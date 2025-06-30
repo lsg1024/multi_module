@@ -1,0 +1,11 @@
+rootProject.name = 'multi_module'
+include 'common'
+include 'user-service'
+include 'auth-service'
+include 'account-service'
+include 'eureka-service'
+include 'api-gateway'
+include 'config-server'
+include 'api-gateway'
+include 'eurekaservice'
+
