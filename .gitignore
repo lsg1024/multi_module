@@ -41,3 +41,6 @@ bin/
 ### Mac OS ###
 .DS_Store
 /api-gateway/src/main/resources/bootstrap.yml
+/account-service/src/main/resources/bootstrap.yml
+/auth-service/src/main/resources/bootstrap.yml
+/config-server/src/main/resources/application-secret.properties
