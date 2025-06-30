@@ -1,0 +1,59 @@
+spring:
+  application:
+    name: scg
+  profiles:
+    active: dev
+  cloud:
+    gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: 'http://localhost:3000'
+            allow-credentials: true
+            allowedHeaders: '*'
+            allowedMethods:
+              - PUT
+              - GET
+              - POST
+              - DELETE
+              - OPTIONS
+      routes:
+        - id: auth
+          uri: lb://AUTH
+          predicates:
+            - Path=/auth/**
+          filters:
+            - StripPrefix=1
+
+        - id: user
+          uri: lb://USER
+          predicates:
+            - Path=/user/**
+          filters:
+            - StripPrefix=1
+
+        - id: account
+          uri: lb://ACCOUNT
+          predicates:
+            - Path=/account/**
+          filters:
+            - StripPrefix=1
+
+#            - name: L1Filter
+#              args:
+#                pre: true
+#                post: true
+
+management:
+  endpoint:
+    gateway:
+      access: unrestricted
+  endpoints:
+    web:
+      exposure:
+        include: gateway, health, refresh
+
+server:
+  port: 8080
