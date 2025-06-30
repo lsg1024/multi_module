@@ -1,0 +1,50 @@
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+ext {
+    set('springCloudVersion', "2024.0.1")
+    querydslVersion = '5.1.0'
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    implementation 'org.springframework.cloud:spring-cloud-starter-bootstrap:4.3.0'
+    implementation 'org.springframework.cloud:spring-cloud-starter-config'
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
+    //security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    //redis
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.redisson:redisson-spring-boot-starter:3.49.0'
+
+    //jwt
+    implementation 'io.jsonwebtoken:jjwt:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+
+    //validation
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation project(path: ':common')
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
