@@ -18,8 +18,7 @@ import org.hibernate.annotations.SQLDelete;
 @SQLDelete(sql = "UPDATE STORE SET STORE_DELETED = TRUE WHERE STORE_ID = ?")
 public class Store extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "STORE_ID")
     private Long storeId;
     @Column(name = "STORE_NAME", nullable = false, length = 30)
@@ -38,28 +37,24 @@ public class Store extends BaseEntity {
     private String storeNote;
     @Column(name = "STORE_DELETED", nullable = false)
     private boolean storeDeleted = false;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "BUSINESS_ID", nullable = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    private Business business;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ADDRESS_ID", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Address address;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "COMMON_OPTIONS_ID")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private CommonOption commonOption;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "OPTION_ID")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private AdditionalOption additionalOption;
 
     @Builder
-    public Store(String storeName, String storePhoneNumber, String storeContactNumber1, String storeContactNumber2, String storeTradePlace, String storeFaxNumber, String storeNote, Business business) {
+    public Store(String storeName, String storePhoneNumber, String storeContactNumber1, String storeContactNumber2, String storeTradePlace, String storeFaxNumber, String storeNote) {
         this.storeName = storeName;
         this.storePhoneNumber = storePhoneNumber;
         this.storeContactNumber1 = storeContactNumber1;
@@ -67,6 +62,5 @@ public class Store extends BaseEntity {
         this.storeTradePlace = storeTradePlace;
         this.storeFaxNumber = storeFaxNumber;
         this.storeNote = storeNote;
-        this.business = business;
     }
 }
