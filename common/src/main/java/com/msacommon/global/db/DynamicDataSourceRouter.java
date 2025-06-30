@@ -5,6 +5,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.Flyway;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 import org.springframework.stereotype.Component;
 
@@ -20,10 +21,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DynamicDataSourceRouter extends AbstractRoutingDataSource {
 
     private final DataSource defaultDs;
+    private final String dbName;
     private final Map<String, DataSource> tenantDsMap = new ConcurrentHashMap();
 
-    public DynamicDataSourceRouter(@Qualifier("defaultDataSource") DataSource defaultDs) {
+    public DynamicDataSourceRouter(
+            @Qualifier("defaultDataSource") DataSource defaultDs,
+            @Value("${custom.datasource.db-name}") String dbName) {
         this.defaultDs = defaultDs;
+        this.dbName = dbName;
         super.setDefaultTargetDataSource(defaultDs);
         super.setTargetDataSources(new HashMap<>());
         super.afterPropertiesSet();
@@ -56,7 +61,7 @@ public class DynamicDataSourceRouter extends AbstractRoutingDataSource {
 
         // 새로운 DataSource 설정
         HikariDataSource ds = new HikariDataSource();
-        ds.setJdbcUrl("jdbc:h2:tcp://localhost/~/userdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE");
+        ds.setJdbcUrl("jdbc:h2:tcp://localhost/~/" + dbName + ";DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE");
         ds.setUsername("sa");
         ds.setPassword("");
         ds.setConnectionInitSql("SET SCHEMA " + tenantId);

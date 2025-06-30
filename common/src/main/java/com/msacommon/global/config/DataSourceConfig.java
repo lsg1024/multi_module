@@ -3,6 +3,7 @@ package com.msacommon.global.config;
 import com.msacommon.global.db.DynamicDataSourceRouter;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -34,7 +35,9 @@ public class DataSourceConfig {
 
     @Bean
     @Primary
-    public DataSource dataSource(@Qualifier("defaultDataSource") DataSource defaultDs) {
-        return new DynamicDataSourceRouter(defaultDs);
+    public DataSource dataSource(
+            @Qualifier("defaultDataSource") DataSource defaultDs,
+            @Value("${custom.datasource.db-name}") String dbName) {
+        return new DynamicDataSourceRouter(defaultDs, dbName);
     }
 }
