@@ -17,20 +17,20 @@ public class Business {
     private Long businessId;
     @Column(name = "BUSINESS_NAME")
     private String businessName;
-    @Column(name = "BUSINESS_NUMBER")
-    private String businessNumber;
     @Column(name = "BUSINESS_OWNER_NAME")
     private String businessOwnerName;
-    @Column(name = "BUSINESS_OWNER_NUMBER")
-    private String businessOwnerNumber;
+    @Column(name = "BUSINESS_NUMBER_1")
+    private String businessNumber1;
+    @Column(name = "BUSINESS_NUMBER_2")
+    private String businessNumber2;
     @Column(name = "DELETED")
     private boolean deleted = false;
 
     @Builder
-    public Business(String businessName, String businessNumber, String businessOwnerName, String businessOwnerNumber) {
+    public Business(String businessName, String businessNumber1, String businessOwnerName, String businessNumber2) {
         this.businessName = businessName;
-        this.businessNumber = businessNumber;
+        this.businessNumber1 = businessNumber1;
         this.businessOwnerName = businessOwnerName;
-        this.businessOwnerNumber = businessOwnerNumber;
+        this.businessNumber2 = businessNumber2;
     }
 }

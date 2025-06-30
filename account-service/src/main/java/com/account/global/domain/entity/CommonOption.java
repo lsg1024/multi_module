@@ -15,17 +15,18 @@ public class CommonOption {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "COMMON_OPTIONS_ID")
     private Long commonOptionId;
-    private String commonOptionGoldLoss;
-    private String commonOptionTradeType;
-    private String commonOptionLevel;
-    private String commonOptionManager;
+    @Enumerated(EnumType.STRING)
+    private OptionTradeType optionTradeType;
+    @Enumerated(EnumType.STRING)
+    private OptionLevel optionLevel;
     private boolean deleted = false;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "GOLD_ID", nullable = false)
+    private GoldLoss goldLoss;
 
     @Builder
-    public CommonOption(String commonOptionGoldLoss, String commonOptionTradeType, String commonOptionLevel, String commonOptionManager) {
-        this.commonOptionGoldLoss = commonOptionGoldLoss;
-        this.commonOptionTradeType = commonOptionTradeType;
-        this.commonOptionLevel = commonOptionLevel;
-        this.commonOptionManager = commonOptionManager;
+    public CommonOption(OptionTradeType optionTradeType, OptionLevel optionLevel) {
+        this.optionTradeType = optionTradeType;
+        this.optionLevel = optionLevel;
     }
 }

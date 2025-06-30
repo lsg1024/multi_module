@@ -1,9 +1,13 @@
 package com.account.domain.store.controller;
 
-import com.account.domain.store.dto.StoreDto;
+import com.account.global.domain.dto.AccountDto;
 import com.account.domain.store.service.StoreService;
+import com.msacommon.global.api.ApiResponse;
+import com.msacommon.global.jwt.AccessToken;
 import jakarta.ws.rs.QueryParam;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -16,10 +20,15 @@ public class StoreController {
     }
 
     //상점 info
-//    @GetMapping("/store/{id}")
-//    public StoreDto.storeInfo getStoreInfo(@QueryParam("id") String storeId) {
-//
-//    }
+    @GetMapping("/store/{id}")
+    public ResponseEntity<ApiResponse<AccountDto.accountInfo>> getStoreInfo(
+            @AccessToken String accessToken,
+            @PathVariable("id") String storeId) {
+
+        AccountDto.accountInfo storeInfo = storeService.getStoreInfo(storeId);
+
+        return ResponseEntity.ok(ApiResponse.success(storeInfo));
+    }
 
     //상점 목록
 
