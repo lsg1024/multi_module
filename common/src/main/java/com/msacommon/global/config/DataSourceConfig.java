@@ -28,13 +28,7 @@ public class DataSourceConfig {
         return ds;
     }
 
-    @Bean(name = "flywayDataSource")
-    public DataSource flywayDataSource(@Qualifier("defaultDataSource") DataSource defaultDs) {
-        return defaultDs;
-    }
-
     @Bean
-    @Primary
     public DataSource dataSource(
             @Qualifier("defaultDataSource") DataSource defaultDs,
             @Value("${custom.datasource.db-name}") String dbName) {
