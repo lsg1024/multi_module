@@ -15,6 +15,8 @@ public class CommonOption {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "COMMON_OPTIONS_ID")
     private Long commonOptionId;
+    @Column(name = "OPTION_TRADE_NOTE")
+    private String optionTradeNote;
     @Enumerated(EnumType.STRING)
     private OptionTradeType optionTradeType;
     @Enumerated(EnumType.STRING)
