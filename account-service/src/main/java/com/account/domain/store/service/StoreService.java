@@ -5,9 +5,11 @@ import com.account.domain.store.repository.StoreRepository;
 import com.account.global.domain.dto.AccountDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
+@Transactional(readOnly = true)
 public class StoreService {
 
     private final StoreRepository storeRepository;
@@ -20,9 +22,25 @@ public class StoreService {
         Store storeInfo = storeRepository.findById(Long.valueOf(storeId))
                 .orElseThrow(() -> new RuntimeException("대상을 찾을 수 없습니다."));
 
-        return AccountDto.accountInfo.builder().build();
+
+
+        return null;
+//        return AccountDto.accountInfo.builder()
+//                .createAt(storeInfo.getCreateDate())
+//                .manager(storeInfo.getCreatedBy())
+//                .businessName(storeInfo.getStoreName())
+//                .businessOwnerName(storeInfo.getStoreOwnerName())
+//                .businessNumber1(storeInfo.getStoreContactNumber1())
+//                .businessNumber2(storeInfo.getStoreContactNumber2())
+//                .faxNumber(storeInfo.getStoreFaxNumber())
+//                .tradePlace(storeInfo.getAddress().get)
+//                .build();
 
     }
+
+//    public void getStoreList(String accessToken) {
+//
+//    }
 
     //상점 호출(info)
 

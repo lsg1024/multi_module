@@ -1,15 +1,20 @@
 package com.account.global.domain.dto;
 
-import lombok.AllArgsConstructor;
+import com.msacommon.global.util.CustomPage;
+import com.querydsl.core.annotations.QueryProjection;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class AccountDto {
 
     @Getter
-    @AllArgsConstructor
+    @NoArgsConstructor
     public static class accountInfo {
-        private String createBy;
+        private String createAt;
         private String manager;
         private String businessName;
         private String businessOwnerName;
@@ -24,8 +29,9 @@ public class AccountDto {
         private String goldLoss;
 
         @Builder
-        public accountInfo(String createBy, String manager, String businessName, String businessOwnerName, String businessNumber1, String businessNumber2, String faxNumber, String address, String tradePlace, String note, String level, String tradeType, String goldLoss) {
-            this.createBy = createBy;
+        @QueryProjection
+        public accountInfo(String createAt, String manager, String businessName, String businessOwnerName, String businessNumber1, String businessNumber2, String faxNumber, String address, String tradePlace, String note, String level, String tradeType, String goldLoss) {
+            this.createAt = createAt;
             this.manager = manager;
             this.businessName = businessName;
             this.businessOwnerName = businessOwnerName;
@@ -39,6 +45,6 @@ public class AccountDto {
             this.tradeType = tradeType;
             this.goldLoss = goldLoss;
         }
-    }
 
+    }
 }

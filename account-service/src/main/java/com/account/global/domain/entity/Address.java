@@ -3,9 +3,11 @@ package com.account.global.domain.entity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
 
+@Getter
 @Entity
 @Table(name = "ADDRESS")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

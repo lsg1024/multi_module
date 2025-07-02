@@ -1,17 +1,18 @@
 package com.account.domain.store.entity;
 
 import com.account.global.domain.entity.Address;
-import com.account.global.domain.entity.Business;
 import com.account.global.domain.entity.CommonOption;
 import com.msacommon.global.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.SQLDelete;
 
+@Getter
 @Entity
 @Table(name = "STORE")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -23,6 +24,8 @@ public class Store extends BaseEntity {
     private Long storeId;
     @Column(name = "STORE_NAME", nullable = false, length = 30)
     private String storeName;
+    @Column(name = "STORE_OWNER_NAME", nullable = false, length = 30)
+    private String storeOwnerName;
     @Column(name = "STORE_PHONE_NUMBER", length = 13)
     private String storePhoneNumber;
     @Column(name = "STORE_CONTACT_NUMBER_1", length = 13)
