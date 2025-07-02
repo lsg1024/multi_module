@@ -5,6 +5,13 @@ spring:
     active: dev
   cloud:
     gateway:
+      forwarded:
+        enabled: true
+      x-forwarded:
+        enabled: true
+        for-enabled: true
+        proto-enabled: true
+        host-enabled: true
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
       globalcors:

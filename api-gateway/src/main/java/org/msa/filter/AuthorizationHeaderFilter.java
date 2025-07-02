@@ -23,7 +23,7 @@ public class AuthorizationHeaderFilter implements GlobalFilter, Ordered {
 
 //        String path = exchange.getRequest().getURI().getPath();
 //
-//        if (path.startsWith("/eureka") || path.startsWith("/actuator")) {
+//        if (path.startsWith("/eureka") || path.startsWith("/actuator") || path.startsWith("/auth/reissue") || path.startsWith("/auth/login")) {
 //            return chain.filter(exchange);
 //        }
 //
@@ -61,6 +61,6 @@ public class AuthorizationHeaderFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -2;
+        return -4;
     }
 }
