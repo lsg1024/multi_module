@@ -22,7 +22,7 @@ public class DynamicDataSourceRouter extends AbstractRoutingDataSource {
 
     private final DataSource defaultDs;
     private final String dbName;
-    private final Map<String, DataSource> tenantDsMap = new ConcurrentHashMap();
+    private final Map<String, DataSource> tenantDsMap = new ConcurrentHashMap<>();
 
     public DynamicDataSourceRouter(
             @Qualifier("defaultDataSource") DataSource defaultDs,
