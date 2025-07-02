@@ -31,6 +31,12 @@ public class StoreController {
     }
 
     //상점 목록
+//    @GetMapping("/store/list")
+//    public ResponseEntity<ApiResponse<AccountDto.accountList>> getStoreList(
+//            @AccessToken String accessToken) {
+//
+//        storeService.getStoreList(accessToken);
+//    }
 
     //상점 생성
 
