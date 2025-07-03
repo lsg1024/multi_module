@@ -8,7 +8,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @EnableFeignClients
 @EnableDiscoveryClient
-@SpringBootApplication(exclude = FlywayAutoConfiguration.class, scanBasePackages = {
+@SpringBootApplication(scanBasePackages = {
 		"com.msa", "com.msacommon.global.jwt", "com.msacommon.global.tenant"
 })
 public class AuthServerApplication {
