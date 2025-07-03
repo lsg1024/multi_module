@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class UsersService {
 
     private final JwtUtil jwtUtil;
@@ -29,7 +30,6 @@ public class UsersService {
     }
 
     //유저 생성
-    @Transactional
     public void createUser(final UserDto.Create userDto) {
         String tenantId = TenantContext.getTenant();
 
@@ -43,7 +43,7 @@ public class UsersService {
         }
 
         final Users user = Users.builder()
-                .userId(userDto.getUserId())
+                .userId(Long.valueOf(userDto.getUserId()))
                 .tenantId(tenantId)
                 .password(encoder.encode(userDto.getPassword()))
                 .nickname(userDto.getNickname())
@@ -84,10 +84,27 @@ public class UsersService {
 
     private Users checkToken(String accessToken) {
         Long id = Long.parseLong(jwtUtil.getId(accessToken));
-        String owner = jwtUtil.getOwner(accessToken);
+        String tenantId = jwtUtil.getTenantId(accessToken);
 
-        return usersRepository.findByIdAndTenantId(id, owner).orElseThrow(() ->
+        return usersRepository.findByIdAndTenantId(id, tenantId).orElseThrow(() ->
                 new UserNotFoundException("사용자 정보 불일치"));
     }
 
+    public UserDto.UserInfo login(UserDto.Login userDto) {
+        Users userInfo = usersRepository.findByUserId(userDto.getUserId())
+                .orElseThrow(() -> new RuntimeException("유저 정보가 없습니다."));
+
+        boolean matches = encoder.matches(userDto.getPassword(), userInfo.getPassword());
+
+        if (matches) {
+            return UserDto.UserInfo.builder()
+                    .id(String.valueOf(userInfo.getId()))
+                    .nickname(userInfo.getNickname())
+                    .tenantId(userInfo.getTenantId())
+                    .role(String.valueOf(userInfo.getRole()))
+                    .build();
+        }
+
+        throw new RuntimeException("유저 정보가 없습니다");
+    }
 }
