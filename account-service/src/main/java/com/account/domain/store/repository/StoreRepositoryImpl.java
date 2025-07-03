@@ -10,6 +10,7 @@ import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Optional;
 
 import static com.account.domain.store.entity.QStore.store;
 import static com.account.global.domain.entity.QAddress.address;
@@ -25,38 +26,37 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
     }
 
     @Override
-    public AccountDto.accountInfo findByStoreId(Long storeId) {
-        return query.select(new QAccountDto_accountInfo(
-                store.createDate,
-                store.createdBy,
-                store.storeName,
-                store.storeOwnerName,
-                store.storeContactNumber1,
-                store.storeContactNumber2,
-                store.storeFaxNumber,
-                Expressions.stringTemplate(
-                        "concat({0}, ' ', {1}, ' ', {2})",
-                        store.address.addressZipCode,
-                        store.address.addressBasic,
-                        store.address.addressAdd
-                ),
-                store.commonOption.optionTradeNote,
-                store.storeNote,
-                store.commonOption.optionLevel.stringValue(),
-                store.commonOption.optionTradeType.stringValue(),
-                store.commonOption.goldLoss.loss.stringValue()))
+    public Optional<AccountDto.accountInfo> findByStoreId(Long storeId) {
+        return Optional.ofNullable(getStoreSelect()
                 .from(store)
                 .join(store.address, address)
                 .join(store.commonOption, commonOption)
                 .join(store.commonOption.goldLoss, goldLoss)
                 .where(store.storeId.eq(storeId).and(store.storeDeleted.isFalse()))
-                .fetchOne();
+                .fetchOne());
+
     }
 
     @Override
     public CustomPage<AccountDto.accountInfo> findAllStore(Pageable pageable) {
 
-        List<AccountDto.accountInfo> content = query
+        List<AccountDto.accountInfo> content = getStoreSelect()
+                .from(store)
+                .join(store.address, address)
+                .join(store.commonOption, commonOption)
+                .join(store.commonOption.goldLoss, goldLoss)
+                .where(store.storeDeleted.isFalse())
+                .orderBy(store.storeName.desc())
+                .fetch();
+
+        JPAQuery<Long> countQuery = query
+                .select(store.count())
+                .from(store);
+
+        return new CustomPage<>(content, pageable, countQuery.fetchOne());
+    }
+    private JPAQuery<AccountDto.accountInfo> getStoreSelect() {
+        return query
                 .select(new QAccountDto_accountInfo(
                         store.createDate,
                         store.createdBy,
@@ -75,19 +75,6 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                         store.storeNote,
                         store.commonOption.optionLevel.stringValue(),
                         store.commonOption.optionTradeType.stringValue(),
-                        store.commonOption.goldLoss.loss.stringValue()))
-                .from(store)
-                .join(store.address, address)
-                .join(store.commonOption, commonOption)
-                .join(store.commonOption.goldLoss, goldLoss)
-                .where(store.storeDeleted.isFalse())
-                .orderBy(store.storeName.desc())
-                .fetch();
-
-        JPAQuery<Long> countQuery = query
-                .select(store.count())
-                .from(store);
-
-        return new CustomPage<>(content, pageable, countQuery.fetchOne());
+                        store.commonOption.goldLoss.loss.stringValue()));
     }
 }

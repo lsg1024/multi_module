@@ -19,23 +19,23 @@ public class StoreService {
     }
 
     public AccountDto.accountInfo getStoreInfo(String storeId) {
-        Store storeInfo = storeRepository.findById(Long.valueOf(storeId))
+        AccountDto.accountInfo storeInfo = storeRepository.findByStoreId(Long.valueOf(storeId))
                 .orElseThrow(() -> new RuntimeException("대상을 찾을 수 없습니다."));
 
-
-
-        return null;
-//        return AccountDto.accountInfo.builder()
-//                .createAt(storeInfo.getCreateDate())
-//                .manager(storeInfo.getCreatedBy())
-//                .businessName(storeInfo.getStoreName())
-//                .businessOwnerName(storeInfo.getStoreOwnerName())
-//                .businessNumber1(storeInfo.getStoreContactNumber1())
-//                .businessNumber2(storeInfo.getStoreContactNumber2())
-//                .faxNumber(storeInfo.getStoreFaxNumber())
-//                .tradePlace(storeInfo.getAddress().get)
-//                .build();
-
+        return AccountDto.accountInfo.builder()
+                .createAt(storeInfo.getCreateAt())
+                .manager(storeInfo.getManager())
+                .businessName(storeInfo.getBusinessName())
+                .businessOwnerName(storeInfo.getBusinessOwnerName())
+                .businessNumber1(storeInfo.getBusinessNumber1())
+                .businessNumber2(storeInfo.getBusinessNumber2())
+                .faxNumber(storeInfo.getFaxNumber())
+                .tradePlace(storeInfo.getAddress())
+                .note(storeInfo.getNote())
+                .level(storeInfo.getLevel())
+                .tradeType(storeInfo.getTradeType())
+                .goldLoss(storeInfo.getGoldLoss())
+                .build();
     }
 
 //    public void getStoreList(String accessToken) {
