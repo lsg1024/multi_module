@@ -21,14 +21,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DynamicDataSourceRouter extends AbstractRoutingDataSource {
 
     private final DataSource defaultDs;
-    private final String dbName;
     private final Map<String, DataSource> tenantDsMap = new ConcurrentHashMap<>();
 
     public DynamicDataSourceRouter(
-            @Qualifier("defaultDataSource") DataSource defaultDs,
-            @Value("${custom.datasource.db-name}") String dbName) {
+            @Qualifier("defaultDataSource") DataSource defaultDs) {
         this.defaultDs = defaultDs;
-        this.dbName = dbName;
         super.setDefaultTargetDataSource(defaultDs);
         super.setTargetDataSources(new HashMap<>());
         super.afterPropertiesSet();
@@ -59,15 +56,8 @@ public class DynamicDataSourceRouter extends AbstractRoutingDataSource {
             throw new IllegalStateException("Failed to create schema: " + tenantId, e);
         }
 
-        // 새로운 DataSource 설정
-        HikariDataSource ds = new HikariDataSource();
-        ds.setJdbcUrl("jdbc:h2:tcp://localhost/~/" + dbName + ";DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE");
-        ds.setUsername("sa");
-        ds.setPassword("");
-        ds.setConnectionInitSql("SET SCHEMA " + tenantId);
-
         Flyway.configure()
-                .dataSource(ds)
+                .dataSource(defaultDs)
                 .schemas(tenantId)
                 .locations("classpath:db/migration")
                 .baselineOnMigrate(true)
@@ -76,10 +66,10 @@ public class DynamicDataSourceRouter extends AbstractRoutingDataSource {
 
         // 라우팅 맵 업데이트
         Map<Object, Object> targetDataSources = new HashMap<>(this.tenantDsMap);
-        targetDataSources.put(tenantId, ds);
+        targetDataSources.put(tenantId, defaultDs);
         super.setTargetDataSources(targetDataSources);
         super.afterPropertiesSet();
 
-        return ds;
+        return defaultDs;
     }
 }

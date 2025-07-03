@@ -3,10 +3,8 @@ package com.msacommon.global.config;
 import com.msacommon.global.db.CurrentTenantIdentifierResolverImpl;
 import com.msacommon.global.db.SchemaMultiTenantConnectionProvider;
 import jakarta.persistence.EntityManagerFactory;
-import lombok.extern.slf4j.Slf4j;
 import org.hibernate.cfg.AvailableSettings;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,12 +14,10 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Slf4j
 @Configuration
 @ConfigurationProperties(prefix = "custom.jpa")
 public class HibernateConfig {

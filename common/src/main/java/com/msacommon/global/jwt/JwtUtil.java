@@ -1,7 +1,6 @@
 package com.msacommon.global.jwt;
 
 import io.jsonwebtoken.Jwts;
-import jakarta.servlet.http.Cookie;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -27,27 +26,38 @@ public class JwtUtil {
         return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("id", String.class);
     }
 
-    public String getOwner(String token) {
-        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("owner", String.class);
+    public String getTenantId(String token) {
+        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("tenantId", String.class);
     }
 
     public String getNickname(String token) {
         return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("nickname", String.class);
     }
 
+    public String getForward(String token) {
+        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("forward", String.class);
+    }
+
+    public String getDevice(String token) {
+        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("device", String.class);
+    }
+
     public String getRole(String token) {
         return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("role", String.class);
     }
+
     public void isExpired(String token) {
         Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().getExpiration().before(new Date());
     }
 
-    public String createJwt(String category, String id, String ownerName, String nickName, String role, Long expireTime) {
+    public String createJwt(String category, String id, String tenantId, String nickName, String forward, String device,  String role, Long expireTime) {
         return Jwts.builder()
                 .claim("category", category)
                 .claim("id", id)
-                .claim("owner", ownerName)
+                .claim("tenantId", tenantId)
                 .claim("nickname", nickName)
+                .claim("forward", forward)
+                .claim("device", device)
                 .claim("role", role)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expireTime))
