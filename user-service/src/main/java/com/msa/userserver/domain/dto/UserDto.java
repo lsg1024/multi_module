@@ -2,10 +2,7 @@ package com.msa.userserver.domain.dto;
 
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 public class UserDto {
 
@@ -13,12 +10,19 @@ public class UserDto {
     private final static String PASSWORD_ERROR = "비밀번호는 영문자, 숫자, 특수문자를 포함한 8~16자리여야 합니다.";
 
     @Getter
-    @AllArgsConstructor
     public static class UserInfo {
         private String id;
-        private String owner;
+        private String tenantId;
         private String nickname;
         private String role;
+
+        @Builder
+        public UserInfo(String id, String tenantId, String nickname, String role) {
+            this.id = id;
+            this.tenantId = tenantId;
+            this.nickname = nickname;
+            this.role = role;
+        }
     }
 
     @Getter

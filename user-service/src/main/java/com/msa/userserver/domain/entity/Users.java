@@ -21,13 +21,13 @@ public class Users extends BaseTimeEntity {
     private Long id;
 
     @Column(name = "USER_ID", nullable = false, length = 10)
-    private String userId;
+    private String userId; // 사용자 아이디
 
     @Column(name = "PASSWORD", nullable = false, length = 100)
     private String password;
 
     @Column(name = "NICKNAME", nullable = false, length = 10)
-    private String nickname;
+    private String nickname; // 이름
 
     @Column(name = "TENANT_ID", nullable = false, length = 10)
     private String tenantId;
@@ -40,8 +40,8 @@ public class Users extends BaseTimeEntity {
     private boolean deleted = false;
 
     @Builder
-    public Users(String userId, String password, String nickname, String tenantId, Role role) {
-        this.userId = userId;
+    public Users(Long userId, String password, String nickname, String tenantId, Role role) {
+        this.id = userId;
         this.password = password;
         this.nickname = nickname;
         this.tenantId = tenantId;

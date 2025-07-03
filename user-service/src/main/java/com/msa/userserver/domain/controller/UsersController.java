@@ -21,6 +21,16 @@ public class UsersController {
         this.usersService = usersService;
     }
 
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<UserDto.UserInfo>> loginCheck(@RequestBody UserDto.Login userDto) {
+
+        log.info("loginCheck {} {}", userDto.getUserId(), userDto.getPassword());
+        UserDto.UserInfo userInfo = usersService.login(userDto);
+
+        return ResponseEntity.ok(ApiResponse.success(userInfo));
+
+    }
+
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<String>> createUser(@Valid @RequestBody UserDto.Create userDto) {
 
