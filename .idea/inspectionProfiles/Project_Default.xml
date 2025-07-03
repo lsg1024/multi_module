@@ -5,6 +5,7 @@
       <option name="customHeaders">
         <set>
           <option value="X-Tenant-ID" />
+          <option value="X-User-ID" />
         </set>
       </option>
     </inspection_tool>
