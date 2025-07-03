@@ -57,7 +57,7 @@ public class SecurityConfig {
         // 2) 인증·재발급 경로만 허용, 그 외 보호
         http
                 .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/login", "/auth/reissue", "/test/hello", "/auth/test/hello").permitAll()
+                .requestMatchers("/actuator/**", "/login", "/reissue", "/test/hello").permitAll()
                 .anyRequest().authenticated()
         );
 
@@ -72,7 +72,7 @@ public class SecurityConfig {
         CustomLoginFilter loginFilter = new CustomLoginFilter(
                 authenticationManager(), ACCESS_TTL, REFRESH_TTL, jwtUtil, redisService, userClient
         );
-        loginFilter.setFilterProcessesUrl("/auth/login");
+        loginFilter.setFilterProcessesUrl("/login");
 
         http
                 .addFilterAt(loginFilter, UsernamePasswordAuthenticationFilter.class);

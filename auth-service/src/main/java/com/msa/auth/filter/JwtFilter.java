@@ -55,24 +55,6 @@ public class JwtFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 2) 토큰 유효성 검사
-        String user_id = jwtUtil.getId(token);
-        String owner = jwtUtil.getOwner(token);
-        String nickname = jwtUtil.getNickname(token);
-        String role = jwtUtil.getRole(token);
-
-        UserDto.UserInfo userInfo = new UserDto.UserInfo(
-                user_id,
-                owner,
-                nickname,
-                role
-        );
-
-
-        Collection<? extends GrantedAuthority> authorities = userInfo.getAuthorities();
-        Authentication authentication = new UsernamePasswordAuthenticationToken(userInfo, null, authorities);
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
         filterChain.doFilter(request, response);
     }
 }

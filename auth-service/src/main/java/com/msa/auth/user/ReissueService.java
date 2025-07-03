@@ -21,11 +21,11 @@ public class ReissueService {
 
     public String[] reissueRefreshToken(String refreshToken, Long access_ttl, Long refresh_ttl) {
 
-        String owner = jwtUtil.getOwner(refreshToken);
+        String tenantId = jwtUtil.getTenantId(refreshToken);
         String nickname = jwtUtil.getNickname(refreshToken);
         String category = jwtUtil.getCategory(refreshToken);
 
-        validateOwner(owner);
+        validateTenantId(tenantId);
         validateNickname(nickname);
         validateCategoryIsRefresh(category);
 
@@ -37,11 +37,13 @@ public class ReissueService {
 
         String id = jwtUtil.getId(refreshToken);
         String role = jwtUtil.getRole(refreshToken);
+        String forward = jwtUtil.getForward(refreshToken);
+        String device = jwtUtil.getDevice(refreshToken);
 
-        String newAccessToken = jwtUtil.createJwt("access", id, owner, nickname, role, access_ttl);
-        String newRefreshToken = jwtUtil.createJwt("refresh", id, owner, nickname, role, refresh_ttl);
+        String newAccessToken = jwtUtil.createJwt("access", id, tenantId, nickname, forward, device, role, access_ttl);
+        String newRefreshToken = jwtUtil.createJwt("refresh", id, tenantId, nickname, forward, device, role, refresh_ttl);
 
-        redisRefreshTokenService.updateNewToken(owner, nickname, newRefreshToken);
+        redisRefreshTokenService.updateNewToken(tenantId, forward, device, nickname, newRefreshToken);
 
         return new String[]{newAccessToken, newRefreshToken};
     }

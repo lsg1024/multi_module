@@ -2,8 +2,8 @@ package com.msa.auth.util;
 
 public class ValidationTokenUtil {
 
-    public static void validateOwner(String owner) {
-        if (owner == null) {
+    public static void validateTenantId(String tenantId) {
+        if (tenantId == null) {
             throw new RuntimeException("접속 실패");
         }
     }

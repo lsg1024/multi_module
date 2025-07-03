@@ -20,23 +20,23 @@ public class RedisRefreshTokenService {
         this.redisTemplate = redisTemplate;
     }
 
-    public void createNewToken(String owner, String nickname, String token) {
+    public void createNewToken(String tenantId, String forward, String userAgent, String nickname, String token) {
         log.info("createNewToken");
-        String key = keyPrefix + owner + ":" + nickname;
+        String key = keyPrefix + tenantId + ":" + forward + ":" + userAgent + ":" + nickname;
         redisTemplate.opsForValue().set(key, token, REFRESH_TTL, TimeUnit.SECONDS);
     }
 
-    public void updateNewToken(String owner, String nickname, String token) {
+    public void updateNewToken(String tenantId, String forward, String device, String nickname, String token) {
         log.info("updateNewToken");
-        createNewToken(owner, nickname, token);
+        createNewToken(tenantId, forward, device, nickname, token);
     }
 
-    public boolean existsToken(String owner, String nickname) {
-        String key = keyPrefix + owner + ":" + nickname;
+    public boolean existsToken(String tenantId, String nickname) {
+        String key = keyPrefix + tenantId + ":" + nickname;
         return Boolean.TRUE.equals(redisTemplate.hasKey(key));
     }
-    public void deleteToken(String owner, String nickname) {
-        String key = keyPrefix + owner + ":" + nickname;
+    public void deleteToken(String tenantId, String nickname) {
+        String key = keyPrefix + tenantId + ":" + nickname;
         redisTemplate.delete(key);
     }
 }

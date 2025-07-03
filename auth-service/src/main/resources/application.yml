@@ -16,5 +16,3 @@ spring:
         redis:
             enable-statistics: true
 
-server:
-    port: 8085

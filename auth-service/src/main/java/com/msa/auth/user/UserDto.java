@@ -21,7 +21,7 @@ public class UserDto {
     private final static String USERID_ERROR = "영어/숫자만 가능합니다. 글자제한(5 ~ 10)";
     private final static String PASSWORD_ERROR = "비밀번호는 영문자, 숫자, 특수문자를 포함한 8~16자리여야 합니다.";
 
-    private String user_id;
+    private String userId;
     private String owner;
     private String nickname;
     private String password;
@@ -32,8 +32,8 @@ public class UserDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class UserInfo {
-        private String user_id;
-        private String owner;
+        private String userId;
+        private String tenantId;
         private String nickname;
         private String role;
 
@@ -49,7 +49,7 @@ public class UserDto {
 
         @Pattern(regexp = "^[A-Za-z0-9]+$", message = USERID_ERROR)
         @Size(min = 5, max = 10)
-        private String user_id;
+        private String userId;
 
         @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*[0-9])(?=.*[$@!%*#?&]).{8,16}$",
                 message = PASSWORD_ERROR)
