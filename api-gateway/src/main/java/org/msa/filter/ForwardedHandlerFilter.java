@@ -9,19 +9,23 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+
 @Slf4j
 @Component
-public class TenantFilter implements GlobalFilter, Ordered {
+public class ForwardedHandlerFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 
-        String host = exchange.getRequest().getHeaders().getFirst(("Host"));
-        String tenantId = host.split("\\.")[0];
+        String forwardedFor = exchange.getRequest().getHeaders().getFirst("X-Forwarded-For");
+
+        String clientIp = (forwardedFor != null)
+                ? forwardedFor.split(",")[0].trim()
+                : exchange.getRequest().getRemoteAddress().getAddress().getHostAddress();
 
         ServerHttpRequest mutatedRequest = exchange.getRequest()
                 .mutate()
-                .headers(h -> h.add("X-Tenant-ID", tenantId))
+                .headers(httpHeaders -> httpHeaders.add("X-Forwarded-For", clientIp))
                 .build();
 
         ServerWebExchange mutatedExchange = exchange.mutate().request(mutatedRequest).build();
@@ -29,9 +33,8 @@ public class TenantFilter implements GlobalFilter, Ordered {
         return chain.filter(mutatedExchange);
     }
 
-    // 필터 순서 -> 작은 순으로 먼저 실행
     @Override
     public int getOrder() {
-        return -3;
+        return -1;
     }
 }
