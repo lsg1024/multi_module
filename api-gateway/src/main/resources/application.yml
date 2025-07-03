@@ -28,21 +28,21 @@ spring:
               - OPTIONS
       routes:
         - id: auth
-          uri: lb://AUTH
+          uri: lb://auth
           predicates:
             - Path=/auth/**
           filters:
             - StripPrefix=1
 
-        - id: user
-          uri: lb://USER
+        - id: users
+          uri: lb://users
           predicates:
-            - Path=/user/**
+            - Path=/users/**
           filters:
             - StripPrefix=1
 
         - id: account
-          uri: lb://ACCOUNT
+          uri: lb://account
           predicates:
             - Path=/account/**
           filters:
@@ -52,6 +52,7 @@ spring:
 #              args:
 #                pre: true
 #                post: true
+
 
 management:
   endpoint:
@@ -63,4 +64,4 @@ management:
         include: gateway, health, refresh
 
 server:
-  port: 8080
+  port: ${gateway.port}
