@@ -1,13 +1,9 @@
 package com.account.global.domain.dto;
 
-import com.msacommon.global.util.CustomPage;
 import com.querydsl.core.annotations.QueryProjection;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class AccountDto {
 
