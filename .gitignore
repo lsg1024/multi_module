@@ -44,4 +44,5 @@ bin/
 /account-service/src/main/resources/bootstrap.yml
 /auth-service/src/main/resources/bootstrap.yml
 /config-server/src/main/resources/application-secret.properties
-/eureka-service/src/main/resources/application-key.properties
+/eureka-service/src/main/resources/application-secret.properties
+/user-service/src/main/resources/bootstrap.yml
