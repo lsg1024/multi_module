@@ -23,9 +23,6 @@ logging:
     org.springframework.orm.jpa: DEBUG
 
 custom:
-  datasource:
-    db-name: accountdb
-
   jpa:
     entity-scan-packages:
       - com.account.domain.store.entity

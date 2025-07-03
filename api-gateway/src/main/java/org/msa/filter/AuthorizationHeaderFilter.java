@@ -1,10 +1,12 @@
 package org.msa.filter;
 
 import com.msacommon.global.jwt.JwtUtil;
+import io.jsonwebtoken.ExpiredJwtException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -21,39 +23,34 @@ public class AuthorizationHeaderFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 
-//        String path = exchange.getRequest().getURI().getPath();
-//
-//        if (path.startsWith("/eureka") || path.startsWith("/actuator") || path.startsWith("/auth/reissue") || path.startsWith("/auth/login")) {
-//            return chain.filter(exchange);
-//        }
-//
-//        String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
-//
-//        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-//            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-//            return exchange.getResponse().setComplete();
-//        }
-//
-//        String token = authHeader.substring(7); // "Bearer " 제거
-//
-//        try {
-//            if (jwtUtil.isExpired(token)) {
-//                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-//                return exchange.getResponse().setComplete();
-//            }
-//
-//            String userId = jwtUtil.getUserId(token);
-//
-            ServerWebExchange mutatedExchange = exchange.mutate()
-                    .request(builder -> builder.header("X-User-ID", "test"))
-                    .build();
-//
-//            return chain.filter(mutatedExchange);
-//        } catch (Exception e) {
-//            log.error("JWT 검증 실패: {}", e.getMessage());
-//            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-//            return exchange.getResponse().setComplete();
-//        }
+        String path = exchange.getRequest().getURI().getPath();
+
+        if (path.startsWith("/eureka") || path.startsWith("/actuator/**") || path.startsWith("/auth/reissue") || path.startsWith("/auth/login") || path.startsWith("/users/login") || path.startsWith("/auth/test/hello")) {
+            return chain.filter(exchange);
+        }
+
+        String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
+
+        String token = authHeader.substring(7); // "Bearer " 제거
+
+        try {
+            jwtUtil.isExpired(token);
+        } catch (ExpiredJwtException e) {
+            log.error("JWT 검증 실패: {}", e.getMessage());
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
+
+        String userId = jwtUtil.getId(token);
+
+        ServerWebExchange mutatedExchange = exchange.mutate()
+                .request(builder -> builder.header("X-User-ID", userId))
+                .build();
 
         return chain.filter(mutatedExchange);
 
@@ -61,6 +58,7 @@ public class AuthorizationHeaderFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -4;
+        return -3;
     }
+
 }

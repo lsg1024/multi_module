@@ -32,6 +32,6 @@ public class TenantFilter implements GlobalFilter, Ordered {
     // 필터 순서 -> 작은 순으로 먼저 실행
     @Override
     public int getOrder() {
-        return -3;
+        return -4;
     }
 }
