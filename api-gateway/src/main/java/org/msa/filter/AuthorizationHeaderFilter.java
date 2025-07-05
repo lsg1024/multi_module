@@ -29,19 +29,37 @@ public class AuthorizationHeaderFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
+        String bearer = exchange.getRequest().getHeaders().getFirst("Authorization");
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (bearer == null || !bearer.startsWith("Bearer ")) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
         }
 
-        String token = authHeader.substring(7); // "Bearer " 제거
+        String token = bearer.substring(7); // "Bearer " 제거
 
         try {
             jwtUtil.isExpired(token);
         } catch (ExpiredJwtException e) {
             log.error("JWT 검증 실패: {}", e.getMessage());
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
+
+        String device = jwtUtil.getDevice(token);
+        String deviceHeader = exchange.getRequest().getHeaders().getFirst("User-Agent");
+
+        if (!device.equals(deviceHeader)) {
+            log.error("Device 불일치");
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
+
+        String forward = jwtUtil.getForward(token);
+        String forwardHeader = exchange.getRequest().getHeaders().getFirst("X-Forwarded-For");
+
+        if (!forward.equals(forwardHeader)) {
+            log.error("X-Forwarded-For 불일치");
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
         }
