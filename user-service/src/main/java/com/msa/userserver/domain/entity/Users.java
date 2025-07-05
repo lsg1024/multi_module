@@ -1,7 +1,7 @@
 package com.msa.userserver.domain.entity;
 
-import com.msa.userserver.domain.dto.UserDto;
 import com.msacommon.global.domain.BaseTimeEntity;
+import com.msacommon.global.domain.dto.UserDto;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -47,6 +47,7 @@ public class Users extends BaseTimeEntity {
         this.tenantId = tenantId;
         this.role = role;
     }
+
     public void updateInfo(UserDto.Update updateDto) {
         this.nickname = updateDto.getNickname();
 

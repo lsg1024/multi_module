@@ -1,6 +1,6 @@
 package com.msa.auth.filter;
 
-import com.msa.auth.user.UserDto;
+import com.msacommon.global.domain.dto.UserDto;
 import com.msacommon.global.jwt.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
@@ -11,11 +11,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 
 @Slf4j
 public class JwtFilter extends OncePerRequestFilter {
@@ -83,7 +85,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 role
         );
 
-        Collection<? extends GrantedAuthority> authorities = userInfo.getAuthorities();
+        Collection<? extends GrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority(userInfo.getRole()));
         Authentication authentication = new UsernamePasswordAuthenticationToken(userInfo, null, authorities);
         SecurityContextHolder.getContext().setAuthentication(authentication);
         filterChain.doFilter(request, response);

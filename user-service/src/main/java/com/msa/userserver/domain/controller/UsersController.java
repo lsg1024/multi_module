@@ -1,8 +1,8 @@
 package com.msa.userserver.domain.controller;
 
 import com.msa.userserver.domain.service.UsersService;
-import com.msa.userserver.domain.dto.UserDto;
 import com.msacommon.global.api.ApiResponse;
+import com.msacommon.global.domain.dto.UserDto;
 import com.msacommon.global.jwt.AccessToken;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -22,9 +22,8 @@ public class UsersController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<UserDto.UserInfo>> loginCheck(@RequestBody UserDto.Login userDto) {
+    public ResponseEntity<ApiResponse<UserDto.UserInfo>> loginCheck(@Valid @RequestBody UserDto.Login userDto) {
 
-        log.info("loginCheck {} {}", userDto.getUserId(), userDto.getPassword());
         UserDto.UserInfo userInfo = usersService.login(userDto);
 
         return ResponseEntity.ok(ApiResponse.success(userInfo));
