@@ -25,6 +25,6 @@ logging:
 custom:
   jpa:
     entity-scan-packages:
-      - com.account.domain.store.entity
-      - com.account.domain.factory.entity
-      - com.account.global.domain.entity
+      - com.msa.account.domain.store.entity
+      - com.msa.account.domain.factory.entity
+      - com.msa.account.global.domain.entity
