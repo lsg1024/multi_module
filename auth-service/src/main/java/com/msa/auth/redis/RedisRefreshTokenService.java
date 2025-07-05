@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 public class RedisRefreshTokenService {
 
     @Value("${jwt.refresh_ttl}")
-    private long REFRESH_TTL;
+    private String REFRESH_TTL;
     private static final String keyPrefix = "refreshToken:";
     private final RedisTemplate<String, Object> redisTemplate;
 
@@ -23,7 +23,7 @@ public class RedisRefreshTokenService {
     public void createNewToken(String tenantId, String forward, String userAgent, String nickname, String token) {
         log.info("createNewToken");
         String key = keyPrefix + tenantId + ":" + forward + ":" + userAgent + ":" + nickname;
-        redisTemplate.opsForValue().set(key, token, REFRESH_TTL, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(key, token, Long.parseLong(REFRESH_TTL), TimeUnit.SECONDS);
     }
 
     public void updateNewToken(String tenantId, String forward, String device, String nickname, String token) {

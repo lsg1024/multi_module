@@ -36,7 +36,6 @@ public class CustomLoginFilter extends UsernamePasswordAuthenticationFilter {
     private final long refreshTtl;
     private final JwtUtil jwtUtil;
     private final RedisRefreshTokenService redisRefreshTokenService;
-
     private final UserServerClient userServerClient;
 
     public CustomLoginFilter(AuthenticationManager authenticationManager, long accessTtl, long refreshTtl, JwtUtil jwtUtil, RedisRefreshTokenService redisRefreshTokenService, UserServerClient userServerClient) {
@@ -95,8 +94,8 @@ public class CustomLoginFilter extends UsernamePasswordAuthenticationFilter {
         response.setCharacterEncoding("UTF-8");
 
         response.setHeader("Authorization", "Bearer " + accessToken);
-        response.addCookie(createCookie("refreshToken", refreshToken, refreshTtl));
-        response.setStatus(HttpStatus.OK.value());
+        response.addCookie(createCookie(refreshToken, refreshTtl));
+        response.setStatus(HttpStatus.NO_CONTENT.value());
     }
 
     @Override
@@ -120,8 +119,8 @@ public class CustomLoginFilter extends UsernamePasswordAuthenticationFilter {
         response.getWriter().write(body);
     }
 
-    private Cookie createCookie(String key, String value, Long TTL) {
-            Cookie cookie = new Cookie(key, value);
+    private Cookie createCookie(String value, Long TTL) {
+            Cookie cookie = new Cookie("refreshToken", value);
             cookie.setMaxAge(TTL.intValue());
             cookie.setPath("/");
             cookie.setHttpOnly(true);

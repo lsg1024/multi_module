@@ -55,6 +55,37 @@ public class JwtFilter extends OncePerRequestFilter {
             return;
         }
 
+        String device = jwtUtil.getDevice(token);
+        String H_userAgent = request.getHeader("User-Agent");
+
+        if (!H_userAgent.equals(device)) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+
+        String forward = jwtUtil.getForward(token);
+        String H_forwarded = request.getHeader("X-Forwarded-For");
+
+        if (!H_forwarded.equals(forward)) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+
+        String user_id = jwtUtil.getId(token);
+        String tenantId = jwtUtil.getTenantId(token);
+        String nickname = jwtUtil.getNickname(token);
+        String role = jwtUtil.getRole(token);
+
+        UserDto.UserInfo userInfo = new UserDto.UserInfo(
+                user_id,
+                tenantId,
+                nickname,
+                role
+        );
+
+        Collection<? extends GrantedAuthority> authorities = userInfo.getAuthorities();
+        Authentication authentication = new UsernamePasswordAuthenticationToken(userInfo, null, authorities);
+        SecurityContextHolder.getContext().setAuthentication(authentication);
         filterChain.doFilter(request, response);
     }
 }

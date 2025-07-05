@@ -22,7 +22,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
-import org.springframework.stereotype.Component;
 
 @Configuration
 @EnableWebSecurity
@@ -57,7 +56,7 @@ public class SecurityConfig {
         // 2) 인증·재발급 경로만 허용, 그 외 보호
         http
                 .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/actuator/**", "/login", "/reissue", "/test/hello").permitAll()
+                .requestMatchers("/actuator/**", "/login", "/reissue").permitAll()
                 .anyRequest().authenticated()
         );
 
