@@ -2,10 +2,10 @@ package com.msa.userserver.domain.service;
 
 
 import com.msa.userserver.domain.respository.UsersRepository;
-import com.msa.userserver.domain.dto.UserDto;
 import com.msa.userserver.domain.entity.Role;
 import com.msa.userserver.domain.entity.Users;
 import com.msa.userserver.exception.UserNotFoundException;
+import com.msacommon.global.domain.dto.UserDto;
 import com.msacommon.global.jwt.JwtUtil;
 import com.msacommon.global.tenant.TenantContext;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -98,7 +98,7 @@ public class UsersService {
 
         if (matches) {
             return UserDto.UserInfo.builder()
-                    .id(String.valueOf(userInfo.getId()))
+                    .userId(String.valueOf(userInfo.getId()))
                     .nickname(userInfo.getNickname())
                     .tenantId(userInfo.getTenantId())
                     .role(String.valueOf(userInfo.getRole()))

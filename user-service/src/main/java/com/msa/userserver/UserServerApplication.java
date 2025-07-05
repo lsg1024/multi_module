@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 @EnableJpaAuditing
 @EnableDiscoveryClient
 @SpringBootApplication(exclude = FlywayAutoConfiguration.class, scanBasePackages = {
-       "com.msa", "com.msacommon.global"
+       "com.msa.userserver", "com.msacommon.global"
 })
 public class UserServerApplication {
 

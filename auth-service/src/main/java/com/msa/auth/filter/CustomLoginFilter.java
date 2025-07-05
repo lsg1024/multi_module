@@ -2,9 +2,9 @@ package com.msa.auth.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msa.auth.redis.RedisRefreshTokenService;
-import com.msa.auth.user.UserDto;
 import com.msa.auth.user.UserServerClient;
 import com.msacommon.global.api.ApiResponse;
+import com.msacommon.global.domain.dto.UserDto;
 import com.msacommon.global.jwt.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletInputStream;
@@ -21,12 +21,14 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 
 @Slf4j
@@ -62,7 +64,7 @@ public class CustomLoginFilter extends UsernamePasswordAuthenticationFilter {
 
             UserDto.UserInfo userinfo = result.getBody().getData();
 
-            Collection<? extends GrantedAuthority> authorities = userinfo.getAuthorities();
+            Collection<? extends GrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority(userinfo.getRole()));
 
             return new UsernamePasswordAuthenticationToken(userinfo, null, authorities);
         } catch (IOException e) {

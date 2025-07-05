@@ -1,6 +1,7 @@
 package com.msa.auth.user;
 
 import com.msacommon.global.api.ApiResponse;
+import com.msacommon.global.domain.dto.UserDto;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
@@ -23,11 +24,6 @@ public class UserServerClient {
     }
 
     public ResponseEntity<ApiResponse<UserDto.UserInfo>> getLogin(HttpServletRequest request, UserDto.Login loginDto) {
-        log.info("getLogin User-ID {}, X-Forwarded-For {}, X-Tenant-ID {}, User-Agent {}",
-                request.getHeader("X-User-ID"),
-                request.getHeader("X-Forwarded-For"),
-                request.getHeader("X-Tenant-ID"),
-                request.getHeader("User-Agent"));
 
         String tenantId = request.getHeader("X-Tenant-ID");
 
@@ -36,7 +32,6 @@ public class UserServerClient {
         HttpHeaders headers = new HttpHeaders();
 
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.add("X-User-ID", request.getHeader("X-User-ID"));
         headers.add("X-Forwarded-For", request.getHeader("X-Forwarded-For"));
         headers.add("X-Tenant-ID", tenantId);
         headers.add("User-Agent", request.getHeader("User-Agent"));
