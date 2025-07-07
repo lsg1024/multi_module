@@ -14,19 +14,18 @@ public class AdditionalOption {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "OPTION_ID")
-    private String optionID;
+    private String optionId;
     @Column(name = "OPTION_APPLY_PAST_SALES")
-    private String optionApplyPastSales;
-    @Column(name = "OPTION_LIMIT_DAY")
-    private String optionLimitDay;
-    @Column(name = "OPTION_MATERIAL")
-    private String optionMaterial;
+    private boolean optionApplyPastSales;
+    @Column(name = "OPTION_MATERIAL_ID") // product server
+    private String optionMaterialId;
+    @Column(name = "OPTION_MATERIAL_NAME")
+    private String optionMaterialName;
     private boolean deleted = false;
 
     @Builder
-    public AdditionalOption(String optionApplyPastSales, String optionLimitDay, String optionMaterial) {
+    public AdditionalOption(boolean optionApplyPastSales, String optionMaterialId) {
         this.optionApplyPastSales = optionApplyPastSales;
-        this.optionLimitDay = optionLimitDay;
-        this.optionMaterial = optionMaterial;
+        this.optionMaterialId = optionMaterialId;
     }
 }
