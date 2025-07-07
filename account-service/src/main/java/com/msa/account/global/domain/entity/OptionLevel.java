@@ -5,10 +5,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum OptionLevel {
 
-    ONE("FIRST", 1),
-    TWO("TWO", 2),
-    THREE("THREE", 3),
-    FOUR("FOUR", 4);
+    ONE("1", 1),
+    TWO("2", 2),
+    THREE("3", 3),
+    FOUR("4", 4);
 
     private final String key;
     private final int level;

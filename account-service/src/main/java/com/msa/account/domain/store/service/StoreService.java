@@ -2,18 +2,23 @@ package com.msa.account.domain.store.service;
 
 import com.msa.account.domain.store.repository.StoreRepository;
 import com.msa.account.global.domain.dto.AccountDto;
+import com.msacommon.global.jwt.JwtUtil;
+import com.msacommon.global.util.CustomPage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Pageable;
 
 @Slf4j
 @Service
 @Transactional(readOnly = true)
 public class StoreService {
 
+    private final JwtUtil jwtUtil;
     private final StoreRepository storeRepository;
 
-    public StoreService(StoreRepository storeRepository) {
+    public StoreService(JwtUtil jwtUtil, StoreRepository storeRepository) {
+        this.jwtUtil = jwtUtil;
         this.storeRepository = storeRepository;
     }
 
@@ -37,8 +42,8 @@ public class StoreService {
                 .build();
     }
 
-    public void getStoreList(String accessToken) {
-
+    public CustomPage<AccountDto.accountInfo> getStoreList(Pageable pageable) {
+        return storeRepository.findAllStore(pageable);
     }
 
     //상점 호출(info)

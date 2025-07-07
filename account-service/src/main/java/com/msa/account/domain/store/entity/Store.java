@@ -42,7 +42,7 @@ public class Store extends BaseEntity {
     private boolean storeDeleted = false;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ADDRESS_ID", nullable = false)
+    @JoinColumn(name = "ADDRESS_ID")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Address address;
 
