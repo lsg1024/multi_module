@@ -5,12 +5,13 @@ import com.msa.account.global.domain.dto.AdditionalOptionDto;
 import com.msa.account.global.domain.dto.AddressDto;
 import com.msa.account.global.domain.dto.CommonOptionDto;
 import com.msa.account.global.domain.entity.GoldHarry;
-import com.msa.account.global.domain.entity.OptionTradeType;
 import com.querydsl.core.annotations.QueryProjection;
 import jakarta.validation.constraints.Pattern;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import static com.msa.account.global.domain.dto.util.ExchangeEnumUtil.*;
 
 public class StoreDto {
 
@@ -28,12 +29,13 @@ public class StoreDto {
         private String storeContactNumber2;
         private String storeFaxNumber;
         private String storeNote;
+        private String address;
         private String tradeType;
         private String level;
         private String goldHarryLoss;
 
         @QueryProjection
-        public StoreResponse(String storeName, String storeOwnerName, String storePhoneNumber, String storeContactNumber1, String storeContactNumber2, String storeFaxNumber, String storeNote, String tradeType, String level, String goldHarryLoss) {
+        public StoreResponse(String storeName, String storeOwnerName, String storePhoneNumber, String storeContactNumber1, String storeContactNumber2, String storeFaxNumber, String storeNote, String address, String tradeType, String level, String goldHarryLoss) {
             this.storeName = storeName;
             this.storeOwnerName = storeOwnerName;
             this.storePhoneNumber = storePhoneNumber;
@@ -41,17 +43,10 @@ public class StoreDto {
             this.storeContactNumber2 = storeContactNumber2;
             this.storeFaxNumber = storeFaxNumber;
             this.storeNote = storeNote;
-            this.tradeType = tradeType;
-            this.level = level;
+            this.address = address;
+            this.tradeType = getTradeTypeTitle(tradeType);;
+            this.level = getLevelTypeTitle(level);;
             this.goldHarryLoss = goldHarryLoss;
-        }
-
-        public void getTradeTypeTitle() {
-            this.tradeType = OptionTradeType.getTitleByKey(tradeType);
-        }
-
-        public void getLevelTypeLevel() {
-            this.level = OptionTradeType.getTitleByKey(level);
         }
     }
 
@@ -96,21 +91,14 @@ public class StoreDto {
             this.addressBasic = addressBasic;
             this.addressAdd = addressAdd;
             this.commonOptionId = commonOptionId;
-            this.tradeType = tradeType;
-            this.level = level;
+            this.tradeType = getTradeTypeTitle(tradeType);
+            this.level = getLevelTypeTitle(level);;
             this.goldHarryId = goldHarryId;
             this.goldHarryLoss = goldHarryLoss;
             this.additionalOptionId = additionalOptionId;
             this.additionalApplyPastSales = additionalApplyPastSales;
             this.additionalMaterialId = additionalMaterialId;
             this.additionalMaterialName = additionalMaterialName;
-        }
-
-        public void getTradeTypeTitle() {
-            this.tradeType = OptionTradeType.getTitleByKey(tradeType);
-        }
-        public void getLevelTypeLevel() {
-            this.level = OptionTradeType.getTitleByKey(level);
         }
     }
 

@@ -4,6 +4,7 @@ import com.msa.account.domain.store.dto.StoreDto;
 import com.msa.account.global.domain.dto.AccountDto;
 import com.msa.account.domain.store.service.StoreService;
 import com.msacommon.global.api.ApiResponse;
+import com.msacommon.global.jwt.AccessToken;
 import com.msacommon.global.util.CustomPage;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
@@ -53,10 +54,11 @@ public class StoreController {
     //상점 수정
     @PatchMapping("/store/{id}")
     public ResponseEntity<ApiResponse<String>> updateStore(
+            @AccessToken String accessToken,
             @PathVariable("id") String storeId,
             @Valid @RequestBody StoreDto.StoreUpdate updateInfo) {
 
-        storeService.updateStore(storeId, updateInfo);
+        storeService.updateStore(accessToken, storeId, updateInfo);
 
         return ResponseEntity.ok(ApiResponse.success());
     }
@@ -64,9 +66,10 @@ public class StoreController {
     //상점 삭제
     @DeleteMapping("/store/{id}")
     public ResponseEntity<ApiResponse<String>> deleteStore(
+            @AccessToken String accessToken,
             @PathVariable("id") String storeId) {
 
-        storeService.deleteStore(storeId);
+        storeService.deleteStore(accessToken, storeId);
 
         return ResponseEntity.ok(ApiResponse.success());
     }
