@@ -25,7 +25,7 @@ public class AuthorizationHeaderFilter implements GlobalFilter, Ordered {
 
         String path = exchange.getRequest().getURI().getPath();
 
-        if (path.startsWith("/eureka") || path.startsWith("/actuator/**") || path.startsWith("/auth/reissue") || path.startsWith("/auth/login") || path.startsWith("/users/login")) {
+        if (path.startsWith("/eureka") || path.startsWith("/actuator/**") || path.startsWith("/auth/reissue") || path.startsWith("/auth/login") || path.startsWith("/users/login") || path.startsWith("/users/signup")) {
             return chain.filter(exchange);
         }
 
@@ -49,6 +49,8 @@ public class AuthorizationHeaderFilter implements GlobalFilter, Ordered {
         String device = jwtUtil.getDevice(token);
         String deviceHeader = exchange.getRequest().getHeaders().getFirst("User-Agent");
 
+        log.info("Device device {} deviceHeader {}", device, deviceHeader);
+
         if (!device.equals(deviceHeader)) {
             log.error("Device 불일치");
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
@@ -57,6 +59,8 @@ public class AuthorizationHeaderFilter implements GlobalFilter, Ordered {
 
         String forward = jwtUtil.getForward(token);
         String forwardHeader = exchange.getRequest().getHeaders().getFirst("X-Forwarded-For");
+
+        log.info("Forward forward {} forwardHeader {}", forward, forwardHeader);
 
         if (!forward.equals(forwardHeader)) {
             log.error("X-Forwarded-For 불일치");
@@ -76,7 +80,7 @@ public class AuthorizationHeaderFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -3;
+        return -1;
     }
 
 }
