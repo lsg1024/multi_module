@@ -17,6 +17,10 @@ public class ApiResponse<T> {
     }
 
     // 성공 응답
+    public static <T> ApiResponse<T> success() {
+        return new ApiResponse<>(true, "OK", null);
+    }
+
     public static <T> ApiResponse<T> success(T data) {
         return new ApiResponse<>(true, "OK", data);
     }
