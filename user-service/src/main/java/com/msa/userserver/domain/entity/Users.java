@@ -40,8 +40,8 @@ public class Users extends BaseTimeEntity {
     private boolean deleted = false;
 
     @Builder
-    public Users(Long userId, String password, String nickname, String tenantId, Role role) {
-        this.id = userId;
+    public Users(String userId, String password, String nickname, String tenantId, Role role) {
+        this.userId = userId;
         this.password = password;
         this.nickname = nickname;
         this.tenantId = tenantId;

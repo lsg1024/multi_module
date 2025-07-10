@@ -43,7 +43,7 @@ public class UsersService {
         }
 
         final Users user = Users.builder()
-                .userId(Long.valueOf(userDto.getUserId()))
+                .userId(userDto.getUserId())
                 .tenantId(tenantId)
                 .password(encoder.encode(userDto.getPassword()))
                 .nickname(userDto.getNickname())
