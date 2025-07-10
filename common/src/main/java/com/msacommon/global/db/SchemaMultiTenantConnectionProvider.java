@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Set;
@@ -42,6 +43,8 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
         Connection connection = getAnyConnection();
         String tenant = tenantIdentifier.toString().toUpperCase();
 
+        log.info("initializedTenants: {}", initializedTenants);
+
         if (DEFAULT_SCHEMA.equals(tenant)) {
             try (Statement stmt = connection.createStatement()) {
                 stmt.execute("SET SCHEMA " + DEFAULT_SCHEMA);
@@ -49,20 +52,18 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
             return connection;
         }
 
-        try (Statement statement = connection.createStatement()) {
-            // 동적 테넌트 스키마 생성 (없다면 생성)
-            statement.execute("CREATE SCHEMA IF NOT EXISTS " + tenant);
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute("CREATE SCHEMA IF NOT EXISTS " + tenant);
         }
 
-        if (initializedTenants.add(tenant)) {
-            Flyway.configure()
-                    .dataSource(defaultDataSource)
-                    .schemas(tenant)
-                    .locations("classpath:db/migration")
-                    .baselineOnMigrate(true)
-                    .load()
-                    .migrate();
-            log.info("Flyway migration applied for tenant schema: {}", tenant);
+        if (!initializedTenants.contains(tenant)) {
+            initializedTenants.add(tenant);
+            runMigration(tenant);
+        } else {
+            if (isSchemaEmpty(connection, tenant)) {
+                log.warn("Schema '{}' previously initialized but now empty. Re-running Flyway migration.", tenant);
+                runMigration(tenant);
+            }
         }
 
         // 스키마 전환
@@ -83,7 +84,33 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
         connection.close();
     }
 
+    private boolean isSchemaEmpty(Connection conn, String tenant) {
+        String sql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '" + tenant + "'";
+        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                int count = rs.getInt(1);
+                log.debug("Schema '{}' has {} tables.", tenant, count);
+                return count == 0;
+            }
+        } catch (SQLException e) {
+            log.warn("Failed to check if schema '{}' is empty: {}", tenant, e.getMessage());
+        }
+        return false;
+    }
+
+    private void runMigration(String tenant) {
+        Flyway.configure()
+                .dataSource(defaultDataSource)
+                .schemas(tenant)
+                .locations("classpath:db/migration")
+                .baselineOnMigrate(true)
+                .load()
+                .migrate();
+
+        log.info("Flyway migration completed for tenant '{}'", tenant);
+    }
     @Override public boolean supportsAggressiveRelease() { return false; }
     @Override public boolean isUnwrappableAs(Class unwrapType) { return false; }
+
     @Override public <T> T unwrap(Class<T> unwrapType) { return null; }
 }
