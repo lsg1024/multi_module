@@ -10,6 +10,10 @@ spring:
       naming:
         implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
         physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
 
   flyway:
     enabled: true
@@ -19,8 +23,8 @@ spring:
 
 logging:
   level:
-    org.hibernate.orm.internal.util.LogHelper: DEBUG
-    org.springframework.orm.jpa: DEBUG
+    org.hibernate.SQL: debug
+    org.hibernate.orm.jdbc.bind: trace
 
 custom:
   jpa:
