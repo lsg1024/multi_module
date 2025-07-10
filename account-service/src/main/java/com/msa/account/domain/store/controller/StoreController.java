@@ -4,6 +4,7 @@ import com.msa.account.domain.store.dto.StoreDto;
 import com.msa.account.global.domain.dto.AccountDto;
 import com.msa.account.domain.store.service.StoreService;
 import com.msacommon.global.api.ApiResponse;
+import com.msacommon.global.jwt.AccessToken;
 import com.msacommon.global.util.CustomPage;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
@@ -20,22 +21,22 @@ public class StoreController {
         this.storeService = storeService;
     }
 
-    //상점 info
+    //상점 단일 조회
     @GetMapping("/store/{id}")
-    public ResponseEntity<ApiResponse<AccountDto.accountInfo>> getStoreInfo(
+    public ResponseEntity<ApiResponse<StoreDto.StoreSingleResponse>> getStoreInfo(
             @PathVariable("id") String storeId) {
 
-        AccountDto.accountInfo storeInfo = storeService.getStoreInfo(storeId);
+        StoreDto.StoreSingleResponse storeInfo = storeService.getStoreInfo(storeId);
 
         return ResponseEntity.ok(ApiResponse.success(storeInfo));
     }
 
-    //상점 목록
+    //상점 목록 조회
     @GetMapping("/store/list")
-    public ResponseEntity<ApiResponse<CustomPage<AccountDto.accountInfo>>> getStoreList(
+    public ResponseEntity<ApiResponse<CustomPage<StoreDto.StoreResponse>>> getStoreList(
             @PageableDefault(size = 30) Pageable pageable) {
 
-        CustomPage<AccountDto.accountInfo> storeList = storeService.getStoreList(pageable);
+        CustomPage<StoreDto.StoreResponse> storeList = storeService.getStoreList(pageable);
 
         return ResponseEntity.ok(ApiResponse.success(storeList));
     }
@@ -53,10 +54,11 @@ public class StoreController {
     //상점 수정
     @PatchMapping("/store/{id}")
     public ResponseEntity<ApiResponse<String>> updateStore(
+            @AccessToken String accessToken,
             @PathVariable("id") String storeId,
             @Valid @RequestBody StoreDto.StoreUpdate updateInfo) {
 
-        storeService.updateStore(storeId, updateInfo);
+        storeService.updateStore(accessToken, storeId, updateInfo);
 
         return ResponseEntity.ok(ApiResponse.success());
     }
@@ -64,9 +66,10 @@ public class StoreController {
     //상점 삭제
     @DeleteMapping("/store/{id}")
     public ResponseEntity<ApiResponse<String>> deleteStore(
+            @AccessToken String accessToken,
             @PathVariable("id") String storeId) {
 
-        storeService.deleteStore(storeId);
+        storeService.deleteStore(accessToken, storeId);
 
         return ResponseEntity.ok(ApiResponse.success());
     }

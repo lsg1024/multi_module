@@ -1,5 +1,8 @@
 package com.msa.account.domain.store.repository;
 
+import com.msa.account.domain.store.dto.QStoreDto_StoreResponse;
+import com.msa.account.domain.store.dto.QStoreDto_StoreSingleResponse;
+import com.msa.account.domain.store.dto.StoreDto;
 import com.msa.account.domain.store.entity.QAdditionalOption;
 import com.msa.account.global.domain.dto.AccountDto;
 import com.msa.account.global.domain.dto.QAccountDto_accountInfo;
@@ -17,6 +20,12 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Optional;
 
+import static com.msa.account.domain.store.entity.QAdditionalOption.*;
+import static com.msa.account.domain.store.entity.QStore.*;
+import static com.msa.account.global.domain.entity.QAddress.*;
+import static com.msa.account.global.domain.entity.QCommonOption.*;
+import static com.msa.account.global.domain.entity.QGoldHarry.*;
+
 public class StoreRepositoryImpl implements CustomStoreRepository {
 
     private final JPAQueryFactory query;
@@ -26,69 +35,76 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
     }
 
     @Override
-    public Optional<AccountDto.accountInfo> findByStoreId(Long storeId) {
+    public Optional<StoreDto.StoreSingleResponse> findByStoreId(Long storeId) {
         return Optional.ofNullable(query
-                .select(new QAccountDto_accountInfo(
-                        QStore.store.createDate,
-                        QStore.store.storeName,
-                        QStore.store.storeOwnerName,
-                        QStore.store.storeContactNumber1,
-                        QStore.store.storeContactNumber2,
-                        QStore.store.storeFaxNumber,
-                        Expressions.stringTemplate(
-                                "concat({0}, ' ', {1}, ' ', {2})",
-                                QStore.store.address.addressZipCode,
-                                QStore.store.address.addressBasic,
-                                QStore.store.address.addressAdd
-                        ),
-                        QStore.store.storeNote,
-                        QStore.store.commonOption.optionLevel.stringValue(),
-                        QStore.store.commonOption.optionTradeType.stringValue(),
-                        QStore.store.commonOption.goldHarry.goldHarryLoss.stringValue(),
-                        QStore.store.additionalOption.))
-                .from(QStore.store)
-                .join(QStore.store.address, QAddress.address)
-                .join(QStore.store.commonOption, QCommonOption.commonOption)
-                .join(QStore.store.additionalOption, QAdditionalOption.additionalOption)
-                .join(QStore.store.commonOption.goldHarry, QGoldHarry.goldHarry)
-                .where(QStore.store.storeDeleted.isFalse())
+                .select(new QStoreDto_StoreSingleResponse(
+                        store.storeId.stringValue(),
+                        store.storeName,
+                        store.storeOwnerName,
+                        store.storePhoneNumber,
+                        store.storeContactNumber1,
+                        store.storeContactNumber2,
+                        store.storeFaxNumber,
+                        store.storeNote,
+
+                        store.address.addressId.stringValue(),
+                        store.address.addressZipCode,
+                        store.address.addressBasic,
+                        store.address.addressAdd,
+
+                        store.commonOption.commonOptionId.stringValue(),
+                        store.commonOption.optionTradeType.stringValue(),
+                        store.commonOption.optionLevel.stringValue(),
+                        store.commonOption.goldHarry.goldHarryId.stringValue(),
+                        store.commonOption.goldHarry.goldHarryLoss.stringValue(),
+
+                        store.additionalOption.optionId.stringValue(),
+                        store.additionalOption.optionApplyPastSales,
+                        store.additionalOption.optionMaterialId.stringValue(),
+                        store.additionalOption.optionMaterialName))
+                .from(store)
+                .join(store.address, address)
+                .join(store.commonOption, commonOption)
+                .join(store.additionalOption, additionalOption)
+                .join(store.commonOption.goldHarry, goldHarry)
+                .where(store.storeId.eq(storeId).and(store.storeDeleted.isFalse()))
                 .fetchOne());
     }
 
     @Override
-    public CustomPage<AccountDto.accountInfo> findAllStore(Pageable pageable) {
+    public CustomPage<StoreDto.StoreResponse> findAllStore(Pageable pageable) {
 
-        List<AccountDto.accountInfo> content = query
-                .select(new QAccountDto_accountInfo(
-                        QStore.store.createDate,
-                        QStore.store.storeName,
-                        QStore.store.storeOwnerName,
-                        QStore.store.storeContactNumber1,
-                        QStore.store.storeContactNumber2,
-                        QStore.store.storeFaxNumber,
+        List<StoreDto.StoreResponse> content = query
+                .select(new QStoreDto_StoreResponse(
+                        store.storeName,
+                        store.storeOwnerName,
+                        store.storePhoneNumber,
+                        store.storeContactNumber1,
+                        store.storeContactNumber2,
+                        store.storeFaxNumber,
+                        store.storeNote,
                         Expressions.stringTemplate(
                                 "concat({0}, ' ', {1}, ' ', {2})",
-                                QStore.store.address.addressZipCode,
-                                QStore.store.address.addressBasic,
-                                QStore.store.address.addressAdd
+                                store.address.addressZipCode,
+                                store.address.addressBasic,
+                                store.address.addressAdd
                         ),
-                        QStore.store.storeNote,
-                        QStore.store.commonOption.optionLevel.stringValue(),
-                        QStore.store.commonOption.optionTradeType.stringValue(),
-                        QStore.store.commonOption.goldHarryLoss))
-                .from(QStore.store)
-                .join(QStore.store.address, QAddress.address)
-                .join(QStore.store.commonOption, QCommonOption.commonOption)
-                .where(QStore.store.storeDeleted.isFalse())
-                .orderBy(QStore.store.storeName.desc())
+                        store.commonOption.optionTradeType.stringValue(),
+                        store.commonOption.optionLevel.stringValue(),
+                        store.commonOption.goldHarryLoss))
+                .from(store)
+                .join(store.address, address)
+                .join(store.commonOption, commonOption)
+                .where(store.storeDeleted.isFalse())
+                .orderBy(store.storeName.desc())
                 .fetch();
 
-        content.forEach(AccountDto.accountInfo::getTradeTypeTitle);
-        content.forEach(AccountDto.accountInfo::getLevelTypeLevel);
+//        content.forEach(StoreDto.StoreResponse::getTradeTypeTitle);
+//        content.forEach(StoreDto.StoreResponse::getLevelTypeLevel);
 
         JPAQuery<Long> countQuery = query
-                .select(QStore.store.count())
-                .from(QStore.store);
+                .select(store.count())
+                .from(store);
 
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
     }

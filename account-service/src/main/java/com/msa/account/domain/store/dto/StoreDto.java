@@ -11,6 +11,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import static com.msa.account.global.domain.dto.util.ExchangeEnumUtil.*;
+
 public class StoreDto {
 
     private static final String ERR_KO_EN_NUM_ONLY = "영어, 한글, 숫자만 허용됩니다.";
@@ -27,13 +29,13 @@ public class StoreDto {
         private String storeContactNumber2;
         private String storeFaxNumber;
         private String storeNote;
-        private String tradeNote;
+        private String address;
         private String tradeType;
         private String level;
         private String goldHarryLoss;
 
         @QueryProjection
-        public StoreResponse(String storeName, String storeOwnerName, String storePhoneNumber, String storeContactNumber1, String storeContactNumber2, String storeFaxNumber, String storeNote, String tradeNote, String tradeType, String level, String goldHarryLoss) {
+        public StoreResponse(String storeName, String storeOwnerName, String storePhoneNumber, String storeContactNumber1, String storeContactNumber2, String storeFaxNumber, String storeNote, String address, String tradeType, String level, String goldHarryLoss) {
             this.storeName = storeName;
             this.storeOwnerName = storeOwnerName;
             this.storePhoneNumber = storePhoneNumber;
@@ -41,9 +43,9 @@ public class StoreDto {
             this.storeContactNumber2 = storeContactNumber2;
             this.storeFaxNumber = storeFaxNumber;
             this.storeNote = storeNote;
-            this.tradeNote = tradeNote;
-            this.tradeType = tradeType;
-            this.level = level;
+            this.address = address;
+            this.tradeType = getTradeTypeTitle(tradeType);;
+            this.level = getLevelTypeTitle(level);;
             this.goldHarryLoss = goldHarryLoss;
         }
     }
@@ -65,7 +67,6 @@ public class StoreDto {
         private String addressBasic;
         private String addressAdd;
         private String commonOptionId;
-        private String tradeNote;
         private String tradeType;
         private String level;
         private String goldHarryId;
@@ -76,7 +77,7 @@ public class StoreDto {
         private String additionalMaterialName;
 
         @QueryProjection
-        public StoreSingleResponse(String storeId, String storeName, String storeOwnerName, String storePhoneNumber, String storeContactNumber1, String storeContactNumber2, String storeFaxNumber, String storeNote, String addressId, String addressZipCode, String addressBasic, String addressAdd, String commonOptionId, String tradeNote, String tradeType, String level, String goldHarryId, String goldHarryLoss, String additionalOptionId, boolean additionalApplyPastSales, String additionalMaterialId, String additionalMaterialName) {
+        public StoreSingleResponse(String storeId, String storeName, String storeOwnerName, String storePhoneNumber, String storeContactNumber1, String storeContactNumber2, String storeFaxNumber, String storeNote, String addressId, String addressZipCode, String addressBasic, String addressAdd, String commonOptionId, String tradeType, String level, String goldHarryId, String goldHarryLoss, String additionalOptionId, boolean additionalApplyPastSales, String additionalMaterialId, String additionalMaterialName) {
             this.storeId = storeId;
             this.storeName = storeName;
             this.storeOwnerName = storeOwnerName;
@@ -90,9 +91,8 @@ public class StoreDto {
             this.addressBasic = addressBasic;
             this.addressAdd = addressAdd;
             this.commonOptionId = commonOptionId;
-            this.tradeNote = tradeNote;
-            this.tradeType = tradeType;
-            this.level = level;
+            this.tradeType = getTradeTypeTitle(tradeType);
+            this.level = getLevelTypeTitle(level);;
             this.goldHarryId = goldHarryId;
             this.goldHarryLoss = goldHarryLoss;
             this.additionalOptionId = additionalOptionId;
@@ -178,8 +178,10 @@ public class StoreDto {
         }
     }
 
-    //생성
-
-    //수정
+    @Getter
+    @NoArgsConstructor
+    public static class StoreCondition {
+        private String storeName;
+    }
 
 }
