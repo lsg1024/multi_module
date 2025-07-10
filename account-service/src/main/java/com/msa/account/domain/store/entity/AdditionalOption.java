@@ -17,15 +17,16 @@ public class AdditionalOption {
     private String optionId;
     @Column(name = "OPTION_APPLY_PAST_SALES")
     private boolean optionApplyPastSales;
-    @Column(name = "OPTION_MATERIAL_ID") // product server
+    @Column(name = "OPTION_MATERIAL_ID" )// product server mapping 필요
     private String optionMaterialId;
-    @Column(name = "OPTION_MATERIAL_NAME")
+    @Column(name = "OPTION_MATERIAL_NAME") // 싱글 조회용
     private String optionMaterialName;
     private boolean deleted = false;
 
     @Builder
-    public AdditionalOption(boolean optionApplyPastSales, String optionMaterialId) {
+    public AdditionalOption(boolean optionApplyPastSales, String optionMaterialId, String optionMaterialName) {
         this.optionApplyPastSales = optionApplyPastSales;
         this.optionMaterialId = optionMaterialId;
+        this.optionMaterialName = optionMaterialName;
     }
 }

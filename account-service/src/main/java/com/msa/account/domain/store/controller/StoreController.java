@@ -1,17 +1,15 @@
 package com.msa.account.domain.store.controller;
 
+import com.msa.account.domain.store.dto.StoreDto;
 import com.msa.account.global.domain.dto.AccountDto;
 import com.msa.account.domain.store.service.StoreService;
 import com.msacommon.global.api.ApiResponse;
-import com.msacommon.global.jwt.AccessToken;
 import com.msacommon.global.util.CustomPage;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 public class StoreController {
@@ -44,14 +42,33 @@ public class StoreController {
 
     //상점 생성
     @PostMapping("/store")
-    public ResponseEntity<ApiResponse<String>> store(
-            @AccessToken String accessToken,
-            @Valid @RequestBody() StoreDto) {
+    public ResponseEntity<ApiResponse<String>> addStore(
+            @Valid @RequestBody StoreDto.StoreRequest storeInfo) {
 
+        storeService.addStore(storeInfo);
+
+        return ResponseEntity.ok(ApiResponse.success());
     }
 
     //상점 수정
+    @PatchMapping("/store/{id}")
+    public ResponseEntity<ApiResponse<String>> updateStore(
+            @PathVariable("id") String storeId,
+            @Valid @RequestBody StoreDto.StoreUpdate updateInfo) {
+
+        storeService.updateStore(storeId, updateInfo);
+
+        return ResponseEntity.ok(ApiResponse.success());
+    }
 
     //상점 삭제
+    @DeleteMapping("/store/{id}")
+    public ResponseEntity<ApiResponse<String>> deleteStore(
+            @PathVariable("id") String storeId) {
+
+        storeService.deleteStore(storeId);
+
+        return ResponseEntity.ok(ApiResponse.success());
+    }
 
 }
