@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Date;
 
 @Component
@@ -51,6 +52,10 @@ public class JwtUtil {
     }
 
     public String createJwt(String category, String id, String tenantId, String nickName, String forward, String device,  String role, Long expireTime) {
+
+        Instant now = Instant.now();
+        Instant expireAt = now.plusMillis(expireTime);
+
         return Jwts.builder()
                 .claim("category", category)
                 .claim("id", id)
@@ -59,8 +64,8 @@ public class JwtUtil {
                 .claim("forward", forward)
                 .claim("device", device)
                 .claim("role", role)
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + expireTime))
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(expireAt))
                 .signWith(secretKey)
                 .compact();
     }

@@ -22,6 +22,8 @@ public class UserDto {
     @Getter
     @NoArgsConstructor
     public static class UserInfo {
+        @Pattern(regexp = "^[A-Za-z0-9]+$", message = USERID_ERROR)
+        @Size(min = 5, max = 10)
         private String userId;
         private String tenantId;
         private String nickname;

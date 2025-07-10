@@ -14,9 +14,10 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 public class BaseEntity extends BaseTimeEntity {
 
     @CreatedBy
-    @Column(updatable = false)
+    @Column(name = "CREATED_BY", updatable = false)
     private String createdBy;
 
     @LastModifiedBy
+    @Column(name = "LAST_MODIFIED_BY")
     private String lastModifiedBy;
 }
