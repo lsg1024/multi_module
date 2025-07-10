@@ -1,15 +1,26 @@
 package com.msa.account.global.domain.entity;
 
+import jakarta.persistence.Table;
 import lombok.RequiredArgsConstructor;
 
+@Table
 @RequiredArgsConstructor
 public enum OptionLevel {
 
-    ONE("1", 1),
-    TWO("2", 2),
-    THREE("3", 3),
-    FOUR("4", 4);
+    ONE("ONE", "1"),
+    TWO("TWO", "2"),
+    THREE("THREE", "3"),
+    FOUR("FOUR", "4");
 
     private final String key;
-    private final int level;
+    private final String level;
+
+    public static String getLevelByKey(String key) {
+        for (OptionLevel type : OptionLevel.values()) {
+            if (type.key.equals(key)) {
+                return type.level;
+            }
+        }
+        return null;
+    }
 }

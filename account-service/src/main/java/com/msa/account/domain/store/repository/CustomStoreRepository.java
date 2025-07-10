@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.Optional;
 
 public interface CustomStoreRepository {
+
     Optional<AccountDto.accountInfo> findByStoreId(Long storeId);
     CustomPage<AccountDto.accountInfo> findAllStore(Pageable pageable);
 }
