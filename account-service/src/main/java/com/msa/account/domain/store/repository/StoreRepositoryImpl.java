@@ -1,5 +1,8 @@
 package com.msa.account.domain.store.repository;
 
+import com.msa.account.domain.store.dto.QStoreDto_StoreResponse;
+import com.msa.account.domain.store.dto.QStoreDto_StoreSingleResponse;
+import com.msa.account.domain.store.dto.StoreDto;
 import com.msa.account.domain.store.entity.QAdditionalOption;
 import com.msa.account.global.domain.dto.AccountDto;
 import com.msa.account.global.domain.dto.QAccountDto_accountInfo;
@@ -26,26 +29,33 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
     }
 
     @Override
-    public Optional<AccountDto.accountInfo> findByStoreId(Long storeId) {
+    public Optional<StoreDto.StoreSingleResponse> findByStoreId(Long storeId) {
         return Optional.ofNullable(query
-                .select(new QAccountDto_accountInfo(
-                        QStore.store.createDate,
+                .select(new QStoreDto_StoreSingleResponse(
+                        QStore.store.storeId.stringValue(),
                         QStore.store.storeName,
                         QStore.store.storeOwnerName,
+                        QStore.store.storePhoneNumber,
                         QStore.store.storeContactNumber1,
                         QStore.store.storeContactNumber2,
                         QStore.store.storeFaxNumber,
-                        Expressions.stringTemplate(
-                                "concat({0}, ' ', {1}, ' ', {2})",
-                                QStore.store.address.addressZipCode,
-                                QStore.store.address.addressBasic,
-                                QStore.store.address.addressAdd
-                        ),
                         QStore.store.storeNote,
-                        QStore.store.commonOption.optionLevel.stringValue(),
+
+                        QStore.store.address.addressId.stringValue(),
+                        QStore.store.address.addressZipCode,
+                        QStore.store.address.addressBasic,
+                        QStore.store.address.addressAdd,
+
+                        QStore.store.commonOption.commonOptionId.stringValue(),
                         QStore.store.commonOption.optionTradeType.stringValue(),
+                        QStore.store.commonOption.optionLevel.stringValue(),
+                        QStore.store.commonOption.goldHarry.goldHarryId.stringValue(),
                         QStore.store.commonOption.goldHarry.goldHarryLoss.stringValue(),
-                        QStore.store.additionalOption.))
+
+                        QStore.store.additionalOption.optionId.stringValue(),
+                        QStore.store.additionalOption.optionApplyPastSales,
+                        QStore.store.additionalOption.optionMaterialId.stringValue(),
+                        QStore.store.additionalOption.optionMaterialName))
                 .from(QStore.store)
                 .join(QStore.store.address, QAddress.address)
                 .join(QStore.store.commonOption, QCommonOption.commonOption)
@@ -56,11 +66,10 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
     }
 
     @Override
-    public CustomPage<AccountDto.accountInfo> findAllStore(Pageable pageable) {
+    public CustomPage<StoreDto.StoreResponse> findAllStore(Pageable pageable) {
 
-        List<AccountDto.accountInfo> content = query
-                .select(new QAccountDto_accountInfo(
-                        QStore.store.createDate,
+        List<StoreDto.StoreResponse> content = query
+                .select(new QStoreDto_StoreResponse(
                         QStore.store.storeName,
                         QStore.store.storeOwnerName,
                         QStore.store.storeContactNumber1,
@@ -73,8 +82,8 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                                 QStore.store.address.addressAdd
                         ),
                         QStore.store.storeNote,
-                        QStore.store.commonOption.optionLevel.stringValue(),
                         QStore.store.commonOption.optionTradeType.stringValue(),
+                        QStore.store.commonOption.optionLevel.stringValue(),
                         QStore.store.commonOption.goldHarryLoss))
                 .from(QStore.store)
                 .join(QStore.store.address, QAddress.address)
@@ -83,8 +92,8 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                 .orderBy(QStore.store.storeName.desc())
                 .fetch();
 
-        content.forEach(AccountDto.accountInfo::getTradeTypeTitle);
-        content.forEach(AccountDto.accountInfo::getLevelTypeLevel);
+        content.forEach(StoreDto.StoreResponse::getTradeTypeTitle);
+        content.forEach(StoreDto.StoreResponse::getLevelTypeLevel);
 
         JPAQuery<Long> countQuery = query
                 .select(QStore.store.count())

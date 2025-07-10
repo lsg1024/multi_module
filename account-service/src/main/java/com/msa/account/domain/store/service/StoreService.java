@@ -43,29 +43,17 @@ public class StoreService {
     }
 
     //상점 호출(info)
-    public AccountDto.accountInfo getStoreInfo(String storeId) {
-        AccountDto.accountInfo storeInfo = storeRepository.findByStoreId(Long.valueOf(storeId))
+    public StoreDto.StoreSingleResponse getStoreInfo(String storeId) {
+        StoreDto.StoreSingleResponse storeInfo = storeRepository.findByStoreId(Long.valueOf(storeId))
                 .orElseThrow(() -> new NotFoundException("대상을 찾을 수 없습니다."));
 
         storeInfo.getTradeTypeTitle();
         storeInfo.getLevelTypeLevel();
 
-        return AccountDto.accountInfo.builder()
-                .createAt(storeInfo.getCreateAt())
-                .businessName(storeInfo.getBusinessName())
-                .businessOwnerName(storeInfo.getBusinessOwnerName())
-                .businessNumber1(storeInfo.getBusinessNumber1())
-                .businessNumber2(storeInfo.getBusinessNumber2())
-                .faxNumber(storeInfo.getFaxNumber())
-                .address(storeInfo.getAddress())
-                .note(storeInfo.getNote())
-                .level(storeInfo.getLevel())
-                .tradeType(storeInfo.getTradeType())
-                .goldLoss(storeInfo.getGoldLoss())
-                .build();
+        return storeInfo;
     }
     //상점 목록 호출(infoList)
-    public CustomPage<AccountDto.accountInfo> getStoreList(Pageable pageable) {
+    public CustomPage<StoreDto.StoreResponse> getStoreList(Pageable pageable) {
         return storeRepository.findAllStore(pageable);
     }
 

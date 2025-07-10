@@ -5,6 +5,7 @@ import com.msa.account.global.domain.dto.AdditionalOptionDto;
 import com.msa.account.global.domain.dto.AddressDto;
 import com.msa.account.global.domain.dto.CommonOptionDto;
 import com.msa.account.global.domain.entity.GoldHarry;
+import com.msa.account.global.domain.entity.OptionTradeType;
 import com.querydsl.core.annotations.QueryProjection;
 import jakarta.validation.constraints.Pattern;
 import lombok.Builder;
@@ -27,13 +28,12 @@ public class StoreDto {
         private String storeContactNumber2;
         private String storeFaxNumber;
         private String storeNote;
-        private String tradeNote;
         private String tradeType;
         private String level;
         private String goldHarryLoss;
 
         @QueryProjection
-        public StoreResponse(String storeName, String storeOwnerName, String storePhoneNumber, String storeContactNumber1, String storeContactNumber2, String storeFaxNumber, String storeNote, String tradeNote, String tradeType, String level, String goldHarryLoss) {
+        public StoreResponse(String storeName, String storeOwnerName, String storePhoneNumber, String storeContactNumber1, String storeContactNumber2, String storeFaxNumber, String storeNote, String tradeType, String level, String goldHarryLoss) {
             this.storeName = storeName;
             this.storeOwnerName = storeOwnerName;
             this.storePhoneNumber = storePhoneNumber;
@@ -41,10 +41,17 @@ public class StoreDto {
             this.storeContactNumber2 = storeContactNumber2;
             this.storeFaxNumber = storeFaxNumber;
             this.storeNote = storeNote;
-            this.tradeNote = tradeNote;
             this.tradeType = tradeType;
             this.level = level;
             this.goldHarryLoss = goldHarryLoss;
+        }
+
+        public void getTradeTypeTitle() {
+            this.tradeType = OptionTradeType.getTitleByKey(tradeType);
+        }
+
+        public void getLevelTypeLevel() {
+            this.level = OptionTradeType.getTitleByKey(level);
         }
     }
 
@@ -65,7 +72,6 @@ public class StoreDto {
         private String addressBasic;
         private String addressAdd;
         private String commonOptionId;
-        private String tradeNote;
         private String tradeType;
         private String level;
         private String goldHarryId;
@@ -76,7 +82,7 @@ public class StoreDto {
         private String additionalMaterialName;
 
         @QueryProjection
-        public StoreSingleResponse(String storeId, String storeName, String storeOwnerName, String storePhoneNumber, String storeContactNumber1, String storeContactNumber2, String storeFaxNumber, String storeNote, String addressId, String addressZipCode, String addressBasic, String addressAdd, String commonOptionId, String tradeNote, String tradeType, String level, String goldHarryId, String goldHarryLoss, String additionalOptionId, boolean additionalApplyPastSales, String additionalMaterialId, String additionalMaterialName) {
+        public StoreSingleResponse(String storeId, String storeName, String storeOwnerName, String storePhoneNumber, String storeContactNumber1, String storeContactNumber2, String storeFaxNumber, String storeNote, String addressId, String addressZipCode, String addressBasic, String addressAdd, String commonOptionId, String tradeType, String level, String goldHarryId, String goldHarryLoss, String additionalOptionId, boolean additionalApplyPastSales, String additionalMaterialId, String additionalMaterialName) {
             this.storeId = storeId;
             this.storeName = storeName;
             this.storeOwnerName = storeOwnerName;
@@ -90,7 +96,6 @@ public class StoreDto {
             this.addressBasic = addressBasic;
             this.addressAdd = addressAdd;
             this.commonOptionId = commonOptionId;
-            this.tradeNote = tradeNote;
             this.tradeType = tradeType;
             this.level = level;
             this.goldHarryId = goldHarryId;
@@ -99,6 +104,13 @@ public class StoreDto {
             this.additionalApplyPastSales = additionalApplyPastSales;
             this.additionalMaterialId = additionalMaterialId;
             this.additionalMaterialName = additionalMaterialName;
+        }
+
+        public void getTradeTypeTitle() {
+            this.tradeType = OptionTradeType.getTitleByKey(tradeType);
+        }
+        public void getLevelTypeLevel() {
+            this.level = OptionTradeType.getTitleByKey(level);
         }
     }
 
@@ -178,8 +190,10 @@ public class StoreDto {
         }
     }
 
-    //생성
-
-    //수정
+    @Getter
+    @NoArgsConstructor
+    public static class StoreCondition {
+        private String storeName;
+    }
 
 }
