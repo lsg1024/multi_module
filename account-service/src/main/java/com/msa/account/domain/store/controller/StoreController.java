@@ -1,7 +1,6 @@
 package com.msa.account.domain.store.controller;
 
 import com.msa.account.domain.store.dto.StoreDto;
-import com.msa.account.global.domain.dto.AccountDto;
 import com.msa.account.domain.store.service.StoreService;
 import com.msacommon.global.api.ApiResponse;
 import com.msacommon.global.jwt.AccessToken;
@@ -43,10 +42,10 @@ public class StoreController {
 
     //상점 생성
     @PostMapping("/store")
-    public ResponseEntity<ApiResponse<String>> addStore(
+    public ResponseEntity<ApiResponse<String>> createStore(
             @Valid @RequestBody StoreDto.StoreRequest storeInfo) {
 
-        storeService.addStore(storeInfo);
+        storeService.createStore(storeInfo);
 
         return ResponseEntity.ok(ApiResponse.success());
     }

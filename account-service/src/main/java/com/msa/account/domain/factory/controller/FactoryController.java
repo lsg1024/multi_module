@@ -42,10 +42,10 @@ public class FactoryController {
 
     //생성
     @PostMapping("/factory")
-    public ResponseEntity<ApiResponse<String>> addFactory(
+    public ResponseEntity<ApiResponse<String>> createFactory(
             @Valid @RequestBody FactoryDto.FactoryRequest factoryInfo) {
 
-        factoryService.addFactory(factoryInfo);
+        factoryService.createFactory(factoryInfo);
 
         return ResponseEntity.ok(ApiResponse.success());
     }

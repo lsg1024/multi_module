@@ -6,6 +6,8 @@ import com.msa.account.global.domain.dto.CommonOptionDto;
 import com.msa.account.global.domain.entity.GoldHarry;
 import com.msa.account.global.domain.entity.OptionTradeType;
 import com.querydsl.core.annotations.QueryProjection;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Builder;
 import lombok.Getter;
@@ -48,13 +50,6 @@ public class FactoryDto {
             this.tradeType = tradeType;
             this.level = level;
             this.goldHarryLoss = goldHarryLoss;
-        }
-        public void getTradeTypeTitle() {
-            this.tradeType = OptionTradeType.getTitleByKey(tradeType);
-        }
-
-        public void getLevelTypeLevel() {
-            this.level = OptionTradeType.getTitleByKey(level);
         }
     }
 
@@ -104,8 +99,15 @@ public class FactoryDto {
     @Getter
     @NoArgsConstructor
     public static class FactoryRequest {
+        @Valid
+        @NotNull(message = "공장 정보는 필수입니다.")
         private FactoryInfo factoryInfo;
+
+        @Valid
+        @NotNull(message = "기본 옵션 정보는 필수입니다.")
         private CommonOptionDto.CommonOptionInfo commonOptionInfo;
+
+        @Valid
         private AddressDto.AddressInfo addressInfo;
 
         public Factory toEntity(GoldHarry goldHarry) {
@@ -127,11 +129,14 @@ public class FactoryDto {
     @Getter
     @NoArgsConstructor
     public static class FactoryUpdate {
+        @Valid
+        @NotNull(message = "공장 정보는 필수입니다.")
         private FactoryInfo factoryInfo;
-        private String commonOptionId;
+        @NotNull(message = "기본 옵션 정보는 필수입니다.")
         private CommonOptionDto.CommonOptionInfo commonOptionInfo;
-        private String addressId;
+        @Valid
         private AddressDto.AddressInfo addressInfo;
+        @NotNull(message = "필수 정보 누락")
         private String goldHarryId;
     }
 

@@ -1,19 +1,21 @@
 package com.msa.account.domain.store.entity;
 
 import com.msa.account.domain.store.dto.StoreDto;
+import com.msa.account.global.domain.dto.AdditionalOptionDto;
+import com.msa.account.global.domain.dto.AddressDto;
+import com.msa.account.global.domain.dto.CommonOptionDto;
 import com.msa.account.global.domain.entity.Address;
 import com.msa.account.global.domain.entity.CommonOption;
+import com.msa.account.global.domain.entity.GoldHarry;
 import com.msacommon.global.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.SQLDelete;
 
-@Getter
 @Entity
 @Table(name = "STORE")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -38,7 +40,7 @@ public class Store extends BaseEntity {
     @Column(name = "STORE_NOTE")
     private String storeNote;
     @Column(name = "STORE_DELETED", nullable = false)
-    private boolean storeDeleted = false;
+    private final boolean storeDeleted = false;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "ADDRESS_ID")
@@ -79,15 +81,20 @@ public class Store extends BaseEntity {
         this.storeNote = updateInfo.getStoreNote();
     }
 
-    public void setAddress(Address address) {
-        this.address = address;
+    public void updateAddressInfo(AddressDto.AddressInfo addressInfo) {
+        this.address.update(addressInfo);
     }
 
-    public void setCommonOption(CommonOption commonOption) {
-        this.commonOption = commonOption;
+    public void updateCommonOption(CommonOptionDto.CommonOptionInfo optionInfo, GoldHarry goldHarry) {
+        this.commonOption.update(optionInfo);
+        this.commonOption.updateGoldHarry(goldHarry);
     }
 
-    public void setAdditionalOption(AdditionalOption additionalOption) {
-        this.additionalOption = additionalOption;
+    public void updateAdditionalOption(AdditionalOptionDto.AdditionalOptionInfo optionInfo) {
+        this.additionalOption.update(optionInfo);
+    }
+
+    public boolean isNameChanged(String storeName) {
+        return !this.storeName.equals(storeName);
     }
 }

@@ -1,5 +1,6 @@
 package com.msa.account.domain.store.entity;
 
+import com.msa.account.global.domain.dto.AdditionalOptionDto;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -28,5 +29,12 @@ public class AdditionalOption {
         this.optionApplyPastSales = optionApplyPastSales;
         this.optionMaterialId = optionMaterialId;
         this.optionMaterialName = optionMaterialName;
+    }
+
+    //optionMaterialId 매핑 수정
+    public void update(AdditionalOptionDto.AdditionalOptionInfo info) {
+        this.optionApplyPastSales = info.isAdditionalApplyPastSales();
+        this.optionMaterialId = info.getAdditionalMaterialId();
+        this.optionMaterialName = info.getAdditionalMaterialName();
     }
 }

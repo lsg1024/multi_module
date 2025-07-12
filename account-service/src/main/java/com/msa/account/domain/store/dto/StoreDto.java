@@ -6,6 +6,9 @@ import com.msa.account.global.domain.dto.AddressDto;
 import com.msa.account.global.domain.dto.CommonOptionDto;
 import com.msa.account.global.domain.entity.GoldHarry;
 import com.querydsl.core.annotations.QueryProjection;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Builder;
 import lombok.Getter;
@@ -62,15 +65,18 @@ public class StoreDto {
         private String storeContactNumber2;
         private String storeFaxNumber;
         private String storeNote;
+
         private String addressId;
         private String addressZipCode;
         private String addressBasic;
         private String addressAdd;
+
         private String commonOptionId;
         private String tradeType;
         private String level;
         private String goldHarryId;
         private String goldHarryLoss;
+
         private String additionalOptionId;
         private boolean additionalApplyPastSales;
         private String additionalMaterialId;
@@ -106,9 +112,15 @@ public class StoreDto {
     @Getter
     @NoArgsConstructor
     public static class StoreRequest {
+
+        @Valid
+        @NotNull(message = "상점 정보는 필수입니다.")
         private StoreInfo storeInfo;
+
+        @NotNull(message = "기본 옵션 정보는 필수입니다.")
         private CommonOptionDto.CommonOptionInfo commonOptionInfo;
         private AdditionalOptionDto.AdditionalOptionInfo additionalOptionInfo;
+        @Valid
         private AddressDto.AddressInfo addressInfo;
 
         public Store toEntity(GoldHarry goldHarry) {
@@ -130,12 +142,13 @@ public class StoreDto {
     @Getter
     @NoArgsConstructor
     public static class StoreUpdate {
+        @Valid
+        @NotNull(message = "상점 정보는 필수입니다.")
         private StoreInfo storeInfo;
-        private String commonOptionId;
+        @NotNull(message = "기본 옵션 정보는 필수입니다.")
         private CommonOptionDto.CommonOptionInfo commonOptionInfo;
-        private String additionalOptionId;
         private AdditionalOptionDto.AdditionalOptionInfo additionalOptionInfo;
-        private String addressId;
+        @Valid
         private AddressDto.AddressInfo addressInfo;
         private String goldHarryId;
     }
@@ -144,9 +157,11 @@ public class StoreDto {
     @NoArgsConstructor
     public static class StoreInfo {
 
+        @NotBlank(message = "필수 입력입니다.")
         @Pattern(regexp = "^[A-Za-z0-9가-힣\\s]+$", message = ERR_KO_EN_NUM_ONLY)
         private String storeName;
 
+        @NotBlank(message = "필수 입력입니다.")
         @Pattern(regexp = "^[A-Za-z0-9가-힣\\s]+$", message = ERR_KO_EN_NUM_ONLY)
         private String storeOwnerName;
 

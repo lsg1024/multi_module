@@ -42,7 +42,7 @@ public class CommonOption {
         this.optionLevel = OptionLevel.valueOf(commonOptionInfo.getLevel());
     }
 
-    public void setGoldHarry(GoldHarry goldHarry) {
+    public void updateGoldHarry(GoldHarry goldHarry) {
         this.goldHarry = goldHarry;
         this.goldHarryLoss = goldHarry.getGoldHarryLoss().toString();
     }
