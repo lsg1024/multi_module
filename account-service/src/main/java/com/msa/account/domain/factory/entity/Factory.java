@@ -1,8 +1,11 @@
 package com.msa.account.domain.factory.entity;
 
 import com.msa.account.domain.factory.dto.FactoryDto;
+import com.msa.account.global.domain.dto.AddressDto;
+import com.msa.account.global.domain.dto.CommonOptionDto;
 import com.msa.account.global.domain.entity.Address;
 import com.msa.account.global.domain.entity.CommonOption;
+import com.msa.account.global.domain.entity.GoldHarry;
 import com.msacommon.global.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -71,12 +74,16 @@ public class Factory extends BaseEntity {
         this.factoryFaxNumber = factoryInfo.getFactoryFaxNumber();
         this.factoryNote = factoryInfo.getFactoryNote();
     }
-    public void setAddress(Address address) {
-        this.address = address;
+    public void updateAddressInfo(AddressDto.AddressInfo addressInfo) {
+        this.address.update(addressInfo);
     }
 
-    public void setCommonOption(CommonOption commonOption) {
-        this.commonOption = commonOption;
+    public void updateCommonOption(CommonOptionDto.CommonOptionInfo optionInfo, GoldHarry goldHarry) {
+        this.commonOption.update(optionInfo);
+        this.commonOption.updateGoldHarry(goldHarry);
     }
 
+    public boolean isNameChanged(String factoryName) {
+        return false;
+    }
 }

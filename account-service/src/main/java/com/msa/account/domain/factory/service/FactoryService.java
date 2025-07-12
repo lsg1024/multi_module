@@ -24,15 +24,11 @@ import static com.msa.account.global.exception.ExceptionMessage.*;
 public class FactoryService {
     private final AuthorityUserRoleUtil authorityUserRoleUtil;
     private final FactoryRepository factoryRepository;
-    private final AddressRepository addressRepository;
-    private final CommonOptionRepository commonOptionRepository;
     private final GoldHarryRepository goldHarryRepository;
 
-    public FactoryService(AuthorityUserRoleUtil authorityUserRoleUtil, FactoryRepository factoryRepository, AddressRepository addressRepository, CommonOptionRepository commonOptionRepository, GoldHarryRepository goldHarryRepository) {
+    public FactoryService(AuthorityUserRoleUtil authorityUserRoleUtil, FactoryRepository factoryRepository, GoldHarryRepository goldHarryRepository) {
         this.authorityUserRoleUtil = authorityUserRoleUtil;
         this.factoryRepository = factoryRepository;
-        this.addressRepository = addressRepository;
-        this.commonOptionRepository = commonOptionRepository;
         this.goldHarryRepository = goldHarryRepository;
     }
 
@@ -48,18 +44,17 @@ public class FactoryService {
         return factoryRepository.findAllFactory(pageable);
     }
 
-    public void addFactory(FactoryDto.FactoryRequest factoryInfo) throws NotFoundException {
+    public void createFactory(FactoryDto.FactoryRequest factoryInfo) throws NotFoundException {
         if (factoryRepository.existsByFactoryName(factoryInfo.getFactoryInfo().getFactoryName())) {
             throw new NotFoundException(ALREADY_EXIST_FACTORY);
         }
 
-        //로스
         GoldHarry goldHarry = goldHarryRepository.findById(Long.valueOf(factoryInfo.getCommonOptionInfo().getGoldHarryId()))
                 .orElseThrow(() -> new NotFoundException(WRONG_HARRY));
 
-        Factory factory = factoryInfo.toEntity(goldHarry);
+        Factory newfactory = factoryInfo.toEntity(goldHarry);
 
-        factoryRepository.save(factory);
+        factoryRepository.save(newfactory);
     }
 
     public void updateFactory(String token, String factoryId, FactoryDto.FactoryUpdate updateInfo) {
@@ -70,24 +65,18 @@ public class FactoryService {
         if (authorityUserRoleUtil.factoryVerification(token, factory)) {
             FactoryDto.FactoryInfo factoryInfo = updateInfo.getFactoryInfo();
 
-            if (!factory.getFactoryName().equals(factoryInfo.getFactoryName()) &&
-                    factoryRepository.existsByFactoryName(factoryInfo.getFactoryName())) {
-                throw new NotFoundException(ALREADY_EXIST_FACTORY);
+            if (factory.isNameChanged(factoryInfo.getFactoryName())) {
+                if (factoryRepository.existsByFactoryName(factoryInfo.getFactoryName())) {
+                    throw new NotFoundException(ALREADY_EXIST_FACTORY);
+                }
             }
 
-            Address address = addressRepository.findById(Long.valueOf(updateInfo.getAddressId()))
-                    .orElseThrow(() -> new NotFoundException(WRONG_ADDRESS));
-            CommonOption commonOption = commonOptionRepository.findById(Long.valueOf(updateInfo.getCommonOptionId()))
-                    .orElseThrow(() -> new NotFoundException(WRONG_COMMON_OPTION));
             GoldHarry goldHarry = goldHarryRepository.findById(Long.valueOf(updateInfo.getGoldHarryId()))
                     .orElseThrow(() -> new NotFoundException(WRONG_HARRY));
 
-            commonOption.update(updateInfo.getCommonOptionInfo());
-            commonOption.setGoldHarry(goldHarry);
-
             factory.updateFactoryInfo(factoryInfo);
-            factory.setAddress(address);
-            factory.setCommonOption(commonOption);
+            factory.updateAddressInfo(updateInfo.getAddressInfo());
+            factory.updateCommonOption(updateInfo.getCommonOptionInfo(), goldHarry);
             return;
         }
 
@@ -95,7 +84,6 @@ public class FactoryService {
     }
 
     public void deleteFactory(String token, String factoryId) {
-
         Factory factory = factoryRepository.findById(Long.valueOf(factoryId))
                 .orElseThrow(() -> new NotFoundException(NOT_FOUND_FACTORY));
 

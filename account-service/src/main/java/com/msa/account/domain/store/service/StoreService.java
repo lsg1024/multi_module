@@ -1,7 +1,6 @@
 package com.msa.account.domain.store.service;
 
 import com.msa.account.domain.store.dto.StoreDto;
-import com.msa.account.domain.store.entity.AdditionalOption;
 import com.msa.account.domain.store.entity.Store;
 import com.msa.account.domain.store.repository.AdditionalOptionRepository;
 import com.msa.account.domain.store.repository.StoreRepository;
@@ -14,32 +13,24 @@ import com.msa.account.global.exception.ExceptionMessage;
 import com.msa.account.global.exception.NotAuthorityException;
 import com.msa.account.global.exception.NotFoundException;
 import com.msacommon.global.util.CustomPage;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Pageable;
 
 import static com.msa.account.global.exception.ExceptionMessage.*;
 
-@Slf4j
 @Service
 @Transactional
 public class StoreService {
 
     private final AuthorityUserRoleUtil authorityUserRoleUtil;
     private final StoreRepository storeRepository;
-    private final AddressRepository addressRepository;
     private final GoldHarryRepository goldHarryRepository;
-    private final CommonOptionRepository commonOptionRepository;
-    private final AdditionalOptionRepository additionalOptionRepository;
 
-    public StoreService(AuthorityUserRoleUtil authorityUserRoleUtil, StoreRepository storeRepository, AddressRepository addressRepository, GoldHarryRepository goldHarryRepository, CommonOptionRepository commonOptionRepository, AdditionalOptionRepository additionalOptionRepository) {
+    public StoreService(AuthorityUserRoleUtil authorityUserRoleUtil, StoreRepository storeRepository, GoldHarryRepository goldHarryRepository) {
         this.authorityUserRoleUtil = authorityUserRoleUtil;
         this.storeRepository = storeRepository;
-        this.addressRepository = addressRepository;
         this.goldHarryRepository = goldHarryRepository;
-        this.commonOptionRepository = commonOptionRepository;
-        this.additionalOptionRepository = additionalOptionRepository;
     }
 
     //상점 호출(info)
@@ -55,14 +46,11 @@ public class StoreService {
     }
 
     //상점 추가
-    public void addStore(StoreDto.StoreRequest storeInfo) {
-        
-        //상점 이름 검증
+    public void createStore(StoreDto.StoreRequest storeInfo) {
         if (storeRepository.existsByStoreName(storeInfo.getStoreInfo().getStoreName())) {
-            throw new NotFoundException(NOT_FOUND_STORE);
+            throw new NotFoundException(ALREADY_EXIST_STORE);
         }
 
-        //로스
         GoldHarry goldHarry = goldHarryRepository.findById(Long.valueOf(storeInfo.getCommonOptionInfo().getGoldHarryId()))
                 .orElseThrow(() -> new NotFoundException(WRONG_HARRY));
 
@@ -80,27 +68,19 @@ public class StoreService {
             StoreDto.StoreInfo storeInfo = updateInfo.getStoreInfo();
 
             //상점 이름 검증
-            if (!store.getStoreName().equals(storeInfo.getStoreName()) &&
-                    storeRepository.existsByStoreName(storeInfo.getStoreName())) {
-                throw new NotFoundException(ALREADY_EXIST_STORE);
+            if (store.isNameChanged(storeInfo.getStoreName())) {
+                if (storeRepository.existsByStoreName(storeInfo.getStoreName())) {
+                    throw new NotFoundException(ALREADY_EXIST_STORE);
+                }
             }
 
-            Address address = addressRepository.findById(Long.valueOf(updateInfo.getAddressId()))
-                    .orElseThrow(() -> new NotFoundException(WRONG_ADDRESS));
-            CommonOption commonOption = commonOptionRepository.findById(Long.valueOf(updateInfo.getCommonOptionId()))
-                    .orElseThrow(() -> new NotFoundException(WRONG_COMMON_OPTION));
-            AdditionalOption additionalOption = additionalOptionRepository.findById(Long.valueOf(updateInfo.getAdditionalOptionId()))
-                    .orElseThrow(() -> new NotFoundException(WRONG_ADDITION_OPTION));
             GoldHarry goldHarry = goldHarryRepository.findById(Long.valueOf(updateInfo.getGoldHarryId()))
                     .orElseThrow(() -> new NotFoundException(WRONG_HARRY));
 
-            commonOption.update(updateInfo.getCommonOptionInfo());
-            commonOption.setGoldHarry(goldHarry);
-
             store.updateStoreInfo(storeInfo);
-            store.setAddress(address);
-            store.setCommonOption(commonOption);
-            store.setAdditionalOption(additionalOption);
+            store.updateAddressInfo(updateInfo.getAddressInfo());
+            store.updateCommonOption(updateInfo.getCommonOptionInfo(), goldHarry);
+            store.updateAdditionalOption(updateInfo.getAdditionalOptionInfo());
             return;
         }
 

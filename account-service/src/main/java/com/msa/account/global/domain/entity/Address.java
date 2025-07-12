@@ -1,5 +1,6 @@
 package com.msa.account.global.domain.entity;
 
+import com.msa.account.global.domain.dto.AddressDto;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -7,7 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
 
-@Getter
 @Entity
 @Table(name = "ADDRESS")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -30,5 +30,11 @@ public class Address {
         this.addressZipCode = addressZipCode;
         this.addressBasic = addressBasic;
         this.addressAdd = addressAdd;
+    }
+
+    public void update(AddressDto.AddressInfo info) {
+        this.addressZipCode = info.getAddressZipCode();
+        this.addressBasic = info.getAddressBasic();
+        this.addressAdd = info.getAddressAdd();
     }
 }
