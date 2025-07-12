@@ -1,5 +1,6 @@
 package com.msa.account.global.domain.dto.util;
 
+import com.msa.account.global.domain.entity.OptionLevel;
 import com.msa.account.global.domain.entity.OptionTradeType;
 
 public class ExchangeEnumUtil {
@@ -8,7 +9,7 @@ public class ExchangeEnumUtil {
         return OptionTradeType.getTitleByKey(tradeTypeKey);
     }
     public static String getLevelTypeTitle(String levelKey) {
-        return OptionTradeType.getTitleByKey(levelKey);
+        return OptionLevel.getLevelByKey(levelKey);
     }
 
 }
