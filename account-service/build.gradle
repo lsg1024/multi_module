@@ -11,6 +11,9 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.cloud:spring-cloud-starter-bootstrap:4.3.0'
 
+    //spring batch
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
+
     //flyway
     implementation 'org.flywaydb:flyway-core'
 
@@ -26,6 +29,7 @@ dependencies {
     //Querydsl
     implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
     implementation 'org.jetbrains:annotations:24.0.0'
+    testImplementation 'org.projectlombok:lombok:1.18.26'
     annotationProcessor "com.querydsl:querydsl-apt:5.1.0:jakarta"
     annotationProcessor "jakarta.annotation:jakarta.annotation-api"
     annotationProcessor "jakarta.persistence:jakarta.persistence-api"
@@ -35,11 +39,18 @@ dependencies {
 
     //db
     runtimeOnly 'com.h2database:h2'
+    testRuntimeOnly 'com.h2database:h2'
 
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.batch:spring-batch-test'
+    testImplementation("org.springframework.kafka:spring-kafka-test")
+
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
     implementation(project(":common"))
 }
 

@@ -4,9 +4,11 @@ import com.msa.account.global.domain.dto.CommonOptionDto;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
 
+@Getter
 @Entity
 @Table(name = "COMMON_OPTION")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -23,7 +25,7 @@ public class CommonOption {
     @Enumerated(EnumType.STRING)
     private OptionLevel optionLevel;
     private boolean deleted = false;
-    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST})
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "GOLD_HARRY_ID", nullable = false)
     private GoldHarry goldHarry;
     @Column(name = "GOLD_HARRY_LOSS")
@@ -45,5 +47,9 @@ public class CommonOption {
     public void updateGoldHarry(GoldHarry goldHarry) {
         this.goldHarry = goldHarry;
         this.goldHarryLoss = goldHarry.getGoldHarryLoss().toString();
+    }
+
+    public void updateGoldHarryLoss(String updatedGoldHarryLoss) {
+        this.goldHarryLoss = updatedGoldHarryLoss;
     }
 }

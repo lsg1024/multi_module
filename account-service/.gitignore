@@ -40,3 +40,5 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+/src/test/resources/application-test.yml
+/src/test/resources/application-secret-key.properties

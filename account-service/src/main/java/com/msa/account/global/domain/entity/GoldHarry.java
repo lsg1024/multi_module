@@ -3,11 +3,15 @@ package com.msa.account.global.domain.entity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.SQLDelete;
 
 import java.math.BigDecimal;
 
+@Slf4j
+@Getter
 @Entity
 @Table(name = "GOLD_HARRY")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -28,5 +32,10 @@ public class GoldHarry {
 
     public BigDecimal getGoldHarryLoss() {
         return goldHarryLoss;
+    }
+
+    public void updateLoss(String newLoss) {
+        log.info("gold harry newLoss");
+        this.goldHarryLoss = new BigDecimal(newLoss);
     }
 }

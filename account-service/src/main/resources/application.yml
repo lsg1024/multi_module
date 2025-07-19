@@ -3,7 +3,14 @@ spring:
     name: account
   profiles:
     active: dev
-
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: always
+  kafka:
+    consumer:
+      auto-offset-reset: earliest
   jpa:
     hibernate:
       ddl-auto: none
