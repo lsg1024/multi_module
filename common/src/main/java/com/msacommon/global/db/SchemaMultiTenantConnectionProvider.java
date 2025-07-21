@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.Flyway;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Profile;
 import org.springframework.jmx.export.annotation.ManagedResource;
 import org.springframework.stereotype.Component;
 
@@ -14,8 +15,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
-@Slf4j
+@Profile("dev")
 @Component
 @ManagedResource(objectName="com.msa:type=MultiTenant,bean=SchemaProvider")
 public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectionProvider {
@@ -43,8 +43,6 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
         Connection connection = getAnyConnection();
         String tenant = tenantIdentifier.toString().toUpperCase();
 
-        log.info("initializedTenants: {}", initializedTenants);
-
         if (DEFAULT_SCHEMA.equals(tenant)) {
             try (Statement stmt = connection.createStatement()) {
                 stmt.execute("SET SCHEMA " + DEFAULT_SCHEMA);
@@ -61,7 +59,6 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
             runMigration(tenant);
         } else {
             if (isSchemaEmpty(connection, tenant)) {
-                log.warn("Schema '{}' previously initialized but now empty. Re-running Flyway migration.", tenant);
                 runMigration(tenant);
             }
         }
@@ -69,7 +66,6 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
         // 스키마 전환
         try (Statement stmt = connection.createStatement()) {
             stmt.execute("SET SCHEMA " + tenant);
-            log.info("Switched to tenant schema: {}", tenant);
         }
 
         return connection;
@@ -89,11 +85,9 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
         try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
             if (rs.next()) {
                 int count = rs.getInt(1);
-                log.debug("Schema '{}' has {} tables.", tenant, count);
                 return count == 0;
             }
         } catch (SQLException e) {
-            log.warn("Failed to check if schema '{}' is empty: {}", tenant, e.getMessage());
         }
         return false;
     }
@@ -106,8 +100,6 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
                 .baselineOnMigrate(true)
                 .load()
                 .migrate();
-
-        log.info("Flyway migration completed for tenant '{}'", tenant);
     }
     @Override public boolean supportsAggressiveRelease() { return false; }
     @Override public boolean isUnwrappableAs(Class unwrapType) { return false; }
