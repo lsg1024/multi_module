@@ -27,10 +27,11 @@ public class KafkaConsumer {
         ObjectMapper om = new ObjectMapper();
         try {
             GoldHarryLossUpdatedEvent event = om.readValue(message, GoldHarryLossUpdatedEvent.class);
-            log.info("Parsed event: id={}, loss={}", event.goldHarryId(), event.newGoldHarryLoss());
+            log.info("Parsed event: tenantId={} id={}, loss={}", event.tenantId(), event.goldHarryId(), event.newGoldHarryLoss());
 
             JobParameters jobParameters = new JobParametersBuilder()
-                    .addLong("commonOptionId", event.goldHarryId())
+                    .addString("tenantId", event.tenantId())
+                    .addLong("goldHarryId", event.goldHarryId())
                     .addString("updatedGoldHarryLoss", event.newGoldHarryLoss())
                     .addLong("timestamp", System.currentTimeMillis())
                     .toJobParameters();
