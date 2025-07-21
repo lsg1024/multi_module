@@ -34,6 +34,11 @@ logging:
     org.hibernate.orm.jdbc.bind: trace
 
 custom:
+  datasource-meta:
+    driver-class-name: org.h2.Driver
+    jdbcUrl: jdbc:h2:tcp://localhost/~/metadb
+    username: sa
+    password:
   jpa:
     entity-scan-packages:
       - com.msa.account.domain.store.entity

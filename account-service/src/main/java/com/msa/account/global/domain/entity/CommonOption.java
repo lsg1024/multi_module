@@ -32,7 +32,8 @@ public class CommonOption {
     private String goldHarryLoss;
 
     @Builder
-    public CommonOption(OptionTradeType optionTradeType, OptionLevel optionLevel, GoldHarry goldHarry, String goldHarryLoss) {
+    public CommonOption(String commonOptionId, OptionTradeType optionTradeType, OptionLevel optionLevel, GoldHarry goldHarry, String goldHarryLoss) {
+        this.commonOptionId = Long.valueOf(commonOptionId);
         this.optionTradeType = optionTradeType;
         this.optionLevel = optionLevel;
         this.goldHarry = goldHarry;

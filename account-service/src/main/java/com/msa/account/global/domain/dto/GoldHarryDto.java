@@ -7,7 +7,6 @@ import lombok.Setter;
 public class GoldHarryDto {
 
     @Getter
-    @Setter
     @AllArgsConstructor
     public static class Update {
         private String goldHarryLoss;

@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.SQLDelete;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Getter
@@ -26,16 +28,19 @@ public class GoldHarry {
     private boolean deleted = false;
 
     @Builder
-    public GoldHarry(BigDecimal goldHarryLoss) {
+    public GoldHarry(Long goldHarryId, BigDecimal goldHarryLoss) {
+        this.goldHarryId = goldHarryId;
         this.goldHarryLoss = goldHarryLoss;
     }
+
+    @OneToMany(mappedBy = "goldHarry", cascade = CascadeType.ALL)
+    private List<CommonOption> commonOptions = new ArrayList<>();
 
     public BigDecimal getGoldHarryLoss() {
         return goldHarryLoss;
     }
 
     public void updateLoss(String newLoss) {
-        log.info("gold harry newLoss");
         this.goldHarryLoss = new BigDecimal(newLoss);
     }
 }
