@@ -25,6 +25,7 @@ public class CommonOption {
     @Enumerated(EnumType.STRING)
     private OptionLevel optionLevel;
     private boolean deleted = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "GOLD_HARRY_ID", nullable = false)
     private GoldHarry goldHarry;

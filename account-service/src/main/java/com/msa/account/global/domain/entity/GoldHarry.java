@@ -25,6 +25,8 @@ public class GoldHarry {
     private Long goldHarryId;
     @Column(name = "GOLD_HARRY_LOSS")
     private BigDecimal goldHarryLoss;
+    @Column(name = "DEFAULT_OPTION")
+    private boolean DefaultOption;
     private boolean deleted = false;
 
     @Builder
@@ -38,6 +40,9 @@ public class GoldHarry {
 
     public BigDecimal getGoldHarryLoss() {
         return goldHarryLoss;
+    }
+    public boolean getDefaultOption() {
+        return this.DefaultOption;
     }
 
     public void updateLoss(String newLoss) {

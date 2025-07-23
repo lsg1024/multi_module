@@ -10,6 +10,8 @@ import com.msacommon.global.jwt.JwtUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static com.msa.account.global.exception.ExceptionMessage.*;
+
 @Service
 @Transactional
 public class GoldHarryService {
@@ -29,7 +31,7 @@ public class GoldHarryService {
         String tenantId = jwtUtil.getTenantId(accessToken);
 
         GoldHarry goldHarry = goldHarryRepository.findById(goldHarryId)
-                .orElseThrow(() -> new NotFoundException("해리 값을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(WRONG_HARRY));
 
         if (!String.valueOf(goldHarry.getGoldHarryLoss()).equals(request.getGoldHarryLoss())) {
             goldHarry.updateLoss(request.getGoldHarryLoss());
@@ -42,6 +44,26 @@ public class GoldHarryService {
                     .build();
 
             kafkaProducer.sendGoldHarryLossUpdated(kafkaEventDto.getTenantId(), kafkaEventDto.getGoldHarryId(), kafkaEventDto.getGoldHarryDto().getGoldHarryLoss());
+        }
+    }
+
+    public void delete(String accessToken, String goldHarryId) {
+        String tenantId = jwtUtil.getTenantId(accessToken);
+        String role = jwtUtil.getRole(accessToken);
+
+        GoldHarry goldHarry;
+        if (role.equals("ADMIN") || role.equals("USER")) {
+            goldHarry = goldHarryRepository.findById(Long.valueOf(goldHarryId))
+                    .orElseThrow(() -> new NotFoundException(WRONG_HARRY));
+
+            if (goldHarry.getDefaultOption()) {
+                throw new IllegalArgumentException(DEFAULT_HARRY);
+            }
+            goldHarryRepository.delete(goldHarry);
+
+            //batch 작업
+            kafkaProducer.sendGoldHarryDeleted(tenantId, goldHarryId);
+
         }
     }
 

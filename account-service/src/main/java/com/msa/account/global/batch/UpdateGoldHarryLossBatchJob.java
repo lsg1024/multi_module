@@ -5,8 +5,6 @@ import com.msa.account.global.domain.entity.CommonOption;
 import com.msa.account.global.domain.entity.GoldHarry;
 import com.msa.account.global.domain.repository.GoldHarryRepository;
 import com.msa.account.global.exception.NotFoundException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -28,12 +26,14 @@ import javax.sql.DataSource;
 import java.util.HashMap;
 import java.util.Map;
 
-@Slf4j
 @Configuration
-@RequiredArgsConstructor
-public class UpdateGoldHarryLossBatchJobConfig {
+public class UpdateGoldHarryLossBatchJob {
 
     private final GoldHarryRepository goldHarryRepository;
+
+    public UpdateGoldHarryLossBatchJob(GoldHarryRepository goldHarryRepository) {
+        this.goldHarryRepository = goldHarryRepository;
+    }
 
     @Bean
     public Job updateStoreGoldHarryLossJob(JobRepository jobRepository, Step updateGoldHarryLossStep) {
@@ -59,31 +59,10 @@ public class UpdateGoldHarryLossBatchJobConfig {
 
     @Bean
     @StepScope
-    public JdbcBatchItemWriter<CommonOption> commonOptionWriter(
-            @Value("#{jobParameters['tenantId']}") String tenantId,
-            @Qualifier("defaultDataSource") DataSource dataSource) {
-        JdbcBatchItemWriter<CommonOption> writer = new JdbcBatchItemWriter<>();
-        writer.setDataSource(dataSource);
-
-        // 스키마명을 동적으로 조립
-        String sql = "UPDATE " + tenantId + ".COMMON_OPTION SET GOLD_HARRY_LOSS = ? WHERE COMMON_OPTION_ID = ?";
-
-        writer.setSql(sql);
-        writer.setItemPreparedStatementSetter((item, ps) -> {
-            ps.setString(1, item.getGoldHarryLoss());
-            ps.setLong(2, item.getCommonOptionId());
-        });
-
-        return writer;
-    }
-
-    @Bean
-    @StepScope
     public JdbcPagingItemReader<CommonOption> commonOptionReader(
             @Value("#{jobParameters['tenantId']}") String tenantId,
             @Value("#{jobParameters['goldHarryId']}") Long goldHarryId,
-            @Qualifier("defaultDataSource") DataSource dataSource
-    ) {
+            @Qualifier("defaultDataSource") DataSource dataSource) {
         JdbcPagingItemReader<CommonOption> reader = new JdbcPagingItemReader<>();
         reader.setDataSource(dataSource);
         reader.setPageSize(100);
@@ -102,7 +81,8 @@ public class UpdateGoldHarryLossBatchJobConfig {
 
         MySqlPagingQueryProvider provider = new MySqlPagingQueryProvider();
         provider.setSelectClause("SELECT co.*");
-        provider.setFromClause(tenantId + ".COMMON_OPTION co JOIN " + tenantId + ".GOLD_HARRY gh ON gh.GOLD_HARRY_ID = co.GOLD_HARRY_ID");
+        provider.setFromClause(tenantId + ".COMMON_OPTION co " +
+                "JOIN " + tenantId + ".GOLD_HARRY gh ON gh.GOLD_HARRY_ID = co.GOLD_HARRY_ID");
         provider.setWhereClause("gh.GOLD_HARRY_ID = :goldHarryId");
 
         Map<String, Order> sortKeys = new HashMap<>();
@@ -125,7 +105,6 @@ public class UpdateGoldHarryLossBatchJobConfig {
             @Value("#{jobParameters['goldHarryId']}") Long goldHarryId,
             @Value("#{jobParameters['updatedGoldHarryLoss']}") String updatedGoldHarryLoss) {
 
-        log.info("updateGoldHarryLossProcessor goldHarryId {}", goldHarryId);
 
         return option -> {
             if (!option.getGoldHarry().getGoldHarryId().equals(goldHarryId)) {
@@ -140,5 +119,26 @@ public class UpdateGoldHarryLossBatchJobConfig {
             return option;
         };
     }
+
+    @Bean
+    @StepScope
+    public JdbcBatchItemWriter<CommonOption> commonOptionWriter(
+            @Value("#{jobParameters['tenantId']}") String tenantId,
+            @Qualifier("defaultDataSource") DataSource dataSource) {
+        JdbcBatchItemWriter<CommonOption> writer = new JdbcBatchItemWriter<>();
+        writer.setDataSource(dataSource);
+
+        // 스키마명을 동적으로 조립
+        String sql = "UPDATE " + tenantId + ".COMMON_OPTION SET GOLD_HARRY_LOSS = ? WHERE COMMON_OPTION_ID = ?";
+
+        writer.setSql(sql);
+        writer.setItemPreparedStatementSetter((item, ps) -> {
+            ps.setString(1, item.getGoldHarryLoss());
+            ps.setLong(2, item.getCommonOptionId());
+        });
+
+        return writer;
+    }
+
 
 }
