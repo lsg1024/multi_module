@@ -4,11 +4,7 @@ import com.msa.account.domain.factory.dto.FactoryDto;
 import com.msa.account.domain.factory.entity.Factory;
 import com.msa.account.domain.factory.repository.FactoryRepository;
 import com.msa.account.global.domain.dto.util.AuthorityUserRoleUtil;
-import com.msa.account.global.domain.entity.Address;
-import com.msa.account.global.domain.entity.CommonOption;
 import com.msa.account.global.domain.entity.GoldHarry;
-import com.msa.account.global.domain.repository.AddressRepository;
-import com.msa.account.global.domain.repository.CommonOptionRepository;
 import com.msa.account.global.domain.repository.GoldHarryRepository;
 import com.msa.account.global.exception.NotAuthorityException;
 import com.msa.account.global.exception.NotFoundException;
@@ -59,7 +55,7 @@ public class FactoryService {
 
     public void updateFactory(String token, String factoryId, FactoryDto.FactoryUpdate updateInfo) {
 
-        Factory factory = factoryRepository.findById(Long.valueOf(factoryId))
+        Factory factory = factoryRepository.findWithAllOptionById(Long.valueOf(factoryId))
                 .orElseThrow(() -> new NotFoundException(NOT_FOUND_FACTORY));
 
         if (authorityUserRoleUtil.factoryVerification(token, factory)) {
@@ -71,7 +67,7 @@ public class FactoryService {
                 }
             }
 
-            GoldHarry goldHarry = goldHarryRepository.findById(Long.valueOf(updateInfo.getGoldHarryId()))
+            GoldHarry goldHarry = goldHarryRepository.findById(Long.valueOf(updateInfo.getCommonOptionInfo().getGoldHarryId()))
                     .orElseThrow(() -> new NotFoundException(WRONG_HARRY));
 
             factory.updateFactoryInfo(factoryInfo);

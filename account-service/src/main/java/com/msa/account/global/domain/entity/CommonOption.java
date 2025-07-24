@@ -6,8 +6,10 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.SQLDelete;
 
+@Slf4j
 @Getter
 @Entity
 @Table(name = "COMMON_OPTION")
@@ -33,22 +35,31 @@ public class CommonOption {
     private String goldHarryLoss;
 
     @Builder
-    public CommonOption(String commonOptionId, OptionTradeType optionTradeType, OptionLevel optionLevel, GoldHarry goldHarry, String goldHarryLoss) {
-        this.commonOptionId = Long.valueOf(commonOptionId);
+    public CommonOption(OptionTradeType optionTradeType, OptionLevel optionLevel, GoldHarry goldHarry, String goldHarryLoss) {
         this.optionTradeType = optionTradeType;
         this.optionLevel = optionLevel;
         this.goldHarry = goldHarry;
         this.goldHarryLoss = goldHarryLoss;
     }
 
-    public void update(CommonOptionDto.CommonOptionInfo commonOptionInfo) {
+    public CommonOption(Long commonOptionId, GoldHarry goldHarry, String goldHarryLoss) {
+        this.commonOptionId = commonOptionId;
+        this.goldHarry = goldHarry;
+        this.goldHarryLoss = goldHarryLoss;
+    }
+
+    public void setGoldHarry(GoldHarry goldHarry) {
+        this.goldHarry = goldHarry;
+    }
+
+    public void updateTradeTypeAndOptionLevel(CommonOptionDto.CommonOptionInfo commonOptionInfo) {
         this.optionTradeType = OptionTradeType.valueOf(commonOptionInfo.getTradeType());
         this.optionLevel = OptionLevel.valueOf(commonOptionInfo.getLevel());
     }
 
-    public void updateGoldHarry(GoldHarry goldHarry) {
-        this.goldHarry = goldHarry;
-        this.goldHarryLoss = goldHarry.getGoldHarryLoss().toString();
+    public void updateGoldHarry(GoldHarry newGoldHarry) {
+        this.goldHarry = newGoldHarry;
+        this.goldHarryLoss = newGoldHarry.getGoldHarryLoss().toString();
     }
 
     public void updateGoldHarryLoss(String updatedGoldHarryLoss) {

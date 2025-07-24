@@ -83,13 +83,13 @@ public class Store extends BaseEntity {
         this.storeNote = updateInfo.getStoreNote();
     }
 
-    public void updateAddressInfo(AddressDto.AddressInfo addressInfo) {
-        this.address.update(addressInfo);
+    public void updateCommonOption(CommonOptionDto.CommonOptionInfo optionInfo, GoldHarry goldHarry) {
+        this.commonOption.updateTradeTypeAndOptionLevel(optionInfo);
+        this.commonOption.updateGoldHarry(goldHarry);
     }
 
-    public void updateCommonOption(CommonOptionDto.CommonOptionInfo optionInfo, GoldHarry goldHarry) {
-        this.commonOption.update(optionInfo);
-        this.commonOption.updateGoldHarry(goldHarry);
+    public void updateAddressInfo(AddressDto.AddressInfo addressInfo) {
+        this.address.update(addressInfo);
     }
 
     public void updateAdditionalOption(AdditionalOptionDto.AdditionalOptionInfo optionInfo) {

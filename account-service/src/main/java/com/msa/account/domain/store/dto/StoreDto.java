@@ -150,7 +150,6 @@ public class StoreDto {
         private AdditionalOptionDto.AdditionalOptionInfo additionalOptionInfo;
         @Valid
         private AddressDto.AddressInfo addressInfo;
-        private String goldHarryId;
     }
 
     @Getter
