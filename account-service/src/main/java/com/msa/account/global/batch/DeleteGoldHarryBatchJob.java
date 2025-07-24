@@ -2,6 +2,9 @@ package com.msa.account.global.batch;
 
 import com.msa.account.global.domain.entity.CommonOption;
 import com.msa.account.global.domain.entity.GoldHarry;
+import com.msa.account.global.domain.repository.GoldHarryRepository;
+import com.msa.account.global.exception.ExceptionMessage;
+import com.msa.account.global.exception.NotFoundException;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -11,8 +14,6 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
-import org.springframework.batch.item.database.Order;
-import org.springframework.batch.item.database.support.MySqlPagingQueryProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -20,11 +21,17 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
-import java.util.HashMap;
-import java.util.Map;
 
 @Configuration
 public class DeleteGoldHarryBatchJob {
+
+    private final BatchCommonOptionUtil batchCommonOptionUtil;
+    private final GoldHarryRepository goldHarryRepository;
+
+    public DeleteGoldHarryBatchJob(BatchCommonOptionUtil batchCommonOptionUtil, GoldHarryRepository goldHarryRepository) {
+        this.batchCommonOptionUtil = batchCommonOptionUtil;
+        this.goldHarryRepository = goldHarryRepository;
+    }
 
     @Bean
     public Job deleteGoldHarryJob(JobRepository jobRepository, Step deleteGoldHarryStep) {
@@ -36,11 +43,12 @@ public class DeleteGoldHarryBatchJob {
     @Bean
     public Step deleteGoldHarryStep(JobRepository jobRepository,
                                     PlatformTransactionManager transactionManager,
-                                    JdbcPagingItemReader<GoldHarry> reader,
-                                    ItemProcessor<GoldHarry, GoldHarry> processor,
-                                    JdbcBatchItemWriter<GoldHarry> writer) {
+                                    @Qualifier("deleteCommonOptionReader") JdbcPagingItemReader<CommonOption> reader,
+                                    @Qualifier("deleteGoldHarryDefaultProcessor") ItemProcessor<CommonOption, CommonOption> processor,
+                                    @Qualifier("deleteCommonOptionWriter") JdbcBatchItemWriter<CommonOption> writer) {
+
         return new StepBuilder("deleteGoldHarryStep", jobRepository)
-                .chunk(100, transactionManager)
+                .<CommonOption, CommonOption>chunk(100, transactionManager)
                 .reader(reader)
                 .processor(processor)
                 .writer(writer)
@@ -50,45 +58,41 @@ public class DeleteGoldHarryBatchJob {
 
     @Bean
     @StepScope
-    public JdbcPagingItemReader<GoldHarry> goldHarryReader(
+    public JdbcPagingItemReader<CommonOption> deleteCommonOptionReader(
             @Value("#{jobParameters['tenantId']}") String tenantId,
-            @Value("#{jobParameters['goldHarryId']}") String goldHarryId,
+            @Value("#{jobParameters['goldHarryId']}") Long goldHarryId,
             @Qualifier("defaultDataSource") DataSource dataSource) {
+        return batchCommonOptionUtil.createReader(tenantId, goldHarryId, dataSource);
+    }
+    @Bean
+    @StepScope //구동 시 빈 등록 시 스키마 미보유 오류 발생
+    public ItemProcessor<CommonOption, CommonOption> deleteGoldHarryDefaultProcessor() {
+        GoldHarry defaultGoldHarry = goldHarryRepository.findById(1L)
+                .orElseThrow(() -> new NotFoundException(ExceptionMessage.NOT_FOUND));
 
-        JdbcPagingItemReader<GoldHarry> reader = new JdbcPagingItemReader<>();
-        reader.setDataSource(dataSource);
-        reader.setPageSize(100);
+        return commonOption -> {
+            commonOption.updateGoldHarry(defaultGoldHarry);
+            return commonOption;
+        };
+    }
 
-        // 헤리값을 삭제하고 기본 값으로 전부 변경하는 코드 추가 차라리 업데이트 코드에 추가를할까?
-        reader.setRowMapper((rs, rowNum) -> {
-            GoldHarry goldHarry = GoldHarry.builder()
-                    .goldHarryId(rs.getLong("GOLD_HARRY_ID"))
-                    .build();
+    @Bean
+    @StepScope
+    public JdbcBatchItemWriter<CommonOption> deleteCommonOptionWriter(
+            @Value("#{jobParameters['tenantId']}") String tenantId,
+            @Qualifier("defaultDataSource") DataSource dataSource) {
+        JdbcBatchItemWriter<CommonOption> writer = new JdbcBatchItemWriter<>();
+        writer.setDataSource(dataSource);
 
-//            return CommonOption.builder()
-//                    .commonOptionId(rs.getString("COMMON_OPTION_ID"))
-//                    .goldHarryLoss(rs.getString("GOLD_HARRY_LOSS"))
-//                    .goldHarry(goldHarry)
-//                    .build();
+        String sql = "UPDATE " + tenantId + ".COMMON_OPTION SET GOLD_HARRY_ID = ?, GOLD_HARRY_LOSS = ? WHERE COMMON_OPTION_ID = ?";
+
+        writer.setSql(sql);
+        writer.setItemPreparedStatementSetter((item, ps) -> {
+            ps.setLong(1, 1L);
+            ps.setString(2, item.getGoldHarryLoss());
+            ps.setLong(3, item.getCommonOptionId());
         });
 
-        MySqlPagingQueryProvider provider = new MySqlPagingQueryProvider();
-        provider.setSelectClause("SELECT co.*");
-        provider.setFromClause(tenantId + ".COMMON_OPTION co " +
-                "JOIN " + tenantId + ".GOLD_HARRY gh ON gh.GOLD_HARRY_ID = co.GOLD_HARRY_ID");
-        provider.setWhereClause("gh.GOLD_HARRY_ID = :goldHarryId");
-
-        Map<String, Order> sortKeys = new HashMap<>();
-        sortKeys.put("COMMON_OPTION_ID", Order.ASCENDING);
-        provider.setSortKeys(sortKeys);
-
-        reader.setQueryProvider(provider);
-
-        // 파라미터
-        Map<String, Object> parameterValues = new HashMap<>();
-        parameterValues.put("goldHarryId", goldHarryId);
-        reader.setParameterValues(parameterValues);
-
-        return reader;
+        return writer;
     }
 }
