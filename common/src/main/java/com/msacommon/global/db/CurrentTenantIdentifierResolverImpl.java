@@ -2,8 +2,10 @@ package com.msacommon.global.db;
 
 import com.msacommon.global.tenant.TenantContext;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+@Profile("dev")
 @Component
 public class CurrentTenantIdentifierResolverImpl implements CurrentTenantIdentifierResolver {
 

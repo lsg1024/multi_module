@@ -17,15 +17,13 @@ public class CommonOptionDto {
         private String tradeType;
         private String level;
         private String goldHarryId;
-        private String goldHarryLoss;
 
         @Builder
         @QueryProjection
-        public CommonOptionInfo(String tradeType, String level, String goldHarryId, String goldHarryLoss) {
+        public CommonOptionInfo(String tradeType, String level, String goldHarryId) {
             this.tradeType = tradeType;
             this.level = level;
             this.goldHarryId = goldHarryId;
-            this.goldHarryLoss = goldHarryLoss;
         }
 
         public CommonOption toEntity(GoldHarry goldHarry) {

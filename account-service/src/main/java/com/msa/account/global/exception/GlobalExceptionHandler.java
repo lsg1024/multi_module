@@ -30,6 +30,14 @@ public class GlobalExceptionHandler {
                 .body(body);
     }
 
+    @ExceptionHandler(KafkaMessageException.class)
+    public ResponseEntity<ApiResponse<String>> handleKafkaMessageException(KafkaMessageException e) {
+        ApiResponse<String> body = ApiResponse.error(e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(body);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationException(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();

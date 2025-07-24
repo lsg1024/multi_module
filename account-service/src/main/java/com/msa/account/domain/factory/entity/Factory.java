@@ -39,6 +39,7 @@ public class Factory extends BaseEntity {
     private String factoryContactNumber2;
     @Column(name = "FACTORY_FAX_NUMBER", length = 16)
     private String factoryFaxNumber;
+    @Column(name = "FACTORY_NOTE")
     private String factoryNote;
     @Column(name = "FACTORY_DELETED", nullable = false)
     private boolean factoryDeleted = false;
@@ -79,11 +80,11 @@ public class Factory extends BaseEntity {
     }
 
     public void updateCommonOption(CommonOptionDto.CommonOptionInfo optionInfo, GoldHarry goldHarry) {
-        this.commonOption.update(optionInfo);
+        this.commonOption.updateTradeTypeAndOptionLevel(optionInfo);
         this.commonOption.updateGoldHarry(goldHarry);
     }
 
     public boolean isNameChanged(String factoryName) {
-        return false;
+        return !this.factoryName.equals(factoryName);
     }
 }

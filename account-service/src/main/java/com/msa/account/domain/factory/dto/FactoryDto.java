@@ -4,7 +4,6 @@ import com.msa.account.domain.factory.entity.Factory;
 import com.msa.account.global.domain.dto.AddressDto;
 import com.msa.account.global.domain.dto.CommonOptionDto;
 import com.msa.account.global.domain.entity.GoldHarry;
-import com.msa.account.global.domain.entity.OptionTradeType;
 import com.querydsl.core.annotations.QueryProjection;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -136,8 +135,6 @@ public class FactoryDto {
         private CommonOptionDto.CommonOptionInfo commonOptionInfo;
         @Valid
         private AddressDto.AddressInfo addressInfo;
-        @NotNull(message = "필수 정보 누락")
-        private String goldHarryId;
     }
 
     @Getter

@@ -11,11 +11,13 @@ import com.msacommon.global.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.SQLDelete;
 
+@Getter
 @Entity
 @Table(name = "STORE")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -81,13 +83,13 @@ public class Store extends BaseEntity {
         this.storeNote = updateInfo.getStoreNote();
     }
 
-    public void updateAddressInfo(AddressDto.AddressInfo addressInfo) {
-        this.address.update(addressInfo);
+    public void updateCommonOption(CommonOptionDto.CommonOptionInfo optionInfo, GoldHarry goldHarry) {
+        this.commonOption.updateTradeTypeAndOptionLevel(optionInfo);
+        this.commonOption.updateGoldHarry(goldHarry);
     }
 
-    public void updateCommonOption(CommonOptionDto.CommonOptionInfo optionInfo, GoldHarry goldHarry) {
-        this.commonOption.update(optionInfo);
-        this.commonOption.updateGoldHarry(goldHarry);
+    public void updateAddressInfo(AddressDto.AddressInfo addressInfo) {
+        this.address.update(addressInfo);
     }
 
     public void updateAdditionalOption(AdditionalOptionDto.AdditionalOptionInfo optionInfo) {

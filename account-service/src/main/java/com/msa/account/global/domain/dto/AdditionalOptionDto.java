@@ -1,7 +1,6 @@
 package com.msa.account.global.domain.dto;
 
 import com.msa.account.domain.store.entity.AdditionalOption;
-import com.querydsl.core.annotations.QueryProjection;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
