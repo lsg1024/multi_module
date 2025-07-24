@@ -47,3 +47,5 @@ bin/
 /eureka-service/src/main/resources/application-secret.properties
 /user-service/src/main/resources/bootstrap.yml
 /account-service/src/test/resources/application.yml
+/src/main/resources/bootstrap.yml
+/product-service/src/main/resources/bootstrap.yml
