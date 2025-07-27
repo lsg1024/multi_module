@@ -1,6 +1,6 @@
-package com.msa.account.domain.factory.entity;
+package com.msa.account.local.factory.entity;
 
-import com.msa.account.domain.factory.dto.FactoryDto;
+import com.msa.account.local.factory.dto.FactoryDto;
 import com.msa.account.global.domain.dto.AddressDto;
 import com.msa.account.global.domain.dto.CommonOptionDto;
 import com.msa.account.global.domain.entity.Address;

@@ -1,6 +1,6 @@
 package com.msa.account.global.domain.dto;
 
-import com.msa.account.domain.store.entity.AdditionalOption;
+import com.msa.account.local.store.entity.AdditionalOption;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

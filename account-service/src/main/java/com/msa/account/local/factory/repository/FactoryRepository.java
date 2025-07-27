@@ -1,6 +1,6 @@
-package com.msa.account.domain.factory.repository;
+package com.msa.account.local.factory.repository;
 
-import com.msa.account.domain.factory.entity.Factory;
+import com.msa.account.local.factory.entity.Factory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

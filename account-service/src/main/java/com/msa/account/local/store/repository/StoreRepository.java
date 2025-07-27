@@ -1,7 +1,7 @@
-package com.msa.account.domain.store.repository;
+package com.msa.account.local.store.repository;
 
 
-import com.msa.account.domain.store.entity.Store;
+import com.msa.account.local.store.entity.Store;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

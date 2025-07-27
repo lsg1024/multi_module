@@ -1,6 +1,6 @@
-package com.msa.account.domain.store.dto;
+package com.msa.account.local.store.dto;
 
-import com.msa.account.domain.store.entity.Store;
+import com.msa.account.local.store.entity.Store;
 import com.msa.account.global.domain.dto.AdditionalOptionDto;
 import com.msa.account.global.domain.dto.AddressDto;
 import com.msa.account.global.domain.dto.CommonOptionDto;

@@ -41,6 +41,6 @@ custom:
     password:
   jpa:
     entity-scan-packages:
-      - com.msa.account.domain.store.entity
-      - com.msa.account.domain.factory.entity
+      - com.msa.account.local.store.entity
+      - com.msa.account.local.factory.entity
       - com.msa.account.global.domain.entity

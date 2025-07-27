@@ -1,6 +1,6 @@
-package com.msa.account.domain.store.entity;
+package com.msa.account.local.store.entity;
 
-import com.msa.account.domain.store.dto.StoreDto;
+import com.msa.account.local.store.dto.StoreDto;
 import com.msa.account.global.domain.dto.AdditionalOptionDto;
 import com.msa.account.global.domain.dto.AddressDto;
 import com.msa.account.global.domain.dto.CommonOptionDto;
@@ -42,7 +42,7 @@ public class Store extends BaseEntity {
     @Column(name = "STORE_NOTE")
     private String storeNote;
     @Column(name = "STORE_DELETED", nullable = false)
-    private final boolean storeDeleted = false;
+    private boolean storeDeleted = false;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "ADDRESS_ID")
