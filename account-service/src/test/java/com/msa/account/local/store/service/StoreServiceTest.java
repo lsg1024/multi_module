@@ -1,8 +1,8 @@
-package com.msa.account.domain.store.service;
+package com.msa.account.local.store.service;
 
-import com.msa.account.domain.store.dto.StoreDto;
-import com.msa.account.domain.store.entity.Store;
-import com.msa.account.domain.store.repository.StoreRepository;
+import com.msa.account.local.store.dto.StoreDto;
+import com.msa.account.local.store.entity.Store;
+import com.msa.account.local.store.repository.StoreRepository;
 import com.msa.account.global.domain.dto.AdditionalOptionDto;
 import com.msa.account.global.domain.dto.AddressDto;
 import com.msa.account.global.domain.dto.CommonOptionDto;

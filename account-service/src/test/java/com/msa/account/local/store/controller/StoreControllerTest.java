@@ -1,19 +1,16 @@
-package com.msa.account.domain.store.controller;
+package com.msa.account.local.store.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.msa.account.domain.store.dto.StoreDto;
-import com.msa.account.domain.store.service.StoreService;
+import com.msa.account.local.store.dto.StoreDto;
 import com.msa.account.global.domain.dto.AdditionalOptionDto;
 import com.msa.account.global.domain.dto.AddressDto;
 import com.msa.account.global.domain.dto.CommonOptionDto;
 import com.msa.account.global.domain.entity.GoldHarry;
-import com.msacommon.global.jwt.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
