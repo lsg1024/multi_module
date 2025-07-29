@@ -6,12 +6,15 @@ import com.msa.product.local.set.entity.SetType;
 import com.msacommon.global.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+@Getter
 @Entity
 @Table(name = "PRODUCT")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -53,17 +56,43 @@ public class Product extends BaseEntity {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductImage> productImages = new ArrayList<>();
 
+    @Builder
+    public Product(Long factoryId, String productFactoryName, String productName, BigDecimal standardWeight, String productNote, List<ProductWorkGradePolicy> gradePolicies, List<ProductStone> productStones, List<ProductImage> productImages) {
+        this.factoryId = factoryId;
+        this.productFactoryName = productFactoryName;
+        this.productName = productName;
+        this.standardWeight = standardWeight;
+        this.productNote = productNote;
+        this.gradePolicies = gradePolicies;
+        this.productStones = productStones;
+        this.productImages = productImages;
+    }
+
+    public void setSetType(SetType setType) {
+        this.setType = setType;
+    }
+
+    public void setClassification(Classification classification) {
+        this.classification = classification;
+    }
+
+    public void setMaterial(Material material) {
+        this.material = material;
+    }
+
     public void addProductStone(ProductStone productStone) {
         productStones.add(productStone);
         productStone.setProduct(this);
     }
+
     public void addGradePolicy(ProductWorkGradePolicy policy) {
         gradePolicies.add(policy);
         policy.setProduct(this);
     }
 
-    public void addImages(List<ProductImage> images) {
-        productImages.addAll(images);
+    public void addImage(ProductImage images) {
+        productImages.add(images);
+        images.setProduct(this);
     }
 
 }

@@ -4,8 +4,10 @@ import com.msacommon.global.domain.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Getter
 @Entity
 @Table(name = "PRODUCT_IMAGE")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -30,7 +32,6 @@ public class ProductImage extends BaseTimeEntity {
         this.imagePath = imagePath;
         this.imageName = imageName;
         this.imageOriginName = imageOriginName;
-        setProduct(product);
     }
 
     public void setProduct(Product product) {
