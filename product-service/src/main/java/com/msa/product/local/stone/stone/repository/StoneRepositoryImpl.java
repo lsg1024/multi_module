@@ -13,7 +13,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.msa.product.local.stone.stone.entity.QStone.stone;
-import static com.msa.product.local.stone.workgradepolicy.entity.QStoneWorkGradePolicy.stoneWorkGradePolicy;
+import static com.msa.product.local.stone.stone.entity.QStoneWorkGradePolicy.stoneWorkGradePolicy;
 
 public class StoneRepositoryImpl implements CustomStoneRepository {
 

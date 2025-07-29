@@ -3,10 +3,13 @@ package com.msa.product.local.product.entity;
 import com.msa.product.global.domain.WorkGrade;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Getter
 @Entity
-@Table(name = "PRODUCT_WORK_GRADE_POLICY")
+@Table(name = "PRODUCT_WORK_GRADE_POLICY") // 상품 판매 공임 (stone X)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProductWorkGradePolicy {
     @Id
@@ -28,9 +31,11 @@ public class ProductWorkGradePolicy {
     @Column(name = "PRODUCT_POLICY_NOTE")
     private String productPolicyNote;
 
-    public ProductWorkGradePolicy(WorkGrade grade, Integer laborCost) {
-        this.grade = grade;
+    @Builder
+    public ProductWorkGradePolicy(String grade, Integer laborCost, String productPolicyNote) {
+        this.grade =  WorkGrade.valueOf(grade);
         this.laborCost = laborCost;
+        this.productPolicyNote = productPolicyNote;
     }
 
     public void setProduct(Product product) {
