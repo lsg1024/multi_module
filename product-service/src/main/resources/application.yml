@@ -28,3 +28,7 @@ custom:
   jpa:
     entity-scan-packages:
       - com.msa.product
+
+file:
+  base-upload-path: "C:/Users/zks14/Desktop/multi_module/product-service/src/main/resources"
+  product-path: ${file.base-upload-path}/products

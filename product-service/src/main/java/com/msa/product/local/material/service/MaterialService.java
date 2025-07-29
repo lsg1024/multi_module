@@ -4,7 +4,6 @@ import com.msa.product.local.material.dto.MaterialDto;
 import com.msa.product.local.material.entity.Material;
 import com.msa.product.local.material.repository.MaterialRepository;
 import com.msacommon.global.jwt.JwtUtil;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,7 +12,6 @@ import java.util.List;
 
 import static com.msa.product.global.exception.ExceptionMessage.*;
 
-@Slf4j
 @Service
 @Transactional
 public class MaterialService {
@@ -32,7 +30,6 @@ public class MaterialService {
         if (existsByMaterialName) {
             throw new IllegalArgumentException(IS_EXIST);
         }
-        log.info("saveMaterial {}", materialDto.getGoldPurityPercent());
 
         Material material = Material.builder()
                 .materialName(materialDto.getName())
