@@ -1,4 +1,4 @@
-package com.msa.account.global.config;
+package com.msacommon.global.config;
 
 import com.msacommon.global.jwt.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
