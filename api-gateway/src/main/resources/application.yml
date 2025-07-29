@@ -51,6 +51,14 @@ spring:
             - name: LoggingFilter
             - StripPrefix=1
 
+        - id: product
+          uri: lb://product
+          predicates:
+            - Path=/product/**
+          filters:
+            - name: LoggingFilter
+            - StripPrefix=1
+
 #            - name: L1Filter
 #              args:
 #                pre: true

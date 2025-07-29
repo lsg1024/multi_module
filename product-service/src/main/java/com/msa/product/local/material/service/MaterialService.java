@@ -1,0 +1,89 @@
+package com.msa.product.local.material.service;
+
+import com.msa.product.local.material.dto.MaterialDto;
+import com.msa.product.local.material.entity.Material;
+import com.msa.product.local.material.repository.MaterialRepository;
+import com.msacommon.global.jwt.JwtUtil;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+import static com.msa.product.global.exception.ExceptionMessage.*;
+
+@Service
+@Transactional
+public class MaterialService {
+
+    private final JwtUtil jwtUtil;
+    private final MaterialRepository materialRepository;
+
+    public MaterialService(JwtUtil jwtUtil, MaterialRepository materialRepository) {
+        this.jwtUtil = jwtUtil;
+        this.materialRepository = materialRepository;
+    }
+
+    // 생성
+    public void saveMaterial(MaterialDto materialDto) {
+        boolean existsByMaterialName = materialRepository.existsByMaterialName(materialDto.getName());
+        if (existsByMaterialName) {
+            throw new IllegalArgumentException(IS_EXIST);
+        }
+
+        Material material = Material.builder()
+                .materialName(materialDto.getName())
+                .materialGoldPurityPercent(new BigDecimal(materialDto.getGoldPurityPercent()))
+                .build();
+
+        materialRepository.save(material);
+    }
+
+    // 단건 조회
+    @Transactional(readOnly = true)
+    public MaterialDto.ResponseSingle getMaterial(Long materialId) {
+        Material material = materialRepository.findById(materialId)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        return MaterialDto.ResponseSingle.builder()
+                .materialId(String.valueOf(materialId))
+                .materialName(material.getMaterialName())
+                .materialGoldPurityPercent(material.getMaterialGoldPurityPercent().toString())
+                .build();
+    }
+
+    // 복수 조회
+    @Transactional(readOnly = true)
+    public List<MaterialDto.ResponseSingle> getMaterials() {
+        return materialRepository.findAllOrderByAsc();
+    }
+
+    // 수정
+    public void updateMaterial(Long id, MaterialDto materialDto) {
+        Material material = materialRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        boolean existsByMaterialName = materialRepository.existsByMaterialName(materialDto.getName());
+        if (existsByMaterialName) {
+            throw new IllegalArgumentException(IS_EXIST);
+        }
+
+        material.updateMaterial(materialDto);
+    }
+
+    // 삭제
+    public void deleteMaterial(String accessToken, Long id) {
+        String role = jwtUtil.getRole(accessToken);
+
+        if (!role.equals("ADMIN")) {
+            throw new IllegalArgumentException(NOT_ACCESS);
+        }
+
+        Material material = materialRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        materialRepository.delete(material);
+        // 카프카 이용해 기존 소재 값을 기본 "" 으로 변경
+    }
+}
+
