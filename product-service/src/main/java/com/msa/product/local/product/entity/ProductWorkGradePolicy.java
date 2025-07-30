@@ -31,6 +31,9 @@ public class ProductWorkGradePolicy {
     @Column(name = "PRODUCT_POLICY_NOTE")
     private String productPolicyNote;
 
+    @Column(name = "PRODUCT_POLICY_DEFAULT")
+    private boolean productPolicyDefault;
+
     @Builder
     public ProductWorkGradePolicy(String grade, Integer laborCost, String productPolicyNote) {
         this.grade =  WorkGrade.valueOf(grade);

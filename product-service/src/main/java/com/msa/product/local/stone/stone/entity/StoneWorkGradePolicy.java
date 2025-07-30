@@ -5,8 +5,10 @@ import com.msa.product.local.stone.stone.entity.Stone;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Getter
 @Entity
 @Table(name = "STONE_WORK_GRADE_POLICY")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -35,17 +37,5 @@ public class StoneWorkGradePolicy {
 
     public void setStone(Stone stone) {
         this.stone = stone;
-    }
-
-    public Long getStoneWorkGradePolicyId() {
-        return stoneWorkGradePolicyId;
-    }
-
-    public WorkGrade getGrade() {
-        return grade;
-    }
-
-    public Integer getLaborCost() {
-        return laborCost;
     }
 }

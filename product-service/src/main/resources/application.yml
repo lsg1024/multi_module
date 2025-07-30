@@ -13,13 +13,20 @@ spring:
       hibernate:
         show_sql: true
         format_sql: true
+        default_batch_fetch_size: 30
 
   flyway:
     enabled: true
     baseline-on-migrate: true
     baseline-version: 1
     locations: classpath:db/migration
-
+  servlet:
+    multipart:
+      enabled: true
+      file-size-threshold: 0B
+      max-file-size: 100MB
+      max-request-size: 100MB
+      location: /Users/imjaeseong/work_file/BackEnd/multi_module/product-service/src/main/resources/temporary
 logging:
   level:
     org.hibernate.SQL: debug
@@ -30,5 +37,5 @@ custom:
       - com.msa.product
 
 file:
-  base-upload-path: "C:/Users/zks14/Desktop/multi_module/product-service/src/main/resources"
+  base-upload-path: "/Users/imjaeseong/work_file/BackEnd/multi_module/product-service/src/main/resources/products"
   product-path: ${file.base-upload-path}/products

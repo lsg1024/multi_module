@@ -1,5 +1,6 @@
 package com.msa.product.local.stone.stone.repository;
 
+import com.msa.product.local.stone.stone.dto.QStoneDto_ResponseSingle;
 import com.msa.product.local.stone.stone.dto.StoneDto;
 import com.msa.product.local.stone.stone.entity.Stone;
 import com.msacommon.global.util.CustomPage;

@@ -4,8 +4,10 @@ import com.msa.product.local.set.dto.SetTypeDto;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Getter
 @Entity
 @Table(name = "SET_TYPE")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -22,14 +24,6 @@ public class SetType {
     public SetType(String setTypeName, String setTypeNote) {
         this.setTypeName = setTypeName;
         this.setTypeNote = setTypeNote;
-    }
-
-    public String getSetTypeName() {
-        return setTypeName;
-    }
-
-    public String getSetTypeNote() {
-        return setTypeNote;
     }
 
     public void updateSetType(SetTypeDto setTypeDto) {

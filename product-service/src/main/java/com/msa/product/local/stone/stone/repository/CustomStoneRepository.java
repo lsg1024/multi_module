@@ -5,6 +5,7 @@ import com.msa.product.local.stone.stone.entity.Stone;
 import com.msacommon.global.util.CustomPage;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface CustomStoneRepository {

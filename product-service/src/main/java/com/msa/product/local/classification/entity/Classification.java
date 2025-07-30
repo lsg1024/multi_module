@@ -4,8 +4,10 @@ import com.msa.product.local.classification.dto.ClassificationDto;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Getter
 @Entity
 @Table(name = "CLASSIFICATION")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -23,14 +25,6 @@ public class Classification {
     public Classification(String classificationName, String classificationNote) {
         this.classificationName = classificationName;
         this.classificationNote = classificationNote;
-    }
-
-    public String getClassificationName() {
-        return classificationName;
-    }
-
-    public String getClassificationNote() {
-        return classificationNote;
     }
 
     public void updateClassification(ClassificationDto classificationDto) {
