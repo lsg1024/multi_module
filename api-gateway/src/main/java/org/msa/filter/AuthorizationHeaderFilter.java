@@ -59,10 +59,11 @@ public class AuthorizationHeaderFilter implements GlobalFilter, Ordered {
 
         String forward = jwtUtil.getForward(token);
         String forwardHeader = exchange.getRequest().getHeaders().getFirst("X-Forwarded-For");
+        String clientIp = forwardHeader.split(",")[0].trim();
 
-        log.info("Forward forward {} forwardHeader {}", forward, forwardHeader);
+        log.info("Forward forward {} forwardHeader {}", forward, clientIp);
 
-        if (!forward.equals(forwardHeader)) {
+        if (!forward.equals(clientIp)) {
             log.error("X-Forwarded-For 불일치");
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
