@@ -1,7 +1,6 @@
 package com.msa.product.local.stone.stone.entity;
 
-import com.msa.product.global.domain.WorkGrade;
-import com.msa.product.local.stone.stone.entity.Stone;
+import com.msa.product.local.grade.WorkGrade;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

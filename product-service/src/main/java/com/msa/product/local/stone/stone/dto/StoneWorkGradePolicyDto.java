@@ -1,6 +1,6 @@
 package com.msa.product.local.stone.stone.dto;
 
-import com.msa.product.global.domain.WorkGrade;
+import com.msa.product.local.grade.WorkGrade;
 import com.msa.product.global.exception.EnumValue;
 import com.msa.product.local.stone.stone.entity.StoneWorkGradePolicy;
 import lombok.Builder;
