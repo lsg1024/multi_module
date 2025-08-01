@@ -52,3 +52,10 @@ project(':product-service') {
         implementation(testFixtures(project(":common")))
     }
 }
+
+project(':order-service') {
+    dependencies {
+        implementation project(':common')
+        implementation(testFixtures(project(":common")))
+    }
+}
