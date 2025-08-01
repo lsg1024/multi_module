@@ -21,7 +21,8 @@ public class SetType {
     private String setTypeNote;
 
     @Builder
-    public SetType(String setTypeName, String setTypeNote) {
+    public SetType(Long setTypeId, String setTypeName, String setTypeNote) {
+        this.setTypeId = setTypeId;
         this.setTypeName = setTypeName;
         this.setTypeNote = setTypeNote;
     }

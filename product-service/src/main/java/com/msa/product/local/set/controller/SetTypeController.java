@@ -58,7 +58,7 @@ public class SetTypeController {
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
 
-    @PatchMapping("/set-types/{id}")
+    @DeleteMapping("/set-types/{id}")
     public ResponseEntity<ApiResponse<String>> deletedSetType(
             @AccessToken String accessToken,
             @PathVariable(name = "id") Long setTypeId) {

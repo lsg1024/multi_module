@@ -22,7 +22,8 @@ public class Classification {
     private String classificationNote;
 
     @Builder
-    public Classification(String classificationName, String classificationNote) {
+    public Classification(Long classificationId, String classificationName, String classificationNote) {
+        this.classificationId = classificationId;
         this.classificationName = classificationName;
         this.classificationNote = classificationNote;
     }

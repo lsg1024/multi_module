@@ -24,7 +24,8 @@ public class Material {
     private BigDecimal materialGoldPurityPercent;
 
     @Builder
-    public Material(String materialName, BigDecimal materialGoldPurityPercent) {
+    public Material(Long materialId, String materialName, BigDecimal materialGoldPurityPercent) {
+        this.materialId = materialId;
         this.materialName = materialName;
         this.materialGoldPurityPercent = materialGoldPurityPercent;
     }

@@ -72,4 +72,10 @@ public class FactoryController {
 
         return ResponseEntity.ok(ApiResponse.success());
     }
+
+    //공장 검증
+    @GetMapping("/factory/{id}/exists")
+    public ResponseEntity<String> existFactoryReturnName(@PathVariable Long id) {
+        return ResponseEntity.ok(factoryService.existsByFactoryId(id));
+    }
 }

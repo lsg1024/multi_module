@@ -1,5 +1,6 @@
 package com.msa.product.local.set.service;
 
+import com.msa.product.global.kafka.KafkaProducer;
 import com.msa.product.local.set.dto.SetTypeDto;
 import com.msa.product.local.set.entity.SetType;
 import com.msa.product.local.set.repository.SetTypeRepository;
@@ -16,10 +17,12 @@ import static com.msa.product.global.exception.ExceptionMessage.*;
 public class SetTypeService {
 
     private final JwtUtil jwtUtil;
+    private final KafkaProducer kafkaProducer;
     private final SetTypeRepository setTypeRepository;
 
-    public SetTypeService(JwtUtil jwtUtil, SetTypeRepository setTypeRepository) {
+    public SetTypeService(JwtUtil jwtUtil, KafkaProducer kafkaProducer, SetTypeRepository setTypeRepository) {
         this.jwtUtil = jwtUtil;
+        this.kafkaProducer = kafkaProducer;
         this.setTypeRepository = setTypeRepository;
     }
 
@@ -71,15 +74,11 @@ public class SetTypeService {
     //삭제
     public void deletedSetType(String accessToken, Long setTypeId) {
         String role = jwtUtil.getRole(accessToken);
+        String tenantId = jwtUtil.getTenantId(accessToken);
         if (!role.equals("ADMIN")) {
             throw new IllegalArgumentException(NOT_ACCESS);
         }
 
-        SetType setType = setTypeRepository.findById(setTypeId)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-
-        setTypeRepository.delete(setType);
-
-        //kafka로 기본 값으로 product setType 전부 변경
+        kafkaProducer.sendSetTypeUpdate(tenantId, setTypeId);
     }
 }

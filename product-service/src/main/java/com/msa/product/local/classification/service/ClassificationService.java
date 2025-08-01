@@ -1,5 +1,6 @@
 package com.msa.product.local.classification.service;
 
+import com.msa.product.global.kafka.KafkaProducer;
 import com.msa.product.local.classification.dto.ClassificationDto;
 import com.msa.product.local.classification.entity.Classification;
 import com.msa.product.local.classification.repository.ClassificationRepository;
@@ -14,12 +15,13 @@ import static com.msa.product.global.exception.ExceptionMessage.*;
 @Service
 @Transactional
 public class ClassificationService {
-
     private final JwtUtil jwtUtil;
+    private final KafkaProducer kafkaProducer;
     private final ClassificationRepository classificationRepository;
 
-    public ClassificationService(JwtUtil jwtUtil, ClassificationRepository classificationRepository) {
+    public ClassificationService(JwtUtil jwtUtil, KafkaProducer kafkaProducer, ClassificationRepository classificationRepository) {
         this.jwtUtil = jwtUtil;
+        this.kafkaProducer = kafkaProducer;
         this.classificationRepository = classificationRepository;
     }
 
@@ -78,11 +80,8 @@ public class ClassificationService {
             throw new IllegalArgumentException(NOT_ACCESS);
         }
 
-        Classification classification = classificationRepository.findById(classificationId)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-
-        classificationRepository.delete(classification);
         // 카프카 이용해 기존 분류 값들을 기본 "" 으로 변경
+        kafkaProducer.sendClassificationUpdate(jwtUtil.getTenantId(accessToken), classificationId);
     }
 
 }
