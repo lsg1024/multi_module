@@ -2,6 +2,8 @@ package com.msa.product.local.product.repository.image;
 
 import com.msa.product.local.product.dto.ProductImageDto;
 import com.msa.product.local.product.dto.QProductImageDto_Response;
+import com.msa.product.local.product.entity.Product;
+import com.msa.product.local.product.entity.ProductImage;
 import com.msa.product.local.product.entity.QProductImage;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -32,4 +34,5 @@ public class ProductImageRepositoryImpl implements CustomProductImageRepository 
                 .orderBy(productImage.product.productId.asc())
                 .fetch();
     }
+
 }
