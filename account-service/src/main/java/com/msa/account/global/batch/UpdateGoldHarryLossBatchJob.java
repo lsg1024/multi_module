@@ -2,7 +2,6 @@ package com.msa.account.global.batch;
 
 
 import com.msa.account.global.domain.entity.CommonOption;
-import com.msa.account.global.domain.repository.GoldHarryRepository;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -24,11 +23,9 @@ import javax.sql.DataSource;
 public class UpdateGoldHarryLossBatchJob {
 
     private final BatchCommonOptionUtil batchCommonOptionUtil;
-    private final GoldHarryRepository goldHarryRepository;
 
-    public UpdateGoldHarryLossBatchJob(BatchCommonOptionUtil batchCommonOptionUtil, GoldHarryRepository goldHarryRepository) {
+    public UpdateGoldHarryLossBatchJob(BatchCommonOptionUtil batchCommonOptionUtil) {
         this.batchCommonOptionUtil = batchCommonOptionUtil;
-        this.goldHarryRepository = goldHarryRepository;
     }
 
     @Bean
