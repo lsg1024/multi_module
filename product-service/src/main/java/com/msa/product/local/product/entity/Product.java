@@ -2,6 +2,7 @@ package com.msa.product.local.product.entity;
 
 import com.msa.product.local.classification.entity.Classification;
 import com.msa.product.local.material.entity.Material;
+import com.msa.product.local.product.dto.ProductDto;
 import com.msa.product.local.set.entity.SetType;
 import com.msacommon.global.domain.BaseEntity;
 import jakarta.persistence.*;
@@ -9,6 +10,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLDelete;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -18,6 +20,7 @@ import java.util.List;
 @Entity
 @Table(name = "PRODUCT")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@SQLDelete(sql = "UPDATE PRODUCT SET PRODUCT_DELETED = TRUE WHERE PRODUCT_ID = ?")
 public class Product extends BaseEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,6 +28,8 @@ public class Product extends BaseEntity {
     private Long productId;
     @Column(name = "FACTORY_ID")
     private Long factoryId;
+    @Column(name = "FACTORY_NAME")
+    private String factoryName;
     @Column(name = "PRODUCT_FACTORY_NAME")
     private String productFactoryName;
     @Column(name = "PRODUCT_NAME", nullable = false, unique = true)
@@ -47,22 +52,28 @@ public class Product extends BaseEntity {
     @Column(name = "PRODUCT_NOTE")
     private String productNote;
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Column(name = "PRODUCT_DELETED")
+    private Boolean productDeleted;
+
+    @OneToMany(mappedBy = "product", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<ProductWorkGradePolicy> gradePolicies = new ArrayList<>();
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "product", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<ProductStone> productStones = new ArrayList<>();
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "product", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<ProductImage> productImages = new ArrayList<>();
 
     @Builder
-    public Product(Long factoryId, String productFactoryName, String productName, BigDecimal standardWeight, String productNote, List<ProductWorkGradePolicy> gradePolicies, List<ProductStone> productStones, List<ProductImage> productImages) {
+    public Product(Long productId, Long factoryId, String factoryName, String productFactoryName, String productName, BigDecimal standardWeight, String productNote, boolean productDeleted, List<ProductWorkGradePolicy> gradePolicies, List<ProductStone> productStones, List<ProductImage> productImages) {
+        this.productId = productId;
         this.factoryId = factoryId;
+        this.factoryName = factoryName;
         this.productFactoryName = productFactoryName;
         this.productName = productName;
         this.standardWeight = standardWeight;
         this.productNote = productNote;
+        this.productDeleted = productDeleted;
         this.gradePolicies = gradePolicies;
         this.productStones = productStones;
         this.productImages = productImages;
@@ -95,4 +106,12 @@ public class Product extends BaseEntity {
         images.setProduct(this);
     }
 
+    public void updateProductInfo(ProductDto productDto, String factoryName) {
+        this.factoryId = productDto.getFactoryId();
+        this.factoryName = factoryName;
+        this.productFactoryName = productDto.getProductFactoryName();
+        this.productName = productDto.getProductName();
+        this.standardWeight = new BigDecimal(productDto.getStandardWeight());
+        this.productNote = productDto.getProductNote();
+    }
 }

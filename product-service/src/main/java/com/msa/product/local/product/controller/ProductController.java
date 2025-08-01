@@ -1,13 +1,14 @@
 package com.msa.product.local.product.controller;
 
 import com.msa.product.local.product.dto.ProductDto;
-import com.msa.product.local.product.dto.ProductStoneDto;
 import com.msa.product.local.product.service.ProductService;
 import com.msacommon.global.api.ApiResponse;
+import com.msacommon.global.util.CustomPage;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 public class ProductController {
@@ -19,37 +20,41 @@ public class ProductController {
 
     @PostMapping("/products")
     public ResponseEntity<ApiResponse<Long>> createProduct(
+            HttpServletRequest request,
             @RequestBody ProductDto productDto) {
-
-        Long productId = productService.saveProduct(productDto);
-        return ResponseEntity.ok(ApiResponse.success("상품이 성공적으로 생성되었습니다.", productId));
+        Long productId = productService.saveProduct(request, productDto);
+        return ResponseEntity.ok(ApiResponse.success("카테고리 생성완료.", productId));
     }
-
-//    @GetMapping("/products/{id}")
-//    public ResponseEntity<ApiResponse<ProductDto.Detail>> getProductV1(
-//            @PathVariable(name = "id") String productId) {
-//
-//        ProductDto.Detail product = productService.getProductV1(Long.valueOf(productId));
-//
-//        return ResponseEntity.ok(ApiResponse.success(product));
-//    }
-
     @GetMapping("/products/{id}")
-    public ResponseEntity<ApiResponse<ProductDto.Detail>> getProductV2(
+    public ResponseEntity<ApiResponse<ProductDto.Detail>> getProduct(
             @PathVariable(name = "id") String productId) {
-
-        ProductDto.Detail product = productService.getProductV2(Long.valueOf(productId));
-
+        ProductDto.Detail product = productService.getProduct(Long.valueOf(productId));
         return ResponseEntity.ok(ApiResponse.success(product));
     }
 
-    @GetMapping("/productstone/{id}")
-    public ResponseEntity<ApiResponse<List<ProductStoneDto.Response>>> getProductStone(
-            @PathVariable(name = "id") String productId) {
-
-        List<ProductStoneDto.Response> productStone = productService.getProductStone(Long.valueOf(productId));
-
-        return ResponseEntity.ok(ApiResponse.success(productStone));
+    @GetMapping("/products")
+    public ResponseEntity<ApiResponse<CustomPage<ProductDto.Page>>> getProducts(
+            @RequestParam(name = "name", required = false) String productName,
+            @PageableDefault(size = 16) Pageable pageable) {
+        CustomPage<ProductDto.Page> products = productService.getProducts(productName, pageable);
+        return ResponseEntity.ok(ApiResponse.success(products));
     }
+
+    @PatchMapping("/products/{id}")
+    public ResponseEntity<ApiResponse<String>> updateProduct(
+            HttpServletRequest request,
+            @PathVariable(name = "id") Long productId,
+            @RequestBody ProductDto.Update productDto) {
+        productService.updateProduct(request, productId, productDto);
+        return ResponseEntity.ok(ApiResponse.success("수정 완료"));
+    }
+
+    @DeleteMapping("/products/{id}")
+    public ResponseEntity<ApiResponse<String>> deletedProduct(
+            @PathVariable(name = "id") Long productId) {
+        productService.deletedProduct(productId);
+        return ResponseEntity.ok(ApiResponse.success("삭제 완료"));
+    }
+
 
 }
