@@ -4,7 +4,7 @@ import com.msa.product.global.kafka.KafkaProducer;
 import com.msa.product.local.classification.dto.ClassificationDto;
 import com.msa.product.local.classification.entity.Classification;
 import com.msa.product.local.classification.repository.ClassificationRepository;
-import com.msacommon.global.jwt.JwtUtil;
+import com.msa.common.global.jwt.JwtUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -75,13 +75,22 @@ public class ClassificationService {
     //삭제
     public void deletedClassification(String accessToken, Long classificationId) {
         String role = jwtUtil.getRole(accessToken);
+        String tenantId = jwtUtil.getTenantId(accessToken);
+
+        Classification classification = classificationRepository.findById(classificationId)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        boolean deletable = classification.isDeletable();
+        if (deletable) {
+            throw new IllegalArgumentException(CANNOT_DELETE_DEFAULT);
+        }
 
         if (!role.equals("ADMIN")) {
             throw new IllegalArgumentException(NOT_ACCESS);
         }
 
         // 카프카 이용해 기존 분류 값들을 기본 "" 으로 변경
-        kafkaProducer.sendClassificationUpdate(jwtUtil.getTenantId(accessToken), classificationId);
+        kafkaProducer.sendClassificationUpdate(tenantId, classificationId);
     }
 
 }

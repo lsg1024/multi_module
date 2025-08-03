@@ -22,6 +22,8 @@ public class Material {
     private String materialName;
     @Column(name = "MATERIAL_GOLD_PURITY_PERCENT", precision = 5, scale = 2)
     private BigDecimal materialGoldPurityPercent;
+    @Column(name = "DEFAULT_ID")
+    private boolean defaultId;
 
     @Builder
     public Material(Long materialId, String materialName, BigDecimal materialGoldPurityPercent) {
@@ -33,5 +35,9 @@ public class Material {
     public void updateMaterial(MaterialDto materialDto) {
         this.materialName = materialDto.getName();
         this.materialGoldPurityPercent = new BigDecimal(materialDto.getGoldPurityPercent());
+    }
+
+    public boolean isDeletable() {
+        return !defaultId;
     }
 }

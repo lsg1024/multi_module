@@ -20,6 +20,8 @@ public class Classification {
     private String classificationName;
     @Column(name = "CLASSIFICATION_NOTE")
     private String classificationNote;
+    @Column(name = "DEFAULT_ID")
+    private boolean defaultId;
 
     @Builder
     public Classification(Long classificationId, String classificationName, String classificationNote) {
@@ -31,5 +33,8 @@ public class Classification {
     public void updateClassification(ClassificationDto classificationDto) {
         this.classificationName = classificationDto.getName();
         this.classificationNote = classificationDto.getNote();
+    }
+    public boolean isDeletable() {
+        return !defaultId;
     }
 }

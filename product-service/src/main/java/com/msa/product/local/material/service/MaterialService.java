@@ -4,7 +4,7 @@ import com.msa.product.global.kafka.KafkaProducer;
 import com.msa.product.local.material.dto.MaterialDto;
 import com.msa.product.local.material.entity.Material;
 import com.msa.product.local.material.repository.MaterialRepository;
-import com.msacommon.global.jwt.JwtUtil;
+import com.msa.common.global.jwt.JwtUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,11 +79,17 @@ public class MaterialService {
         String role = jwtUtil.getRole(accessToken);
         String tenantId = jwtUtil.getTenantId(accessToken);
 
+        Material material = materialRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+        boolean deletable = material.isDeletable();
+        if (deletable) {
+            throw new IllegalArgumentException(CANNOT_DELETE_DEFAULT);
+        }
+
         if (!role.equals("ADMIN")) {
             throw new IllegalArgumentException(NOT_ACCESS);
         }
 
-        // 카프카 이용해 기존 소재 값을 기본 "" 으로 변경
         kafkaProducer.sendMaterialUpdate(tenantId, id);
     }
 }

@@ -1,10 +1,10 @@
 package com.msa.product.local.set.service;
 
+import com.msa.common.global.jwt.JwtUtil;
 import com.msa.product.global.kafka.KafkaProducer;
 import com.msa.product.local.set.dto.SetTypeDto;
 import com.msa.product.local.set.entity.SetType;
 import com.msa.product.local.set.repository.SetTypeRepository;
-import com.msacommon.global.jwt.JwtUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -75,6 +75,15 @@ public class SetTypeService {
     public void deletedSetType(String accessToken, Long setTypeId) {
         String role = jwtUtil.getRole(accessToken);
         String tenantId = jwtUtil.getTenantId(accessToken);
+
+        SetType setType = setTypeRepository.findById(setTypeId)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        boolean deletable = setType.isDeletable();
+        if (deletable) {
+            throw new IllegalArgumentException(CANNOT_DELETE_DEFAULT);
+        }
+
         if (!role.equals("ADMIN")) {
             throw new IllegalArgumentException(NOT_ACCESS);
         }

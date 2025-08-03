@@ -1,6 +1,6 @@
 package com.msa.product.global.exception;
 
-import com.msacommon.global.api.ApiResponse;
+import com.msa.common.global.api.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;

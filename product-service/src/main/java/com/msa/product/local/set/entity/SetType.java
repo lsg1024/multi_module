@@ -19,6 +19,8 @@ public class SetType {
     private String setTypeName;
     @Column(name = "SET_TYPE_NOTE")
     private String setTypeNote;
+    @Column(name = "DEFAULT_ID")
+    private boolean defaultId;
 
     @Builder
     public SetType(Long setTypeId, String setTypeName, String setTypeNote) {
@@ -30,5 +32,8 @@ public class SetType {
     public void updateSetType(SetTypeDto setTypeDto) {
         this.setTypeName = setTypeDto.getName();
         this.setTypeNote = setTypeDto.getNote();
+    }
+    public boolean isDeletable() {
+        return !defaultId;
     }
 }
