@@ -1,9 +1,10 @@
 package com.msa.product.local.material.service;
 
+import com.msa.product.global.kafka.KafkaProducer;
 import com.msa.product.local.material.dto.MaterialDto;
 import com.msa.product.local.material.entity.Material;
 import com.msa.product.local.material.repository.MaterialRepository;
-import com.msacommon.global.jwt.JwtUtil;
+import com.msa.common.global.jwt.JwtUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,10 +18,12 @@ import static com.msa.product.global.exception.ExceptionMessage.*;
 public class MaterialService {
 
     private final JwtUtil jwtUtil;
+    private final KafkaProducer kafkaProducer;
     private final MaterialRepository materialRepository;
 
-    public MaterialService(JwtUtil jwtUtil, MaterialRepository materialRepository) {
+    public MaterialService(JwtUtil jwtUtil, KafkaProducer kafkaProducer, MaterialRepository materialRepository) {
         this.jwtUtil = jwtUtil;
+        this.kafkaProducer = kafkaProducer;
         this.materialRepository = materialRepository;
     }
 
@@ -74,16 +77,20 @@ public class MaterialService {
     // 삭제
     public void deleteMaterial(String accessToken, Long id) {
         String role = jwtUtil.getRole(accessToken);
+        String tenantId = jwtUtil.getTenantId(accessToken);
+
+        Material material = materialRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+        boolean deletable = material.isDeletable();
+        if (deletable) {
+            throw new IllegalArgumentException(CANNOT_DELETE_DEFAULT);
+        }
 
         if (!role.equals("ADMIN")) {
             throw new IllegalArgumentException(NOT_ACCESS);
         }
 
-        Material material = materialRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-
-        materialRepository.delete(material);
-        // 카프카 이용해 기존 소재 값을 기본 "" 으로 변경
+        kafkaProducer.sendMaterialUpdate(tenantId, id);
     }
 }
 

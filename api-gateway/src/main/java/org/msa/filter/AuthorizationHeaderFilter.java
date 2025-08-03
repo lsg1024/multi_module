@@ -1,6 +1,6 @@
 package org.msa.filter;
 
-import com.msacommon.global.jwt.JwtUtil;
+import com.msa.common.global.jwt.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -38,6 +38,8 @@ public class AuthorizationHeaderFilter implements GlobalFilter, Ordered {
 
         String token = bearer.substring(7); // "Bearer " 제거
 
+        log.info("AuthorizationHeaderFilter token {}", token);
+
         try {
             jwtUtil.isExpired(token);
         } catch (ExpiredJwtException e) {
@@ -59,10 +61,11 @@ public class AuthorizationHeaderFilter implements GlobalFilter, Ordered {
 
         String forward = jwtUtil.getForward(token);
         String forwardHeader = exchange.getRequest().getHeaders().getFirst("X-Forwarded-For");
+        String clientIp = forwardHeader.split(",")[0].trim();
 
-        log.info("Forward forward {} forwardHeader {}", forward, forwardHeader);
+        log.info("Forward forward {} forwardHeader {}", forward, clientIp);
 
-        if (!forward.equals(forwardHeader)) {
+        if (!forward.equals(clientIp)) {
             log.error("X-Forwarded-For 불일치");
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();

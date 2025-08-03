@@ -3,8 +3,8 @@ package com.msa.product.local.material.controller;
 
 import com.msa.product.local.material.dto.MaterialDto;
 import com.msa.product.local.material.service.MaterialService;
-import com.msacommon.global.api.ApiResponse;
-import com.msacommon.global.jwt.AccessToken;
+import com.msa.common.global.api.ApiResponse;
+import com.msa.common.global.jwt.AccessToken;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

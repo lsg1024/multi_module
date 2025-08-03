@@ -1,6 +1,7 @@
 package com.msa.product.local.product.entity;
 
-import com.msa.product.global.domain.WorkGrade;
+import com.msa.product.local.grade.WorkGrade;
+import com.msa.product.local.product.dto.ProductWorkGradePolicyDto;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -17,10 +18,6 @@ public class ProductWorkGradePolicy {
     @Column(name = "PRODUCT_WORK_GRADE_POLICY_ID")
     private Long productWorkGradePolicyId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "PRODUCT_ID", nullable = false)
-    private Product product;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "GRADE", nullable = false)
     private WorkGrade grade;
@@ -31,14 +28,25 @@ public class ProductWorkGradePolicy {
     @Column(name = "PRODUCT_POLICY_NOTE")
     private String productPolicyNote;
 
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "PRODUCT_WORK_GRADE_POLICY_GROUP_ID")
+    private ProductWorkGradePolicyGroup workGradePolicyGroup;
+
     @Builder
-    public ProductWorkGradePolicy(String grade, Integer laborCost, String productPolicyNote) {
+    public ProductWorkGradePolicy(Long productWorkGradePolicyId, String grade, Integer laborCost, String productPolicyNote) {
+        this.productWorkGradePolicyId = productWorkGradePolicyId;
         this.grade =  WorkGrade.valueOf(grade);
         this.laborCost = laborCost;
         this.productPolicyNote = productPolicyNote;
     }
 
-    public void setProduct(Product product) {
-        this.product = product;
+    public void setWorkGradePolicyGroup(ProductWorkGradePolicyGroup workGradePolicyGroup) {
+        this.workGradePolicyGroup = workGradePolicyGroup;
+    }
+
+    public void updateWorkGradePolicyDto(ProductWorkGradePolicyDto.Request dto) {
+        this.laborCost = dto.getLaborCost();
+        this.productPolicyNote = dto.getNote();
     }
 }

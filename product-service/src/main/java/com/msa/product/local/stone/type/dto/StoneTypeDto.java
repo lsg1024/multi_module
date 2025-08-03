@@ -1,12 +1,14 @@
 package com.msa.product.local.stone.type.dto;
 
 import com.querydsl.core.annotations.QueryProjection;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
 public class StoneTypeDto {
     private String name;
     private String note;

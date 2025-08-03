@@ -1,0 +1,58 @@
+spring:
+  config:
+    import: optional:application-secret.properties
+  batch:
+    job:
+      enabled: false
+  kafka:
+    listener:
+      missing-topics-fatal: false
+    consumer:
+      auto-offset-reset: earliest
+    bootstrap-servers: ${kafka.uri}
+  cloud:
+    bus:
+      ack:
+        enabled: true
+  application:
+    name: order
+  profiles:
+    active: dev
+  jpa:
+    hibernate:
+      ddl-auto: none
+      naming:
+        implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 30
+        show_sql: true
+        format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+    locations: classpath:db/migration
+logging:
+  level:
+    org.hibernate.SQL: debug
+    org.hibernate.orm.jdbc.bind: trace
+    org.springframework.kafka.retrytopic: debug
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: refresh, bus-refresh
+custom:
+  jpa:
+    entity-scan-packages:
+      - com.msa.product
+  datasource-meta:
+    driver-class-name: org.h2.Driver
+    jdbcUrl: jdbc:h2:tcp://localhost/~/metadb
+    username: sa
+    password:

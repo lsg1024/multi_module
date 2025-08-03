@@ -1,7 +1,7 @@
-package com.msa.account.local.store.controller;
+package com.msa.account.domain.store.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.msa.account.local.store.dto.StoreDto;
+import com.msa.account.domain.store.dto.StoreDto;
 import com.msa.account.global.domain.dto.AdditionalOptionDto;
 import com.msa.account.global.domain.dto.AddressDto;
 import com.msa.account.global.domain.dto.CommonOptionDto;
@@ -53,7 +53,6 @@ class StoreControllerTest {
                 .level("ONE")
                 .tradeType("WEIGHT")
                 .goldHarryId("1")
-                .goldHarryLoss("1.10")
                 .build();
 
         originAdditionalOptionInfo = AdditionalOptionDto.AdditionalOptionInfo.builder()

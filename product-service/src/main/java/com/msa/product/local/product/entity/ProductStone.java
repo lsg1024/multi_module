@@ -1,5 +1,6 @@
 package com.msa.product.local.product.entity;
 
+import com.msa.product.local.product.dto.ProductStoneDto;
 import com.msa.product.local.stone.stone.entity.Stone;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -26,6 +27,9 @@ public class ProductStone {
     @JoinColumn(name = "STONE_ID", nullable = false)
     private Stone stone; // 판매 단가 호출 필요
 
+    @Column(name = "PRODUCT_STONE_MAIN")
+    private Boolean productStoneMain;
+
     @Column(name = "INCLUDE_QUANTITY")
     private Boolean includeQuantity;
 
@@ -39,9 +43,10 @@ public class ProductStone {
     private Integer stoneQuantity;
 
     @Builder
-    public ProductStone(Product product, Stone stone, Boolean includeQuantity, Boolean includeWeight, Boolean includeLabor, Integer stoneQuantity) {
+    public ProductStone(Product product, Stone stone, Boolean productStoneMain, Boolean includeQuantity, Boolean includeWeight, Boolean includeLabor, Integer stoneQuantity) {
         this.product = product;
         this.stone = stone;
+        this.productStoneMain = productStoneMain;
         this.includeQuantity = includeQuantity;
         this.includeWeight = includeWeight;
         this.includeLabor = includeLabor;
@@ -54,6 +59,13 @@ public class ProductStone {
 
     public void updateStoneQuantity(Integer stoneQuantity) {
         this.stoneQuantity = stoneQuantity;
+    }
+
+    public void updateStone(ProductStoneDto.Request dto) {
+        this.includeQuantity = dto.isIncludeQuantity();
+        this.includeWeight = dto.isIncludeWeight();
+        this.includeLabor = dto.isIncludeLabor();
+        this.stoneQuantity = dto.getStoneQuantity();
     }
 
     public void setProduct(Product product) {

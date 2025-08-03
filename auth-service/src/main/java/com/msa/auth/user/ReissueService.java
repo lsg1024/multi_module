@@ -2,7 +2,7 @@ package com.msa.auth.user;
 
 
 import com.msa.auth.redis.RedisRefreshTokenService;
-import com.msacommon.global.jwt.JwtUtil;
+import com.msa.common.global.jwt.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
 import org.springframework.stereotype.Service;
 

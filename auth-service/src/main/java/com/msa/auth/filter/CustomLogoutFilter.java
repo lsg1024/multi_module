@@ -2,8 +2,8 @@ package com.msa.auth.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msa.auth.redis.RedisRefreshTokenService;
-import com.msacommon.global.api.ApiResponse;
-import com.msacommon.global.jwt.JwtUtil;
+import com.msa.common.global.api.ApiResponse;
+import com.msa.common.global.jwt.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

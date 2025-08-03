@@ -2,8 +2,8 @@ package com.msa.account.global.domain.controller;
 
 import com.msa.account.global.domain.dto.GoldHarryDto;
 import com.msa.account.global.domain.service.GoldHarryService;
-import com.msacommon.global.api.ApiResponse;
-import com.msacommon.global.jwt.AccessToken;
+import com.msa.common.global.api.ApiResponse;
+import com.msa.common.global.jwt.AccessToken;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

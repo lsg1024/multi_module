@@ -49,3 +49,5 @@ bin/
 /account-service/src/test/resources/application.yml
 /src/main/resources/bootstrap.yml
 /product-service/src/main/resources/bootstrap.yml
+/product-service/src/main/resources/application-secret.properties
+/product-service/src/main/java/com/msa/product/global/kafka/KafkaTestController.java

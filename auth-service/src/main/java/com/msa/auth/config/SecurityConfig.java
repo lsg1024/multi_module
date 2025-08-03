@@ -5,7 +5,7 @@ import com.msa.auth.filter.CustomLogoutFilter;
 import com.msa.auth.filter.JwtFilter;
 import com.msa.auth.redis.RedisRefreshTokenService;
 import com.msa.auth.user.UserServerClient;
-import com.msacommon.global.jwt.JwtUtil;
+import com.msa.common.global.jwt.JwtUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;

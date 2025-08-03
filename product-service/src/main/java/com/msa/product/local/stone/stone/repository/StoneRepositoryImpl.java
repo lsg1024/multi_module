@@ -2,7 +2,7 @@ package com.msa.product.local.stone.stone.repository;
 
 import com.msa.product.local.stone.stone.dto.StoneDto;
 import com.msa.product.local.stone.stone.entity.Stone;
-import com.msacommon.global.util.CustomPage;
+import com.msa.common.global.util.CustomPage;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;

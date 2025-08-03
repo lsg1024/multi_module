@@ -4,6 +4,7 @@ import com.msa.product.local.stone.stone.entity.StoneWorkGradePolicy;
 import com.querydsl.core.annotations.QueryProjection;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,6 +13,7 @@ import java.util.List;
 
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
 public class StoneDto {
 
     public static final String NO_MESSAGE = "필수 입력값 입니다.";

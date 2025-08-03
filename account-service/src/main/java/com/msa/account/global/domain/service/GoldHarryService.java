@@ -6,7 +6,7 @@ import com.msa.account.global.domain.repository.GoldHarryRepository;
 import com.msa.account.global.exception.NotFoundException;
 import com.msa.account.global.kafka.KafkaProducer;
 import com.msa.account.global.kafka.dto.KafkaEventDto;
-import com.msacommon.global.jwt.JwtUtil;
+import com.msa.common.global.jwt.JwtUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

@@ -1,8 +1,9 @@
 package com.msa.product.local.product.dto;
 
-import com.msa.product.global.domain.WorkGrade;
 import com.msa.product.global.exception.EnumValue;
-import com.msa.product.local.product.entity.ProductWorkGradePolicy;
+import com.msa.product.local.grade.WorkGrade;
+import com.querydsl.core.annotations.QueryProjection;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,20 +17,33 @@ public class ProductWorkGradePolicyDto {
     private String note;
 
     @Getter
-    @Builder
+    @NoArgsConstructor
     public static class Response {
         private String workGradePolicyId;
         private String grade;
         private Integer laborCost;
         private String note;
+        private Long groupId;
 
-        public static ProductWorkGradePolicyDto.Response fromEntity(ProductWorkGradePolicy policy) {
-            return Response.builder()
-                    .workGradePolicyId(policy.getProductWorkGradePolicyId().toString())
-                    .grade(policy.getGrade().name())
-                    .laborCost(policy.getLaborCost())
-                    .note(policy.getProductPolicyNote())
-                    .build();
+        @Builder
+        @QueryProjection
+        public Response(String workGradePolicyId, String grade, Integer laborCost, String note, Long groupId) {
+            this.workGradePolicyId = workGradePolicyId;
+            this.grade = grade;
+            this.laborCost = laborCost;
+            this.note = note;
+            this.groupId = groupId;
         }
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Request {
+        private String workGradePolicyId;
+        private String grade;
+        private Integer laborCost;
+        private String note;
+        private Long groupId;
     }
 }

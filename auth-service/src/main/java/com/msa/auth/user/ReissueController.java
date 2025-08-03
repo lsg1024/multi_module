@@ -1,15 +1,13 @@
 package com.msa.auth.user;
 
-import com.msacommon.global.api.ApiResponse;
+import com.msa.common.global.api.ApiResponse;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
@@ -26,13 +24,6 @@ public class ReissueController {
 
     public ReissueController(ReissueService reissueService) {
         this.reissueService = reissueService;
-    }
-
-    @GetMapping("/test/hello")
-    public String hello(@RequestHeader("X-Tenant-ID") String tenantId, HttpServletResponse response) {
-        log.info("hello log {}", tenantId);
-        response.addHeader("X-Tenant-ID", tenantId);
-        return "Auth-Server";
     }
 
     @PostMapping("/reissue")

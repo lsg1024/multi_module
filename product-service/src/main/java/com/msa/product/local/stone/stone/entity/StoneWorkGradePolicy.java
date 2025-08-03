@@ -1,12 +1,13 @@
 package com.msa.product.local.stone.stone.entity;
 
-import com.msa.product.global.domain.WorkGrade;
-import com.msa.product.local.stone.stone.entity.Stone;
+import com.msa.product.local.grade.WorkGrade;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Getter
 @Entity
 @Table(name = "STONE_WORK_GRADE_POLICY")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -28,24 +29,13 @@ public class StoneWorkGradePolicy {
     private Integer laborCost;
 
     @Builder
-    public StoneWorkGradePolicy(String grade, Integer laborCost) {
+    public StoneWorkGradePolicy(Long stoneWorkGradePolicyId, String grade, Integer laborCost) {
+        this.stoneWorkGradePolicyId = stoneWorkGradePolicyId;
         this.grade = WorkGrade.valueOf(grade);
         this.laborCost = laborCost;
     }
 
     public void setStone(Stone stone) {
         this.stone = stone;
-    }
-
-    public Long getStoneWorkGradePolicyId() {
-        return stoneWorkGradePolicyId;
-    }
-
-    public WorkGrade getGrade() {
-        return grade;
-    }
-
-    public Integer getLaborCost() {
-        return laborCost;
     }
 }
