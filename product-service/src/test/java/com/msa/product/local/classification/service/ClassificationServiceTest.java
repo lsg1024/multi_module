@@ -3,7 +3,7 @@ package com.msa.product.local.classification.service;
 import com.msa.product.local.classification.dto.ClassificationDto;
 import com.msa.product.local.classification.entity.Classification;
 import com.msa.product.local.classification.repository.ClassificationRepository;
-import com.msacommon.global.jwt.JwtUtil;
+import com.msa.common.global.jwt.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
