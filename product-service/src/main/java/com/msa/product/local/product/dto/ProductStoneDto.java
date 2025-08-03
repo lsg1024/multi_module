@@ -1,6 +1,5 @@
 package com.msa.product.local.product.dto;
 
-import com.msa.product.local.product.entity.ProductStone;
 import com.msa.product.local.stone.stone.dto.StoneWorkGradePolicyDto;
 import com.querydsl.core.annotations.QueryProjection;
 import lombok.Builder;
@@ -28,6 +27,20 @@ public class ProductStoneDto {
         this.includeWeight = includeWeight;
         this.includeLabor = includeLabor;
         this.stoneQuantity = stoneQuantity;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class Request {
+        private String productStoneId;
+        private String stoneId;
+        private String stoneName;
+        private boolean productStoneMain;
+        private boolean includeQuantity;
+        private boolean includeWeight;
+        private boolean includeLabor;
+        private Integer stoneQuantity;
+        private List<StoneWorkGradePolicyDto.Response> stoneWorkGradePolicyDtos;
     }
 
     @Setter
@@ -58,17 +71,6 @@ public class ProductStoneDto {
             essential(productStoneId, stoneId, stoneName, productStoneMain, includeQuantity, includeWeight, includeLabor, stoneQuantity);
         }
 
-        public static Response fromEntity(ProductStone productStone) {
-            return Response.builder()
-                    .productStoneId(productStone.getProductStoneId().toString())
-                    .stoneId(productStone.getStone().getStoneId().toString())
-                    .stoneName(productStone.getStone().getStoneName())
-                    .includeWeight(productStone.getIncludeWeight())
-                    .includeLabor(productStone.getIncludeLabor())
-                    .includeQuantity(productStone.getIncludeQuantity())
-                    .stoneQuantity(productStone.getStoneQuantity())
-                    .build();
-        }
         private void essential(String productStoneId, String stoneId, String stoneName, boolean mainStone, boolean includeQuantity, boolean includeWeight, boolean includeLabor, Integer stoneQuantity) {
             this.productStoneId = productStoneId;
             this.stoneId = stoneId;

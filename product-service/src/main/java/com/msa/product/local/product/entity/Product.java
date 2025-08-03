@@ -1,10 +1,10 @@
 package com.msa.product.local.product.entity;
 
+import com.msa.common.global.domain.BaseEntity;
 import com.msa.product.local.classification.entity.Classification;
 import com.msa.product.local.material.entity.Material;
 import com.msa.product.local.product.dto.ProductDto;
 import com.msa.product.local.set.entity.SetType;
-import com.msacommon.global.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -55,8 +55,8 @@ public class Product extends BaseEntity {
     @Column(name = "PRODUCT_DELETED")
     private Boolean productDeleted;
 
-    @OneToMany(mappedBy = "product", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    private List<ProductWorkGradePolicy> gradePolicies = new ArrayList<>();
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductWorkGradePolicyGroup> productWorkGradePolicyGroups = new ArrayList<>();
 
     @OneToMany(mappedBy = "product", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<ProductStone> productStones = new ArrayList<>();
@@ -65,7 +65,7 @@ public class Product extends BaseEntity {
     private List<ProductImage> productImages = new ArrayList<>();
 
     @Builder
-    public Product(Long productId, Long factoryId, String factoryName, String productFactoryName, String productName, BigDecimal standardWeight, String productNote, boolean productDeleted, List<ProductWorkGradePolicy> gradePolicies, List<ProductStone> productStones, List<ProductImage> productImages) {
+    public Product(Long productId, Long factoryId, String factoryName, String productFactoryName, String productName, BigDecimal standardWeight, String productNote, boolean productDeleted, List<ProductStone> productStones, List<ProductImage> productImages) {
         this.productId = productId;
         this.factoryId = factoryId;
         this.factoryName = factoryName;
@@ -74,7 +74,6 @@ public class Product extends BaseEntity {
         this.standardWeight = standardWeight;
         this.productNote = productNote;
         this.productDeleted = productDeleted;
-        this.gradePolicies = gradePolicies;
         this.productStones = productStones;
         this.productImages = productImages;
     }
@@ -91,14 +90,14 @@ public class Product extends BaseEntity {
         this.material = material;
     }
 
+    public void addPolicyGroup(ProductWorkGradePolicyGroup group) {
+        productWorkGradePolicyGroups.add(group);
+        group.setProduct(this);
+    }
+
     public void addProductStone(ProductStone productStone) {
         productStones.add(productStone);
         productStone.setProduct(this);
-    }
-
-    public void addGradePolicy(ProductWorkGradePolicy policy) {
-        gradePolicies.add(policy);
-        policy.setProduct(this);
     }
 
     public void addImage(ProductImage images) {
@@ -106,7 +105,7 @@ public class Product extends BaseEntity {
         images.setProduct(this);
     }
 
-    public void updateProductInfo(ProductDto productDto, String factoryName) {
+    public void updateProductInfo(ProductDto.Update productDto, String factoryName) {
         this.factoryId = productDto.getFactoryId();
         this.factoryName = factoryName;
         this.productFactoryName = productDto.getProductFactoryName();
@@ -114,4 +113,5 @@ public class Product extends BaseEntity {
         this.standardWeight = new BigDecimal(productDto.getStandardWeight());
         this.productNote = productDto.getProductNote();
     }
+
 }

@@ -1,5 +1,6 @@
 package com.msa.product.local.product.entity;
 
+import com.msa.product.local.product.dto.ProductStoneDto;
 import com.msa.product.local.stone.stone.entity.Stone;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -58,6 +59,13 @@ public class ProductStone {
 
     public void updateStoneQuantity(Integer stoneQuantity) {
         this.stoneQuantity = stoneQuantity;
+    }
+
+    public void updateStone(ProductStoneDto.Request dto) {
+        this.includeQuantity = dto.isIncludeQuantity();
+        this.includeWeight = dto.isIncludeWeight();
+        this.includeLabor = dto.isIncludeLabor();
+        this.stoneQuantity = dto.getStoneQuantity();
     }
 
     public void setProduct(Product product) {

@@ -1,13 +1,14 @@
 package com.msa.product.local.product.repository;
 
-import com.msa.product.local.grade.WorkGrade;
+import com.msa.common.global.util.CustomPage;
 import com.msa.product.local.classification.dto.QClassificationDto_ResponseSingle;
+import com.msa.product.local.grade.WorkGrade;
 import com.msa.product.local.material.dto.QMaterialDto_ResponseSingle;
 import com.msa.product.local.product.dto.ProductDto;
 import com.msa.product.local.product.dto.QProductDto_Detail;
 import com.msa.product.local.product.dto.QProductDto_Page;
+import com.msa.product.local.product.entity.QProductWorkGradePolicy;
 import com.msa.product.local.set.dto.QSetTypeDto_ResponseSingle;
-import com.msacommon.global.util.CustomPage;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
@@ -25,6 +26,7 @@ import static com.msa.product.local.product.entity.QProduct.product;
 import static com.msa.product.local.product.entity.QProductImage.productImage;
 import static com.msa.product.local.product.entity.QProductStone.productStone;
 import static com.msa.product.local.product.entity.QProductWorkGradePolicy.productWorkGradePolicy;
+import static com.msa.product.local.product.entity.QProductWorkGradePolicyGroup.productWorkGradePolicyGroup;
 import static com.msa.product.local.set.entity.QSetType.setType;
 import static com.msa.product.local.stone.stone.entity.QStoneWorkGradePolicy.stoneWorkGradePolicy;
 
@@ -77,6 +79,8 @@ public class ProductRepositoryImpl implements CustomProductRepository {
     @Override
     public CustomPage<ProductDto.Page> findByAllProductName(String productName, Pageable pageable) {
 
+        QProductWorkGradePolicy productWorkGradePolicySub = new QProductWorkGradePolicy("productWorkGradePolicySub");
+
         BooleanBuilder builder = new BooleanBuilder();
 
         if (productName != null && !productName.isBlank()) {
@@ -88,6 +92,7 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                         product.productId.stringValue(),
                         product.productName,
                         product.standardWeight.stringValue(),
+                        productWorkGradePolicyGroup.color.colorName,
                         product.productNote,
                         productWorkGradePolicy.laborCost.coalesce(0).stringValue(),
                         productStone.stoneQuantity.multiply(stoneWorkGradePolicy.laborCost).coalesce(0).sum().stringValue(),
@@ -99,8 +104,15 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 ))
                 .from(product)
                 .leftJoin(productStone).on(product.productId.eq(productStone.product.productId))
-                .leftJoin(productWorkGradePolicy).on(product.productId.eq(productWorkGradePolicy.product.productId)
-                        .and(productWorkGradePolicy.grade.eq(WorkGrade.GRADE_1)))
+                .leftJoin(product.productWorkGradePolicyGroups, productWorkGradePolicyGroup)
+                .leftJoin(productWorkGradePolicyGroup.gradePolicies, productWorkGradePolicy).on(productWorkGradePolicy.grade.eq(WorkGrade.GRADE_1)
+                        .and(productWorkGradePolicy.productWorkGradePolicyId.eq(
+                                JPAExpressions
+                                        .select(productWorkGradePolicySub.productWorkGradePolicyId.min())
+                                        .from(productWorkGradePolicySub)
+                                        .where(productWorkGradePolicySub.workGradePolicyGroup.product.eq(product))
+                                        .where(productWorkGradePolicySub.grade.eq(WorkGrade.GRADE_1))
+                        )))
                 .leftJoin(stoneWorkGradePolicy).on(productStone.stone.stoneId.eq(stoneWorkGradePolicy.stone.stoneId)
                         .and(stoneWorkGradePolicy.grade.eq(WorkGrade.GRADE_1)))
                 .where(builder)

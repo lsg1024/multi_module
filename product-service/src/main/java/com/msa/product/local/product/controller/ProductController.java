@@ -1,9 +1,10 @@
 package com.msa.product.local.product.controller;
 
+import com.msa.common.global.jwt.AccessToken;
 import com.msa.product.local.product.dto.ProductDto;
 import com.msa.product.local.product.service.ProductService;
-import com.msacommon.global.api.ApiResponse;
-import com.msacommon.global.util.CustomPage;
+import com.msa.common.global.api.ApiResponse;
+import com.msa.common.global.util.CustomPage;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -51,8 +52,9 @@ public class ProductController {
 
     @DeleteMapping("/products/{id}")
     public ResponseEntity<ApiResponse<String>> deletedProduct(
+            @AccessToken String accessToken,
             @PathVariable(name = "id") Long productId) {
-        productService.deletedProduct(productId);
+        productService.deletedProduct(accessToken, productId);
         return ResponseEntity.ok(ApiResponse.success("삭제 완료"));
     }
 

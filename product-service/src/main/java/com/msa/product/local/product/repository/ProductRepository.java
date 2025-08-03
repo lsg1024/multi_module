@@ -9,6 +9,8 @@ import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long>, CustomProductRepository {
     boolean existsByProductName(String productName);
+
+    boolean existsByProductNameAndProductIdNot(String productName, Long productId);
     @Query("select p from Product p " +
             "join fetch p.setType " +
             "join fetch p.material " +

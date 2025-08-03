@@ -1,6 +1,6 @@
 package com.msa.product.local.product.entity;
 
-import com.msacommon.global.domain.BaseTimeEntity;
+import com.msa.common.global.domain.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
