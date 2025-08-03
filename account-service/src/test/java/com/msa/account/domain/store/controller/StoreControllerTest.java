@@ -53,7 +53,6 @@ class StoreControllerTest {
                 .level("ONE")
                 .tradeType("WEIGHT")
                 .goldHarryId("1")
-                .goldHarryLoss("1.10")
                 .build();
 
         originAdditionalOptionInfo = AdditionalOptionDto.AdditionalOptionInfo.builder()
