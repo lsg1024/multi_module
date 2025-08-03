@@ -29,7 +29,8 @@ public class StoneWorkGradePolicy {
     private Integer laborCost;
 
     @Builder
-    public StoneWorkGradePolicy(String grade, Integer laborCost) {
+    public StoneWorkGradePolicy(Long stoneWorkGradePolicyId, String grade, Integer laborCost) {
+        this.stoneWorkGradePolicyId = stoneWorkGradePolicyId;
         this.grade = WorkGrade.valueOf(grade);
         this.laborCost = laborCost;
     }

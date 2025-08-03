@@ -3,19 +3,24 @@ package com.msa.product.local.stone.stone.dto;
 import com.msa.product.local.grade.WorkGrade;
 import com.msa.product.global.exception.EnumValue;
 import com.msa.product.local.stone.stone.entity.StoneWorkGradePolicy;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
 public class StoneWorkGradePolicyDto {
     @EnumValue(enumClass = WorkGrade.class, message = "잘못된 입력 양식입니다.")
     private String grade;
     private Integer laborCost;
 
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Request {
+        private String workGradePolicyId;
         private String grade;
         private Integer laborCost;
     }
