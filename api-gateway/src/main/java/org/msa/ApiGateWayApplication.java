@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication(scanBasePackages = {
         "org.msa.filter",
-        "com.msacommon.global.jwt"
+        "com.msa.common.global.jwt"
 })
 public class ApiGateWayApplication {
     public static void main(String[] args) {

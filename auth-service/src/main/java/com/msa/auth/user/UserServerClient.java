@@ -1,7 +1,7 @@
 package com.msa.auth.user;
 
-import com.msacommon.global.api.ApiResponse;
-import com.msacommon.global.domain.dto.UserDto;
+import com.msa.common.global.api.ApiResponse;
+import com.msa.common.global.domain.dto.UserDto;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;

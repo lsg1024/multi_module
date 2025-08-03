@@ -1,7 +1,7 @@
 package com.msa.userserver.domain.entity;
 
-import com.msacommon.global.domain.BaseTimeEntity;
-import com.msacommon.global.domain.dto.UserDto;
+import com.msa.common.global.domain.BaseTimeEntity;
+import com.msa.common.global.domain.dto.UserDto;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

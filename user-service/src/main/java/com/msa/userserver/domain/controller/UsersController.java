@@ -1,9 +1,9 @@
 package com.msa.userserver.domain.controller;
 
 import com.msa.userserver.domain.service.UsersService;
-import com.msacommon.global.api.ApiResponse;
-import com.msacommon.global.domain.dto.UserDto;
-import com.msacommon.global.jwt.AccessToken;
+import com.msa.common.global.api.ApiResponse;
+import com.msa.common.global.domain.dto.UserDto;
+import com.msa.common.global.jwt.AccessToken;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

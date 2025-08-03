@@ -1,7 +1,7 @@
 package com.msa.auth.filter;
 
-import com.msacommon.global.domain.dto.UserDto;
-import com.msacommon.global.jwt.JwtUtil;
+import com.msa.common.global.domain.dto.UserDto;
+import com.msa.common.global.jwt.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

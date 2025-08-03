@@ -3,7 +3,7 @@ package com.msa.account.domain.factory.repository;
 import com.msa.account.domain.factory.dto.FactoryDto;
 import com.msa.account.domain.factory.dto.QFactoryDto_FactoryResponse;
 import com.msa.account.domain.factory.dto.QFactoryDto_FactorySingleResponse;
-import com.msacommon.global.util.CustomPage;
+import com.msa.common.global.util.CustomPage;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;

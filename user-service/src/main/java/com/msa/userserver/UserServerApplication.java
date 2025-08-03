@@ -11,7 +11,7 @@ import static org.springframework.data.web.config.EnableSpringDataWebSupport.Pag
 
 @EnableDiscoveryClient
 @SpringBootApplication(exclude = FlywayAutoConfiguration.class, scanBasePackages = {
-       "com.msa.userserver", "com.msacommon.global"
+       "com.msa.userserver", "com.msa.common.global"
 })
 @EnableSpringDataWebSupport(pageSerializationMode = VIA_DTO)
 public class UserServerApplication {

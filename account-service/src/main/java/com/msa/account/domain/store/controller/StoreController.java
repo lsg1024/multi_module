@@ -2,9 +2,9 @@ package com.msa.account.domain.store.controller;
 
 import com.msa.account.domain.store.dto.StoreDto;
 import com.msa.account.domain.store.service.StoreService;
-import com.msacommon.global.api.ApiResponse;
-import com.msacommon.global.jwt.AccessToken;
-import com.msacommon.global.util.CustomPage;
+import com.msa.common.global.api.ApiResponse;
+import com.msa.common.global.jwt.AccessToken;
+import com.msa.common.global.util.CustomPage;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;

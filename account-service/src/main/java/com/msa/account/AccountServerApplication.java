@@ -12,7 +12,7 @@ import static org.springframework.data.web.config.EnableSpringDataWebSupport.Pag
 @EnableCaching
 @EnableDiscoveryClient
 @SpringBootApplication(exclude = FlywayAutoConfiguration.class, scanBasePackages = {
-        "com.msa.account", "com.msacommon.global"
+        "com.msa.account", "com.msa.common.global"
 })
 @EnableSpringDataWebSupport(pageSerializationMode = VIA_DTO)
 public class AccountServerApplication {

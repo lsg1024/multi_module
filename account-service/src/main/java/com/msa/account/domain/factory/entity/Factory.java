@@ -6,7 +6,7 @@ import com.msa.account.global.domain.dto.CommonOptionDto;
 import com.msa.account.global.domain.entity.Address;
 import com.msa.account.global.domain.entity.CommonOption;
 import com.msa.account.global.domain.entity.GoldHarry;
-import com.msacommon.global.domain.BaseEntity;
+import com.msa.common.global.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

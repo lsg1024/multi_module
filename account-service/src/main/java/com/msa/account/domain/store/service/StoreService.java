@@ -9,7 +9,7 @@ import com.msa.account.global.domain.repository.GoldHarryRepository;
 import com.msa.account.global.exception.ExceptionMessage;
 import com.msa.account.global.exception.NotAuthorityException;
 import com.msa.account.global.exception.NotFoundException;
-import com.msacommon.global.util.CustomPage;
+import com.msa.common.global.util.CustomPage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;

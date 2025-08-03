@@ -8,7 +8,7 @@ import com.msa.account.global.domain.entity.GoldHarry;
 import com.msa.account.global.domain.repository.GoldHarryRepository;
 import com.msa.account.global.exception.NotAuthorityException;
 import com.msa.account.global.exception.NotFoundException;
-import com.msacommon.global.util.CustomPage;
+import com.msa.common.global.util.CustomPage;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

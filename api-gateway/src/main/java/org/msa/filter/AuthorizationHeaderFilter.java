@@ -1,6 +1,6 @@
 package org.msa.filter;
 
-import com.msacommon.global.jwt.JwtUtil;
+import com.msa.common.global.jwt.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -37,6 +37,8 @@ public class AuthorizationHeaderFilter implements GlobalFilter, Ordered {
         }
 
         String token = bearer.substring(7); // "Bearer " 제거
+
+        log.info("AuthorizationHeaderFilter token {}", token);
 
         try {
             jwtUtil.isExpired(token);
