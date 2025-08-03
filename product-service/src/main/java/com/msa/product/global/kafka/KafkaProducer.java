@@ -2,6 +2,7 @@ package com.msa.product.global.kafka;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msa.product.global.kafka.dto.ClassificationEvent;
+import com.msa.product.global.kafka.dto.ColorEvent;
 import com.msa.product.global.kafka.dto.MaterialEvent;
 import com.msa.product.global.kafka.dto.SetTypeEvent;
 import org.apache.kafka.common.KafkaException;
@@ -70,6 +71,24 @@ public class KafkaProducer {
     public void sendSetTypeDelete(String tenantId, Long setTypeId) {
         try {
             SetTypeEvent event = new SetTypeEvent(tenantId, setTypeId);
+            kafkaTemplate.send("set-type.delete", objectMapper.writeValueAsString(event));
+        } catch (Exception e) {
+            throw new KafkaException(NOT_FOUND);
+        }
+    }
+
+    public void sendColorUpdate(String tenantId, Long colorId) {
+        try {
+            ColorEvent event = new ColorEvent(tenantId, colorId);
+            kafkaTemplate.send("color.update", objectMapper.writeValueAsString(event));
+        } catch (Exception e) {
+            throw new KafkaException(NOT_FOUND);
+        }
+    }
+
+    public void sendColorDelete(String tenantId, Long colorId) {
+        try {
+            ColorEvent event = new ColorEvent(tenantId, colorId);
             kafkaTemplate.send("set-type.delete", objectMapper.writeValueAsString(event));
         } catch (Exception e) {
             throw new KafkaException(NOT_FOUND);

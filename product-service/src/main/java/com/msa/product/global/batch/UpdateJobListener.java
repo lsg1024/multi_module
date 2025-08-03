@@ -37,6 +37,9 @@ public class UpdateJobListener implements JobExecutionListener {
             } else if (params.getParameters().containsKey("setTypeId")) {
                 Long setTypeId = params.getLong("setTypeId");
                 kafkaProducer.sendSetTypeDelete(tenantId, setTypeId);
+            } else if (params.getParameters().containsKey("colorId")) {
+                Long colorId = params.getLong("colorId");
+                kafkaProducer.sendColorDelete(tenantId, colorId);
             }
         }
     }
