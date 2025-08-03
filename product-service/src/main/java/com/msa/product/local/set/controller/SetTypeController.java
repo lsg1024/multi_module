@@ -2,8 +2,8 @@ package com.msa.product.local.set.controller;
 
 import com.msa.product.local.set.dto.SetTypeDto;
 import com.msa.product.local.set.service.SetTypeService;
-import com.msacommon.global.api.ApiResponse;
-import com.msacommon.global.jwt.AccessToken;
+import com.msa.common.global.api.ApiResponse;
+import com.msa.common.global.jwt.AccessToken;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msa.product.local.product.dto.ProductImageDto;
 import com.msa.product.local.product.service.ProductImageService;
-import com.msacommon.global.api.ApiResponse;
+import com.msa.common.global.api.ApiResponse;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

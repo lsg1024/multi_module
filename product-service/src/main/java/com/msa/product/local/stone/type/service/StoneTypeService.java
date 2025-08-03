@@ -3,7 +3,7 @@ package com.msa.product.local.stone.type.service;
 import com.msa.product.local.stone.type.dto.StoneTypeDto;
 import com.msa.product.local.stone.type.entity.StoneType;
 import com.msa.product.local.stone.type.repository.StoneTypeRepository;
-import com.msacommon.global.jwt.JwtUtil;
+import com.msa.common.global.jwt.JwtUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
