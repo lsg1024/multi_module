@@ -48,9 +48,12 @@ public class Orders {
     private Priority priority;
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<StatusHistory> statusHistory = new ArrayList<>();
+    @Column(name = "ORDER_STATUS", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private OrderStatus orderStatus;
 
     @Builder
-    public Orders(Long orderId, String orderCode, String storeName, String productName, String productSize, String productLaborCost, String orderNote, String factoryName, String materialName, String colorName, Integer quantity, Integer orderMainStoneQuantity, Integer orderAuxiliaryStoneQuantity) {
+    public Orders(Long orderId, String orderCode, String storeName, String productName, String productSize, String productLaborCost, String orderNote, String factoryName, String materialName, String colorName, Integer quantity, Integer orderMainStoneQuantity, Integer orderAuxiliaryStoneQuantity, List<StatusHistory> statusHistory, OrderStatus orderStatus) {
         this.orderId = orderId;
         this.orderCode = orderCode;
         this.storeName = storeName;
@@ -64,13 +67,20 @@ public class Orders {
         this.quantity = quantity;
         this.orderMainStoneQuantity = orderMainStoneQuantity;
         this.orderAuxiliaryStoneQuantity = orderAuxiliaryStoneQuantity;
+        this.statusHistory = statusHistory;
+        this.orderStatus = orderStatus;
     }
 
-    public void setOrderCode(String orderCode) {
+    public void addStatusHistory(StatusHistory statusHistory) {
+        this.statusHistory.add(statusHistory);
+        statusHistory.setOrder(this);
+    }
+
+    public void addOrderCode(String orderCode) {
         this.orderCode = orderCode;
     }
 
-    public void setPriority(Priority priority) {
+    public void addPriority(Priority priority) {
         this.priority = priority;
     }
 }

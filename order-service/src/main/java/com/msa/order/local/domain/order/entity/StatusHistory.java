@@ -2,6 +2,7 @@ package com.msa.order.local.domain.order.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
@@ -17,13 +18,26 @@ public class StatusHistory {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ID")
     private Long id;
-    @Column(name = "STATUS_TYPE")
-    private String statusType; // 주문, 재고, 출고...
+    @Column(name = "ORDER_STATUS", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private OrderStatus orderStatus;
     @Column(name = "CREATE_AT")
-    private LocalDateTime createAt;
+    private String createAt;
     @Column(name = "USER_NAME")
     private String userName;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ORDER_ID")
     private Orders order;
+
+    @Builder
+    public StatusHistory(OrderStatus orderStatus, String createAt, String userName, Orders order) {
+        this.orderStatus = orderStatus;
+        this.createAt = createAt;
+        this.userName = userName;
+        this.order = order;
+    }
+
+    public void setOrder(Orders orders) {
+        this.order = orders;
+    }
 }

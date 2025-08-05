@@ -4,6 +4,7 @@ import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.tenant.TenantContext;
 import com.msa.order.global.util.RestClientUtil;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,7 @@ public class StoreClient {
 
     public String getStoreInfo(HttpServletRequest request, Long storeId) {
         String tenant = TenantContext.getTenant();
+
         ResponseEntity<ApiResponse<String>> response;
         try {
             String url = "http://" + tenant + baseUrl + "/store/" + storeId;

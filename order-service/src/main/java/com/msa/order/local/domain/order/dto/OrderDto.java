@@ -24,10 +24,11 @@ public class OrderDto {
         private Integer orderMainStoneQuantity;
         private Integer orderAuxiliaryStoneQuantity;
         private String priorityName;
+        private String orderStatus;
         private String createAt;
 
         @Builder
-        public Request(String storeId, String productId, String productSize, String productLaborCost, String orderNote, String factoryId, String materialId, String colorId, Integer quantity, Integer orderMainStoneQuantity, Integer orderAuxiliaryStoneQuantity, String priorityName, String createAt) {
+        public Request(String storeId, String productId, String productSize, String productLaborCost, String orderNote, String factoryId, String materialId, String colorId, Integer quantity, Integer orderMainStoneQuantity, Integer orderAuxiliaryStoneQuantity, String priorityName, String orderStatus, String createAt) {
             this.storeId = storeId;
             this.productId = productId;
             this.productSize = productSize;
@@ -40,6 +41,7 @@ public class OrderDto {
             this.orderMainStoneQuantity = orderMainStoneQuantity;
             this.orderAuxiliaryStoneQuantity = orderAuxiliaryStoneQuantity;
             this.priorityName = priorityName;
+            this.orderStatus = orderStatus;
             this.createAt = createAt;
         }
     }
