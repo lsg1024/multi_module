@@ -25,7 +25,7 @@ import static com.msa.product.global.exception.ExceptionMessage.NOT_FOUND;
 @Transactional
 public class ProductImageService {
 
-    @Value("${file.base-upload-path}")
+    @Value("${FILE_UPLOAD_PATH}")
     private String baseUploadPath;
 
     private final ProductRepository productRepository;

@@ -13,7 +13,7 @@ import static com.msa.product.global.exception.ExceptionMessage.NOT_FOUND;
 @Service
 public class AccountClient {
 
-    @Value("${server_url}")
+    @Value("${ACCOUNT_SERVER_URL}")
     private String baseUrl;
     private final RestClientUtil restClientUtil;
 

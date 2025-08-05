@@ -28,7 +28,7 @@ import java.util.Map;
 public class ClassificationUpdateBatchJob {
 
     @Bean
-    public Job updateClassificationUpdateJob(JobRepository jobRepository, Step updateClassificationStep, UpdateJobListener updateJobListener) {
+    public Job updateClassificationJob(JobRepository jobRepository, Step updateClassificationStep, UpdateJobListener updateJobListener) {
         return new JobBuilder("updateClassificationJob", jobRepository)
                 .listener(updateJobListener)
                 .start(updateClassificationStep)
