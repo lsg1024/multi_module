@@ -50,7 +50,7 @@ management:
 custom:
   jpa:
     entity-scan-packages:
-      - com.msa.product
+      - com.msa.order
   datasource-meta:
     driver-class-name: org.h2.Driver
     jdbcUrl: jdbc:h2:tcp://localhost/~/metadb
