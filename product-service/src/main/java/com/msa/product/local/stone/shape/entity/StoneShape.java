@@ -14,7 +14,7 @@ public class StoneShape {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "STONE_SHAPE_ID")
     private Long stoneShapeId;
-    @Column(name = "STONE_SHAPE_NAME")
+    @Column(name = "STONE_SHAPE_NAME", unique = true)
     private String stoneShapeName;
     @Column(name = "STONE_SHAPE_NOTE")
     private String stoneShapeNote;

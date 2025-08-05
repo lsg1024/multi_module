@@ -13,7 +13,7 @@ public class StoneType {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "STONE_TYPE_ID")
     private Long stoneTypeId;
-    @Column(name = "STONE_TYPE_NAME")
+    @Column(name = "STONE_TYPE_NAME", unique = true)
     private String stoneTypeName;
     @Column(name = "STONE_TYPE_NOTE")
     private String stoneTypeNote;
