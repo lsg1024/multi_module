@@ -91,7 +91,7 @@ public class FactoryService {
         throw new NotAuthorityException(NO_ROLE);
     }
 
-    public String existsByFactoryId(Long id) {
+    public String getFactoryName(Long id) {
         return factoryRepository.findByFactoryNameByFactoryId(id);
     }
 }

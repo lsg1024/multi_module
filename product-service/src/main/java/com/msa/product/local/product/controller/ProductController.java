@@ -58,5 +58,11 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.success("삭제 완료"));
     }
 
+    @GetMapping("/api/product/{id}")
+    public ResponseEntity<ApiResponse<String>> getProductInfo(
+            @PathVariable Long id) {
+        String productName = productService.getProductName(id);
+        return ResponseEntity.ok(ApiResponse.success(productName));
+    }
 
 }

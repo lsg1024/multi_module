@@ -1,15 +1,15 @@
 package com.msa.product.local.product.controller;
 
+import com.msa.common.global.api.ApiResponse;
 import com.msa.product.global.util.RestClientUtil;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import static com.msa.product.global.exception.ExceptionMessage.NOT_FOUND;
 
-@Slf4j
 @Service
 public class AccountClient {
 
@@ -21,16 +21,14 @@ public class AccountClient {
         this.restClientUtil = restClientUtil;
     }
 
-    public String validateFactoryId(HttpServletRequest request, Long factoryId) {
+    public String getFactoryInfo(HttpServletRequest request, Long factoryId) {
 
         String tenantId = request.getHeader("X-Tenant-ID");
-        String authorization = request.getHeader("Authorization");
 
-        ResponseEntity<String> response;
+        ResponseEntity<ApiResponse<String>> response;
         try {
-            String url = "http://" + tenantId + baseUrl + "/factory/" + factoryId + "/exists";
-            log.info("validateFactoryId {} {} {}", tenantId, url, authorization);
-            response = restClientUtil.get(request, url, String.class);
+            String url = "http://" + tenantId + baseUrl + "/factory/" + factoryId;
+            response = restClientUtil.get(request, url, new ParameterizedTypeReference<>() {});
         } catch (Exception e) {
             throw new IllegalArgumentException("서버 연결 실패");
         }
@@ -38,7 +36,7 @@ public class AccountClient {
         if (response.getStatusCode().is4xxClientError()) {
             throw new IllegalArgumentException(NOT_FOUND);
         }
-        return response.getBody();
+        return response.getBody().getData();
     }
 
 }

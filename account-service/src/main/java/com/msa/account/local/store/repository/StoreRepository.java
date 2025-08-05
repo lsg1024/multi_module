@@ -9,6 +9,8 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface StoreRepository extends JpaRepository<Store, Long>, CustomStoreRepository {
+    @Query("select s.storeName from Store s where s.storeId= :id")
+    String findByStoreName(Long id);
     boolean existsByStoreName(String storeName);
     @Query("select s from Store s " +
             "join fetch s.commonOption co " +

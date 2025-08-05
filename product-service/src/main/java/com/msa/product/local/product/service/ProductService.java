@@ -241,7 +241,7 @@ public class ProductService {
     }
 
     private String validFactory(HttpServletRequest request, Long productDto) {
-        String factoryName = accountClient.validateFactoryId(request, productDto);
+        String factoryName = accountClient.getFactoryInfo(request, productDto);
         if (factoryName == null || factoryName.isBlank()) {
             throw new IllegalArgumentException(productDto + " " + NOT_FOUND);
         }
@@ -317,5 +317,9 @@ public class ProductService {
             ProductWorkGradePolicy policy = entityPolicyMap.get(policyId);
             policy.updateWorkGradePolicyDto(dto);
         }
+    }
+
+    public String getProductName(Long id) {
+        return productRepository.findByProductName(id);
     }
 }

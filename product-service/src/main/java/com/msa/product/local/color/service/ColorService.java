@@ -90,4 +90,8 @@ public class ColorService {
 
         kafkaProducer.sendColorUpdate(tenantId, colorId);
     }
+
+    public String getColorName(Long id) {
+        return colorRepository.findByColorName(id);
+    }
 }

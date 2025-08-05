@@ -73,4 +73,10 @@ public class StoreController {
         return ResponseEntity.ok(ApiResponse.success());
     }
 
+    @GetMapping("/api/store/{id}")
+    public ResponseEntity<ApiResponse<String>> getStoreInfo(@PathVariable Long id) {
+        String storeName = storeService.getStoreName(id);
+        return ResponseEntity.ok(ApiResponse.success(storeName));
+    }
+
 }

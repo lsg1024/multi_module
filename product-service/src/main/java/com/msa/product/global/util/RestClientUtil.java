@@ -1,12 +1,12 @@
 package com.msa.product.global.util;
 
+import com.msa.common.global.api.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-@Slf4j
 @Component
 public class RestClientUtil {
 
@@ -16,22 +16,26 @@ public class RestClientUtil {
         this.restTemplate = restTemplate;
     }
 
-    public <T, R> ResponseEntity<R> post(HttpServletRequest request, String url, T body, Class<R> responseType) {
+    // POST
+    public <T, R> ResponseEntity<ApiResponse<R>> post(HttpServletRequest request, String url, T body, ParameterizedTypeReference<ApiResponse<R>> responseType) {
         HttpEntity<T> entity = new HttpEntity<>(body, buildHeaders(request));
         return restTemplate.exchange(url, HttpMethod.POST, entity, responseType);
     }
 
-    public <R> ResponseEntity<R> get(HttpServletRequest request, String url, Class<R> responseType) {
+    // GET
+    public <R> ResponseEntity<ApiResponse<R>> get(HttpServletRequest request, String url, ParameterizedTypeReference<ApiResponse<R>> responseType) {
         HttpEntity<Void> entity = new HttpEntity<>(buildHeaders(request));
         return restTemplate.exchange(url, HttpMethod.GET, entity, responseType);
     }
 
-    public <T, R> ResponseEntity<R> put(HttpServletRequest request, String url, T body, Class<R> responseType) {
+    // PUT
+    public <T, R> ResponseEntity<ApiResponse<R>> put(HttpServletRequest request, String url, T body, ParameterizedTypeReference<ApiResponse<R>> responseType) {
         HttpEntity<T> entity = new HttpEntity<>(body, buildHeaders(request));
         return restTemplate.exchange(url, HttpMethod.PUT, entity, responseType);
     }
 
-    public <R> ResponseEntity<R> delete(HttpServletRequest request, String url, Class<R> responseType) {
+    // DELETE
+    public <R> ResponseEntity<ApiResponse<R>> delete(HttpServletRequest request, String url, ParameterizedTypeReference<ApiResponse<R>> responseType) {
         HttpEntity<Void> entity = new HttpEntity<>(buildHeaders(request));
         return restTemplate.exchange(url, HttpMethod.DELETE, entity, responseType);
     }

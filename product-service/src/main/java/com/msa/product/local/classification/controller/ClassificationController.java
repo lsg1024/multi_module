@@ -73,4 +73,11 @@ public class ClassificationController {
         classificationService.deletedClassification(accessToken, classificationId);
         return ResponseEntity.ok(ApiResponse.success("삭제 완료"));
     }
+
+    @GetMapping("/api/classification/{id}")
+    public ResponseEntity<ApiResponse<String>> getClassificationInfo(
+            @PathVariable Long id) {
+        String classificationName = classificationService.getClassificationName(id);
+        return ResponseEntity.ok(ApiResponse.success(classificationName));
+    }
 }

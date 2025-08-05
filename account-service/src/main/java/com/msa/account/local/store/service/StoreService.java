@@ -99,4 +99,7 @@ public class StoreService {
         throw new NotAuthorityException(NO_ROLE);
     }
 
+    public String getStoreName(Long id) {
+        return storeRepository.findByStoreName(id);
+    }
 }

@@ -93,4 +93,7 @@ public class ClassificationService {
         kafkaProducer.sendClassificationUpdate(tenantId, classificationId);
     }
 
+    public String getClassificationName(Long id) {
+        return classificationRepository.findByClassificationName(id);
+    }
 }

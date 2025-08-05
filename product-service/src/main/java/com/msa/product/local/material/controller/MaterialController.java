@@ -69,4 +69,10 @@ public class MaterialController {
         materialService.deleteMaterial(accessToken, materialId);
         return ResponseEntity.ok(ApiResponse.success("삭제 완료"));
     }
+
+    @GetMapping("/api/material/{id}")
+    public ResponseEntity<ApiResponse<String>> getMaterialInfo(@PathVariable Long id) {
+        String materialName = materialService.getMaterialName(id);
+        return ResponseEntity.ok(ApiResponse.success(materialName));
+    }
 }
