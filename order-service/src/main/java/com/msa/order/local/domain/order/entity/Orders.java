@@ -21,61 +21,55 @@ public class Orders {
     private Long orderId;
     @Column(name = "ORDER_CODE")
     private String orderCode;
+    @Column(name = "STORE_ID") //account - store
+    private Long storeId;
     @Column(name = "STORE_NAME") //account - store
     private String storeName;
-    @Column(name = "PRODUCT_NAME") //product - product
-    private String productName;
-    @Column(name = "PRODUCT_SIZE")
-    private String productSize;
-    @Column(name = "PRODUCT_LABOR_COST")
-    private String productLaborCost;
     @Column(name = "ORDER_NOTE")
     private String orderNote;
-    @Column(name = "FACTORY_NAME") //account - factory
-    private String factoryName;
-    @Column(name = "MATERIAL_NAME") //product - option
-    private String materialName;
-    @Column(name = "COLOR_NAME") //product - option
-    private String colorName;
-    @Column(name = "QUANTITY")
-    private Integer quantity;
-    @Column(name = "ORDER_MAIN_STONE_QUANTITY")
-    private Integer orderMainStoneQuantity;
-    @Column(name = "ORDER_AUXILIARY_STONE_QUANTITY")
-    private Integer orderAuxiliaryStoneQuantity;
+
+    @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private OrderProduct orderProduct;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderStone> orderStones = new ArrayList<>();
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<StatusHistory> statusHistory = new ArrayList<>();
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PRIORITY_ID")
-    private Priority priority;
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
-    private List<StatusHistory> statusHistory = new ArrayList<>();
+    private Priority priority; // 출고 등급
+
+
     @Column(name = "ORDER_STATUS", nullable = false)
     @Enumerated(EnumType.STRING)
-    private OrderStatus orderStatus;
+    private OrderStatus orderStatus; // 주문 상태
 
     @Builder
-    public Orders(Long orderId, String orderCode, String storeName, String productName, String productSize, String productLaborCost, String orderNote, String factoryName, String materialName, String colorName, Integer quantity, Integer orderMainStoneQuantity, Integer orderAuxiliaryStoneQuantity, List<StatusHistory> statusHistory, OrderStatus orderStatus) {
+    public Orders(Long orderId, String orderCode, Long storeId, String storeName, String orderNote, List<StatusHistory> statusHistory, OrderStatus orderStatus) {
         this.orderId = orderId;
         this.orderCode = orderCode;
+        this.storeId = storeId;
         this.storeName = storeName;
-        this.productName = productName;
-        this.productSize = productSize;
-        this.productLaborCost = productLaborCost;
         this.orderNote = orderNote;
-        this.factoryName = factoryName;
-        this.materialName = materialName;
-        this.colorName = colorName;
-        this.quantity = quantity;
-        this.orderMainStoneQuantity = orderMainStoneQuantity;
-        this.orderAuxiliaryStoneQuantity = orderAuxiliaryStoneQuantity;
         this.statusHistory = statusHistory;
         this.orderStatus = orderStatus;
     }
 
+    public void addOrderStone(OrderStone orderStone) {
+        this.orderStones.add(orderStone);
+        orderStone.setOrder(this);
+    }
     public void addStatusHistory(StatusHistory statusHistory) {
         this.statusHistory.add(statusHistory);
         statusHistory.setOrder(this);
     }
 
+    public void addOrderProduct(OrderProduct orderProduct) {
+        this.orderProduct = orderProduct;
+        orderProduct.setOrder(this);
+    }
     public void addOrderCode(String orderCode) {
         this.orderCode = orderCode;
     }
