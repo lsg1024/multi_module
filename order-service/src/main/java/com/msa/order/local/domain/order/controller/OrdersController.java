@@ -31,4 +31,12 @@ public class OrdersController {
         return ResponseEntity.ok(ApiResponse.success("생성 완료"));
     }
 
+    //단일 값
+//    @GetMapping("/orders/{id}")
+//    public ResponseEntity<ApiResponse<OrderDto.Response>> getOrder(
+//            @PathVariable Long id) {
+//
+//        ordersService.getOrder(id);
+//    }
+
 }
