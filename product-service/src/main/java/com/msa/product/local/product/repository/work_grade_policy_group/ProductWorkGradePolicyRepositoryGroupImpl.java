@@ -28,6 +28,7 @@ public class ProductWorkGradePolicyRepositoryGroupImpl implements CustomProductW
         List<ProductWorkGradePolicyGroupInfo> groups = query
                 .select(new QProductWorkGradePolicyGroupInfo(
                         productWorkGradePolicyGroup.productWorkGradePolicyGroupId,
+                        productWorkGradePolicyGroup.productPurchasePrice,
                         color.colorName
                 ))
                 .from(productWorkGradePolicyGroup)
@@ -62,6 +63,7 @@ public class ProductWorkGradePolicyRepositoryGroupImpl implements CustomProductW
         return groups.stream()
                 .map(group -> ProductWorkGradePolicyGroupDto.Response.builder()
                         .productGroupId(group.getGroupId().toString())
+                        .productPurchasePrice(group.getProductPurchasePrice())
                         .colorName(group.getColorName())
                         .gradePolicyDtos(policyMap.getOrDefault(group.getGroupId(), List.of()))
                         .build())

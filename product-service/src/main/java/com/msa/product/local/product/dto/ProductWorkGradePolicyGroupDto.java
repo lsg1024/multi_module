@@ -14,6 +14,7 @@ import java.util.List;
 public class ProductWorkGradePolicyGroupDto {
 
     private String productGroupId;
+    private Integer productPurchasePrice;
     private String colorId;
     @Valid
     private List<ProductWorkGradePolicyDto> policyDtos;
@@ -22,13 +23,15 @@ public class ProductWorkGradePolicyGroupDto {
     @NoArgsConstructor
     public static class Response {
         private String productGroupId;
+        private Integer productPurchasePrice;
         private String colorName;
         private List<ProductWorkGradePolicyDto.Response> gradePolicyDtos;
 
         @Builder
         @QueryProjection
-        public Response(String productGroupId, String colorName, List<ProductWorkGradePolicyDto.Response> gradePolicyDtos) {
+        public Response(String productGroupId, Integer productPurchasePrice, String colorName, List<ProductWorkGradePolicyDto.Response> gradePolicyDtos) {
             this.productGroupId = productGroupId;
+            this.productPurchasePrice = productPurchasePrice;
             this.colorName = colorName;
             this.gradePolicyDtos = gradePolicyDtos;
         }
@@ -39,6 +42,7 @@ public class ProductWorkGradePolicyGroupDto {
     @AllArgsConstructor
     public static class Request {
         private String productGroupId;
+        private Integer productPurchasePrice;
         private String colorId;
         private String colorName;
         private List<ProductWorkGradePolicyDto.Request> gradePolicyDtos;

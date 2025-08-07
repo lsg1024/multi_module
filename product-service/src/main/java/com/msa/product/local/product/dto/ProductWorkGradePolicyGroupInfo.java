@@ -9,11 +9,13 @@ import lombok.NoArgsConstructor;
 public class ProductWorkGradePolicyGroupInfo {
 
     private Long groupId;
+    private Integer productPurchasePrice;
     private String colorName;
 
     @QueryProjection
-    public ProductWorkGradePolicyGroupInfo(Long groupId, String colorName) {
+    public ProductWorkGradePolicyGroupInfo(Long groupId, Integer productPurchasePrice, String colorName) {
         this.groupId = groupId;
+        this.productPurchasePrice = productPurchasePrice;
         this.colorName = colorName;
     }
 }

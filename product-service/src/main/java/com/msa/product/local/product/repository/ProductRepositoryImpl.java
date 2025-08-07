@@ -4,9 +4,7 @@ import com.msa.common.global.util.CustomPage;
 import com.msa.product.local.classification.dto.QClassificationDto_ResponseSingle;
 import com.msa.product.local.grade.WorkGrade;
 import com.msa.product.local.material.dto.QMaterialDto_ResponseSingle;
-import com.msa.product.local.product.dto.ProductDto;
-import com.msa.product.local.product.dto.QProductDto_Detail;
-import com.msa.product.local.product.dto.QProductDto_Page;
+import com.msa.product.local.product.dto.*;
 import com.msa.product.local.product.entity.QProductWorkGradePolicy;
 import com.msa.product.local.set.dto.QSetTypeDto_ResponseSingle;
 import com.querydsl.core.BooleanBuilder;
@@ -21,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.msa.product.local.classification.entity.QClassification.classification;
+import static com.msa.product.local.color.entity.QColor.color;
 import static com.msa.product.local.material.entity.QMaterial.material;
 import static com.msa.product.local.product.entity.QProduct.product;
 import static com.msa.product.local.product.entity.QProductImage.productImage;
@@ -28,6 +27,7 @@ import static com.msa.product.local.product.entity.QProductStone.productStone;
 import static com.msa.product.local.product.entity.QProductWorkGradePolicy.productWorkGradePolicy;
 import static com.msa.product.local.product.entity.QProductWorkGradePolicyGroup.productWorkGradePolicyGroup;
 import static com.msa.product.local.set.entity.QSetType.setType;
+import static com.msa.product.local.stone.stone.entity.QStone.stone;
 import static com.msa.product.local.stone.stone.entity.QStoneWorkGradePolicy.stoneWorkGradePolicy;
 
 public class ProductRepositoryImpl implements CustomProductRepository {
@@ -105,7 +105,8 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 .from(product)
                 .leftJoin(productStone).on(product.productId.eq(productStone.product.productId))
                 .leftJoin(product.productWorkGradePolicyGroups, productWorkGradePolicyGroup)
-                .leftJoin(productWorkGradePolicyGroup.gradePolicies, productWorkGradePolicy).on(productWorkGradePolicy.grade.eq(WorkGrade.GRADE_1)
+                .leftJoin(productWorkGradePolicyGroup.gradePolicies, productWorkGradePolicy)
+                .on(productWorkGradePolicy.grade.eq(WorkGrade.GRADE_1)
                         .and(productWorkGradePolicy.productWorkGradePolicyId.eq(
                                 JPAExpressions
                                         .select(productWorkGradePolicySub.productWorkGradePolicyId.min())
@@ -115,8 +116,17 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                         )))
                 .leftJoin(stoneWorkGradePolicy).on(productStone.stone.stoneId.eq(stoneWorkGradePolicy.stone.stoneId)
                         .and(stoneWorkGradePolicy.grade.eq(WorkGrade.GRADE_1)))
-                .where(builder)
-                .groupBy(product.productId, product.productName, product.standardWeight, product.productNote, productWorkGradePolicy.laborCost)
+                .where(
+                        productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue()
+                        .and(builder)
+                )
+                .groupBy(
+                        product.productId,
+                        product.productName,
+                        product.standardWeight,
+                        product.productNote,
+                        productWorkGradePolicy.laborCost
+                )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .orderBy(product.createDate.desc())
@@ -128,5 +138,54 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 .where(builder);
 
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
+    }
+
+    @Override
+    public ProductDetailDto findProductDetail(Long productId, WorkGrade grade) {
+        ProductDetailDto result = query
+                .select(new QProductDetailDto(
+                        product.productId,
+                        product.productName,
+                        material.materialName,
+                        color.colorName,
+                        productWorkGradePolicy.laborCost
+                ))
+                .from(product)
+                .join(product.material, material)
+                .join(product.productWorkGradePolicyGroups, productWorkGradePolicyGroup)
+                .join(productWorkGradePolicyGroup.color, color)
+                .join(productWorkGradePolicyGroup.gradePolicies, productWorkGradePolicy)
+                .where(
+                        product.productId.eq(productId),
+                        productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue(),
+                        productWorkGradePolicy.grade.eq(grade)
+                )
+                .fetchOne();
+
+        List<ProductDetailDto.StoneInfo> stoneCosts = query
+                .select(new QProductDetailDto_StoneInfo(
+                        stone.stoneId.stringValue(),
+                        stone.stoneName,
+                        stone.stoneWeight.stringValue(),
+                        stone.stonePurchasePrice,
+                        stoneWorkGradePolicy.laborCost,
+                        productStone.stoneQuantity,
+                        productStone.productStoneMain,
+                        productStone.includeQuantity,
+                        productStone.includeWeight,
+                        productStone.includeLabor
+                ))
+                .from(productStone)
+                .join(productStone.stone, stone)
+                .join(stone.gradePolicies, stoneWorkGradePolicy)
+                .where(
+                        productStone.product.productId.eq(productId),
+                        stoneWorkGradePolicy.grade.eq(grade)
+                )
+                .fetch();
+
+        result.setStoneInfos(stoneCosts);
+
+        return result;
     }
 }

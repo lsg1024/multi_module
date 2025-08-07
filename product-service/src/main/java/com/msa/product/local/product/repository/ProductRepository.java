@@ -8,8 +8,6 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long>, CustomProductRepository {
-    @Query("select p.productName from Product p where p.productId= :productId")
-    String findByProductName(Long productId);
     boolean existsByProductName(String productName);
 
     boolean existsByProductNameAndProductIdNot(String productName, Long productId);
