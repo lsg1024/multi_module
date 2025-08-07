@@ -92,9 +92,6 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                 .orderBy(store.storeName.desc())
                 .fetch();
 
-//        content.forEach(StoreDto.StoreResponse::getTradeTypeTitle);
-//        content.forEach(StoreDto.StoreResponse::getLevelTypeLevel);
-
         JPAQuery<Long> countQuery = query
                 .select(store.count())
                 .from(store);

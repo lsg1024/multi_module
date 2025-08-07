@@ -1,10 +1,10 @@
 package com.msa.account.local.store.dto;
 
-import com.msa.account.local.store.entity.Store;
 import com.msa.account.global.domain.dto.AdditionalOptionDto;
 import com.msa.account.global.domain.dto.AddressDto;
 import com.msa.account.global.domain.dto.CommonOptionDto;
 import com.msa.account.global.domain.entity.GoldHarry;
+import com.msa.account.local.store.entity.Store;
 import com.querydsl.core.annotations.QueryProjection;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -14,7 +14,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import static com.msa.account.global.domain.dto.util.ExchangeEnumUtil.*;
+import static com.msa.account.global.domain.dto.util.ExchangeEnumUtil.getLevelTypeTitle;
+import static com.msa.account.global.domain.dto.util.ExchangeEnumUtil.getTradeTypeTitle;
 
 public class StoreDto {
 

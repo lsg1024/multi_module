@@ -1,14 +1,15 @@
 package com.msa.account.local.store.service;
 
-import com.msa.account.local.store.dto.StoreDto;
-import com.msa.account.local.store.entity.Store;
-import com.msa.account.local.store.repository.StoreRepository;
 import com.msa.account.global.domain.dto.util.AuthorityUserRoleUtil;
 import com.msa.account.global.domain.entity.GoldHarry;
 import com.msa.account.global.domain.repository.GoldHarryRepository;
 import com.msa.account.global.exception.ExceptionMessage;
 import com.msa.account.global.exception.NotAuthorityException;
 import com.msa.account.global.exception.NotFoundException;
+import com.msa.account.local.store.dto.StoreDto;
+import com.msa.account.local.store.dto.StoreNameAndOptionLevelDto;
+import com.msa.account.local.store.entity.Store;
+import com.msa.account.local.store.repository.StoreRepository;
 import com.msa.common.global.util.CustomPage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -99,7 +100,8 @@ public class StoreService {
         throw new NotAuthorityException(NO_ROLE);
     }
 
-    public String getStoreName(Long id) {
-        return storeRepository.findByStoreName(id);
+    public StoreNameAndOptionLevelDto getStoreInfo(Long id) {
+        return storeRepository.findByStoreNameAndOptionLevel(id)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
     }
 }
