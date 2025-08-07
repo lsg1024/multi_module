@@ -1,15 +1,18 @@
 package com.msa.order.local.domain.order.service;
 
 import com.msa.common.global.jwt.JwtUtil;
+import com.msa.common.global.util.CustomPage;
 import com.msa.order.local.domain.order.dto.OrderDto;
 import com.msa.order.local.domain.order.entity.*;
 import com.msa.order.local.domain.order.external_client.*;
 import com.msa.order.local.domain.order.external_client.dto.ProductDetailDto;
+import com.msa.order.local.domain.order.repository.CustomOrderRepository;
 import com.msa.order.local.domain.order.repository.OrdersRepository;
 import com.msa.order.local.domain.priority.entitiy.Priority;
 import com.msa.order.local.domain.priority.repository.PriorityRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,8 +20,6 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND;
 
 @Slf4j
 @Service
@@ -32,9 +33,10 @@ public class OrdersService {
     private final MaterialClient materialClient;
     private final ClassificationClient classificationClient;
     private final OrdersRepository ordersRepository;
+    private final CustomOrderRepository customOrderRepository;
     private final PriorityRepository priorityRepository;
 
-    public OrdersService(JwtUtil jwtUtil, StoreClient storeClient, FactoryClient factoryClient, ColorClient colorClient, ProductClient productClient, MaterialClient materialClient, ClassificationClient classificationClient, OrdersRepository ordersRepository, PriorityRepository priorityRepository) {
+    public OrdersService(JwtUtil jwtUtil, StoreClient storeClient, FactoryClient factoryClient, ColorClient colorClient, ProductClient productClient, MaterialClient materialClient, ClassificationClient classificationClient, OrdersRepository ordersRepository, CustomOrderRepository customOrderRepository, PriorityRepository priorityRepository) {
         this.jwtUtil = jwtUtil;
         this.storeClient = storeClient;
         this.factoryClient = factoryClient;
@@ -43,6 +45,7 @@ public class OrdersService {
         this.materialClient = materialClient;
         this.classificationClient = classificationClient;
         this.ordersRepository = ordersRepository;
+        this.customOrderRepository = customOrderRepository;
         this.priorityRepository = priorityRepository;
     }
 
@@ -138,9 +141,14 @@ public class OrdersService {
 
     //기성 대체 -> ?
 
-    public void getOrderInfo(Long orderId) {
-        Orders order = ordersRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+    // 주문 단건 조회
+    public OrderDto.ResponseDetail getOrder(Long orderId) {
+        return customOrderRepository.findByOrderId(orderId);
+    }
+
+    // 주문 전체 리스트 조회
+    public CustomPage<OrderDto.Response> getOrderProducts(OrderDto.Condition condition, Pageable pageable) {
+        return customOrderRepository.findByOrders(condition, pageable);
 
     }
 }
