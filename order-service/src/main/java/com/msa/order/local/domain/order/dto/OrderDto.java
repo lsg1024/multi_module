@@ -7,6 +7,7 @@ import com.querydsl.core.annotations.QueryProjection;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -53,39 +54,92 @@ public class OrderDto {
     @Getter
     @NoArgsConstructor
     public static class Response {
+        private String createAt;
         private String orderId;
         private String orderCode;
         private String storeName;
         private String productName;
-        private String productSize;
-        private String productLaborCost;
-        private String orderNote;
-        private String factoryName;
         private String materialName;
         private String colorName;
-        private Integer quantity;
-        private Integer orderMainStoneQuantity;
-        private Integer orderAuxiliaryStoneQuantity;
+        private String productSize;
+        // 재고 기능 구현 후 재고에 동일 제품 여부 체크
+        private String orderNote;
+        private String factoryName;
         private String priority;
-        private String createAt;
+        private String orderStatus;
 
         @QueryProjection
-        public Response(String orderId, String orderCode, String storeName, String productName, String productSize, String productLaborCost, String orderNote, String factoryName, String materialName, String colorName, Integer quantity, Integer orderMainStoneQuantity, Integer orderAuxiliaryStoneQuantity, String priority, String createAt) {
+        public Response(String orderId, String orderCode, String storeName, String productName, String productSize, String orderNote, String factoryName, String materialName, String colorName, String priority, String createAt, String orderStatus) {
             this.orderId = orderId;
             this.orderCode = orderCode;
             this.storeName = storeName;
             this.productName = productName;
             this.productSize = productSize;
-            this.productLaborCost = productLaborCost;
             this.orderNote = orderNote;
             this.factoryName = factoryName;
             this.materialName = materialName;
             this.colorName = colorName;
-            this.quantity = quantity;
-            this.orderMainStoneQuantity = orderMainStoneQuantity;
-            this.orderAuxiliaryStoneQuantity = orderAuxiliaryStoneQuantity;
             this.priority = priority;
             this.createAt = createAt;
+            this.orderStatus = orderStatus;
         }
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class ResponseDetail {
+        private String createAt;
+        private String deliveryAt;
+        private String orderId;
+        private String orderCode;
+        private String storeName;
+        private String productLaborCost;
+        private String productAddLaborCost;
+        private String productStoneMainLaborCost;
+        private String productStoneAssistanceLaborCost;
+        private String productStoneMainQuantity;
+        private String productStoneAssistanceQuantity;
+        private String productName;
+        private String classification;
+        private String materialName;
+        private String colorName;
+        private String productSize;
+        private String orderNote;
+        private String factoryName;
+        private String priority;
+        private String orderStatus;
+
+        @QueryProjection
+        public ResponseDetail(String createAt, String deliveryAt, String orderId, String orderCode, String storeName, String productLaborCost, String productAddLaborCost, String productStoneMainLaborCost, String productStoneAssistanceLaborCost, String productStoneMainQuantity, String productStoneAssistanceQuantity, String productName, String classification, String materialName, String colorName, String productSize, String orderNote, String factoryName, String priority, String orderStatus) {
+            this.createAt = createAt;
+            this.deliveryAt = deliveryAt;
+            this.orderId = orderId;
+            this.orderCode = orderCode;
+            this.storeName = storeName;
+            this.productLaborCost = productLaborCost;
+            this.productAddLaborCost = productAddLaborCost;
+            this.productStoneMainLaborCost = productStoneMainLaborCost;
+            this.productStoneAssistanceLaborCost = productStoneAssistanceLaborCost;
+            this.productStoneMainQuantity = productStoneMainQuantity;
+            this.productStoneAssistanceQuantity = productStoneAssistanceQuantity;
+            this.productName = productName;
+            this.classification = classification;
+            this.materialName = materialName;
+            this.colorName = colorName;
+            this.productSize = productSize;
+            this.orderNote = orderNote;
+            this.factoryName = factoryName;
+            this.priority = priority;
+            this.orderStatus = orderStatus;
+        }
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Condition {
+        private String searchInput;
+        private String startAt;
+        private String endAt;
     }
 }

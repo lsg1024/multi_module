@@ -15,6 +15,6 @@ public class Priority {
     @Column(name = "PRIORITY_NAME", unique = true)
     private String priorityName;
     @Column(name = "PRIORITY_DATE")
-    private String priorityDate; // 일반, 급, 초급 -> default 일반
+    private Integer priorityDate; // 일반, 급, 초급 -> default 일반
 
 }
