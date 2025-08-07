@@ -63,6 +63,3 @@ custom:
     jdbcUrl: jdbc:h2:tcp://localhost/~/metadb
     username: sa
     password:
-
-file:
-  base-upload-path: "C:\\Users\\zks14\\Desktop\\multi_module\\product-service\\src\\main\\resources"

@@ -1,27 +1,26 @@
 package com.msa.account.local.store.kafka;
 
-import com.msa.account.global.batch.UpdateGoldHarryLossBatchJobConfig;
+import com.msa.account.global.batch.UpdateGoldHarryLossBatchJob;
 import com.msa.account.global.domain.entity.CommonOption;
 import com.msa.account.global.domain.entity.GoldHarry;
-import org.junit.jupiter.api.Test;
-import org.springframework.batch.core.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-
-import java.math.BigDecimal;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.msa.account.global.domain.repository.CommonOptionRepository;
 import com.msa.account.global.domain.repository.GoldHarryRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.batch.core.BatchStatus;
+import org.springframework.batch.core.JobExecution;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.test.JobLauncherTestUtils;
 import org.springframework.batch.test.context.SpringBatchTest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @TestPropertySource(locations = "classpath:application.yml")
-@Import(UpdateGoldHarryLossBatchJobConfig.class)
+@Import(UpdateGoldHarryLossBatchJob.class)
 public class UpdateGoldHarryLossBatchJobTest {
 
     @Autowired
@@ -49,18 +48,24 @@ public class UpdateGoldHarryLossBatchJobTest {
     @BeforeEach
     void setup() {
         // 테스트 데이터 초기화
-        goldHarry1 = goldHarryRepository.save(new GoldHarry(new BigDecimal("1.11")));
-        goldHarry2 = goldHarryRepository.save(new GoldHarry(new BigDecimal("2.22")));
+        goldHarry1 = goldHarryRepository.save(
+                GoldHarry.builder()
+                .goldHarryLoss(new BigDecimal("1.11"))
+                .build());
+        goldHarry2 = goldHarryRepository.save(
+                GoldHarry.builder()
+                .goldHarryLoss(new BigDecimal("2.22"))
+                .build());
 
         CommonOption option1 = CommonOption.builder()
-                .goldHarry(goldHarry1)
+                .goldHarry(this.goldHarry1)
                 .goldHarryLoss("1.11")
                 .optionLevel(null)
                 .optionTradeType(null)
                 .build();
 
         CommonOption option2 = CommonOption.builder()
-                .goldHarry(goldHarry1)
+                .goldHarry(this.goldHarry1)
                 .goldHarryLoss("1.11")
                 .optionLevel(null)
                 .optionTradeType(null)

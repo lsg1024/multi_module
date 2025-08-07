@@ -1,9 +1,7 @@
 package com.msa.account.global.domain.entity;
 
-import jakarta.persistence.Table;
 import lombok.RequiredArgsConstructor;
 
-@Table
 @RequiredArgsConstructor
 public enum OptionLevel {
 
@@ -22,5 +20,9 @@ public enum OptionLevel {
             }
         }
         return null;
+    }
+
+    public String getLevel() {
+        return this.level;
     }
 }

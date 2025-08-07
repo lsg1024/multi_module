@@ -70,4 +70,10 @@ public class ColorController {
         colorService.deleteColor(accessToken, colorId);
         return ResponseEntity.ok(ApiResponse.success("삭제 완료"));
     }
+
+    @GetMapping("/api/color/{id}")
+    public ResponseEntity<ApiResponse<String>> getColorInfo(@PathVariable Long id) {
+        String colorName = colorService.getColorName(id);
+        return ResponseEntity.ok(ApiResponse.success(colorName));
+    }
 }

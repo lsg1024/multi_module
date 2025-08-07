@@ -1,6 +1,6 @@
-package com.msa.account.domain.store.repository;
+package com.msa.account.local.store.repository;
 
-import com.msa.account.domain.store.dto.StoreDto;
+import com.msa.account.local.store.dto.StoreDto;
 import com.msa.common.global.util.CustomPage;
 import org.springframework.data.domain.Pageable;
 

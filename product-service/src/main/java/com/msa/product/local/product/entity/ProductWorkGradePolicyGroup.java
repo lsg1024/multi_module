@@ -20,6 +20,9 @@ public class ProductWorkGradePolicyGroup {
     @Column(name = "PRODUCT_WORK_GRADE_POLICY_GROUP_ID")
     private Long productWorkGradePolicyGroupId;
 
+    @Column(name = "PRODUCT_PURCHASE_PRICE")
+    private Integer productPurchasePrice;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PRODUCT_ID")
     private Product product;
@@ -35,8 +38,9 @@ public class ProductWorkGradePolicyGroup {
     private List<ProductWorkGradePolicy> gradePolicies = new ArrayList<>();
 
     @Builder
-    public ProductWorkGradePolicyGroup(Long productWorkGradePolicyGroupId, Product product, Color color, boolean productWorkGradePolicyGroupDefault, List<ProductWorkGradePolicy> gradePolicies) {
+    public ProductWorkGradePolicyGroup(Long productWorkGradePolicyGroupId, Integer productPurchasePrice, Product product, Color color, boolean productWorkGradePolicyGroupDefault, List<ProductWorkGradePolicy> gradePolicies) {
         this.productWorkGradePolicyGroupId = productWorkGradePolicyGroupId;
+        this.productPurchasePrice = productPurchasePrice;
         this.product = product;
         this.color = color;
         this.productWorkGradePolicyGroupDefault = productWorkGradePolicyGroupDefault;
@@ -53,5 +57,7 @@ public class ProductWorkGradePolicyGroup {
     public void setColor(Color color) {
         this.color = color;
     }
-
+    public void updateProductPurchasePrice(Integer productPurchasePrice) {
+        this.productPurchasePrice = productPurchasePrice;
+    }
 }

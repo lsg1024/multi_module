@@ -1,16 +1,19 @@
-package com.msa.account.domain.store.controller;
+package com.msa.account.local.store.controller;
 
-import com.msa.account.domain.store.dto.StoreDto;
-import com.msa.account.domain.store.service.StoreService;
+import com.msa.account.local.store.dto.StoreDto;
+import com.msa.account.local.store.dto.StoreNameAndOptionLevelDto;
+import com.msa.account.local.store.service.StoreService;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.AccessToken;
 import com.msa.common.global.util.CustomPage;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 public class StoreController {
 
@@ -71,6 +74,12 @@ public class StoreController {
         storeService.deleteStore(accessToken, storeId);
 
         return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @GetMapping("/api/store/{id}")
+    public ResponseEntity<ApiResponse<StoreNameAndOptionLevelDto>> getStoreInfo(@PathVariable Long id) {
+        StoreNameAndOptionLevelDto storeInfo = storeService.getStoreInfo(id);
+        return ResponseEntity.ok(ApiResponse.success(storeInfo));
     }
 
 }

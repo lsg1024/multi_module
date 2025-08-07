@@ -1,10 +1,11 @@
 package com.msa.product.local.product.controller;
 
+import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.AccessToken;
+import com.msa.common.global.util.CustomPage;
+import com.msa.product.local.product.dto.ProductDetailDto;
 import com.msa.product.local.product.dto.ProductDto;
 import com.msa.product.local.product.service.ProductService;
-import com.msa.common.global.api.ApiResponse;
-import com.msa.common.global.util.CustomPage;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -58,5 +59,12 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.success("삭제 완료"));
     }
 
+    @GetMapping("/api/product/{id}/{grade}")
+    public ResponseEntity<ApiResponse<ProductDetailDto>> getProductInfo(
+            @PathVariable Long id,
+            @PathVariable(name = "grade") String grade) {
+        ProductDetailDto productInfo = productService.getProductInfo(id, grade);
+        return ResponseEntity.ok(ApiResponse.success(productInfo));
+    }
 
 }

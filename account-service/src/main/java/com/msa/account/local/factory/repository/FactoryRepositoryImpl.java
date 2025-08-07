@@ -1,8 +1,8 @@
-package com.msa.account.domain.factory.repository;
+package com.msa.account.local.factory.repository;
 
-import com.msa.account.domain.factory.dto.FactoryDto;
-import com.msa.account.domain.factory.dto.QFactoryDto_FactoryResponse;
-import com.msa.account.domain.factory.dto.QFactoryDto_FactorySingleResponse;
+import com.msa.account.local.factory.dto.QFactoryDto_FactoryResponse;
+import com.msa.account.local.factory.dto.QFactoryDto_FactorySingleResponse;
+import com.msa.account.local.factory.dto.FactoryDto;
 import com.msa.common.global.util.CustomPage;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQuery;
@@ -13,12 +13,12 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Optional;
 
-import static com.msa.account.domain.factory.entity.QFactory.*;
-import static com.msa.account.global.domain.entity.QAddress.*;
-import static com.msa.account.global.domain.entity.QCommonOption.*;
-import static com.msa.account.global.domain.entity.QGoldHarry.*;
+import static com.msa.account.local.factory.entity.QFactory.factory;
+import static com.msa.account.global.domain.entity.QAddress.address;
+import static com.msa.account.global.domain.entity.QCommonOption.commonOption;
+import static com.msa.account.global.domain.entity.QGoldHarry.goldHarry;
 
-public class FactoryRepositoryImpl implements CustomFactoryRepository{
+public class FactoryRepositoryImpl implements CustomFactoryRepository {
 
     private final JPAQueryFactory query;
 

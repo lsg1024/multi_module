@@ -59,6 +59,14 @@ spring:
             - name: LoggingFilter
             - StripPrefix=1
 
+        - id: order
+          uri: lb://order
+          predicates:
+            - Path=/order/**
+          filters:
+            - name: LoggingFilter
+            - StripPrefix=1
+
 #            - name: L1Filter
 #              args:
 #                pre: true

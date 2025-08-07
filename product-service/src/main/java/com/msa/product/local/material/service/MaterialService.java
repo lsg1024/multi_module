@@ -92,5 +92,9 @@ public class MaterialService {
 
         kafkaProducer.sendMaterialUpdate(tenantId, id);
     }
+
+    public String getMaterialName(Long id) {
+        return materialRepository.findByMaterialName(id);
+    }
 }
 

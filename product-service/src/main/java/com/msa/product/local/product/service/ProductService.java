@@ -6,6 +6,7 @@ import com.msa.product.local.classification.entity.Classification;
 import com.msa.product.local.classification.repository.ClassificationRepository;
 import com.msa.product.local.color.entity.Color;
 import com.msa.product.local.color.repository.ColorRepository;
+import com.msa.product.local.grade.WorkGrade;
 import com.msa.product.local.material.entity.Material;
 import com.msa.product.local.material.repository.MaterialRepository;
 import com.msa.product.local.product.controller.AccountClient;
@@ -24,19 +25,18 @@ import com.msa.product.local.set.repository.SetTypeRepository;
 import com.msa.product.local.stone.stone.entity.Stone;
 import com.msa.product.local.stone.stone.repository.StoneRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.msa.product.global.exception.ExceptionMessage.*;
 
+@Slf4j
 @Service
 @Transactional
 public class ProductService {
@@ -146,6 +146,7 @@ public class ProductService {
                     .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
             ProductWorkGradePolicyGroup groups = ProductWorkGradePolicyGroup.builder()
+                    .productPurchasePrice(groupDto.getProductPurchasePrice())
                     .color(color)
                     .gradePolicies(new ArrayList<>())
                     .productWorkGradePolicyGroupDefault(isFirst)
@@ -241,7 +242,7 @@ public class ProductService {
     }
 
     private String validFactory(HttpServletRequest request, Long productDto) {
-        String factoryName = accountClient.validateFactoryId(request, productDto);
+        String factoryName = accountClient.getFactoryInfo(request, productDto);
         if (factoryName == null || factoryName.isBlank()) {
             throw new IllegalArgumentException(productDto + " " + NOT_FOUND);
         }
@@ -300,6 +301,7 @@ public class ProductService {
                         .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
                 group.setColor(color);
             }
+            group.updateProductPurchasePrice(dto.getProductPurchasePrice());
             updatePolicies(group, dto.getGradePolicyDtos());
         }
     }
@@ -317,5 +319,13 @@ public class ProductService {
             ProductWorkGradePolicy policy = entityPolicyMap.get(policyId);
             policy.updateWorkGradePolicyDto(dto);
         }
+    }
+
+    public ProductDetailDto getProductInfo(Long id, String grade) {
+        WorkGrade t_grade = Arrays.stream(WorkGrade.values())
+                .filter(g -> g.getLevel().equals(grade))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+        return productRepository.findProductDetail(id, t_grade);
     }
 }
