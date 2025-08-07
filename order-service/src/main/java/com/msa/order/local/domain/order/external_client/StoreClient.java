@@ -4,7 +4,9 @@ import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.tenant.TenantContext;
 import com.msa.order.global.util.RestClientUtil;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
@@ -23,14 +25,15 @@ public class StoreClient {
         this.restClientUtil = restClientUtil;
     }
 
-    public String getStoreInfo(HttpServletRequest request, Long storeId) {
+    public StoreInfo getStoreInfo(HttpServletRequest request, Long storeId) {
         String tenant = TenantContext.getTenant();
 
-        ResponseEntity<ApiResponse<String>> response;
+        ResponseEntity<ApiResponse<StoreInfo>> response;
         try {
             String url = "http://" + tenant + baseUrl + "/store/" + storeId;
             response = restClientUtil.get(request, url,
-                    new ParameterizedTypeReference<>() {}
+                    new ParameterizedTypeReference<>() {
+                    }
             );
         } catch (Exception e) {
             throw new IllegalArgumentException("서버 연결 실패");
@@ -40,11 +43,19 @@ public class StoreClient {
             throw new IllegalArgumentException(NOT_FOUND);
         }
 
-        String data = response.getBody().getData();
+        StoreInfo data = response.getBody().getData();
         if (data == null) {
             throw new IllegalArgumentException(NOT_FOUND + " " + storeId);
         }
 
         return data;
     }
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class StoreInfo {
+        private String storeName;
+        private String grade;
+    }
+
 }
