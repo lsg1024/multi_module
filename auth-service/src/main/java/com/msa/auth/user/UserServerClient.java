@@ -27,7 +27,7 @@ public class UserServerClient {
 
         String tenantId = request.getHeader("X-Tenant-ID");
 
-        String url = "http://" + tenantId + ".localtest.me:8080/users/login";
+        String url = "http://" + tenantId + ".localtest.me:8080/internal/users/login";
 
         HttpHeaders headers = new HttpHeaders();
 
@@ -35,6 +35,8 @@ public class UserServerClient {
         headers.add("X-Forwarded-For", request.getHeader("X-Forwarded-For"));
         headers.add("X-Tenant-ID", tenantId);
         headers.add("User-Agent", request.getHeader("User-Agent"));
+
+        log.info("UserServerClient {} {}" ,loginDto.getUserId(), loginDto.getPassword());
 
         HttpEntity<UserDto.Login> entity = new HttpEntity<>(loginDto, headers);
         try {
