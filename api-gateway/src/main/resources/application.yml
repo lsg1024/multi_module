@@ -12,66 +12,181 @@ spring:
         for-enabled: true
         proto-enabled: true
         host-enabled: true
+
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+
       globalcors:
         cors-configurations:
           '[/**]':
-            allowedOrigins: 'http://localhost:3000'
+            allowedOrigins: 'http://localhost:3000,http://lim.localtest.me:3000'
             allow-credentials: true
             allowedHeaders: '*'
-            allowedMethods:
-              - PUT
-              - GET
-              - POST
-              - DELETE
-              - OPTIONS
+            allowedMethods: GET,POST,PUT,DELETE,OPTIONS
+
       routes:
+
+        ################################
+        # 외부 라우팅: 클라이언트 <-> 서비스 #
+        ################################
+
         - id: auth
           uri: lb://auth
           predicates:
             - Path=/auth/**
           filters:
-            - name: LoggingFilter
             - StripPrefix=1
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - name: UserAgentHeaderFilter
+            - RemoveRequestHeader=X-User-ID
+            - name: AuthorizationHeaderFilter
+              args:
+                require: false
 
         - id: users
           uri: lb://users
           predicates:
             - Path=/users/**
           filters:
-            - name: LoggingFilter
             - StripPrefix=1
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - name: UserAgentHeaderFilter
+            - name: AuthorizationHeaderFilter
+              args:
+                require: true
+                verifyDevice: true
+                verifyForwardedFor: true
 
         - id: account
           uri: lb://account
           predicates:
             - Path=/account/**
           filters:
-            - name: LoggingFilter
             - StripPrefix=1
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - name: UserAgentHeaderFilter
+            - name: AuthorizationHeaderFilter
+              args:
+                require: true
+                verifyDevice: true
+                verifyForwardedFor: true
 
         - id: product
           uri: lb://product
           predicates:
             - Path=/product/**
           filters:
-            - name: LoggingFilter
             - StripPrefix=1
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - name: UserAgentHeaderFilter
+            - name: AuthorizationHeaderFilter
+              args:
+                require: true
+                verifyDevice: true
+                verifyForwardedFor: true
 
         - id: order
           uri: lb://order
           predicates:
             - Path=/order/**
           filters:
-            - name: LoggingFilter
             - StripPrefix=1
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - name: UserAgentHeaderFilter
+            - name: AuthorizationHeaderFilter
+              args:
+                require: true
+                verifyDevice: true
+                verifyForwardedFor: true
 
-#            - name: L1Filter
-#              args:
-#                pre: true
-#                post: true
+        #############################
+        # 내부 라우팅: 서비스 <-> 서비스 #
+        #############################
+        - id: users-internal # 일단 내부로 돌리긴 했는데 추후 내부 통신에 따라 login과 비login으로 분리 필요할지도..
+          uri: lb://users
+          predicates:
+            - Path=/internal/users/**
+          filters:
+            - StripPrefix=2
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - name: UserAgentHeaderFilter
+            - RemoveRequestHeader=Cookie
+            - RemoveRequestHeader=X-User-ID
+            - name: AuthorizationHeaderFilter
+              args:
+                require: false
+                verifyDevice: false
+                verifyForwardedFor: false
 
+        - id: account-internal
+          uri: lb://account
+          predicates:
+            - Path=/internal/account/**
+#            - RemoteAddr=${ACCOUNT_INTERNAL_IP}
+          filters:
+            - StripPrefix=2
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - RemoveRequestHeader=Cookie
+            - RemoveRequestHeader=X-User-ID
+            - name: UserAgentHeaderFilter
+            - name: AuthorizationHeaderFilter
+              args:
+                require: true
+                verifyDevice: false
+                verifyForwardedFor: false
+
+        - id: product-internal
+          uri: lb://product
+          predicates:
+            - Path=/internal/product/**
+#            - RemoteAddr=${PRODUCT_INTERNAL_IP}
+          filters:
+            - StripPrefix=2
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - RemoveRequestHeader=Cookie
+            - RemoveRequestHeader=X-User-ID
+            - name: UserAgentHeaderFilter
+            - name: AuthorizationHeaderFilter
+              args:
+                require: true
+                verifyDevice: false
+                verifyForwardedFor: false
+
+
+        - id: order-internal
+          uri: lb://order
+          predicates:
+            - Path=/internal/order/**
+#            - RemoteAddr=${ORDER_INTERNAL_IP}
+          filters:
+            - StripPrefix=2
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - RemoveRequestHeader=Cookie
+            - RemoveRequestHeader=X-User-ID
+            - name: UserAgentHeaderFilter
+            - name: AuthorizationHeaderFilter
+              args:
+                require: true
+                verifyDevice: false
+                verifyForwardedFor: false
 
 management:
   endpoint:
