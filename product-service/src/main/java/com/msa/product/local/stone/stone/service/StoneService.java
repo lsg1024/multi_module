@@ -124,4 +124,8 @@ public class StoneService {
         return stoneRepository
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
     }
+
+    public Boolean getExistStoneId(Long id) {
+        return stoneRepository.existsByStoneId(id);
+    }
 }

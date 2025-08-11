@@ -70,4 +70,11 @@ public class StoneController {
         stoneService.deletedStone(accessToken, stoneId);
         return ResponseEntity.ok(ApiResponse.success("삭제 완료"));
     }
+
+    @GetMapping("/api/stone/{id}")
+    public ResponseEntity<ApiResponse<Boolean>> existStoneId(
+            @PathVariable Long id) {
+        Boolean existStoneId = stoneService.getExistStoneId(id);
+        return ResponseEntity.ok(ApiResponse.success(existStoneId));
+    }
 }
