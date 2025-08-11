@@ -1,9 +1,7 @@
 package com.msa.order.local.domain.order.external_client;
 
 import com.msa.common.global.api.ApiResponse;
-import com.msa.common.global.tenant.TenantContext;
 import com.msa.order.global.util.RestClientUtil;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,13 +23,11 @@ public class StoreClient {
         this.restClientUtil = restClientUtil;
     }
 
-    public StoreInfo getStoreInfo(HttpServletRequest request, Long storeId) {
-        String tenant = TenantContext.getTenant();
-
+    public StoreInfo getStoreInfo(String tenantId, Long storeId) {
         ResponseEntity<ApiResponse<StoreInfo>> response;
         try {
-            String url = "http://" + tenant + baseUrl + "/store/" + storeId;
-            response = restClientUtil.get(request, url,
+            String url = "http://" + tenantId + baseUrl + "/store/" + storeId;
+            response = restClientUtil.get(url,
                     new ParameterizedTypeReference<>() {
                     }
             );

@@ -1,9 +1,7 @@
 package com.msa.order.local.domain.order.external_client;
 
 import com.msa.common.global.api.ApiResponse;
-import com.msa.common.global.tenant.TenantContext;
 import com.msa.order.global.util.RestClientUtil;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
@@ -23,12 +21,11 @@ public class ClassificationClient {
         this.restClientUtil = restClientUtil;
     }
 
-    public String getClassificationInfo(HttpServletRequest request, Long classificationId) {
-        String tenant = TenantContext.getTenant();
+    public String getClassificationInfo(String tenantId, Long classificationId) {
         ResponseEntity<ApiResponse<String>> response;
         try {
-            String url = "http://" + tenant + baseUrl + "/classification/" + classificationId;
-            response = restClientUtil.get(request, url,
+            String url = "http://" + tenantId + baseUrl + "/classification/" + classificationId;
+            response = restClientUtil.get(url,
                     new ParameterizedTypeReference<>() {}
             );
         } catch (Exception e) {

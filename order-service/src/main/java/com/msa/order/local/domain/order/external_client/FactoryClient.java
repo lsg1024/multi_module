@@ -1,9 +1,7 @@
 package com.msa.order.local.domain.order.external_client;
 
 import com.msa.common.global.api.ApiResponse;
-import com.msa.common.global.tenant.TenantContext;
 import com.msa.order.global.util.RestClientUtil;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
@@ -23,12 +21,11 @@ public class FactoryClient {
         this.restClientUtil = restClientUtil;
     }
 
-    public String getFactoryInfo(HttpServletRequest request, Long factoryId) {
-        String tenant = TenantContext.getTenant();
+    public String getFactoryInfo(String tenantId, Long factoryId) {
         ResponseEntity<ApiResponse<String>> response;
         try {
-            String url = "http://" + tenant + baseUrl + "/factory/" + factoryId;
-            response = restClientUtil.get(request, url,
+            String url = "http://" + tenantId + baseUrl + "/factory/" + factoryId;
+            response = restClientUtil.get(url,
                     new ParameterizedTypeReference<>() {}
             );
         } catch (Exception e) {
