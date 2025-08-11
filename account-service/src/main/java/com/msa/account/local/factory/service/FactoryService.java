@@ -91,7 +91,10 @@ public class FactoryService {
         throw new NotAuthorityException(NO_ROLE);
     }
 
-    public String getFactoryName(Long id) {
-        return factoryRepository.findByFactoryNameByFactoryId(id);
+    public FactoryDto.ApiFactoryInfo getFactoryIdAndName(Long id) {
+        Factory factory = factoryRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_FACTORY));
+
+        return new FactoryDto.ApiFactoryInfo(factory.getFactoryId(), factory.getFactoryName());
     }
 }

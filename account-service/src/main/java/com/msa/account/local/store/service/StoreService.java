@@ -7,7 +7,6 @@ import com.msa.account.global.exception.ExceptionMessage;
 import com.msa.account.global.exception.NotAuthorityException;
 import com.msa.account.global.exception.NotFoundException;
 import com.msa.account.local.store.dto.StoreDto;
-import com.msa.account.local.store.dto.StoreNameAndOptionLevelDto;
 import com.msa.account.local.store.entity.Store;
 import com.msa.account.local.store.repository.StoreRepository;
 import com.msa.common.global.util.CustomPage;
@@ -100,8 +99,10 @@ public class StoreService {
         throw new NotAuthorityException(NO_ROLE);
     }
 
-    public StoreNameAndOptionLevelDto getStoreInfo(Long id) {
-        return storeRepository.findByStoreNameAndOptionLevel(id)
+    public StoreDto.ApiStoreInfo getStoreInfo(Long id) {
+        Store store = storeRepository.findByStoreInfo(id)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        return new StoreDto.ApiStoreInfo(store.getStoreId(), store.getStoreName(), store.getCommonOption().getOptionLevel().getLevel());
     }
 }

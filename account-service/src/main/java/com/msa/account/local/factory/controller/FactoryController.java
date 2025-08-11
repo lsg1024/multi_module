@@ -75,8 +75,8 @@ public class FactoryController {
 
     //공장 검증
     @GetMapping("/api/factory/{id}")
-    public ResponseEntity<ApiResponse<String>> getFactoryInfo(@PathVariable Long id) {
-        String factoryName = factoryService.getFactoryName(id);
-        return ResponseEntity.ok(ApiResponse.success(factoryName));
+    public ResponseEntity<ApiResponse<FactoryDto.ApiFactoryInfo>> getFactoryInfo(@PathVariable Long id) {
+        FactoryDto.ApiFactoryInfo factoryIdAndName = factoryService.getFactoryIdAndName(id);
+        return ResponseEntity.ok(ApiResponse.success(factoryIdAndName));
     }
 }

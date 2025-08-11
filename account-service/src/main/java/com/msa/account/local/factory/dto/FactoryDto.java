@@ -8,6 +8,7 @@ import com.querydsl.core.annotations.QueryProjection;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -172,5 +173,13 @@ public class FactoryDto {
             this.factoryFaxNumber = factoryFaxNumber;
             this.factoryNote = factoryNote;
         }
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ApiFactoryInfo {
+        private Long factoryId;
+        private String factoryName;
     }
 }
