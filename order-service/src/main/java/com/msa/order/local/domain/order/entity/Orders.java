@@ -94,12 +94,12 @@ public class Orders {
         this.orderStatus = newStatus;
     }
 
-    public void updateStoreName(StoreDto.UpdateRequest storeDto) {
+    public void updateStoreName(StoreDto.Request storeDto) {
         this.storeId = storeDto.getStoreId();
         this.storeName = storeDto.getStoreName();
     }
 
-    public void updateFactoryName(FactoryDto.UpdateRequest factoryDto) {
+    public void updateFactoryName(FactoryDto.Request factoryDto) {
         this.factoryId = factoryDto.getFactoryId();
         this.factoryName = factoryDto.getFactoryName();
     }

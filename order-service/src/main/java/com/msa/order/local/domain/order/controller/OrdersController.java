@@ -3,10 +3,10 @@ package com.msa.order.local.domain.order.controller;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.AccessToken;
 import com.msa.common.global.util.CustomPage;
+import com.msa.order.local.domain.order.dto.FactoryDto;
 import com.msa.order.local.domain.order.dto.OrderDto;
 import com.msa.order.local.domain.order.dto.StoreDto;
 import com.msa.order.local.domain.order.service.OrdersService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -29,10 +29,9 @@ public class OrdersController {
     @PostMapping("/orders")
     public ResponseEntity<ApiResponse<String>> createOrders(
             @AccessToken String accessToken,
-            HttpServletRequest request,
             @Valid @RequestBody OrderDto.Request orderDto) {
 
-        ordersService.saveOrder(accessToken, request, orderDto);
+        ordersService.saveOrder(accessToken, orderDto);
 
         return ResponseEntity.ok(ApiResponse.success("생성 완료"));
     }
@@ -79,10 +78,22 @@ public class OrdersController {
     // 주문 상점 변경
     @PatchMapping("/order/{id}/store")
     public ResponseEntity<ApiResponse<String>> updateOrderStore (
+            @AccessToken String accessToken,
             @PathVariable Long id,
-            @RequestBody StoreDto.UpdateRequest updateStoreDto) {
-        ordersService.updateOrderStore(id, updateStoreDto);
+            @RequestBody StoreDto.Request updateStoreDto) {
+        ordersService.updateOrderStore(accessToken, id, updateStoreDto);
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
+
+    @PatchMapping("/order/{id}/factory")
+    public ResponseEntity<ApiResponse<String>> updateOrderStore (
+            @AccessToken String accessToken,
+            @PathVariable Long id,
+            @RequestBody FactoryDto.Request updateFactoryDto) {
+        ordersService.updateOrderFactory(accessToken, id, updateFactoryDto);
+        return ResponseEntity.ok(ApiResponse.success("수정 완료"));
+    }
+
+
 
 }

@@ -1,7 +1,6 @@
 package com.msa.account.local.store.controller;
 
 import com.msa.account.local.store.dto.StoreDto;
-import com.msa.account.local.store.dto.StoreNameAndOptionLevelDto;
 import com.msa.account.local.store.service.StoreService;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.AccessToken;
@@ -77,8 +76,8 @@ public class StoreController {
     }
 
     @GetMapping("/api/store/{id}")
-    public ResponseEntity<ApiResponse<StoreNameAndOptionLevelDto>> getStoreInfo(@PathVariable Long id) {
-        StoreNameAndOptionLevelDto storeInfo = storeService.getStoreInfo(id);
+    public ResponseEntity<ApiResponse<StoreDto.ApiStoreInfo>> getStoreInfo(@PathVariable Long id) {
+        StoreDto.ApiStoreInfo storeInfo = storeService.getStoreInfo(id);
         return ResponseEntity.ok(ApiResponse.success(storeInfo));
     }
 

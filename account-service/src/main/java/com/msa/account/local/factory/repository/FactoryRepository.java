@@ -16,7 +16,4 @@ public interface FactoryRepository extends JpaRepository<Factory, Long>, CustomF
             "join fetch f.address a " +
             "where f.factoryId = :factoryId")
     Optional<Factory> findWithAllOptionById(@Param("factoryId") Long factoryId);
-
-    @Query("select f.factoryName from Factory f where f.factoryId = :id")
-    String findByFactoryNameByFactoryId(Long id);
 }

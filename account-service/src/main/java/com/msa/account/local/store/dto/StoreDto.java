@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -197,6 +198,15 @@ public class StoreDto {
     @NoArgsConstructor
     public static class StoreCondition {
         private String storeName;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ApiStoreInfo {
+        private Long storeId;
+        private String storeName;
+        private String grade;
     }
 
 }

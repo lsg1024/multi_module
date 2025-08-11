@@ -4,16 +4,18 @@ import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.tenant.TenantContext;
 import com.msa.common.global.util.CustomPage;
 import com.msa.order.global.kafka.KafkaProducer;
-import com.msa.order.global.kafka.dto.OrderEnrichmentRequested;
+import com.msa.order.global.kafka.dto.OrderAsyncRequested;
+import com.msa.order.local.domain.order.dto.FactoryDto;
 import com.msa.order.local.domain.order.dto.OrderDto;
 import com.msa.order.local.domain.order.dto.StoreDto;
 import com.msa.order.local.domain.order.entity.*;
+import com.msa.order.local.domain.order.external_client.FactoryClient;
+import com.msa.order.local.domain.order.external_client.StoreClient;
 import com.msa.order.local.domain.order.external_client.dto.ProductDetailDto;
 import com.msa.order.local.domain.order.repository.CustomOrderRepository;
 import com.msa.order.local.domain.order.repository.OrdersRepository;
 import com.msa.order.local.domain.priority.entitiy.Priority;
 import com.msa.order.local.domain.priority.repository.PriorityRepository;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND;
 
@@ -34,13 +37,17 @@ import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND;
 @Transactional
 public class OrdersService {
     private final JwtUtil jwtUtil;
+    private final FactoryClient factoryClient;
+    private final StoreClient storeClient;
     private final KafkaProducer kafkaProducer;
     private final OrdersRepository ordersRepository;
     private final CustomOrderRepository customOrderRepository;
     private final PriorityRepository priorityRepository;
 
-    public OrdersService(JwtUtil jwtUtil, KafkaProducer kafkaProducer, OrdersRepository ordersRepository, CustomOrderRepository customOrderRepository, PriorityRepository priorityRepository) {
+    public OrdersService(JwtUtil jwtUtil, FactoryClient factoryClient, StoreClient storeClient, KafkaProducer kafkaProducer, OrdersRepository ordersRepository, CustomOrderRepository customOrderRepository, PriorityRepository priorityRepository) {
         this.jwtUtil = jwtUtil;
+        this.factoryClient = factoryClient;
+        this.storeClient = storeClient;
         this.kafkaProducer = kafkaProducer;
         this.ordersRepository = ordersRepository;
         this.customOrderRepository = customOrderRepository;
@@ -48,7 +55,7 @@ public class OrdersService {
     }
 
     //주문
-    public void saveOrder(String accessToken, HttpServletRequest request, OrderDto.Request orderDto) {
+    public void saveOrder(String accessToken, OrderDto.Request orderDto) {
 
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = TenantContext.getTenant();
@@ -69,6 +76,7 @@ public class OrdersService {
                 .orderNote(orderDto.getOrderNote())
                 .statusHistory(new ArrayList<>())
                 .orderStatus(OrderStatus.ORDER_AWAIT)
+                .orderDate(OffsetDateTime.parse(orderDto.getCreateAt()))
                 .build();
 
         // orderProduct 추가
@@ -92,6 +100,7 @@ public class OrdersService {
         order.addStatusHistory(statusHistory);
 
         // orderStone 추가
+        List<Long> stoneIds = new ArrayList<>();
         List<ProductDetailDto.StoneInfo> storeInfos = orderDto.getStoneInfos();
         for (ProductDetailDto.StoneInfo stoneInfo : storeInfos) {
             OrderStone orderStone = OrderStone.builder()
@@ -107,16 +116,14 @@ public class OrdersService {
                     .includeLabor(stoneInfo.isIncludeLabor())
                     .build();
 
+            stoneIds.add(Long.valueOf(stoneInfo.getStoneId()));
             order.addOrderStone(orderStone);
         }
 
         ordersRepository.save(order);
 
-        order.addOrderCode(String.format("J%07d", order.getOrderId()));
-        ordersRepository.save(order);
-
-        OrderEnrichmentRequested evt = OrderEnrichmentRequested.builder()
-                .eventId(java.util.UUID.randomUUID().toString())
+        OrderAsyncRequested evt = OrderAsyncRequested.builder()
+                .eventId(UUID.randomUUID().toString())
                 .orderId(order.getOrderId())
                 .tenantId(tenantId)
                 .storeId(storeId)
@@ -126,12 +133,16 @@ public class OrdersService {
                 .classificationId(classificationId)
                 .colorId(colorId)
                 .nickname(nickname)
+                .stoneIds(stoneIds)
                 .build();
+
+        order.addOrderCode(String.format("J%07d", order.getOrderId()));
+        ordersRepository.save(order);
 
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                kafkaProducer.publishOrderEnrichmentRequested(evt);
+                kafkaProducer.publishOrderAsyncRequested(evt);
             }
         });
     }
@@ -174,14 +185,26 @@ public class OrdersService {
     }
 
     //거래처 변경 -> account -> store 리스트 호출 /store/list
-    public void updateOrderStore(Long orderId, StoreDto.UpdateRequest storeDto) {
+    public void updateOrderStore(String accessToken, Long orderId, StoreDto.Request storeDto) {
+        String tenantId = jwtUtil.getTenantId(accessToken);
         Orders order = ordersRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        order.updateStoreName(storeDto);
+        StoreDto.Request storeInfo = storeClient.getStoreInfo(tenantId, storeDto.getStoreId());
+
+        order.updateStoreName(storeInfo);
     }
 
     //제조사 변경 -> ?
+    public void updateOrderFactory(String accessToken, Long orderId, FactoryDto.Request factoryDto) {
+        String tenantId = jwtUtil.getTenantId(accessToken);
+        Orders order = ordersRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        FactoryDto.Request factoryInfo = factoryClient.getFactoryInfo(tenantId, factoryDto.getFactoryId());
+
+        order.updateFactoryName(factoryInfo);
+    }
 
     //기성 대체 -> ?
 
@@ -196,9 +219,9 @@ public class OrdersService {
 
     }
 
-    //판매등록
+    //주문 -> 재고 변경
 
-    //재고등록
+    //주문 -> 판매 변경
 
 
 }
