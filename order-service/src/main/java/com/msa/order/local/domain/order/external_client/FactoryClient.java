@@ -1,13 +1,17 @@
 package com.msa.order.local.domain.order.external_client;
 
+import com.msa.common.global.aop.Retry;
 import com.msa.common.global.api.ApiResponse;
+import com.msa.order.global.exception.RetryableExternalException;
 import com.msa.order.global.util.RestClientUtil;
+import com.msa.order.local.domain.order.dto.FactoryDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND;
+import static com.msa.order.global.exception.ExceptionMessage.NO_CONNECT_SERVER;
 
 @Service
 public class FactoryClient {
@@ -21,27 +25,29 @@ public class FactoryClient {
         this.restClientUtil = restClientUtil;
     }
 
-    public String getFactoryInfo(String tenantId, Long factoryId) {
-        ResponseEntity<ApiResponse<String>> response;
+    @Retry(value = 3)
+    public FactoryDto.Request getFactoryInfo(String tenantId, Long factoryId) {
+        ResponseEntity<ApiResponse<FactoryDto.Request>> response;
+
         try {
             String url = "http://" + tenantId + baseUrl + "/factory/" + factoryId;
             response = restClientUtil.get(url,
                     new ParameterizedTypeReference<>() {}
             );
         } catch (Exception e) {
-            throw new IllegalArgumentException("서버 연결 실패");
+            throw new RetryableExternalException(NO_CONNECT_SERVER + e.getMessage());
         }
 
         if (response.getStatusCode().is4xxClientError()) {
             throw new IllegalArgumentException(NOT_FOUND);
         }
 
-        String data = response.getBody().getData();
-        if (data == null) {
+        FactoryDto.Request factoryInfo = response.getBody().getData();
+        if (factoryInfo == null) {
             throw new IllegalArgumentException(NOT_FOUND + " " + factoryId);
         }
 
-        return data;
+        return factoryInfo;
     }
 
 }

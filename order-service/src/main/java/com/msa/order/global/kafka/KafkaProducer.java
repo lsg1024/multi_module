@@ -2,7 +2,7 @@ package com.msa.order.global.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.msa.order.global.kafka.dto.OrderEnrichmentRequested;
+import com.msa.order.global.kafka.dto.OrderAsyncRequested;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -16,12 +16,12 @@ public class KafkaProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
-    public void publishOrderEnrichmentRequested(OrderEnrichmentRequested evt) {
+    public void publishOrderAsyncRequested(OrderAsyncRequested evt) {
         String key = String.valueOf(evt.getOrderId());
 
         try {
             String payload = objectMapper.writeValueAsString(evt);
-            kafkaTemplate.send("order.enrichment.requested", key, payload)
+            kafkaTemplate.send("order.async.requested", key, payload)
                     .whenComplete((res, ex) -> {
                         if (ex != null) {
                             log.error("kafka send failed. topic= {}, key= {}, err= {}",
