@@ -1,9 +1,7 @@
 package com.msa.order.local.domain.order.external_client;
 
 import com.msa.common.global.api.ApiResponse;
-import com.msa.common.global.tenant.TenantContext;
 import com.msa.order.global.util.RestClientUtil;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
@@ -23,12 +21,12 @@ public class ColorClient {
         this.restClientUtil = restClientUtil;
     }
 
-    public String getColorInfo(HttpServletRequest request, Long colorId) {
-        String tenant = TenantContext.getTenant();
+    public String getColorInfo(String tenantId, Long colorId) {
+
         ResponseEntity<ApiResponse<String>> response;
         try {
-            String url = "http://" + tenant + baseUrl + "/color/" + colorId;
-            response = restClientUtil.get(request, url,
+            String url = "http://" + tenantId + baseUrl + "/color/" + colorId;
+            response = restClientUtil.get(url,
                     new ParameterizedTypeReference<>() {}
             );
         } catch (Exception e) {

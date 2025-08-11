@@ -1,10 +1,8 @@
 package com.msa.order.local.domain.order.external_client;
 
 import com.msa.common.global.api.ApiResponse;
-import com.msa.common.global.tenant.TenantContext;
 import com.msa.order.global.util.RestClientUtil;
 import com.msa.order.local.domain.order.external_client.dto.ProductDetailDto;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -26,14 +24,12 @@ public class ProductClient {
         this.restClientUtil = restClientUtil;
     }
 
-    public ProductDetailDto getProductInfo(HttpServletRequest request, Long productId, String grade) {
-        log.info("ProductClient {}, {}", productId, grade);
+    public ProductDetailDto getProductInfo(String tenantId, Long productId, String grade) {
 
-        String tenant = TenantContext.getTenant();
         ResponseEntity<ApiResponse<ProductDetailDto>> response;
         try {
-            String url = "http://" + tenant + baseUrl + "/product/" + productId + "/" + grade;
-            response = restClientUtil.get(request, url,
+            String url = "http://" + tenantId + baseUrl + "/product/" + productId + "/" + grade;
+            response = restClientUtil.get(url,
                     new ParameterizedTypeReference<>() {}
             );
         } catch (Exception e) {
@@ -44,7 +40,6 @@ public class ProductClient {
             throw new IllegalArgumentException(NOT_FOUND);
         }
         ProductDetailDto data = response.getBody().getData();
-        log.info("ProductClient ProductDetailDto {} ", data.getProductName());
         if (data == null) {
             throw new IllegalArgumentException(NOT_FOUND + " " + productId);
         }

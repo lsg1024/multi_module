@@ -13,10 +13,6 @@ public class OrderProduct {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ORDER_PRODUCT_ID")
     private Long orderProductId;
-    @Column(name = "FACTORY_ID")
-    private Long factoryId;
-    @Column(name = "FACTORY_NAME")
-    private String factoryName;
     @Column(name = "PRODUCT_ID")
     private Long productId;
     @Column(name = "PRODUCT_NAME")
@@ -39,9 +35,7 @@ public class OrderProduct {
     private Orders order;
 
     @Builder
-    public OrderProduct(Long factoryId, String factoryName, Long productId, String productName, String productSize, Integer productLaborCost, Integer productAddLaborCost, String materialName, String classificationName, String colorName, Orders order) {
-        this.factoryId = factoryId;
-        this.factoryName = factoryName;
+    public OrderProduct(Long productId, String productName, String productSize, Integer productLaborCost, Integer productAddLaborCost, String materialName, String classificationName, String colorName, Orders order) {
         this.productId = productId;
         this.productName = productName;
         this.productSize = productSize;
@@ -56,4 +50,13 @@ public class OrderProduct {
     public void setOrder(Orders order) {
         this.order = order;
     }
+
+    public void updateOrder(String productName, Integer productLaborCost, String materialName, String classificationName, String colorName) {
+        this.productName = productName;
+        this.productLaborCost = productLaborCost;
+        this.materialName = materialName;
+        this.classificationName = classificationName;
+        this.colorName = colorName;
+    }
+
 }
