@@ -80,7 +80,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                         orderProduct.colorName,              // 11: String
                         orderProduct.productSize,            // 12: String
                         orders.orderNote,                    // 13: String
-                        orders.orderProduct.factoryName,     // 14: String
+                        orders.factoryName,                  // 14: String
                         priority.priorityName,               // 15: String
                         orders.orderStatus                   // 16: Enum(OrderStatus)
                 )
@@ -147,7 +147,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         if (StringUtils.hasText(searchInput)) {
             booleanInput.and(orderProduct.productName.containsIgnoreCase(searchInput));
             booleanInput.or(orders.storeName.containsIgnoreCase(searchInput));
-            booleanInput.or(orderProduct.factoryName.containsIgnoreCase(searchInput));
+            booleanInput.or(orders.factoryName.containsIgnoreCase(searchInput));
         }
 
 
@@ -159,7 +159,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                         orders.orderProduct.productName,
                         orderProduct.productSize,
                         orders.orderNote,
-                        orderProduct.factoryName,
+                        orders.factoryName,
                         orderProduct.materialName,
                         orderProduct.colorName,
                         priority.priorityName,

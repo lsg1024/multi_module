@@ -4,6 +4,7 @@ import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.AccessToken;
 import com.msa.common.global.util.CustomPage;
 import com.msa.order.local.domain.order.dto.OrderDto;
+import com.msa.order.local.domain.order.dto.StoreDto;
 import com.msa.order.local.domain.order.service.OrdersService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -56,6 +57,32 @@ public class OrdersController {
         OrderDto.Condition condition = new OrderDto.Condition(input, startAt, endAt);
         CustomPage<OrderDto.Response> orderProducts = ordersService.getOrderProducts(condition, pageable);
         return ResponseEntity.ok(ApiResponse.success(orderProducts));
+    }
+
+    // 주문 상태 호출
+    @GetMapping("/orders/{id}/status")
+    public ResponseEntity<ApiResponse<List<String>>> getStatus (
+            @PathVariable Long id) {
+        List<String> orderStatusInfo = ordersService.getOrderStatusInfo(id);
+        return ResponseEntity.ok(ApiResponse.success(orderStatusInfo));
+    }
+
+    // 주문 상태 변경
+    @PatchMapping("/orders/{id}/status")
+    public ResponseEntity<ApiResponse<String>> updateOrderStatus (
+            @PathVariable Long id,
+            @RequestParam(required = false) String orderStatus) {
+        ordersService.updateOrderStatus(id, orderStatus);
+        return ResponseEntity.ok(ApiResponse.success("수정 완료"));
+    }
+
+    // 주문 상점 변경
+    @PatchMapping("/order/{id}/store")
+    public ResponseEntity<ApiResponse<String>> updateOrderStore (
+            @PathVariable Long id,
+            @RequestBody StoreDto.UpdateRequest updateStoreDto) {
+        ordersService.updateOrderStore(id, updateStoreDto);
+        return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
 
 }
