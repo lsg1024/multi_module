@@ -8,7 +8,7 @@ public class FactoryDto {
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class UpdateRequest {
+    public static class Request {
         private Long factoryId;
         private String factoryName;
     }
