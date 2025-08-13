@@ -17,4 +17,7 @@ public class Priority {
     @Column(name = "PRIORITY_DATE")
     private Integer priorityDate; // 일반, 급, 초급 -> default 일반
 
+    public Integer getPriorityDate() {
+        return priorityDate;
+    }
 }

@@ -3,6 +3,7 @@ package com.msa.order.local.domain.order.controller;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.AccessToken;
 import com.msa.common.global.util.CustomPage;
+import com.msa.order.local.domain.order.dto.DateDto;
 import com.msa.order.local.domain.order.dto.FactoryDto;
 import com.msa.order.local.domain.order.dto.OrderDto;
 import com.msa.order.local.domain.order.dto.StoreDto;
@@ -29,9 +30,10 @@ public class OrdersController {
     @PostMapping("/orders")
     public ResponseEntity<ApiResponse<String>> createOrders(
             @AccessToken String accessToken,
+            @RequestParam(name = "order_type") String orderType,
             @Valid @RequestBody OrderDto.Request orderDto) {
 
-        ordersService.saveOrder(accessToken, orderDto);
+        ordersService.saveOrder(accessToken, orderType, orderDto);
 
         return ResponseEntity.ok(ApiResponse.success("생성 완료"));
     }
@@ -53,13 +55,14 @@ public class OrdersController {
             @RequestParam(required = false) String endAt,
             @PageableDefault(size = 16) Pageable pageable) {
 
-        OrderDto.Condition condition = new OrderDto.Condition(input, startAt, endAt);
-        CustomPage<OrderDto.Response> orderProducts = ordersService.getOrderProducts(condition, pageable);
+        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
+        OrderDto.OrderCondition orderCondition = new OrderDto.OrderCondition(startAt, endAt);
+        CustomPage<OrderDto.Response> orderProducts = ordersService.getOrderProducts(inputCondition, orderCondition, pageable);
         return ResponseEntity.ok(ApiResponse.success(orderProducts));
     }
 
     // 주문 상태 호출
-    @GetMapping("/orders/{id}/status")
+    @GetMapping("/orders/status/{id}")
     public ResponseEntity<ApiResponse<List<String>>> getStatus (
             @PathVariable Long id) {
         List<String> orderStatusInfo = ordersService.getOrderStatusInfo(id);
@@ -67,16 +70,25 @@ public class OrdersController {
     }
 
     // 주문 상태 변경
-    @PatchMapping("/orders/{id}/status")
+    @PatchMapping("/orders/status/{id}")
     public ResponseEntity<ApiResponse<String>> updateOrderStatus (
             @PathVariable Long id,
-            @RequestParam(required = false) String orderStatus) {
+            @RequestParam(name = "status", required = false) String orderStatus) {
         ordersService.updateOrderStatus(id, orderStatus);
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
 
+    // 출고일 변경
+    @PatchMapping("/orders/expect_date/{id}")
+    public ResponseEntity<ApiResponse<String>> updateOrderExpectDate (
+            @PathVariable Long id,
+            @RequestBody DateDto updateDate) {
+        ordersService.updateOrderExpectDate(id, updateDate);
+        return ResponseEntity.ok(ApiResponse.success("수정 완료"));
+    }
+
     // 주문 상점 변경
-    @PatchMapping("/order/{id}/store")
+    @PatchMapping("/orders/store/{id}")
     public ResponseEntity<ApiResponse<String>> updateOrderStore (
             @AccessToken String accessToken,
             @PathVariable Long id,
@@ -85,8 +97,8 @@ public class OrdersController {
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
 
-    @PatchMapping("/order/{id}/factory")
-    public ResponseEntity<ApiResponse<String>> updateOrderStore (
+    @PatchMapping("/orders/factory/{id}")
+    public ResponseEntity<ApiResponse<String>> updateOrderFactory (
             @AccessToken String accessToken,
             @PathVariable Long id,
             @RequestBody FactoryDto.Request updateFactoryDto) {
@@ -94,6 +106,60 @@ public class OrdersController {
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
 
+    // 주문 삭제
+    @DeleteMapping("/orders/{id}")
+    public ResponseEntity<ApiResponse<String>> deletedOrder(
+            @AccessToken String accessToken,
+            @PathVariable Long id) {
+        ordersService.deletedOrder(accessToken, id);
+        return ResponseEntity.ok(ApiResponse.success("삭제 완료"));
+    }
 
+    // 주문 -> 재고
+    @PatchMapping("/orders/stock/{id}")
+    public ResponseEntity<ApiResponse<String>> updateOrderToStock(
+            @AccessToken String accessToken,
+            @PathVariable Long id) {
+        ordersService.updateOrderStatusToStock(accessToken, id);
+        return ResponseEntity.ok(ApiResponse.success("재고 등록 완료"));
+    }
+
+
+    // 주문 -> 판매
+    @PatchMapping("/orders/sale/{id}")
+    public ResponseEntity<ApiResponse<String>> updateOrderToSale(
+            @AccessToken String accessToken,
+            @PathVariable Long id) {
+        ordersService.updateOrderStatusSale(accessToken, id);
+        return ResponseEntity.ok(ApiResponse.success("판매 등록 완료"));
+    }
+
+    // 출고 예정 조회
+    @GetMapping("/orders/expect")
+    public ResponseEntity<ApiResponse<CustomPage<OrderDto.Response>>> getOrderExpect(
+            @RequestParam(required = false) String input,
+            @RequestParam(required = false) String endAt,
+            @PageableDefault(size = 16) Pageable pageable) {
+
+        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
+        OrderDto.ExpectCondition expectCondition = new OrderDto.ExpectCondition(endAt);
+        CustomPage<OrderDto.Response> expectProducts = ordersService.getExpectProducts(inputCondition, expectCondition, pageable);
+
+        return ResponseEntity.ok(ApiResponse.success(expectProducts));
+    }
+
+    @GetMapping("/orders/delete")
+    public ResponseEntity<ApiResponse<CustomPage<OrderDto.Response>>> getOrderDeleted(
+            @RequestParam(required = false) String input,
+            @RequestParam(required = false) String startAt,
+            @RequestParam(required = false) String endAt,
+            @PageableDefault(size = 16) Pageable pageable) {
+
+        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
+        OrderDto.OrderCondition orderCondition = new OrderDto.OrderCondition(startAt, endAt);
+        CustomPage<OrderDto.Response> deletedProducts = ordersService.getDeletedProducts(inputCondition, orderCondition, pageable);
+
+        return ResponseEntity.ok(ApiResponse.success(deletedProducts));
+    }
 
 }

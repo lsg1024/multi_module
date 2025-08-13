@@ -1,13 +1,13 @@
 package com.msa.order.local.domain.order.service;
 
-import com.msa.common.global.aop.Retry;
 import com.msa.order.global.kafka.dto.OrderAsyncRequested;
 import com.msa.order.local.domain.order.dto.FactoryDto;
 import com.msa.order.local.domain.order.dto.StoreDto;
 import com.msa.order.local.domain.order.entity.OrderProduct;
-import com.msa.order.local.domain.order.entity.OrderStatus;
 import com.msa.order.local.domain.order.entity.Orders;
 import com.msa.order.local.domain.order.entity.StatusHistory;
+import com.msa.order.local.domain.order.entity.order_enum.OrderStatus;
+import com.msa.order.local.domain.order.entity.order_enum.ProductStatus;
 import com.msa.order.local.domain.order.external_client.*;
 import com.msa.order.local.domain.order.external_client.dto.ProductDetailDto;
 import com.msa.order.local.domain.order.repository.OrdersRepository;
@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND;
 import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND_STONE;
 
 @Slf4j
@@ -43,7 +44,6 @@ public class OrderAsyncService {
         this.ordersRepository = ordersRepository;
     }
 
-    @Retry(value = 3)
     @Transactional
     public void handle(OrderAsyncRequested evt) {
 
@@ -51,17 +51,15 @@ public class OrderAsyncService {
         final String tenantId = evt.getTenantId();
 
         Orders order = ordersRepository.findAggregate(evt.getOrderId())
-                .orElseThrow(() -> new IllegalArgumentException("Order not found: " + evt.getOrderId()));
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        // 멱등 처리: 이미 AWAIT이 아니면 스킵
-        if (order.getOrderStatus() != OrderStatus.ORDER_AWAIT) {
-            log.info("Skip Sync. status={}, orderId={}", order.getOrderStatus(), order.getOrderId());
+        if (order.getProductStatus() != ProductStatus.ORDER && order.getProductStatus() != ProductStatus.FIX) {
             return;
         }
 
         try {
             // 1) 외부 조회 (순차/병렬 선택 가능)
-            StoreDto.Request storeInfo = storeClient.getStoreInfo(tenantId, evt.getStoreId());
+            StoreDto.Response storeInfo = storeClient.getStoreInfo(tenantId, evt.getStoreId());
             String factoryName = factoryClient.getFactoryInfo(tenantId, evt.getFactoryId()).getFactoryName();
             String materialName = materialClient.getMaterialInfo(tenantId, evt.getMaterialId());
             String classificationName = classificationClient.getClassificationInfo(tenantId, evt.getClassificationId());
@@ -85,23 +83,17 @@ public class OrderAsyncService {
                 }
             }
 
-            order.updateStoreName(StoreDto.Request.builder().storeId(evt.getStoreId()).storeName(storeInfo.getStoreName()).build());
-            order.updateFactoryName(new FactoryDto.Request(evt.getFactoryId(), factoryName));
-
-            order.updateStatus(OrderStatus.ORDER);
-            order.addStatusHistory(StatusHistory.builder()
-                    .orderStatus(OrderStatus.ORDER)
-                    .createAt(OffsetDateTime.now())
-                    .userName(evt.getNickname())
-                    .build());
+            order.updateStore(new StoreDto.Response(evt.getStoreId(), storeInfo.getStoreName()));
+            order.updateFactory(new FactoryDto.Response(evt.getFactoryId(), factoryName));
 
             ordersRepository.save(order);
 
         } catch (Exception e) {
             log.error("Async failed. orderId={}, err={}", evt.getOrderId(), e.getMessage(), e);
-            order.updateStatus(OrderStatus.ORDER_AWAIT_FAILED);
+            order.updateOrderStatus(OrderStatus.RECEIPT_FAILED);
             order.addStatusHistory(StatusHistory.builder()
-                    .orderStatus(OrderStatus.ORDER_AWAIT_FAILED)
+                    .productStatus(ProductStatus.FAILED)
+                    .orderStatus(OrderStatus.RECEIPT_FAILED)
                     .createAt(OffsetDateTime.now())
                     .userName(evt.getNickname())
                     .build());

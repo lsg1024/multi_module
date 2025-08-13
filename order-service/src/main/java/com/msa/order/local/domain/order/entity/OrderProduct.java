@@ -5,6 +5,8 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Table(name = "ORDER_PRODUCT")
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -19,6 +21,10 @@ public class OrderProduct {
     private String productName;
     @Column(name = "PRODUCT_SIZE")
     private String productSize;
+    @Column(name = "PRODUCT_WEIGHT", precision = 8, scale = 2)
+    private BigDecimal productWeight;
+    @Column(name = "STONE_WEIGHT", precision = 8, scale = 2)
+    private BigDecimal stoneWeight;
     @Column(name = "PRODUCT_LABOR_COST")
     private Integer productLaborCost; // 상점 grade 등급에 따라 가격
     @Column(name = "PRODUCT_ADD_LABOR_COST")
@@ -35,10 +41,12 @@ public class OrderProduct {
     private Orders order;
 
     @Builder
-    public OrderProduct(Long productId, String productName, String productSize, Integer productLaborCost, Integer productAddLaborCost, String materialName, String classificationName, String colorName, Orders order) {
+    public OrderProduct(Long productId, String productName, String productSize, BigDecimal productWeight, BigDecimal stoneWeight, Integer productLaborCost, Integer productAddLaborCost, String materialName, String classificationName, String colorName, Orders order) {
         this.productId = productId;
         this.productName = productName;
         this.productSize = productSize;
+        this.productWeight = productWeight;
+        this.stoneWeight = stoneWeight;
         this.productLaborCost = productLaborCost;
         this.productAddLaborCost = productAddLaborCost;
         this.materialName = materialName;

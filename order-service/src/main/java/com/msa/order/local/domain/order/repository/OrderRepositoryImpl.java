@@ -3,14 +3,16 @@ package com.msa.order.local.domain.order.repository;
 import com.msa.common.global.util.CustomPage;
 import com.msa.order.local.domain.order.dto.OrderDto;
 import com.msa.order.local.domain.order.dto.QOrderDto_Response;
-import com.msa.order.local.domain.order.entity.OrderStatus;
 import com.msa.order.local.domain.order.entity.OrderStone;
+import com.msa.order.local.domain.order.entity.order_enum.OrderStatus;
+import com.msa.order.local.domain.order.entity.order_enum.ProductStatus;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
@@ -72,16 +74,17 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                         orders.orderId,                     // 2: Long
                         orders.orderCode,                   // 3: String
                         orders.storeName,                   // 4: String
-                        orders.orderProduct.productLaborCost,     // 6: Integer
-                        orders.orderProduct.productAddLaborCost,  // 7: Integer
-                        orders.orderProduct.productName,     // 8: String
-                        orderProduct.classificationName,     // 9: String
-                        orders.orderProduct.materialName,    // 10: String
-                        orderProduct.colorName,              // 11: String
-                        orderProduct.productSize,            // 12: String
-                        orders.orderNote,                    // 13: String
-                        orders.factoryName,                  // 14: String
-                        priority.priorityName,               // 15: String
+                        orders.orderProduct.productLaborCost,     // 5: Integer
+                        orders.orderProduct.productAddLaborCost,  // 6: Integer
+                        orders.orderProduct.productName,     // 7: String
+                        orderProduct.classificationName,     // 8: String
+                        orders.orderProduct.materialName,    // 9: String
+                        orderProduct.colorName,              // 10: String
+                        orderProduct.productSize,            // 11: String
+                        orders.orderNote,                    // 12: String
+                        orders.factoryName,                  // 13: String
+                        priority.priorityName,               // 14: String
+                        orders.productStatus,                // 15: Enum(ProductStatus)
                         orders.orderStatus                   // 16: Enum(OrderStatus)
                 )
                 .from(orders)
@@ -91,7 +94,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 .where(orders.orderId.eq(orderId))
                 .fetchOne();
 
-        if (tuple == null) return null; // or throw new NotFoundException();
+        if (tuple == null) return null;
 
         // 3. Java에서 날짜 계산
         OffsetDateTime createAt = tuple.get(0, OffsetDateTime.class);
@@ -121,36 +124,38 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 tuple.get(12, String.class),                                  // orderNote
                 tuple.get(13, String.class),                                  // factoryName
                 tuple.get(14, String.class),                                  // priority
-                tuple.get(15, OrderStatus.class) != null
-                        ? tuple.get(15, OrderStatus.class).name() : null          // orderStatus (enum → String)
+                tuple.get(15, ProductStatus.class).getDisplayName(),
+                tuple.get(16, OrderStatus.class).getDisplayName()
         );
     }
 
     @Override
-    public CustomPage<OrderDto.Response> findByOrders(OrderDto.Condition condition, Pageable pageable) {
+    public CustomPage<OrderDto.Response> findByOrders(OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable) {
 
-        String startAt = condition.getStartAt();
-        String endAt = condition.getEndAt();
+        BooleanBuilder conditionBuilder = getSearchBuilder(inputCondition);
+        BooleanExpression statusBuilder = getOrdersStatusBuilder(orderCondition);
 
-        LocalDateTime start = LocalDate.parse(startAt).atStartOfDay(); // 예: 2025-08-04 00:00:00
-        LocalDateTime end = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
+        return getResponses(pageable, conditionBuilder, statusBuilder, false);
+    }
 
-        OffsetDateTime startDateTime = start.atOffset(ZoneOffset.of("+09:00"));
-        OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
+    @Override
+    public CustomPage<OrderDto.Response> findByExpectOrders(OrderDto.InputCondition inputCondition, OrderDto.ExpectCondition orderCondition, Pageable pageable) {
+        BooleanBuilder conditionBuilder = getSearchBuilder(inputCondition);
+        BooleanExpression statusBuilder = getExpectStatusBuilder(orderCondition);
 
-        BooleanExpression booleanDate = statusHistory.orderStatus.eq(OrderStatus.ORDER)
-                .and(statusHistory.createAt.between(startDateTime, endDateTime));
+        return getResponses(pageable, conditionBuilder, statusBuilder, false);
+    }
 
-        BooleanBuilder booleanInput = new BooleanBuilder();
+    @Override
+    public CustomPage<OrderDto.Response> findByDeletedOrders(OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable) {
+        BooleanBuilder conditionBuilder = getSearchBuilder(inputCondition);
+        BooleanExpression statusBuilder = getOrdersDeletedStatusBuilder(orderCondition);
 
-        String searchInput = condition.getSearchInput();
-        if (StringUtils.hasText(searchInput)) {
-            booleanInput.and(orderProduct.productName.containsIgnoreCase(searchInput));
-            booleanInput.or(orders.storeName.containsIgnoreCase(searchInput));
-            booleanInput.or(orders.factoryName.containsIgnoreCase(searchInput));
-        }
+        return getResponses(pageable, conditionBuilder, statusBuilder, true);
+    }
 
-
+    @NotNull
+    private CustomPage<OrderDto.Response> getResponses(Pageable pageable, BooleanBuilder conditionBuilder, BooleanExpression statusBuilder, Boolean orderDeleted) {
         List<OrderDto.Response> content = query
                 .select(new QOrderDto_Response(
                         orders.orderId.stringValue(),
@@ -164,22 +169,103 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                         orderProduct.colorName,
                         priority.priorityName,
                         statusHistory.createAt.stringValue(),
-                        orders.orderStatus.stringValue()
+                        orders.productStatus,
+                        orders.orderStatus
                 ))
                 .from(orders)
                 .join(orders.orderProduct, orderProduct)
                 .join(orders.statusHistory, statusHistory)
                 .join(orders.priority, priority)
                 .where(
-                        booleanDate,
-                        booleanInput
+                        statusBuilder,
+                        conditionBuilder,
+                        orders.orderDeleted.eq(orderDeleted)
                 )
                 .fetch();
 
         JPAQuery<Long> countQuery = query
                 .select(orders.count())
-                .from(orders);
+                .from(orders)
+                .where(orders.orderDeleted.eq(orderDeleted));
 
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
     }
+
+    @NotNull
+    private static BooleanBuilder getSearchBuilder(OrderDto.InputCondition orderCondition) {
+        BooleanBuilder booleanInput = new BooleanBuilder();
+
+        String searchInput = orderCondition.getSearchInput();
+        if (StringUtils.hasText(searchInput)) {
+            booleanInput.and(orderProduct.productName.containsIgnoreCase(searchInput));
+            booleanInput.or(orders.storeName.containsIgnoreCase(searchInput));
+            booleanInput.or(orders.factoryName.containsIgnoreCase(searchInput));
+        }
+
+        return booleanInput;
+    }
+
+    private static BooleanExpression getOrdersStatusBuilder(OrderDto.OrderCondition orderCondition) {
+        String startAt = orderCondition.getStartAt();
+        String endAt = orderCondition.getEndAt();
+
+        LocalDateTime start = LocalDate.parse(startAt).atStartOfDay(); // 예: 2025-08-04 00:00:00
+        LocalDateTime end = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
+
+        OffsetDateTime startDateTime = start.atOffset(ZoneOffset.of("+09:00"));
+        OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
+
+        BooleanExpression createdBetween =
+                orders.orderDate.between(startDateTime, endDateTime);
+
+        BooleanExpression statusIsReceiptOrWaiting =
+                statusHistory.orderStatus.in(OrderStatus.RECEIPT, OrderStatus.WAITING);
+
+        BooleanExpression statusIsOrder =
+                orders.productStatus.in(ProductStatus.ORDER);
+
+        return statusIsReceiptOrWaiting.and(statusIsOrder).and(createdBetween);
+    }
+
+    private static BooleanExpression getExpectStatusBuilder(OrderDto.ExpectCondition orderCondition) {
+        String endAt = orderCondition.getEndAt();
+
+        LocalDateTime end = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
+
+        OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
+
+        BooleanExpression createdBetween =
+                orders.orderExpectDate.loe(endDateTime);
+
+        BooleanExpression statusIsReceiptOrWaiting =
+                statusHistory.orderStatus.in(OrderStatus.RECEIPT, OrderStatus.WAITING);
+
+        BooleanExpression statusIsOrder =
+                orders.productStatus.in(ProductStatus.ORDER);
+
+        return statusIsReceiptOrWaiting.and(statusIsOrder).and(createdBetween);
+    }
+
+    private static BooleanExpression getOrdersDeletedStatusBuilder(OrderDto.OrderCondition orderCondition) {
+        String startAt = orderCondition.getStartAt();
+        String endAt = orderCondition.getEndAt();
+
+        LocalDateTime start = LocalDate.parse(startAt).atStartOfDay(); // 예: 2025-08-04 00:00:00
+        LocalDateTime end = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
+
+        OffsetDateTime startDateTime = start.atOffset(ZoneOffset.of("+09:00"));
+        OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
+
+        BooleanExpression deletedDate =
+                orders.orderExpectDate.between(startDateTime, endDateTime);
+
+        BooleanExpression statusIsReceiptOrWaiting =
+                statusHistory.orderStatus.in(OrderStatus.RECEIPT, OrderStatus.WAITING);
+
+        BooleanExpression statusIsOrder =
+                orders.productStatus.in(ProductStatus.ORDER);
+
+        return statusIsReceiptOrWaiting.and(statusIsOrder).and(deletedDate);
+    }
+
 }

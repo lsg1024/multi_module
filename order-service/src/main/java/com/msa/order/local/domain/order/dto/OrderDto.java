@@ -1,7 +1,8 @@
 package com.msa.order.local.domain.order.dto;
 
 import com.msa.order.global.exception.EnumValue;
-import com.msa.order.local.domain.order.entity.OrderStatus;
+import com.msa.order.local.domain.order.entity.order_enum.OrderStatus;
+import com.msa.order.local.domain.order.entity.order_enum.ProductStatus;
 import com.msa.order.local.domain.order.external_client.dto.ProductDetailDto;
 import com.querydsl.core.annotations.QueryProjection;
 import jakarta.validation.Valid;
@@ -11,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Getter
@@ -42,10 +44,11 @@ public class OrderDto {
         private String classificationId;
         private String colorId;
         private String priorityName;
-        private String createAt;
+
+        private OffsetDateTime createAt;
 
         @EnumValue(enumClass = OrderStatus.class)
-        private String orderStatus;
+        private String orderStatus; // 주문 상태 설정 값 기본은 RECEIPT
 
         @Valid
         private List<ProductDetailDto.StoneInfo> stoneInfos;
@@ -66,10 +69,11 @@ public class OrderDto {
         private String orderNote;
         private String factoryName;
         private String priority;
-        private String orderStatus;
+        private ProductStatus productStatus;
+        private OrderStatus orderStatus;
 
         @QueryProjection
-        public Response(String orderId, String orderCode, String storeName, String productName, String productSize, String orderNote, String factoryName, String materialName, String colorName, String priority, String createAt, String orderStatus) {
+        public Response(String orderId, String orderCode, String storeName, String productName, String productSize, String orderNote, String factoryName, String materialName, String colorName, String priority, String createAt, ProductStatus productStatus, OrderStatus orderStatus) {
             this.orderId = orderId;
             this.orderCode = orderCode;
             this.storeName = storeName;
@@ -81,6 +85,7 @@ public class OrderDto {
             this.colorName = colorName;
             this.priority = priority;
             this.createAt = createAt;
+            this.productStatus = productStatus;
             this.orderStatus = orderStatus;
         }
     }
@@ -107,10 +112,11 @@ public class OrderDto {
         private String orderNote;
         private String factoryName;
         private String priority;
+        private String productStatus;
         private String orderStatus;
 
         @QueryProjection
-        public ResponseDetail(String createAt, String deliveryAt, String orderId, String orderCode, String storeName, String productLaborCost, String productAddLaborCost, String productStoneMainLaborCost, String productStoneAssistanceLaborCost, String productStoneMainQuantity, String productStoneAssistanceQuantity, String productName, String classification, String materialName, String colorName, String productSize, String orderNote, String factoryName, String priority, String orderStatus) {
+        public ResponseDetail(String createAt, String deliveryAt, String orderId, String orderCode, String storeName, String productLaborCost, String productAddLaborCost, String productStoneMainLaborCost, String productStoneAssistanceLaborCost, String productStoneMainQuantity, String productStoneAssistanceQuantity, String productName, String classification, String materialName, String colorName, String productSize, String orderNote, String factoryName, String priority, String productStatus, String orderStatus) {
             this.createAt = createAt;
             this.deliveryAt = deliveryAt;
             this.orderId = orderId;
@@ -130,6 +136,7 @@ public class OrderDto {
             this.orderNote = orderNote;
             this.factoryName = factoryName;
             this.priority = priority;
+            this.productStatus = productStatus;
             this.orderStatus = orderStatus;
         }
     }
@@ -137,9 +144,21 @@ public class OrderDto {
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class Condition {
+    public static class InputCondition {
         private String searchInput;
+    }
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class OrderCondition {
         private String startAt;
+        private String endAt;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ExpectCondition {
         private String endAt;
     }
 }
