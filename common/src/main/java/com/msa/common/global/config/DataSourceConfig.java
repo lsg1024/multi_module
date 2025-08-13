@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 import javax.sql.DataSource;
@@ -26,6 +27,7 @@ public class DataSourceConfig {
         return ds;
     }
 
+    @Primary
     @Bean
     public DataSource dataSource(
             @Qualifier("defaultDataSource") DataSource defaultDs) {
