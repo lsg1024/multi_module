@@ -2,21 +2,29 @@ package com.msa.order.local.domain.order.entity;
 
 import com.msa.order.local.domain.order.dto.FactoryDto;
 import com.msa.order.local.domain.order.dto.StoreDto;
+import com.msa.order.local.domain.order.entity.order_enum.OrderStatus;
+import com.msa.order.local.domain.order.entity.order_enum.ProductStatus;
 import com.msa.order.local.domain.priority.entitiy.Priority;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.hibernate.annotations.SQLDelete;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import static jakarta.persistence.CascadeType.*;
+
+@Slf4j
 @Getter
 @Table(name = "ORDERS")
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@SQLDelete(sql = "UPDATE ORDERS SET ORDER_DELETED = TRUE WHERE ORDER_ID = ?")
 public class Orders {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,14 +44,18 @@ public class Orders {
     private String orderNote;
     @Column(name = "ORDER_DATE")
     private OffsetDateTime orderDate;
+    @Column(name = "ORDER_EXPECT_DATE")
+    private OffsetDateTime orderExpectDate;
+    @Column(name = "ORDER_DELETED", nullable = false)
+    private boolean orderDeleted = false;
 
-    @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "order", cascade = {PERSIST, MERGE})
     private OrderProduct orderProduct;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "order", cascade = {PERSIST, MERGE})
     private List<OrderStone> orderStones = new ArrayList<>();
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "order", cascade = {PERSIST, MERGE})
     private List<StatusHistory> statusHistory = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -51,12 +63,16 @@ public class Orders {
     private Priority priority; // 출고 등급
 
 
+    @Column(name = "PRODUCT_STATUS", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ProductStatus productStatus; // 주문 상태
+
     @Column(name = "ORDER_STATUS", nullable = false)
     @Enumerated(EnumType.STRING)
-    private OrderStatus orderStatus; // 주문 상태
+    private OrderStatus orderStatus;
 
     @Builder
-    public Orders(Long orderId, String orderCode, Long storeId, String storeName, Long factoryId, String factoryName, String orderNote, OffsetDateTime orderDate, List<StatusHistory> statusHistory, OrderStatus orderStatus) {
+    public Orders(Long orderId, String orderCode, Long storeId, String storeName, Long factoryId, String factoryName, String orderNote, OffsetDateTime orderDate, OffsetDateTime orderExpectDate, List<StatusHistory> statusHistory, ProductStatus productStatus, OrderStatus orderStatus) {
         this.orderId = orderId;
         this.orderCode = orderCode;
         this.storeId = storeId;
@@ -65,7 +81,9 @@ public class Orders {
         this.factoryName = factoryName;
         this.orderNote = orderNote;
         this.orderDate = orderDate;
+        this.orderExpectDate = orderExpectDate;
         this.statusHistory = statusHistory;
+        this.productStatus = productStatus;
         this.orderStatus = orderStatus;
     }
 
@@ -90,18 +108,33 @@ public class Orders {
         this.priority = priority;
     }
 
-    public void updateStatus(OrderStatus newStatus) {
+    public void updateOrderStatus(OrderStatus newStatus) {
         this.orderStatus = newStatus;
     }
 
-    public void updateStoreName(StoreDto.Request storeDto) {
+    public void updateProductStatus(ProductStatus productStatus) {
+        this.productStatus = productStatus;
+        this.orderStatus = OrderStatus.NONE;
+    }
+
+    public void updateStore(StoreDto.Response storeDto) {
         this.storeId = storeDto.getStoreId();
         this.storeName = storeDto.getStoreName();
     }
 
-    public void updateFactoryName(FactoryDto.Request factoryDto) {
+    public void updateFactory(FactoryDto.Response factoryDto) {
         this.factoryId = factoryDto.getFactoryId();
         this.factoryName = factoryDto.getFactoryName();
     }
+
+    public void updateExceptDate(OffsetDateTime orderExpectDate) {
+        this.orderExpectDate = orderExpectDate;
+    }
+
+    public void deletedOrder(OffsetDateTime orderExpectDate) {
+        this.orderExpectDate = orderExpectDate;
+        this.orderDeleted = true;
+    }
+
 }
 
