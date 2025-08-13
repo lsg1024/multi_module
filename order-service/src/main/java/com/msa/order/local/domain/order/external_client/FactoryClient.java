@@ -26,8 +26,8 @@ public class FactoryClient {
     }
 
     @Retry(value = 3)
-    public FactoryDto.Request getFactoryInfo(String tenantId, Long factoryId) {
-        ResponseEntity<ApiResponse<FactoryDto.Request>> response;
+    public FactoryDto.Response getFactoryInfo(String tenantId, Long factoryId) {
+        ResponseEntity<ApiResponse<FactoryDto.Response>> response;
 
         try {
             String url = "http://" + tenantId + baseUrl + "/factory/" + factoryId;
@@ -42,7 +42,7 @@ public class FactoryClient {
             throw new IllegalArgumentException(NOT_FOUND);
         }
 
-        FactoryDto.Request factoryInfo = response.getBody().getData();
+        FactoryDto.Response factoryInfo = response.getBody().getData();
         if (factoryInfo == null) {
             throw new IllegalArgumentException(NOT_FOUND + " " + factoryId);
         }

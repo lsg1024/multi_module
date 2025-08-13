@@ -10,6 +10,13 @@ public class FactoryDto {
     @AllArgsConstructor
     public static class Request {
         private Long factoryId;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Response {
+        private Long factoryId;
         private String factoryName;
     }
 }
