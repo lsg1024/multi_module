@@ -42,6 +42,10 @@ public class Orders {
     private String factoryName;
     @Column(name = "ORDER_NOTE")
     private String orderNote;
+    @Column(name = "ORDER_MAIN_STONE_NOTE")
+    private String orderMainStoneNote;
+    @Column(name = "ORDER_ASSISTANCE_STONE_NOTE")
+    private String orderAssistanceStoneNote;
     @Column(name = "ORDER_DATE")
     private OffsetDateTime orderDate;
     @Column(name = "ORDER_EXPECT_DATE")
@@ -72,7 +76,7 @@ public class Orders {
     private OrderStatus orderStatus;
 
     @Builder
-    public Orders(Long orderId, String orderCode, Long storeId, String storeName, Long factoryId, String factoryName, String orderNote, OffsetDateTime orderDate, OffsetDateTime orderExpectDate, List<StatusHistory> statusHistory, ProductStatus productStatus, OrderStatus orderStatus) {
+    public Orders(Long orderId, String orderCode, Long storeId, String storeName, Long factoryId, String factoryName, String orderNote, String orderMainStoneNote, String orderAssistanceStoneNote, OffsetDateTime orderDate, OffsetDateTime orderExpectDate, List<StatusHistory> statusHistory, ProductStatus productStatus, OrderStatus orderStatus) {
         this.orderId = orderId;
         this.orderCode = orderCode;
         this.storeId = storeId;
@@ -80,6 +84,8 @@ public class Orders {
         this.factoryId = factoryId;
         this.factoryName = factoryName;
         this.orderNote = orderNote;
+        this.orderMainStoneNote = orderMainStoneNote;
+        this.orderAssistanceStoneNote = orderAssistanceStoneNote;
         this.orderDate = orderDate;
         this.orderExpectDate = orderExpectDate;
         this.statusHistory = statusHistory;
