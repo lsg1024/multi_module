@@ -12,6 +12,7 @@ public enum ProductStatus {
     SALE("판매"),
     RENT("대여"),
     FIX("수리"),
+    FIX_STOCK("수리 재고"),
     CANCEL("취소"),    // 운영상 필요한 경우 유지 권장
     DELETE("삭제");
 

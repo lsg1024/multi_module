@@ -16,6 +16,4 @@ public interface CustomOrderRepository {
     // 주문 삭제 검색 = 제품 이름, 거래처, 공장, 접수일 - 삭제 예정
     CustomPage<OrderDto.Response> findByDeletedOrders(OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable);
 
-    // 재고
-//    CustomPage<>
 }

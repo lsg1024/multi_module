@@ -99,7 +99,7 @@ public class OrdersService {
 
         Integer priorityDate = priority.getPriorityDate();
 
-        OffsetDateTime received = orderDto.getCreateAt();
+        OffsetDateTime received = orderDto.getCreateAt().atOffset(ZoneOffset.of("+09:00"));
         OffsetDateTime receivedUtc = received.withOffsetSameInstant(ZoneOffset.UTC);
 
         OffsetDateTime expectUtc =
@@ -111,6 +111,8 @@ public class OrdersService {
                 .statusHistory(new ArrayList<>())
                 .productStatus(ProductStatus.valueOf(orderType))
                 .orderStatus(OrderStatus.valueOf(orderDto.getOrderStatus()))
+                .orderMainStoneNote(orderDto.getOrderMainStoneNote())
+                .orderAssistanceStoneNote(orderDto.getOrderAssistanceStoneNote())
                 .orderDate(receivedUtc)
                 .orderExpectDate(expectUtc)
                 .build();
@@ -118,6 +120,8 @@ public class OrdersService {
         // orderProduct 추가
         OrderProduct orderProduct = OrderProduct.builder()
                 .productId(productId)
+                .productWeight(orderDto.getProductWeight())
+                .stoneWeight(orderDto.getStoneWeight())
                 .productAddLaborCost(orderDto.getProductAddLaborCost())
                 .productSize(orderDto.getProductSize())
                 .build();

@@ -12,7 +12,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.OffsetDateTime;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -45,7 +46,12 @@ public class OrderDto {
         private String colorId;
         private String priorityName;
 
-        private OffsetDateTime createAt;
+        private BigDecimal productWeight;
+        private BigDecimal stoneWeight;
+        private String orderMainStoneNote;
+        private String orderAssistanceStoneNote;
+
+        private LocalDateTime createAt;
 
         @EnumValue(enumClass = OrderStatus.class)
         private String orderStatus; // 주문 상태 설정 값 기본은 RECEIPT
