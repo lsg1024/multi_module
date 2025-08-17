@@ -1,15 +1,15 @@
-package com.msa.order.local.domain.order.controller;
+package com.msa.order.local.domain.stock.controller;
 
 import com.msa.common.global.api.ApiResponse;
+import com.msa.common.global.jwt.AccessToken;
 import com.msa.common.global.util.CustomPage;
 import com.msa.order.local.domain.stock.dto.StockDto;
 import com.msa.order.local.domain.stock.service.StockService;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 public class StockController {
@@ -31,6 +31,16 @@ public class StockController {
         CustomPage<StockDto.Response> stocks = stockService.getStocks(inputSearch, condition, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(stocks));
+    }
+
+    @PostMapping("/stocks")
+    public ResponseEntity<ApiResponse<String>> createStock(
+            @AccessToken String accessToken,
+            @RequestParam(name = "order_type") String orderType,
+            @Valid @RequestBody StockDto.OrderStockRequest stockDto) {
+
+        stockService.saveStock(accessToken, orderType, stockDto);
+        return ResponseEntity.ok(ApiResponse.success("생성 완료"));
     }
 
 }

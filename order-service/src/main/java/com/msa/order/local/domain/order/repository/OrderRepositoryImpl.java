@@ -219,10 +219,10 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 orders.orderDate.between(startDateTime, endDateTime);
 
         BooleanExpression statusIsReceiptOrWaiting =
-                statusHistory.orderStatus.in(OrderStatus.RECEIPT, OrderStatus.WAITING);
+                statusHistory.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
 
         BooleanExpression statusIsOrder =
-                orders.productStatus.in(ProductStatus.ORDER);
+                orders.orderStatus.in(OrderStatus.ORDER);
 
         return statusIsReceiptOrWaiting.and(statusIsOrder).and(createdBetween);
     }
@@ -238,10 +238,10 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 orders.orderExpectDate.loe(endDateTime);
 
         BooleanExpression statusIsReceiptOrWaiting =
-                statusHistory.orderStatus.in(OrderStatus.RECEIPT, OrderStatus.WAITING);
+                statusHistory.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
 
         BooleanExpression statusIsOrder =
-                orders.productStatus.in(ProductStatus.ORDER);
+                orders.orderStatus.in(OrderStatus.ORDER);
 
         return statusIsReceiptOrWaiting.and(statusIsOrder).and(createdBetween);
     }
@@ -260,10 +260,10 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 orders.orderExpectDate.between(startDateTime, endDateTime);
 
         BooleanExpression statusIsReceiptOrWaiting =
-                statusHistory.orderStatus.in(OrderStatus.RECEIPT, OrderStatus.WAITING);
+                statusHistory.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
 
         BooleanExpression statusIsOrder =
-                orders.productStatus.in(ProductStatus.ORDER);
+                orders.orderStatus.in(OrderStatus.ORDER);
 
         return statusIsReceiptOrWaiting.and(statusIsOrder).and(deletedDate);
     }

@@ -23,7 +23,7 @@ import com.msa.order.local.domain.order.repository.OrdersRepository;
 import com.msa.order.local.domain.order.util.DateUtil;
 import com.msa.order.local.domain.priority.entitiy.Priority;
 import com.msa.order.local.domain.priority.repository.PriorityRepository;
-import jakarta.persistence.EntityManager;
+import com.msa.order.local.domain.stock.entity.stock_enum.StockStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -47,8 +47,6 @@ import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND;
 @Service
 @Transactional
 public class OrdersService {
-    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Seoul");
-    private EntityManager em;
     private final JwtUtil jwtUtil;
     private final FactoryClient factoryClient;
     private final StoreClient storeClient;
@@ -99,21 +97,22 @@ public class OrdersService {
 
         Integer priorityDate = priority.getPriorityDate();
 
-        OffsetDateTime received = orderDto.getCreateAt().atOffset(ZoneOffset.of("+09:00"));
-        OffsetDateTime receivedUtc = received.withOffsetSameInstant(ZoneOffset.UTC);
+        OffsetDateTime received = orderDto.getCreateAt()
+                .atZone(ZoneId.of("+09:00"))
+                .toOffsetDateTime();
 
         OffsetDateTime expectUtc =
-                DateUtil.plusBusinessDay(receivedUtc, priorityDate, BUSINESS_ZONE);
+                DateUtil.plusBusinessDay(received, priorityDate);
 
         // productInfo 값에 있는 Stone 값을 스냅샷해 저장한다. /
         Orders order = Orders.builder()
                 .orderNote(orderDto.getOrderNote())
                 .statusHistory(new ArrayList<>())
-                .productStatus(ProductStatus.valueOf(orderType))
-                .orderStatus(OrderStatus.valueOf(orderDto.getOrderStatus()))
-                .orderMainStoneNote(orderDto.getOrderMainStoneNote())
-                .orderAssistanceStoneNote(orderDto.getOrderAssistanceStoneNote())
-                .orderDate(receivedUtc)
+                .productStatus(ProductStatus.valueOf(orderDto.getProductStatus()))
+                .orderStatus(OrderStatus.valueOf(orderType))
+                .orderMainStoneNote(orderDto.getMainStoneNote())
+                .orderAssistanceStoneNote(orderDto.getAssistanceStoneNote())
+                .orderDate(received)
                 .orderExpectDate(expectUtc)
                 .build();
 
@@ -132,9 +131,9 @@ public class OrdersService {
 
         // statusHistory 추가
         StatusHistory statusHistory = StatusHistory.builder()
-                .productStatus(ProductStatus.valueOf(orderType))
-                .orderStatus(OrderStatus.valueOf(orderDto.getOrderStatus()))
-                .createAt(receivedUtc)
+                .productStatus(ProductStatus.valueOf(orderDto.getProductStatus()))
+                .orderStatus(OrderStatus.valueOf(orderType))
+                .createAt(received)
                 .userName(nickname)
                 .build();
 
@@ -175,8 +174,8 @@ public class OrdersService {
                 .colorId(colorId)
                 .nickname(nickname)
                 .stoneIds(stoneIds)
-                .productStatus(orderType)
-                .orderStatus(orderDto.getOrderStatus())
+                .productStatus(orderDto.getProductStatus())
+                .orderStatus(orderType)
                 .build();
 
         order.addOrderCode(String.format("J%07d", order.getOrderId()));
@@ -185,7 +184,7 @@ public class OrdersService {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                kafkaProducer.publishOrderAsyncRequested(evt);
+                kafkaProducer.orderDetailAsync(evt);
             }
         });
     }
@@ -193,13 +192,13 @@ public class OrdersService {
     //주문 상태 변경 (주문, 취소)
     public List<String> getOrderStatusInfo(Long orderId) {
 
-        List<OrderStatus> orderStatuses = Arrays.asList(OrderStatus.RECEIPT, OrderStatus.RECEIPT_FAILED, OrderStatus.WAITING);
+        List<ProductStatus> productStatuses = Arrays.asList(ProductStatus.RECEIPT, ProductStatus.RECEIPT_FAILED, ProductStatus.WAITING);
         List<String> statusDtos = new ArrayList<>();
-        for (OrderStatus productStatus : orderStatuses) {
+        for (ProductStatus productStatus : productStatuses) {
             statusDtos.add(productStatus.getDisplayName());
         }
 
-        boolean existsByOrderIdAndOrderStatusIn = ordersRepository.existsByOrderIdAndOrderStatusIn(orderId, orderStatuses);
+        boolean existsByOrderIdAndOrderStatusIn = ordersRepository.existsByOrderIdAndProductStatusIn(orderId, productStatuses);
 
         if (existsByOrderIdAndOrderStatusIn) {
             return statusDtos;
@@ -211,8 +210,8 @@ public class OrdersService {
     public void updateOrderStatus(Long orderId, String status) {
 
         List<String> allowed = Arrays.asList(
-                OrderStatus.RECEIPT.getDisplayName(),
-                OrderStatus.WAITING.getDisplayName());
+                ProductStatus.RECEIPT.getDisplayName(),
+                ProductStatus.WAITING.getDisplayName());
 
         log.info("status {} {}", status, allowed.contains(status));
         if (!allowed.contains(status)) {
@@ -222,10 +221,10 @@ public class OrdersService {
         Orders order = ordersRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        OrderStatus newStatus = OrderStatus.fromDisplayName(status)
+        ProductStatus newStatus = ProductStatus.fromDisplayName(status)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        order.updateOrderStatus(newStatus);
+        order.updateProductStatus(newStatus);
         ordersRepository.save(order);
 
     }
@@ -258,9 +257,9 @@ public class OrdersService {
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         OffsetDateTime received = newDate.getExpectDate();
-        OffsetDateTime receivedUtc = received.withOffsetSameInstant(ZoneOffset.UTC);
+        OffsetDateTime receivedKst  = received.withOffsetSameInstant(ZoneOffset.ofHours(9));
 
-        order.updateExceptDate(receivedUtc);
+        order.updateExceptDate(receivedKst);
     }
 
     //기성 대체 -> 재고에 있는 제품 (이름, 색상, 재질 동일)
@@ -277,7 +276,7 @@ public class OrdersService {
             OffsetDateTime now = OffsetDateTime.now();
             StatusHistory statusHistory = StatusHistory.builder()
                     .productStatus(ProductStatus.DELETE)
-                    .orderStatus(OrderStatus.NONE)
+                    .orderStatus(OrderStatus.ORDER)
                     .createAt(now)
                     .userName(nickname)
                     .build();
@@ -297,14 +296,15 @@ public class OrdersService {
 
         OffsetDateTime now = OffsetDateTime.now();
         StatusHistory statusHistory = StatusHistory.builder()
-                .productStatus(ProductStatus.STOCK)
+                .stockStatus(StockStatus.STOCK)
+                .productStatus(ProductStatus.NONE)
                 .orderStatus(OrderStatus.NONE)
                 .createAt(now)
                 .userName(nickname)
                 .build();
 
         order.addStatusHistory(statusHistory);
-        order.updateProductStatus(ProductStatus.STOCK);
+        order.updateOrderStatus();
     }
 
     //주문 -> 판매 변경
@@ -315,14 +315,15 @@ public class OrdersService {
 
         OffsetDateTime now = OffsetDateTime.now();
         StatusHistory statusHistory = StatusHistory.builder()
-                .productStatus(ProductStatus.STOCK)
+                .stockStatus(StockStatus.SALE)
+                .productStatus(ProductStatus.NONE)
                 .orderStatus(OrderStatus.NONE)
                 .createAt(now)
                 .userName(nickname)
                 .build();
 
         order.addStatusHistory(statusHistory);
-        order.updateProductStatus(ProductStatus.SALE);
+        order.updateOrderStatus();
     }
 
 

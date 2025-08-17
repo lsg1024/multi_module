@@ -2,6 +2,7 @@ package com.msa.order.global.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.msa.order.global.kafka.dto.KafkaStockRequest;
 import com.msa.order.global.kafka.dto.OrderAsyncRequested;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +17,7 @@ public class KafkaProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
-    public void publishOrderAsyncRequested(OrderAsyncRequested evt) {
+    public void orderDetailAsync(OrderAsyncRequested evt) {
         String key = String.valueOf(evt.getOrderId());
 
         try {
@@ -35,6 +36,29 @@ public class KafkaProducer {
                         }
                     });
 
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("이벤트 직렬화 실패", e);
+        }
+    }
+
+    public void stockDetailAsync(KafkaStockRequest ksq) {
+        String key = String.valueOf(ksq.getOrderId());
+
+        try {
+            String payload = objectMapper.writeValueAsString(ksq);
+            kafkaTemplate.send("stock.async.requested", key, payload)
+                    .whenComplete((res, ex) -> {
+                        if (ex != null) {
+                            log.error("kafka send failed. topic= {}, key= {}, err= {}",
+                                    "order.enrichment.requested", key, ex.getMessage());
+                        } else {
+                            log.info("Kafka sent. topic={}, key={}, partition={}, offset={}",
+                                    res.getRecordMetadata().topic(),
+                                    res.getProducerRecord().key(),
+                                    res.getRecordMetadata().partition(),
+                                    res.getRecordMetadata().offset());
+                        }
+                    });
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("이벤트 직렬화 실패", e);
         }

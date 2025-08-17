@@ -1,5 +1,6 @@
 package com.msa.order.local.domain.order.entity;
 
+import com.msa.order.local.domain.stock.entity.domain.Stock;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -52,6 +53,10 @@ public class OrderStone {
     @JoinColumn(name = "ORDER_ID")
     private Orders order;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "STOCK_ID")
+    private Stock stock;
+
     @Builder
     public OrderStone(Long originStoneId, String originStoneName, BigDecimal originStoneWeight, String stonePurchasePrice, Integer stoneLaborCost, Integer stoneQuantity, Boolean productStoneMain, Boolean includeQuantity, Boolean includeWeight, Boolean includeLabor) {
         this.originStoneId = originStoneId;
@@ -68,5 +73,9 @@ public class OrderStone {
 
     public void setOrder(Orders order) {
         this.order = order;
+    }
+
+    public void setStock(Stock stock) {
+        this.stock = stock;
     }
 }

@@ -7,7 +7,6 @@ import com.msa.order.local.domain.order.entity.OrderProduct;
 import com.msa.order.local.domain.order.entity.Orders;
 import com.msa.order.local.domain.order.entity.StatusHistory;
 import com.msa.order.local.domain.order.entity.order_enum.OrderStatus;
-import com.msa.order.local.domain.order.entity.order_enum.ProductStatus;
 import com.msa.order.local.domain.order.external_client.*;
 import com.msa.order.local.domain.order.external_client.dto.ProductDetailDto;
 import com.msa.order.local.domain.order.repository.OrdersRepository;
@@ -20,10 +19,11 @@ import java.util.List;
 
 import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND;
 import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND_STONE;
+import static com.msa.order.local.domain.order.entity.order_enum.ProductStatus.RECEIPT_FAILED;
 
 @Slf4j
 @Service
-public class OrderAsyncService {
+public class KafkaOrderService {
     private final StoreClient storeClient;
     private final StoneClient stoneClient;
     private final ProductClient productClient;
@@ -33,7 +33,7 @@ public class OrderAsyncService {
     private final ColorClient colorClient;
     private final OrdersRepository ordersRepository;
 
-    public OrderAsyncService(StoreClient storeClient, StoneClient stoneClient, ProductClient productClient, FactoryClient factoryClient, MaterialClient materialClient, ClassificationClient classificationClient, ColorClient colorClient, OrdersRepository ordersRepository) {
+    public KafkaOrderService(StoreClient storeClient, StoneClient stoneClient, ProductClient productClient, FactoryClient factoryClient, MaterialClient materialClient, ClassificationClient classificationClient, ColorClient colorClient, OrdersRepository ordersRepository) {
         this.storeClient = storeClient;
         this.stoneClient = stoneClient;
         this.productClient = productClient;
@@ -53,7 +53,7 @@ public class OrderAsyncService {
         Orders order = ordersRepository.findAggregate(evt.getOrderId())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        if (order.getProductStatus() != ProductStatus.ORDER && order.getProductStatus() != ProductStatus.FIX) {
+        if (order.getOrderStatus() != OrderStatus.ORDER && order.getOrderStatus() != OrderStatus.FIX) {
             return;
         }
 
@@ -90,10 +90,10 @@ public class OrderAsyncService {
 
         } catch (Exception e) {
             log.error("Async failed. orderId={}, err={}", evt.getOrderId(), e.getMessage(), e);
-            order.updateOrderStatus(OrderStatus.RECEIPT_FAILED);
+            order.updateProductStatus(RECEIPT_FAILED);
             order.addStatusHistory(StatusHistory.builder()
-                    .productStatus(ProductStatus.FAILED)
-                    .orderStatus(OrderStatus.RECEIPT_FAILED)
+                    .productStatus(RECEIPT_FAILED)
+                    .orderStatus(OrderStatus.ORDER)
                     .createAt(OffsetDateTime.now())
                     .userName(evt.getNickname())
                     .build());

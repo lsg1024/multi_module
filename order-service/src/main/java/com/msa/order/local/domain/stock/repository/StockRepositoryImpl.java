@@ -41,6 +41,7 @@ public class StockRepositoryImpl implements CustomStockRepository {
     public CustomPage<StockDto.Response> findByStockProducts(String input, StockDto.StockCondition condition, Pageable pageable) {
 
         BooleanBuilder searchBuilder = getSearchBuilder(input);
+        BooleanExpression stockStatusBuilder = getStockStatusBuilder(condition);
 
         OffsetDateTime start = null;
         OffsetDateTime end = null;
@@ -52,11 +53,12 @@ public class StockRepositoryImpl implements CustomStockRepository {
         }
 
 
+        // stock 엔티티로 변경
         List<Long> pageOrderIds = query
                 .select(orders.orderId)
                 .from(orders)
                 .where(
-                        orders.productStatus.eq(ProductStatus.STOCK),
+                        orders.orderStatus.eq(OrderStatus),
                         start != null ? orders.orderDate.goe(start) : null,
                         end != null ? orders.orderDate.loe(end) : null
                 )
@@ -173,6 +175,7 @@ public class StockRepositoryImpl implements CustomStockRepository {
                 .from(orders)
                 .where(
                         searchBuilder,
+                        stockStatusBuilder,
                         orders.productStatus.eq(ProductStatus.STOCK),
                         start != null ? orders.orderDate.goe(start) : null,
                         end != null ? orders.orderDate.loe(end) : null

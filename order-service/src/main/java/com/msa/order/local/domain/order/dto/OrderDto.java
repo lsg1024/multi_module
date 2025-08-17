@@ -48,13 +48,13 @@ public class OrderDto {
 
         private BigDecimal productWeight;
         private BigDecimal stoneWeight;
-        private String orderMainStoneNote;
-        private String orderAssistanceStoneNote;
+        private String mainStoneNote;
+        private String assistanceStoneNote;
 
         private LocalDateTime createAt;
 
-        @EnumValue(enumClass = OrderStatus.class)
-        private String orderStatus; // 주문 상태 설정 값 기본은 RECEIPT
+        @EnumValue(enumClass = ProductStatus.class)
+        private String productStatus; // 주문 상태 설정 값 기본은 RECEIPT
 
         @Valid
         private List<ProductDetailDto.StoneInfo> stoneInfos;

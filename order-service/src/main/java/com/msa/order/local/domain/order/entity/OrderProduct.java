@@ -3,10 +3,12 @@ package com.msa.order.local.domain.order.entity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+@Getter
 @Table(name = "ORDER_PRODUCT")
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

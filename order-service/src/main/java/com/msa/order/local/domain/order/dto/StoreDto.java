@@ -23,5 +23,11 @@ public class StoreDto {
             this.storeId = storeId;
             this.storeName = storeName;
         }
+
+        public Response(Long storeId, String storeName, String grade) {
+            this.storeId = storeId;
+            this.storeName = storeName;
+            this.grade = grade;
+        }
     }
 }

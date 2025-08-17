@@ -5,6 +5,7 @@ import com.msa.order.local.domain.order.dto.StoreDto;
 import com.msa.order.local.domain.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.domain.order.entity.order_enum.ProductStatus;
 import com.msa.order.local.domain.priority.entitiy.Priority;
+import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -17,7 +18,8 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import static jakarta.persistence.CascadeType.*;
+import static jakarta.persistence.CascadeType.MERGE;
+import static jakarta.persistence.CascadeType.PERSIST;
 
 @Slf4j
 @Getter
@@ -30,7 +32,7 @@ public class Orders {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ORDER_ID")
     private Long orderId;
-    @Column(name = "ORDER_CODE")
+    @Tsid @Column(name = "ORDER_CODE")
     private String orderCode;
     @Column(name = "STORE_ID") //account - store
     private Long storeId;
@@ -114,13 +116,13 @@ public class Orders {
         this.priority = priority;
     }
 
-    public void updateOrderStatus(OrderStatus newStatus) {
-        this.orderStatus = newStatus;
+    public void updateProductStatus(ProductStatus newStatus) {
+        this.productStatus = newStatus;
     }
 
-    public void updateProductStatus(ProductStatus productStatus) {
-        this.productStatus = productStatus;
+    public void updateOrderStatus() {
         this.orderStatus = OrderStatus.NONE;
+        this.productStatus = ProductStatus.WAITING;
     }
 
     public void updateStore(StoreDto.Response storeDto) {
