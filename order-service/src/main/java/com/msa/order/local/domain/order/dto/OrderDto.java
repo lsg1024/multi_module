@@ -1,6 +1,5 @@
 package com.msa.order.local.domain.order.dto;
 
-import com.msa.order.global.exception.EnumValue;
 import com.msa.order.local.domain.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.domain.order.entity.order_enum.ProductStatus;
 import com.msa.order.local.domain.order.external_client.dto.ProductDetailDto;
@@ -37,6 +36,7 @@ public class OrderDto {
         @Pattern(regexp = "\\d+", message = "상품 ID는 숫자여야 합니다.")
         private String productId;
         private String productSize;
+        private boolean isProductWeightSale;
         private Integer productAddLaborCost;
 
         @NotBlank(message = "재질 값은 필수입니다.")
@@ -52,8 +52,6 @@ public class OrderDto {
         private String assistanceStoneNote;
 
         private LocalDateTime createAt;
-
-        @EnumValue(enumClass = ProductStatus.class)
         private String productStatus; // 주문 상태 설정 값 기본은 RECEIPT
 
         @Valid
@@ -65,7 +63,7 @@ public class OrderDto {
     public static class Response {
         private String createAt;
         private String orderId;
-        private String orderCode;
+        private Long flowCode;
         private String storeName;
         private String productName;
         private String materialName;
@@ -79,9 +77,9 @@ public class OrderDto {
         private OrderStatus orderStatus;
 
         @QueryProjection
-        public Response(String orderId, String orderCode, String storeName, String productName, String productSize, String orderNote, String factoryName, String materialName, String colorName, String priority, String createAt, ProductStatus productStatus, OrderStatus orderStatus) {
+        public Response(String orderId, Long flowCode, String storeName, String productName, String productSize, String orderNote, String factoryName, String materialName, String colorName, String priority, String createAt, ProductStatus productStatus, OrderStatus orderStatus) {
             this.orderId = orderId;
-            this.orderCode = orderCode;
+            this.flowCode = flowCode;
             this.storeName = storeName;
             this.productName = productName;
             this.productSize = productSize;

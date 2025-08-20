@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 import static com.msa.order.local.domain.order.entity.QOrderProduct.orderProduct;
 import static com.msa.order.local.domain.order.entity.QOrderStone.orderStone;
 import static com.msa.order.local.domain.order.entity.QOrders.orders;
-import static com.msa.order.local.domain.order.entity.QStatusHistory.statusHistory;
 
 @Repository
 public class StockRepositoryImpl implements CustomStockRepository {
@@ -58,7 +57,7 @@ public class StockRepositoryImpl implements CustomStockRepository {
                 .select(orders.orderId)
                 .from(orders)
                 .where(
-                        orders.orderStatus.eq(OrderStatus),
+                        orders.orderStatus.eq(OrderStatus.STOCK), // 재고만?
                         start != null ? orders.orderDate.goe(start) : null,
                         end != null ? orders.orderDate.loe(end) : null
                 )
@@ -70,7 +69,7 @@ public class StockRepositoryImpl implements CustomStockRepository {
         List<Tuple> basics = query
                 .select(
                         orders.orderId,                   // 0
-                        orders.orderCode,                 // 1
+                        orders.flowCode,                 // 1
                         orders.orderDate,                 // 2 (createAt)
                         orders.productStatus,             // 3
                         orders.storeName,                 // 4
@@ -176,7 +175,7 @@ public class StockRepositoryImpl implements CustomStockRepository {
                 .where(
                         searchBuilder,
                         stockStatusBuilder,
-                        orders.productStatus.eq(ProductStatus.STOCK),
+                        orders.orderStatus.eq(OrderStatus.STOCK),
                         start != null ? orders.orderDate.goe(start) : null,
                         end != null ? orders.orderDate.loe(end) : null
                 );
@@ -220,11 +219,8 @@ public class StockRepositoryImpl implements CustomStockRepository {
                 orders.orderDate.between(startDateTime, endDateTime);
 
         BooleanExpression statusIsReceiptOrWaiting =
-                statusHistory.orderStatus.in(OrderStatus.NONE);
+                orders.orderStatus.in(OrderStatus.NONE);
 
-        BooleanExpression statusIsStock =
-                orders.productStatus.in(ProductStatus.STOCK);
-
-        return statusIsReceiptOrWaiting.and(statusIsStock).and(createdBetween);
+        return statusIsReceiptOrWaiting.and(createdBetween);
     }
 }

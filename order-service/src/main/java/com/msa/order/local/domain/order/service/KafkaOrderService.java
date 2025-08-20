@@ -10,11 +10,11 @@ import com.msa.order.local.domain.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.domain.order.external_client.*;
 import com.msa.order.local.domain.order.external_client.dto.ProductDetailDto;
 import com.msa.order.local.domain.order.repository.OrdersRepository;
+import com.msa.order.local.domain.order.repository.StatusHistoryRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 
 import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND;
@@ -32,8 +32,9 @@ public class KafkaOrderService {
     private final ClassificationClient classificationClient;
     private final ColorClient colorClient;
     private final OrdersRepository ordersRepository;
+    private final StatusHistoryRepository statusHistoryRepository;
 
-    public KafkaOrderService(StoreClient storeClient, StoneClient stoneClient, ProductClient productClient, FactoryClient factoryClient, MaterialClient materialClient, ClassificationClient classificationClient, ColorClient colorClient, OrdersRepository ordersRepository) {
+    public KafkaOrderService(StoreClient storeClient, StoneClient stoneClient, ProductClient productClient, FactoryClient factoryClient, MaterialClient materialClient, ClassificationClient classificationClient, ColorClient colorClient, OrdersRepository ordersRepository, StatusHistoryRepository statusHistoryRepository) {
         this.storeClient = storeClient;
         this.stoneClient = stoneClient;
         this.productClient = productClient;
@@ -42,6 +43,7 @@ public class KafkaOrderService {
         this.classificationClient = classificationClient;
         this.colorClient = colorClient;
         this.ordersRepository = ordersRepository;
+        this.statusHistoryRepository = statusHistoryRepository;
     }
 
     @Transactional
@@ -50,12 +52,17 @@ public class KafkaOrderService {
         // 멀티테넌시 컨텍스트 전파
         final String tenantId = evt.getTenantId();
 
-        Orders order = ordersRepository.findAggregate(evt.getOrderId())
+        Orders order = ordersRepository.findAggregate(evt.getFlowCode())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         if (order.getOrderStatus() != OrderStatus.ORDER && order.getOrderStatus() != OrderStatus.FIX) {
             return;
         }
+
+        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        StatusHistory statusHistory;
 
         try {
             // 1) 외부 조회 (순차/병렬 선택 가능)
@@ -69,6 +76,7 @@ public class KafkaOrderService {
             OrderProduct orderProduct = order.getOrderProduct();
             orderProduct.updateOrder(
                     productInfo.getProductName(),
+                    productInfo.getPurchaseCost(),
                     productInfo.getLaborCost(),
                     materialName,
                     classificationName,
@@ -88,16 +96,29 @@ public class KafkaOrderService {
 
             ordersRepository.save(order);
 
+            statusHistory = StatusHistory.phaseChange(
+                    order.getFlowCode(),
+                    lastHistory.getSourceType(),
+                    lastHistory.getPhase(),
+                    StatusHistory.BusinessPhase.ORDER,
+                    evt.getNickname()
+            );
+
+            statusHistoryRepository.save(statusHistory);
+
         } catch (Exception e) {
-            log.error("Async failed. orderId={}, err={}", evt.getOrderId(), e.getMessage(), e);
+            log.error("Async failed. orderId={}, err={}", evt.getFlowCode(), e.getMessage(), e);
             order.updateProductStatus(RECEIPT_FAILED);
-            order.addStatusHistory(StatusHistory.builder()
-                    .productStatus(RECEIPT_FAILED)
-                    .orderStatus(OrderStatus.ORDER)
-                    .createAt(OffsetDateTime.now())
-                    .userName(evt.getNickname())
-                    .build());
-            ordersRepository.save(order);
+
+            statusHistory = StatusHistory.phaseChange(
+                    order.getFlowCode(),
+                    lastHistory.getSourceType(),
+                    lastHistory.getPhase(),
+                    StatusHistory.BusinessPhase.ORDER_FAIL,
+                    evt.getNickname()
+            );
+
+            statusHistoryRepository.save(statusHistory);
         }
     }
 }

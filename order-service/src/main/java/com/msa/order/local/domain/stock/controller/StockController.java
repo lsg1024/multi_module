@@ -33,14 +33,35 @@ public class StockController {
         return ResponseEntity.ok(ApiResponse.success(stocks));
     }
 
+    // 주문 -> 재고
+    @PatchMapping("/orders/stock/{id}")
+    public ResponseEntity<ApiResponse<String>> updateOrderToStock(
+            @AccessToken String accessToken,
+            @PathVariable(name = "id") Long flowCode,
+            @Valid @RequestBody StockDto.orderStockRequest stockDto) {
+        stockService.updateOrderStatusToStock(accessToken, flowCode, stockDto);
+        return ResponseEntity.ok(ApiResponse.success("재고 등록 완료"));
+    }
+
+
     @PostMapping("/stocks")
     public ResponseEntity<ApiResponse<String>> createStock(
             @AccessToken String accessToken,
             @RequestParam(name = "order_type") String orderType,
-            @Valid @RequestBody StockDto.OrderStockRequest stockDto) {
+            @Valid @RequestBody StockDto.createStockRequest stockDto) {
 
         stockService.saveStock(accessToken, orderType, stockDto);
         return ResponseEntity.ok(ApiResponse.success("생성 완료"));
+    }
+
+    //재고 -> 대여
+    @PatchMapping("/stocks/rental/{id}")
+    public ResponseEntity<ApiResponse<String>> updateStockToRental(
+            @AccessToken String accessToken,
+            @PathVariable(name = "id") Long flowCode,
+            @Valid @RequestBody StockDto.StockRentalRequest stockDto) {
+        stockService.stockToRental(accessToken, flowCode, stockDto);
+        return ResponseEntity.ok(ApiResponse.success("변경 완료"));
     }
 
 }

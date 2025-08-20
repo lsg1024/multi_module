@@ -3,19 +3,18 @@ package com.msa.order.local.domain.stock.service;
 import com.msa.order.global.kafka.dto.KafkaStockRequest;
 import com.msa.order.local.domain.order.dto.FactoryDto;
 import com.msa.order.local.domain.order.dto.StoreDto;
-import com.msa.order.local.domain.order.entity.OrderProduct;
-import com.msa.order.local.domain.order.entity.Orders;
 import com.msa.order.local.domain.order.entity.StatusHistory;
 import com.msa.order.local.domain.order.entity.order_enum.OrderStatus;
-import com.msa.order.local.domain.order.entity.order_enum.ProductStatus;
 import com.msa.order.local.domain.order.external_client.*;
 import com.msa.order.local.domain.order.external_client.dto.ProductDetailDto;
-import com.msa.order.local.domain.order.repository.OrdersRepository;
+import com.msa.order.local.domain.order.repository.StatusHistoryRepository;
+import com.msa.order.local.domain.stock.entity.domain.ProductSnapshot;
+import com.msa.order.local.domain.stock.entity.domain.Stock;
+import com.msa.order.local.domain.stock.repository.StockRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 
 import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND;
@@ -33,9 +32,10 @@ public class KafkaStockService {
     private final MaterialClient materialClient;
     private final ColorClient colorClient;
     private final ClassificationClient classificationClient;
-    private final OrdersRepository ordersRepository;
+    private final StockRepository stockRepository;
+    private final StatusHistoryRepository statusHistoryRepository;
 
-    public KafkaStockService(StoneClient stoneClient, StoreClient storeClient, FactoryClient factoryClient, ProductClient productClient, MaterialClient materialClient, ColorClient colorClient, ClassificationClient classificationClient, OrdersRepository ordersRepository) {
+    public KafkaStockService(StoneClient stoneClient, StoreClient storeClient, FactoryClient factoryClient, ProductClient productClient, MaterialClient materialClient, ColorClient colorClient, ClassificationClient classificationClient, StockRepository stockRepository, StatusHistoryRepository statusHistoryRepository) {
         this.stoneClient = stoneClient;
         this.storeClient = storeClient;
         this.factoryClient = factoryClient;
@@ -43,19 +43,24 @@ public class KafkaStockService {
         this.materialClient = materialClient;
         this.colorClient = colorClient;
         this.classificationClient = classificationClient;
-        this.ordersRepository = ordersRepository;
+        this.stockRepository = stockRepository;
+        this.statusHistoryRepository = statusHistoryRepository;
     }
 
     public void saveStockDetail(KafkaStockRequest stockRequest) {
         final String tenantId = stockRequest.getTenantId();
 
-        Orders order = ordersRepository.findAggregate(stockRequest.getOrderId())
+        Stock stock = stockRepository.findByFlowCode(stockRequest.getFlowCode())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        // stock에서 추출되게 변경
-        if (order.getOrderStatus() != OrderStatus.NORMAL && order.getProductStatus() != ProductStatus.RETURNS) {
+        if (stock.getOrderStatus() != OrderStatus.NORMAL) {
             return;
         }
+
+        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(stock.getFlowCode())
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        StatusHistory statusHistory;
 
         try {
             StoreDto.Response storeInfo;
@@ -96,8 +101,8 @@ public class KafkaStockService {
 
             ProductDetailDto productInfo = productClient.getProductInfo(tenantId, stockRequest.getProductId(), storeInfo.getGrade());
 
-            OrderProduct orderProduct = order.getOrderProduct();
-            orderProduct.updateOrder(
+            ProductSnapshot product = stock.getProduct();
+            product.updateProduct(
                     productInfo.getProductName(),
                     productInfo.getLaborCost(),
                     materialName,
@@ -113,19 +118,31 @@ public class KafkaStockService {
                 }
             }
 
-            order.updateStore(new StoreDto.Response(stockRequest.getStoreId(), storeInfo.getStoreName()));
-            order.updateFactory(new FactoryDto.Response(stockRequest.getFactoryId(), factoryName));
+            stock.updateStore(new StoreDto.Response(stockRequest.getStoreId(), storeInfo.getStoreName()));
+            stock.updateFactory(new FactoryDto.Response(stockRequest.getFactoryId(), factoryName));
+
+            statusHistory = StatusHistory.phaseChange(
+                    stock.getFlowCode(),
+                    lastHistory.getSourceType(),
+                    lastHistory.getPhase(),
+                    StatusHistory.BusinessPhase.STOCK,
+                    stockRequest.getNickname()
+            );
+
+            statusHistoryRepository.save(statusHistory);
 
         } catch (Exception e) {
-            log.error("Async failed. orderId={}, err={}", stockRequest.getOrderId(), e.getMessage(), e);
-            order.updateProductStatus(ProductStatus.RECEIPT_FAILED);
-            order.addStatusHistory(StatusHistory.builder()
-                    .productStatus(ProductStatus.RECEIPT_FAILED)
-                    .orderStatus(OrderStatus.ORDER)
-                    .createAt(OffsetDateTime.now())
-                    .userName(stockRequest.getNickname())
-                    .build());
-            ordersRepository.save(order);
+            log.error("Async failed. orderId={}, err={}", stockRequest.getFlowCode(), e.getMessage(), e);
+
+            statusHistory = StatusHistory.phaseChange(
+                    stock.getFlowCode(),
+                    lastHistory.getSourceType(),
+                    lastHistory.getPhase(),
+                    StatusHistory.BusinessPhase.STOCK_FAIL,
+                    stockRequest.getNickname()
+            );
+
+            statusHistoryRepository.save(statusHistory);
         }
     }
 }

@@ -14,9 +14,10 @@ public interface OrdersRepository extends JpaRepository<Orders, Long> {
     @Query("""
     select distinct o from Orders o
      left join fetch o.orderProduct op
+     left join fetch o.orderStones os
      left join fetch o.priority p
-     left join o.statusHistory sh
-     where o.orderCode = :id
+     where o.flowCode= :id
     """)
-    Optional<Orders> findAggregate(@Param("id") Long orderId);
+    Optional<Orders> findAggregate(@Param("id") Long flowCode);
+    Optional<Orders> findByFlowCode(Long flowCode);
 }

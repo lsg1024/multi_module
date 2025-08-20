@@ -14,6 +14,7 @@ public class ProductDetailDto {
     private String productName;
     private String materialName;
     private String colorName;
+    private Integer purchaseCost;
     private Integer laborCost;
     private List<StoneInfo> StoneInfos;
 
@@ -22,11 +23,12 @@ public class ProductDetailDto {
     }
 
     @QueryProjection
-    public ProductDetailDto(Long productId, String productName, String materialName, String colorName, Integer laborCost) {
+    public ProductDetailDto(Long productId, String productName, String materialName, String colorName, Integer purchaseCost, Integer laborCost) {
         this.productId = productId;
         this.productName = productName;
         this.materialName = materialName;
         this.colorName = colorName;
+        this.purchaseCost = purchaseCost;
         this.laborCost = laborCost;
     }
 

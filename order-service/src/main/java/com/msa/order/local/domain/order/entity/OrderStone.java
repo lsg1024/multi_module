@@ -1,5 +1,6 @@
 package com.msa.order.local.domain.order.entity;
 
+import com.msa.order.local.domain.stock.dto.StockDto;
 import com.msa.order.local.domain.stock.entity.domain.Stock;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -25,11 +26,11 @@ public class OrderStone {
     @Column(name = "ORIGIN_STONE_NAME")
     private String originStoneName;
 
-    @Column(name = "ORIGIN_STONE_WEIGHT", precision = 5, scale = 2)
+    @Column(name = "ORIGIN_STONE_WEIGHT", precision = 8, scale = 2)
     private BigDecimal originStoneWeight;
 
-    @Column(name = "STONE_PURCHASE_PRICE")
-    private String stonePurchasePrice; // 매입 금액
+    @Column(name = "STONE_PURCHASE_COST")
+    private Integer stonePurchaseCost; // 매입 금액
 
     @Column(name = "STONE_LABOR_COST")
     private Integer stoneLaborCost; // 판매 금액
@@ -58,11 +59,11 @@ public class OrderStone {
     private Stock stock;
 
     @Builder
-    public OrderStone(Long originStoneId, String originStoneName, BigDecimal originStoneWeight, String stonePurchasePrice, Integer stoneLaborCost, Integer stoneQuantity, Boolean productStoneMain, Boolean includeQuantity, Boolean includeWeight, Boolean includeLabor) {
+    public OrderStone(Long originStoneId, String originStoneName, BigDecimal originStoneWeight, Integer stonePurchaseCost, Integer stoneLaborCost, Integer stoneQuantity, Boolean productStoneMain, Boolean includeQuantity, Boolean includeWeight, Boolean includeLabor) {
         this.originStoneId = originStoneId;
         this.originStoneName = originStoneName;
         this.originStoneWeight = originStoneWeight;
-        this.stonePurchasePrice = stonePurchasePrice;
+        this.stonePurchaseCost = stonePurchaseCost;
         this.stoneLaborCost = stoneLaborCost;
         this.stoneQuantity = stoneQuantity;
         this.productStoneMain = productStoneMain;
@@ -77,5 +78,18 @@ public class OrderStone {
 
     public void setStock(Stock stock) {
         this.stock = stock;
+    }
+
+    public void updateFrom(StockDto.StoneInfo s) {
+        this.originStoneId = Long.valueOf(s.getStoneId());
+        this.originStoneName = s.getStoneName();
+        this.originStoneWeight = new BigDecimal(s.getStoneWeight());
+        this.stonePurchaseCost = s.getPurchaseCost();
+        this.stoneLaborCost = s.getLaborCost();
+        this.stoneQuantity = s.getQuantity();
+        this.productStoneMain = s.isProductStoneMain();
+        this.includeQuantity = s.isIncludeQuantity();
+        this.includeWeight = s.isIncludeWeight();
+        this.includeLabor = s.isIncludeLabor();
     }
 }

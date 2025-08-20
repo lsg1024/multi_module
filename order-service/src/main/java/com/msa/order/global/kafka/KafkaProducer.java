@@ -18,7 +18,7 @@ public class KafkaProducer {
     private final ObjectMapper objectMapper;
 
     public void orderDetailAsync(OrderAsyncRequested evt) {
-        String key = String.valueOf(evt.getOrderId());
+        String key = String.valueOf(evt.getFlowCode());
 
         try {
             String payload = objectMapper.writeValueAsString(evt);
@@ -42,7 +42,7 @@ public class KafkaProducer {
     }
 
     public void stockDetailAsync(KafkaStockRequest ksq) {
-        String key = String.valueOf(ksq.getOrderId());
+        String key = String.valueOf(ksq.getFlowCode());
 
         try {
             String payload = objectMapper.writeValueAsString(ksq);

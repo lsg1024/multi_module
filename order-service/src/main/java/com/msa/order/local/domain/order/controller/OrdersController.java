@@ -115,16 +115,6 @@ public class OrdersController {
         return ResponseEntity.ok(ApiResponse.success("삭제 완료"));
     }
 
-    // 주문 -> 재고
-    @PatchMapping("/orders/stock/{id}")
-    public ResponseEntity<ApiResponse<String>> updateOrderToStock(
-            @AccessToken String accessToken,
-            @PathVariable Long id) {
-        ordersService.updateOrderStatusToStock(accessToken, id);
-        return ResponseEntity.ok(ApiResponse.success("재고 등록 완료"));
-    }
-
-
     // 주문 -> 판매
     @PatchMapping("/orders/sale/{id}")
     public ResponseEntity<ApiResponse<String>> updateOrderToSale(

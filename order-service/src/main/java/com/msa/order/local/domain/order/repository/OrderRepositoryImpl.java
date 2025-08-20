@@ -72,7 +72,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                         statusHistory.createAt,             // 0: OffsetDateTime
                         priority.priorityDate,              // 1: Integer
                         orders.orderId,                     // 2: Long
-                        orders.orderCode,                   // 3: String
+                        orders.flowCode,                   // 3: String
                         orders.storeName,                   // 4: String
                         orders.orderProduct.productLaborCost,     // 5: Integer
                         orders.orderProduct.productAddLaborCost,  // 6: Integer
@@ -89,7 +89,6 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 )
                 .from(orders)
                 .join(orders.orderProduct, orderProduct)
-                .join(orders.statusHistory, statusHistory)
                 .join(orders.priority, priority)
                 .where(orders.orderId.eq(orderId))
                 .fetchOne();
@@ -159,7 +158,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         List<OrderDto.Response> content = query
                 .select(new QOrderDto_Response(
                         orders.orderId.stringValue(),
-                        orders.orderCode,
+                        orders.flowCode,
                         orders.storeName,
                         orders.orderProduct.productName,
                         orderProduct.productSize,
@@ -174,7 +173,6 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 ))
                 .from(orders)
                 .join(orders.orderProduct, orderProduct)
-                .join(orders.statusHistory, statusHistory)
                 .join(orders.priority, priority)
                 .where(
                         statusBuilder,
@@ -219,7 +217,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 orders.orderDate.between(startDateTime, endDateTime);
 
         BooleanExpression statusIsReceiptOrWaiting =
-                statusHistory.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
+                orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
 
         BooleanExpression statusIsOrder =
                 orders.orderStatus.in(OrderStatus.ORDER);
@@ -238,7 +236,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 orders.orderExpectDate.loe(endDateTime);
 
         BooleanExpression statusIsReceiptOrWaiting =
-                statusHistory.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
+                orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
 
         BooleanExpression statusIsOrder =
                 orders.orderStatus.in(OrderStatus.ORDER);
@@ -260,7 +258,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 orders.orderExpectDate.between(startDateTime, endDateTime);
 
         BooleanExpression statusIsReceiptOrWaiting =
-                statusHistory.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
+                orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
 
         BooleanExpression statusIsOrder =
                 orders.orderStatus.in(OrderStatus.ORDER);

@@ -12,7 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 public class KafkaStockRequest {
     private String eventId;
-    private Long orderId;
+    private Long flowCode;
     private String tenantId;
     private Long storeId;
     private Long factoryId;
@@ -26,9 +26,9 @@ public class KafkaStockRequest {
     private List<Long> stoneIds;
 
     @Builder
-    public KafkaStockRequest(String eventId, Long orderId, String tenantId, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, Long classificationId, String productStatus, String nickname, List<Long> stoneIds) {
+    public KafkaStockRequest(String eventId, Long flowCode, String tenantId, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, Long classificationId, String productStatus, String nickname, List<Long> stoneIds) {
         this.eventId = eventId;
-        this.orderId = orderId;
+        this.flowCode = flowCode;
         this.tenantId = tenantId;
         this.storeId = storeId;
         this.factoryId = factoryId;
