@@ -38,17 +38,11 @@ public class OrderStone {
     @Column(name = "STONE_QUANTITY")
     private Integer stoneQuantity; // 스톤 개수
 
-    @Column(name = "PRODUCT_STONE_MAIN")
-    private Boolean productStoneMain; // 메인 여부
+    @Column(name = "IS_MAIN_STONE")
+    private Boolean isMainStone; // 메인 여부
 
-    @Column(name = "INCLUDE_QUANTITY")
-    private Boolean includeQuantity; // 수량 포함 여부
-
-    @Column(name = "INCLUDE_WEIGHT")
-    private Boolean includeWeight; // 중량 포함 여부
-
-    @Column(name = "INCLUDE_LABOR")
-    private Boolean includeLabor; // 공임 포함 여부
+    @Column(name = "IS_INCLUDE_STONE")
+    private Boolean isIncludeStone; // 포함 여부
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ORDER_ID")
@@ -59,17 +53,15 @@ public class OrderStone {
     private Stock stock;
 
     @Builder
-    public OrderStone(Long originStoneId, String originStoneName, BigDecimal originStoneWeight, Integer stonePurchaseCost, Integer stoneLaborCost, Integer stoneQuantity, Boolean productStoneMain, Boolean includeQuantity, Boolean includeWeight, Boolean includeLabor) {
+    public OrderStone(Long originStoneId, String originStoneName, BigDecimal originStoneWeight, Integer stonePurchaseCost, Integer stoneLaborCost, Integer stoneQuantity, Boolean isMainStone, Boolean isIncludeStone) {
         this.originStoneId = originStoneId;
         this.originStoneName = originStoneName;
         this.originStoneWeight = originStoneWeight;
         this.stonePurchaseCost = stonePurchaseCost;
         this.stoneLaborCost = stoneLaborCost;
         this.stoneQuantity = stoneQuantity;
-        this.productStoneMain = productStoneMain;
-        this.includeQuantity = includeQuantity;
-        this.includeWeight = includeWeight;
-        this.includeLabor = includeLabor;
+        this.isMainStone = isMainStone;
+        this.isIncludeStone = isIncludeStone;
     }
 
     public void setOrder(Orders order) {
@@ -87,9 +79,8 @@ public class OrderStone {
         this.stonePurchaseCost = s.getPurchaseCost();
         this.stoneLaborCost = s.getLaborCost();
         this.stoneQuantity = s.getQuantity();
-        this.productStoneMain = s.isProductStoneMain();
-        this.includeQuantity = s.isIncludeQuantity();
-        this.includeWeight = s.isIncludeWeight();
-        this.includeLabor = s.isIncludeLabor();
+        this.isMainStone = s.getIsMainStone();
+        this.isIncludeStone = s.getIsIncludeStone();
     }
+
 }

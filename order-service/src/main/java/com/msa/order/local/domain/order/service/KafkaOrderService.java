@@ -6,6 +6,7 @@ import com.msa.order.local.domain.order.dto.StoreDto;
 import com.msa.order.local.domain.order.entity.OrderProduct;
 import com.msa.order.local.domain.order.entity.Orders;
 import com.msa.order.local.domain.order.entity.StatusHistory;
+import com.msa.order.local.domain.order.entity.order_enum.BusinessPhase;
 import com.msa.order.local.domain.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.domain.order.external_client.*;
 import com.msa.order.local.domain.order.external_client.dto.ProductDetailDto;
@@ -52,7 +53,7 @@ public class KafkaOrderService {
         // 멀티테넌시 컨텍스트 전파
         final String tenantId = evt.getTenantId();
 
-        Orders order = ordersRepository.findAggregate(evt.getFlowCode())
+        Orders order = ordersRepository.findByFlowCode(evt.getFlowCode())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         if (order.getOrderStatus() != OrderStatus.ORDER && order.getOrderStatus() != OrderStatus.FIX) {
@@ -100,7 +101,7 @@ public class KafkaOrderService {
                     order.getFlowCode(),
                     lastHistory.getSourceType(),
                     lastHistory.getPhase(),
-                    StatusHistory.BusinessPhase.ORDER,
+                    BusinessPhase.ORDER,
                     evt.getNickname()
             );
 
@@ -114,7 +115,7 @@ public class KafkaOrderService {
                     order.getFlowCode(),
                     lastHistory.getSourceType(),
                     lastHistory.getPhase(),
-                    StatusHistory.BusinessPhase.ORDER_FAIL,
+                    BusinessPhase.ORDER_FAIL,
                     evt.getNickname()
             );
 

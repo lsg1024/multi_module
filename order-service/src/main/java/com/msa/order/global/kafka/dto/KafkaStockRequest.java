@@ -1,7 +1,6 @@
 package com.msa.order.global.kafka.dto;
 
-import com.msa.order.global.exception.EnumValue;
-import com.msa.order.local.domain.order.entity.order_enum.ProductStatus;
+import com.msa.order.local.domain.stock.dto.StockDto;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,13 +19,14 @@ public class KafkaStockRequest {
     private Long materialId;
     private Long colorId;
     private Long classificationId;
-    @EnumValue(enumClass = ProductStatus.class)
-    private String productStatus;
     private String nickname;
+    private Integer addProductLaborCost;
+    private Integer addStoneLaborCost;
     private List<Long> stoneIds;
+    private List<StockDto.StoneInfo> stoneInfos;
 
     @Builder
-    public KafkaStockRequest(String eventId, Long flowCode, String tenantId, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, Long classificationId, String productStatus, String nickname, List<Long> stoneIds) {
+    public KafkaStockRequest(String eventId, Long flowCode, String tenantId, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, Long classificationId, String nickname, Integer addProductLaborCost, Integer addStoneLaborCost, List<Long> stoneIds, List<StockDto.StoneInfo> stoneInfos) {
         this.eventId = eventId;
         this.flowCode = flowCode;
         this.tenantId = tenantId;
@@ -36,8 +36,11 @@ public class KafkaStockRequest {
         this.materialId = materialId;
         this.colorId = colorId;
         this.classificationId = classificationId;
-        this.productStatus = productStatus;
         this.nickname = nickname;
+        this.addProductLaborCost = addProductLaborCost;
+        this.addStoneLaborCost = addStoneLaborCost;
         this.stoneIds = stoneIds;
+        this.stoneInfos = stoneInfos;
     }
+
 }

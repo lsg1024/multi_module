@@ -19,8 +19,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import static jakarta.persistence.CascadeType.MERGE;
-import static jakarta.persistence.CascadeType.PERSIST;
+import static jakarta.persistence.CascadeType.*;
 
 @Slf4j
 @Getter
@@ -59,7 +58,7 @@ public class Orders {
     @OneToOne(mappedBy = "order", cascade = {PERSIST, MERGE})
     private OrderProduct orderProduct;
 
-    @OneToMany(mappedBy = "order", cascade = {PERSIST, MERGE})
+    @OneToMany(mappedBy = "order", cascade = {PERSIST, MERGE, REMOVE}, orphanRemoval = true)
     private List<OrderStone> orderStones = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)

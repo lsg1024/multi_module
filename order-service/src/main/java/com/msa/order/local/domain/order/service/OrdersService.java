@@ -13,8 +13,7 @@ import com.msa.order.local.domain.order.entity.OrderProduct;
 import com.msa.order.local.domain.order.entity.OrderStone;
 import com.msa.order.local.domain.order.entity.Orders;
 import com.msa.order.local.domain.order.entity.StatusHistory;
-import com.msa.order.local.domain.order.entity.order_enum.OrderStatus;
-import com.msa.order.local.domain.order.entity.order_enum.ProductStatus;
+import com.msa.order.local.domain.order.entity.order_enum.*;
 import com.msa.order.local.domain.order.external_client.FactoryClient;
 import com.msa.order.local.domain.order.external_client.StoreClient;
 import com.msa.order.local.domain.order.external_client.dto.ProductDetailDto;
@@ -41,6 +40,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.msa.order.global.exception.ExceptionMessage.*;
+import static com.msa.order.local.domain.order.util.StoneUtil.countStoneLabor;
+import static com.msa.order.local.domain.order.util.StoneUtil.countStoneQuantity;
 
 @Slf4j
 @Service
@@ -68,8 +69,41 @@ public class OrdersService {
 
     // 주문 단건 조회
     @Transactional(readOnly = true)
-    public OrderDto.ResponseDetail getOrder(Long orderId) {
-        return customOrderRepository.findByOrderId(orderId);
+    public OrderDto.ResponseDetail getOrder(Long flowCode) {
+        Orders order = ordersRepository.findByFlowCode(flowCode)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        int mainStoneQuantity = 0;
+        int assistanceStoneQuantity = 0;
+        int mainStoneLaborCost = 0;
+        int assistanceStoneLaborCost = 0;
+        List<OrderStone> orderStones = order.getOrderStones();
+        countStoneQuantity(orderStones, mainStoneQuantity, assistanceStoneQuantity);
+        countStoneLabor(orderStones, mainStoneLaborCost, assistanceStoneLaborCost);
+
+        return OrderDto.ResponseDetail.builder()
+                .createAt(order.getOrderDate().toString())
+                .deliveryAt(order.getOrderExpectDate().toString())
+                .flowCode(order.getFlowCode().toString())
+                .storeName(order.getStoreName())
+                .productLaborCost(order.getOrderProduct().getProductLaborCost())
+                .productAddLaborCost(order.getOrderProduct().getProductAddLaborCost())
+                .productStoneMainLaborCost(mainStoneLaborCost)
+                .productStoneAssistanceLaborCost(assistanceStoneLaborCost)
+                .productStoneMainQuantity(mainStoneQuantity)
+                .productStoneAssistanceQuantity(assistanceStoneQuantity)
+                .productName(order.getOrderProduct().getProductName())
+                .classification(order.getOrderProduct().getClassificationName())
+                .materialName(order.getOrderProduct().getMaterialName())
+                .colorName(order.getOrderProduct().getColorName())
+                .productSize(order.getOrderProduct().getProductSize())
+                .orderNote(order.getOrderNote())
+                .factoryName(order.getFactoryName())
+                .priority(order.getPriority().getPriorityName())
+                .productStatus(order.getProductStatus().getDisplayName())
+                .orderStatus(order.getOrderStatus().getDisplayName())
+                .build();
+
     }
 
     // 주문 전체 리스트 조회
@@ -143,10 +177,8 @@ public class OrdersService {
                     .stonePurchaseCost(stoneInfo.getPurchaseCost())
                     .stoneLaborCost(stoneInfo.getLaborCost())
                     .stoneQuantity(stoneInfo.getQuantity())
-                    .productStoneMain(stoneInfo.isProductStoneMain())
-                    .includeQuantity(stoneInfo.isIncludeQuantity())
-                    .includeWeight(stoneInfo.isIncludeWeight())
-                    .includeLabor(stoneInfo.isIncludeLabor())
+                    .isMainStone(stoneInfo.isMainStone())
+                    .isIncludeStone(stoneInfo.isIncludeStone())
                     .build();
 
             stoneIds.add(Long.valueOf(stoneInfo.getStoneId()));
@@ -158,9 +190,9 @@ public class OrdersService {
         // statusHistory 추가
         StatusHistory statusHistory = StatusHistory.create(
                 order.getFlowCode(),
-                StatusHistory.SourceType.ORDER,
-                StatusHistory.BusinessPhase.WAITING,
-                StatusHistory.Kind.CREATE,
+                SourceType.ORDER,
+                BusinessPhase.WAITING,
+                Kind.CREATE,
                 nickname
         );
 
@@ -277,8 +309,8 @@ public class OrdersService {
             StatusHistory statusHistory = StatusHistory.phaseChange(
                     order.getFlowCode(),
                     lastHistory.getSourceType(),
-                    StatusHistory.BusinessPhase.valueOf(lastHistory.getFromValue()),
-                    StatusHistory.BusinessPhase.DELETE,
+                    BusinessPhase.valueOf(lastHistory.getFromValue()),
+                    BusinessPhase.DELETE,
                     nickname
             );
 
@@ -301,27 +333,5 @@ public class OrdersService {
         return customOrderRepository.findByDeletedOrders(inputCondition, orderCondition, pageable);
     }
 
-    //주문 -> 판매 변경
-    public void updateOrderStatusSale(String accessToken, Long orderId) {
-        String nickname = jwtUtil.getNickname(accessToken);
-        Orders order = ordersRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-
-
-        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-
-        StatusHistory statusHistory = StatusHistory.phaseChange(
-                order.getFlowCode(),
-                lastHistory.getSourceType(),
-                StatusHistory.BusinessPhase.valueOf(lastHistory.getFromValue()),
-                StatusHistory.BusinessPhase.SALE,
-                nickname
-        );
-
-        statusHistoryRepository.save(statusHistory);
-
-        //주문 저장 기능 필요
-    }
 
 }

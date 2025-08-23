@@ -18,6 +18,5 @@ public interface OrdersRepository extends JpaRepository<Orders, Long> {
      left join fetch o.priority p
      where o.flowCode= :id
     """)
-    Optional<Orders> findAggregate(@Param("id") Long flowCode);
-    Optional<Orders> findByFlowCode(Long flowCode);
+    Optional<Orders> findByFlowCode(@Param("id") Long flowCode);
 }

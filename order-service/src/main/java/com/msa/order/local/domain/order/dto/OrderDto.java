@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -61,34 +62,40 @@ public class OrderDto {
     @Getter
     @NoArgsConstructor
     public static class Response {
-        private String createAt;
-        private String orderId;
-        private Long flowCode;
+        private String orderDate;
+        private String orderExpectDate;
+        private String flowCode;
         private String storeName;
         private String productName;
         private String materialName;
         private String colorName;
         private String productSize;
-        // 재고 기능 구현 후 재고에 동일 제품 여부 체크
+        private Integer stockQuantity;
+        private List<String> stockFlowCodes;
         private String orderNote;
         private String factoryName;
         private String priority;
         private ProductStatus productStatus;
         private OrderStatus orderStatus;
 
+        public void setStockFlowCodes(List<String> stockFlowCodes) {
+            this.stockFlowCodes = stockFlowCodes;
+        }
+
         @QueryProjection
-        public Response(String orderId, Long flowCode, String storeName, String productName, String productSize, String orderNote, String factoryName, String materialName, String colorName, String priority, String createAt, ProductStatus productStatus, OrderStatus orderStatus) {
-            this.orderId = orderId;
+        public Response(String orderExpectDate, String flowCode, String storeName, String productName, String productSize, Integer stockQuantity, String orderNote, String factoryName, String materialName, String colorName, String priority, String orderDate, ProductStatus productStatus, OrderStatus orderStatus) {
+            this.orderDate = orderDate;
+            this.orderExpectDate = orderExpectDate;
             this.flowCode = flowCode;
             this.storeName = storeName;
             this.productName = productName;
             this.productSize = productSize;
+            this.stockQuantity = stockQuantity;
             this.orderNote = orderNote;
             this.factoryName = factoryName;
             this.materialName = materialName;
             this.colorName = colorName;
             this.priority = priority;
-            this.createAt = createAt;
             this.productStatus = productStatus;
             this.orderStatus = orderStatus;
         }
@@ -99,15 +106,14 @@ public class OrderDto {
     public static class ResponseDetail {
         private String createAt;
         private String deliveryAt;
-        private String orderId;
-        private String orderCode;
+        private String flowCode;
         private String storeName;
-        private String productLaborCost;
-        private String productAddLaborCost;
-        private String productStoneMainLaborCost;
-        private String productStoneAssistanceLaborCost;
-        private String productStoneMainQuantity;
-        private String productStoneAssistanceQuantity;
+        private Integer productLaborCost;
+        private Integer productAddLaborCost;
+        private Integer productStoneMainLaborCost;
+        private Integer productStoneAssistanceLaborCost;
+        private Integer productStoneMainQuantity;
+        private Integer productStoneAssistanceQuantity;
         private String productName;
         private String classification;
         private String materialName;
@@ -119,12 +125,11 @@ public class OrderDto {
         private String productStatus;
         private String orderStatus;
 
-        @QueryProjection
-        public ResponseDetail(String createAt, String deliveryAt, String orderId, String orderCode, String storeName, String productLaborCost, String productAddLaborCost, String productStoneMainLaborCost, String productStoneAssistanceLaborCost, String productStoneMainQuantity, String productStoneAssistanceQuantity, String productName, String classification, String materialName, String colorName, String productSize, String orderNote, String factoryName, String priority, String productStatus, String orderStatus) {
+        @Builder
+        public ResponseDetail(String createAt, String deliveryAt, String flowCode, String storeName, Integer productLaborCost, Integer productAddLaborCost, Integer productStoneMainLaborCost, Integer productStoneAssistanceLaborCost, Integer productStoneMainQuantity, Integer productStoneAssistanceQuantity, String productName, String classification, String materialName, String colorName, String productSize, String orderNote, String factoryName, String priority, String productStatus, String orderStatus) {
             this.createAt = createAt;
             this.deliveryAt = deliveryAt;
-            this.orderId = orderId;
-            this.orderCode = orderCode;
+            this.flowCode = flowCode;
             this.storeName = storeName;
             this.productLaborCost = productLaborCost;
             this.productAddLaborCost = productAddLaborCost;
