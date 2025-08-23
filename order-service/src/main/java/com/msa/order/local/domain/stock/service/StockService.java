@@ -10,8 +10,7 @@ import com.msa.order.local.domain.order.entity.OrderProduct;
 import com.msa.order.local.domain.order.entity.OrderStone;
 import com.msa.order.local.domain.order.entity.Orders;
 import com.msa.order.local.domain.order.entity.StatusHistory;
-import com.msa.order.local.domain.order.entity.order_enum.OrderStatus;
-import com.msa.order.local.domain.order.entity.order_enum.ProductStatus;
+import com.msa.order.local.domain.order.entity.order_enum.*;
 import com.msa.order.local.domain.order.external_client.StoreClient;
 import com.msa.order.local.domain.order.repository.OrdersRepository;
 import com.msa.order.local.domain.order.repository.StatusHistoryRepository;
@@ -20,6 +19,7 @@ import com.msa.order.local.domain.stock.entity.domain.ProductSnapshot;
 import com.msa.order.local.domain.stock.entity.domain.Stock;
 import com.msa.order.local.domain.stock.repository.CustomStockRepository;
 import com.msa.order.local.domain.stock.repository.StockRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,10 +31,10 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND;
-import static com.msa.order.global.exception.ExceptionMessage.READY_TO_EXPECT;
+import static com.msa.order.global.exception.ExceptionMessage.*;
 import static com.msa.order.local.domain.order.util.StoneUtil.*;
 
+@Slf4j
 @Service
 @Transactional
 public class StockService {
@@ -57,16 +57,54 @@ public class StockService {
         this.statusHistoryRepository = statusHistoryRepository;
     }
 
-    // 재고 관리 get 전체 재고 + 주문, 수리, 대여 관련
+    // 재고 상세 조회
     @Transactional(readOnly = true)
-    public CustomPage<StockDto.Response> getStocks(String inputSearch, StockDto.StockCondition condition, Pageable pageable) {
-        return customStockRepository.findByStockProducts(inputSearch, condition, pageable);
+    public StockDto.ResponseDetail getDetailStock(Long flowCode) {
+        Stock stock = stockRepository.findByFlowCode(flowCode)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+        StatusHistory statusHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(flowCode)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        int mainStoneQuantity = 0;
+        int assistanceStoneQuantity = 0;
+        List<OrderStone> orderStones = stock.getOrderStones();
+        countStoneQuantity(orderStones, mainStoneQuantity, assistanceStoneQuantity);
+
+        return StockDto.ResponseDetail.builder()
+                .flowCode(stock.getFlowCode().toString())
+                .createAt(stock.getStockCreateAt().toString())
+                .originalProductStatus(statusHistory.getSourceType().getDisplayName())
+                .classificationName(stock.getProduct().getClassificationName())
+                .productName(stock.getProduct().getName())
+                .storeName(stock.getStoreName())
+                .materialName(stock.getProduct().getMaterialName())
+                .colorName(stock.getProduct().getColorName())
+                .mainStoneNote(stock.getStockMainStoneNote())
+                .assistanceStoneNote(stock.getStockAssistanceStoneNote())
+                .productSize(stock.getProduct().getSize())
+                .stockNote(stock.getStockNote())
+                .productLaborCost(stock.getProduct().getLaborCost())
+                .productAddLaborCost(stock.getProduct().getAddLaborCost())
+                .mainStoneLaborCost(stock.getMainStoneLaborCost())
+                .assistanceStoneLaborCost(stock.getAssistanceStoneLaborCost())
+                .mainStoneQuantity(mainStoneQuantity)
+                .assistanceStoneQuantity(assistanceStoneQuantity)
+                .totalWeight(stock.getProduct().getProductWeight().toPlainString())
+                .stoneWeight(stock.getProduct().getStoneWeight().toPlainString())
+                .productPurchaseCost(stock.getProduct().getProductPurchaseCost())
+                .stonePurchaseCost(stock.getStonePurchaseCost()).build();
+    }
+
+    // 재고 관리  주문, 수리, 대여 관련
+    @Transactional(readOnly = true)
+    public CustomPage<StockDto.Response> getStocks(String inputSearch, String orderType, StockDto.StockCondition condition, Pageable pageable) {
+        return customStockRepository.findByStockProducts(inputSearch, orderType, condition, pageable);
     }
 
     //주문 -> 재고 변경
-    public void updateOrderStatusToStock(String accessToken, Long flowCode, StockDto.orderStockRequest stockDto) {
+    public void updateOrderStatus(String accessToken, Long flowCode, String orderType, StockDto.orderStockRequest stockDto) {
         String nickname = jwtUtil.getNickname(accessToken);
-        Orders order = ordersRepository.findAggregate(flowCode)
+        Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         if (stockRepository.existsByOrder(order)) {
@@ -83,7 +121,7 @@ public class StockService {
                 .name(orderProduct.getProductName())
                 .size(stockDto.getProductSize())
                 .classificationName(orderProduct.getClassificationName())
-                .isProductWeightSale(stockDto.isProductWeightSale())
+                .isProductWeightSale(stockDto.getIsProductWeightSale())
                 .laborCost(orderProduct.getProductLaborCost())
                 .addLaborCost(stockDto.getAddProductLaborCost())
                 .productPurchaseCost(stockDto.getProductPurchaseCost())
@@ -108,7 +146,7 @@ public class StockService {
                 .stonePurchaseCost(stockDto.getStonePurchaseCost())
                 .addStoneLaborCost(stockDto.getAddStoneLaborCost())
                 .orderStones(new ArrayList<>())
-                .orderStatus(OrderStatus.STOCK)
+                .orderStatus(OrderStatus.valueOf(orderType))
                 .product(product)
                 .build();
 
@@ -118,7 +156,7 @@ public class StockService {
         updateStoneInfo(stockDto, order, stock);
         updateStoneCostAndPurchase(stock);
 
-        order.updateOrderStatus(OrderStatus.STOCK);
+        order.updateOrderStatus(OrderStatus.valueOf(orderType));
         order.updateProductStatus(ProductStatus.EXPECT);
 
         StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
@@ -128,14 +166,14 @@ public class StockService {
                 order.getFlowCode(),
                 lastHistory.getSourceType(),
                 lastHistory.getPhase(),
-                StatusHistory.BusinessPhase.STOCK,
+                BusinessPhase.valueOf(orderType),
                 nickname
         );
 
         statusHistoryRepository.save(statusHistory);
     }
 
-    // 재고 등록 -> 생성 시 발생하는 토큰 저장 후 고유 stock_code 발급 후 저장
+    //재고 등록 -> 생성 시 발생하는 토큰 저장 후 고유 stock_code 발급 후 저장
     public void saveStock(String accessToken, String orderType, StockDto.createStockRequest stockDto) {
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = TenantContext.getTenant();
@@ -150,14 +188,15 @@ public class StockService {
         ProductSnapshot product = ProductSnapshot.builder()
                 .id(productId)
                 .size(stockDto.getProductSize())
-                .addLaborCost(stockDto.getProductAddLaborCost())
+                .productPurchaseCost(stockDto.getProductPurchaseCost())
+                .addLaborCost(stockDto.getAddProductLaborCost())
                 .productWeight(stockDto.getProductWeight())
                 .stoneWeight(stockDto.getStoneWeight())
                 .build();
 
         Stock stock = Stock.builder()
                 .stockNote(stockDto.getStockNote())
-                .orderStatus(OrderStatus.valueOf(orderType))
+                .orderStatus(OrderStatus.NORMAL)
                 .stockMainStoneNote(stockDto.getMainStoneNote())
                 .stockAssistanceStoneNote(stockDto.getAssistanceStoneNote())
                 .product(product)
@@ -174,10 +213,8 @@ public class StockService {
                     .stonePurchaseCost(stoneInfo.getPurchaseCost())
                     .stoneLaborCost(stoneInfo.getLaborCost())
                     .stoneQuantity(stoneInfo.getQuantity())
-                    .productStoneMain(stoneInfo.isProductStoneMain())
-                    .includeQuantity(stoneInfo.isIncludeQuantity())
-                    .includeWeight(stoneInfo.isIncludeWeight())
-                    .includeLabor(stoneInfo.isIncludeLabor())
+                    .isMainStone(stoneInfo.getIsMainStone())
+                    .isIncludeStone(stoneInfo.getIsIncludeStone())
                     .build();
 
             stoneIds.add(Long.valueOf(stoneInfo.getStoneId()));
@@ -188,9 +225,9 @@ public class StockService {
 
         StatusHistory statusHistory = StatusHistory.create(
                 stock.getStockCode(),
-                StatusHistory.SourceType.NORMAL,
-                StatusHistory.BusinessPhase.NORMAL,
-                StatusHistory.Kind.CREATE,
+                SourceType.valueOf(orderType),
+                BusinessPhase.valueOf(orderType),
+                Kind.CREATE,
                 nickname
         );
 
@@ -207,8 +244,10 @@ public class StockService {
                 .classificationId(classificationId)
                 .colorId(colorId)
                 .nickname(nickname)
-                .productStatus(orderType)
+                .addProductLaborCost(stockDto.getAddProductLaborCost())
+                .addStoneLaborCost(stockDto.getAddStoneLaborCost())
                 .stoneIds(stoneIds)
+                .stoneInfos(stockDto.getStoneInfos())
                 .build();
 
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
@@ -219,142 +258,198 @@ public class StockService {
         });
     }
 
-    // 재고 -> 대여
+    //재고 -> 대여
     public void stockToRental(String accessToken, Long flowCode, StockDto.StockRentalRequest stockRentalDto) {
         String tenantId = jwtUtil.getTenantId(accessToken);
         String nickname = jwtUtil.getNickname(accessToken);
         Stock stock = stockRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        StatusHistory beforeStatusHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(flowCode)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+        if (stock.getOrderStatus() == OrderStatus.NORMAL || stock.getOrderStatus() == OrderStatus.STOCK) {
 
-        StoreDto.Response storeInfo = storeClient.getStoreInfo(tenantId, Long.valueOf(stockRentalDto.getStoreId()));
-        stock.updateStore(storeInfo);
+            StatusHistory beforeStatusHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(flowCode)
+                    .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        // 1) stone Update 필요 여부
-        Map<Long, OrderStone> existingById = stock.getOrderStones().stream()
-                .filter(s -> s.getOrderStoneId() != null)
-                .collect(Collectors.toMap(OrderStone::getOriginStoneId, Function.identity()));
+            StoreDto.Response storeInfo = storeClient.getStoreInfo(tenantId, Long.valueOf(stockRentalDto.getStoreId()));
+            stock.updateStore(storeInfo);
 
-        Set<Long> keepIds = new HashSet<>();
-        for (StockDto.StoneInfo stoneInfo : stockRentalDto.getStoneInfos()) {
-            Long id = Long.valueOf(stoneInfo.getStoneId());
-            if (id != null && existingById.containsKey(id)) {
-                existingById.get(id).updateFrom(stoneInfo);
-                keepIds.add(id);
-            } else {
-                OrderStone orderStone = OrderStone.builder()
-                        .originStoneId(Long.valueOf(stoneInfo.getStoneId()))
-                        .originStoneName(stoneInfo.getStoneName())
-                        .originStoneWeight(new BigDecimal(stoneInfo.getStoneWeight()))
-                        .stonePurchaseCost(stoneInfo.getPurchaseCost())
-                        .stoneLaborCost(stoneInfo.getLaborCost())
-                        .stoneQuantity(stoneInfo.getQuantity())
-                        .productStoneMain(stoneInfo.isProductStoneMain())
-                        .includeQuantity(stoneInfo.isIncludeQuantity())
-                        .includeWeight(stoneInfo.isIncludeWeight())
-                        .includeLabor(stoneInfo.isIncludeLabor())
-                        .build();
+            // 1) stone Update 필요 여부
+            Map<Long, OrderStone> existingById = stock.getOrderStones().stream()
+                    .filter(s -> s.getOrderStoneId() != null)
+                    .collect(Collectors.toMap(OrderStone::getOriginStoneId, Function.identity()));
 
-                orderStone.setStock(stock);
-                stock.addStockStone(orderStone);
-                if (orderStone.getOrderStoneId() != null) keepIds.add(orderStone.getOrderStoneId());
+            Set<Long> keepIds = new HashSet<>();
+            for (StockDto.StoneInfo stoneInfo : stockRentalDto.getStoneInfos()) {
+                Long id = Long.valueOf(stoneInfo.getStoneId());
+                if (existingById.containsKey(id)) {
+                    existingById.get(id).updateFrom(stoneInfo);
+                    keepIds.add(id);
+                } else {
+                    OrderStone orderStone = OrderStone.builder()
+                            .originStoneId(Long.valueOf(stoneInfo.getStoneId()))
+                            .originStoneName(stoneInfo.getStoneName())
+                            .originStoneWeight(new BigDecimal(stoneInfo.getStoneWeight()))
+                            .stonePurchaseCost(stoneInfo.getPurchaseCost())
+                            .stoneLaborCost(stoneInfo.getLaborCost())
+                            .stoneQuantity(stoneInfo.getQuantity())
+                            .isMainStone(stoneInfo.getIsMainStone())
+                            .isIncludeStone(stoneInfo.getIsIncludeStone())
+                            .build();
+
+                    orderStone.setStock(stock);
+                    stock.addStockStone(orderStone);
+                    if (orderStone.getOrderStoneId() != null) keepIds.add(orderStone.getOrderStoneId());
+                }
             }
-        }
 
-        stock.getOrderStones().removeIf(os ->
-                os.getOrderStoneId() != null && !keepIds.contains(os.getOrderStoneId()));
+            stock.getOrderStones().removeIf(os ->
+                    os.getOrderStoneId() != null && !keepIds.contains(os.getOrderStoneId()));
 
-        // 2) stone Cost
-        int sum = 0;
-        sum += (stockRentalDto.getAddStoneLaborCost() != null ? stockRentalDto.getAddStoneLaborCost() : 0);
-        for (OrderStone orderStone : stock.getOrderStones()) {
-            if (Boolean.TRUE.equals(orderStone.getIncludeLabor())) {
-                sum += (orderStone.getStoneLaborCost() != null ? orderStone.getStoneLaborCost() : 0);
+            // 2) stone Cost
+            int totalStonePurchaseCost = 0;
+            int mainStoneCost = 0;
+            int assistanceStoneCost = 0;
+            for (OrderStone orderStone : stock.getOrderStones()) {
+                Integer stoneLaborCost = orderStone.getStoneLaborCost();
+                Integer stoneQuantity = orderStone.getStoneQuantity();
+                Integer stonePurchaseCost = orderStone.getStonePurchaseCost();
+                if (Boolean.TRUE.equals(orderStone.getIsIncludeStone())) {
+                    if (Boolean.TRUE.equals(orderStone.getIsMainStone())) {
+                        mainStoneCost += stoneLaborCost * stoneQuantity;
+                    } else {
+                        assistanceStoneCost += stoneLaborCost * stoneQuantity;
+                    }
+                    totalStonePurchaseCost += stonePurchaseCost * stoneQuantity;
+                }
             }
+
+            stock.updateStoneCost(totalStonePurchaseCost, mainStoneCost, assistanceStoneCost);
+
+            stock.moveToRental(stockRentalDto);
+
+            StatusHistory statusHistory = StatusHistory.phaseChange(
+                    stock.getFlowCode(),
+                    beforeStatusHistory.getSourceType(),
+                    BusinessPhase.valueOf(beforeStatusHistory.getFromValue()),
+                    BusinessPhase.RENTAL,
+                    nickname
+            );
+
+            statusHistoryRepository.save(statusHistory);
+            return;
         }
-
-        stock.moveToRental(stockRentalDto);
-
-        statusHistoryRepository.save(StatusHistory.phaseChange(
-                stock.getFlowCode(),
-                beforeStatusHistory.getSourceType(),
-                StatusHistory.BusinessPhase.valueOf(beforeStatusHistory.getFromValue()),
-                StatusHistory.BusinessPhase.RENTAL,
-                nickname
-        ));
+         throw new IllegalArgumentException("일반, 재고 상품만 대여 전환이 가능합니다.");
     }
 
     // 재고 -> 주문 (삭제)
+    public void stockToDelete(String accessToken, Long flowCode) {
+        String nickname = jwtUtil.getNickname(accessToken);
+        Stock stock = stockRepository.findByFlowCode(flowCode)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-    // 삭제 재고 -> 재고
+        Long beforeFlowCode = stock.getFlowCode();
+        // 일반인 경우 그냥 삭제
+        // 주문인 경우 연관관계 제거 후 주문 상태는 WAIT로 변경
+        // -> orderStone, history들은 스냅샷 후 별도 저장
+        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(beforeFlowCode)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-    // 재고 -> 판매
+        stock.removeOrder(); // order, orderProduct 연관성 제거
+        stock.updateOrderStatus(OrderStatus.DELETE);
+
+        StatusHistory orderStatusHistory = StatusHistory.phaseChange(
+                beforeFlowCode,
+                lastHistory.getSourceType(),
+                lastHistory.getPhase(),
+                BusinessPhase.WAITING,
+                nickname
+        );
+
+        statusHistoryRepository.save(orderStatusHistory);
+
+        List<StatusHistory> allByFlowCode = statusHistoryRepository.findAllByFlowCode(beforeFlowCode);
+        for (StatusHistory statusHistory : allByFlowCode) {
+            statusHistory.updateFlowCode(stock.getFlowCode());
+        }
+
+        StatusHistory deleteStockHistory = StatusHistory.phaseChange(
+                stock.getFlowCode(),
+                lastHistory.getSourceType(),
+                lastHistory.getPhase(),
+                BusinessPhase.DELETE,
+                nickname
+        );
+
+        allByFlowCode.add(deleteStockHistory);
+
+        statusHistoryRepository.saveAll(allByFlowCode);
+    }
+
+    // 대여 -> 반납 (재고) RETURN -> STOCK
+
+    // 삭제 -> 재고 DELETE -> STOCK
+    public void recoveryStock(String accessToken, Long flowCode, String orderType) {
+        String nickname = jwtUtil.getNickname(accessToken);
+        Stock stock = stockRepository.findByFlowCode(flowCode)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(flowCode)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        OrderStatus target = OrderStatus.valueOf(orderType);
+
+        if (target != OrderStatus.RETURN && target != OrderStatus.DELETE) {
+            throw new IllegalArgumentException(WRONG_STATUS);
+        }
+        stock.updateOrderStatus(OrderStatus.STOCK);
+        StatusHistory orderStatusHistory = StatusHistory.phaseChange(
+                flowCode,
+                lastHistory.getSourceType(),
+                lastHistory.getPhase(),
+                BusinessPhase.STOCK,
+                nickname
+        );
+        statusHistoryRepository.save(orderStatusHistory);
+    }
 
     private static void updateStoneInfo(StockDto.orderStockRequest stockDto, Orders order, Stock stock) {
-        Map<Long, OrderStone> stoneId = order.getOrderStones().stream()
-                .filter(os -> os.getOrderStoneId() != null)
-                .collect(Collectors.toMap(OrderStone::getOrderStoneId, Function.identity()));
+        Map<Long, OrderStone> stones = order.getOrderStones().stream()
+                .filter(os -> os.getOriginStoneId() != null)
+                .collect(Collectors.toMap(OrderStone::getOriginStoneId, Function.identity()));
 
+        // 분기점 1. 동일 id면 내부 값만 갱신 2. 다른 id가 있으면 추가 3. id가 없어지면 삭제
         Set<Long> keepIds = new HashSet<>();
         if (stockDto.getStoneInfos() != null) {
             for (StockDto.StoneInfo s : stockDto.getStoneInfos()) {
-                Long osId = parseLongOrNull(s.getStoneId());
-                if (osId != null) {
-                    OrderStone os = stoneId.get(osId);
-                    if (os == null) {
-                        throw new IllegalArgumentException("잘못된 orderStoneId: " + osId);
-                    }
-                    if (isChanged(os, s)) {
-                        os.updateFrom(s); // 필드 일괄 업데이트
-                    }
-                    os.setStock(stock);
-                    stock.addStockStone(os);
-                    keepIds.add(osId);
-                } else {
+                Long stoneId = Long.valueOf(s.getStoneId());
+                OrderStone os = stones.get(stoneId);
+                if (os == null) {
                     // 신규 스톤 추가(주문에는 없었던 항목)
-                    OrderStone os = OrderStone.builder()
+                    OrderStone newOs = OrderStone.builder()
                             .originStoneId(Long.valueOf(s.getStoneId()))
                             .originStoneName(s.getStoneName())
                             .originStoneWeight(new BigDecimal(s.getStoneWeight()))
                             .stonePurchaseCost(s.getPurchaseCost())
                             .stoneLaborCost(s.getLaborCost())
                             .stoneQuantity(s.getQuantity())
-                            .productStoneMain(s.isProductStoneMain())
-                            .includeQuantity(s.isIncludeQuantity())
-                            .includeWeight(s.isIncludeWeight())
-                            .includeLabor(s.isIncludeLabor())
+                            .isMainStone(s.getIsMainStone())
+                            .isIncludeStone(s.getIsIncludeStone())
                             .build();
-                    os.setStock(stock);
-                    stock.addStockStone(os);
-                }
-            }
-        }
-
-        stock.getOrderStones().removeIf(os ->
-                os.getOrderStoneId() != null && !keepIds.contains(os.getOrderStoneId()));
-    }
-
-    private static void updateStoneCostAndPurchase(Stock stock) {
-        int totalStonePurchaseCost = 0;
-        int mainStoneCost = 0;
-        int assistanceStoneCost = 0;
-
-        for (OrderStone os : stock.getOrderStones()) {
-            int qty = nvl(os.getStoneQuantity());
-            int labor = nvl(os.getStoneLaborCost());
-            int purchase = nvl(os.getStonePurchaseCost());
-            if (Boolean.TRUE.equals(os.getIncludeQuantity())) {
-                if (Boolean.TRUE.equals(os.getProductStoneMain())) {
-                    mainStoneCost += labor * qty;
+                    newOs.setStock(stock);
+                    order.addOrderStone(newOs);
+                    stock.addStockStone(newOs);
+                    keepIds.add(stoneId);
                 } else {
-                    assistanceStoneCost += labor * qty;
+                    if (isChanged(os, s)) {
+                        os.updateFrom(s);
+                    }
+                    stock.addStockStone(os);
+                    keepIds.add(stoneId);
                 }
-                totalStonePurchaseCost += purchase * qty;
             }
         }
-        stock.updateStonePurchaseCost(totalStonePurchaseCost, mainStoneCost, assistanceStoneCost);
+
+        order.getOrderStones().removeIf(os ->
+                os.getOriginStoneId() != null && !keepIds.contains(os.getOriginStoneId()));
     }
 
 }

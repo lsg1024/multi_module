@@ -58,10 +58,10 @@ public class Stock {
     private Integer mainStoneLaborCost;
     @Column(name = "ASSISTANCE_STONE_LABOR_COST")
     private Integer assistanceStoneLaborCost;
-    @Column(name = "ADD_STONE_LABOR_COST")
-    private Integer addStoneLaborCost;
     @Column(name = "TOTAL_STONE_PURCHASE_COST")
     private Integer stonePurchaseCost;
+    @Column(name = "ADD_STONE_LABOR_COST")
+    private Integer addStoneLaborCost;
     @Column(name = "STOCK_CREATE_AT", nullable = false, updatable = false)
     private OffsetDateTime stockCreateAt;
     @Column(name = "STOCK_DELETED", nullable = false)
@@ -109,6 +109,8 @@ public class Stock {
     }
 
     public void removeOrder() {
+        this.flowCode = TsidCreator.getTsid().toLong();
+        this.stockCode = flowCode;
         this.order = null;
     }
 
@@ -129,7 +131,7 @@ public class Stock {
 
     public void moveToRental(StockDto.StockRentalRequest rentalRequest) {
         this.addStoneLaborCost = rentalRequest.getAddStoneLaborCost();
-        this.stockNote = rentalRequest.getProductNote();
+        this.stockNote = rentalRequest.getStockNote();
         this.stockMainStoneNote = rentalRequest.getMainStoneNote();
         this.stockAssistanceStoneNote = rentalRequest.getAssistanceStoneNote();
         this.orderStatus = OrderStatus.RENTAL;
@@ -147,9 +149,17 @@ public class Stock {
         }
     }
 
-    public void updateStonePurchaseCost(int totalStonePurchaseCost, int mainLaborCost, int assistanceLaborCost) {
+    public void updateStoneCost(int totalStonePurchaseCost, int mainLaborCost, int assistanceLaborCost) {
         this.stonePurchaseCost = totalStonePurchaseCost;
         this.mainStoneLaborCost = mainLaborCost;
         this.assistanceStoneLaborCost = assistanceLaborCost;
+    }
+
+    public void updateAddStoneLaborCost(Integer addStoneLaborCost) {
+        this.addStoneLaborCost = addStoneLaborCost;
+    }
+
+    public void updateOrderStatus(OrderStatus orderStatus) {
+        this.orderStatus = orderStatus;
     }
 }

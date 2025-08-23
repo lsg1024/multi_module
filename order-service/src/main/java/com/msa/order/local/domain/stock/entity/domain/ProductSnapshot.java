@@ -4,16 +4,18 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.AccessLevel;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+@Getter
 @Embeddable
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProductSnapshot {
     @Column(name = "PRODUCT_ID", updatable = false)
     private Long id;
-    @Column(name = "PRODUCT_NAME", updatable = false)
+    @Column(name = "PRODUCT_NAME")
     private String name;
     @Column(name = "PRODUCT_SIZE")
     private String size;

@@ -4,10 +4,12 @@ import com.msa.order.global.kafka.dto.KafkaStockRequest;
 import com.msa.order.local.domain.order.dto.FactoryDto;
 import com.msa.order.local.domain.order.dto.StoreDto;
 import com.msa.order.local.domain.order.entity.StatusHistory;
+import com.msa.order.local.domain.order.entity.order_enum.BusinessPhase;
 import com.msa.order.local.domain.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.domain.order.external_client.*;
 import com.msa.order.local.domain.order.external_client.dto.ProductDetailDto;
 import com.msa.order.local.domain.order.repository.StatusHistoryRepository;
+import com.msa.order.local.domain.stock.dto.StockDto;
 import com.msa.order.local.domain.stock.entity.domain.ProductSnapshot;
 import com.msa.order.local.domain.stock.entity.domain.Stock;
 import com.msa.order.local.domain.stock.repository.StockRepository;
@@ -19,6 +21,7 @@ import java.util.List;
 
 import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND;
 import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND_STONE;
+import static com.msa.order.local.domain.order.util.StoneUtil.updateStoneCostAndPurchase;
 
 @Slf4j
 @Service
@@ -47,13 +50,14 @@ public class KafkaStockService {
         this.statusHistoryRepository = statusHistoryRepository;
     }
 
-    public void saveStockDetail(KafkaStockRequest stockRequest) {
-        final String tenantId = stockRequest.getTenantId();
+    public void saveStockDetail(KafkaStockRequest stockDto) {
+        final String tenantId = stockDto.getTenantId();
 
-        Stock stock = stockRepository.findByFlowCode(stockRequest.getFlowCode())
+        Stock stock = stockRepository.findByFlowCode(stockDto.getFlowCode())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         if (stock.getOrderStatus() != OrderStatus.NORMAL) {
+            log.info("WARING STATUS");
             return;
         }
 
@@ -69,37 +73,37 @@ public class KafkaStockService {
             String classificationName;
             String colorName;
 
-            if (stockRequest.getStoreId() != null) {
-                storeInfo = storeClient.getStoreInfo(tenantId, stockRequest.getStoreId());
+            if (stockDto.getStoreId() != null) {
+                storeInfo = storeClient.getStoreInfo(tenantId, stockDto.getStoreId());
             } else {
                 storeInfo = storeClient.getStoreInfo(tenantId, 1L);
             }
 
-            if (stockRequest.getFactoryId() != null) {
-                factoryName = factoryClient.getFactoryInfo(tenantId, stockRequest.getFactoryId()).getFactoryName();
+            if (stockDto.getFactoryId() != null) {
+                factoryName = factoryClient.getFactoryInfo(tenantId, stockDto.getFactoryId()).getFactoryName();
             } else {
                 factoryName = factoryClient.getFactoryInfo(tenantId, 1L).getFactoryName();
             }
 
-            if (stockRequest.getMaterialId() != null) {
-                materialName = materialClient.getMaterialInfo(tenantId, stockRequest.getMaterialId());
+            if (stockDto.getMaterialId() != null) {
+                materialName = materialClient.getMaterialInfo(tenantId, stockDto.getMaterialId());
             } else {
                 materialName = materialClient.getMaterialInfo(tenantId, 1L);
             }
 
-            if (stockRequest.getClassificationId() != null) {
-                classificationName = classificationClient.getClassificationInfo(tenantId, stockRequest.getClassificationId());
+            if (stockDto.getClassificationId() != null) {
+                classificationName = classificationClient.getClassificationInfo(tenantId, stockDto.getClassificationId());
             } else {
                 classificationName = classificationClient.getClassificationInfo(tenantId, 1L);
             }
 
-            if (stockRequest.getColorId() != null) {
-                colorName = colorClient.getColorInfo(tenantId, stockRequest.getColorId());
+            if (stockDto.getColorId() != null) {
+                colorName = colorClient.getColorInfo(tenantId, stockDto.getColorId());
             } else {
                 colorName = colorClient.getColorInfo(tenantId, 1L);
             }
 
-            ProductDetailDto productInfo = productClient.getProductInfo(tenantId, stockRequest.getProductId(), storeInfo.getGrade());
+            ProductDetailDto productInfo = productClient.getProductInfo(tenantId, stockDto.getProductId(), storeInfo.getGrade());
 
             ProductSnapshot product = stock.getProduct();
             product.updateProduct(
@@ -110,7 +114,7 @@ public class KafkaStockService {
                     colorName
             );
 
-            List<Long> stoneIds = stockRequest.getStoneIds();
+            List<Long> stoneIds = stockDto.getStoneIds();
             for (Long stoneId : stoneIds) {
                 Boolean existStoneId = stoneClient.getExistStoneId(tenantId, stoneId);
                 if (!existStoneId) {
@@ -118,28 +122,49 @@ public class KafkaStockService {
                 }
             }
 
-            stock.updateStore(new StoreDto.Response(stockRequest.getStoreId(), storeInfo.getStoreName()));
-            stock.updateFactory(new FactoryDto.Response(stockRequest.getFactoryId(), factoryName));
+            updateStoneCostAndPurchase(stock);
+
+            int totalStonePurchaseCost = 0;
+            int mainStoneCost = 0;
+            int assistanceStoneCost = 0;
+            for (StockDto.StoneInfo stoneInfo : stockDto.getStoneInfos()) {
+                Integer laborCost = stoneInfo.getLaborCost();
+                Integer quantity = stoneInfo.getQuantity();
+                Integer purchaseCost = stoneInfo.getPurchaseCost();
+                if (Boolean.TRUE.equals(stoneInfo.getIsIncludeStone())) {
+                    if (Boolean.TRUE.equals(stoneInfo.getIsMainStone())) {
+                        mainStoneCost += laborCost * quantity;
+                    } else {
+                        assistanceStoneCost += laborCost * quantity;
+                    }
+                    totalStonePurchaseCost += purchaseCost * quantity;
+                }
+            }
+
+            stock.updateStoneCost(totalStonePurchaseCost, mainStoneCost, assistanceStoneCost);
+            stock.updateStore(new StoreDto.Response(stockDto.getStoreId(), storeInfo.getStoreName()));
+            stock.updateFactory(new FactoryDto.Response(stockDto.getFactoryId(), factoryName));
+            stock.updateAddStoneLaborCost(stockDto.getAddStoneLaborCost());
 
             statusHistory = StatusHistory.phaseChange(
                     stock.getFlowCode(),
                     lastHistory.getSourceType(),
                     lastHistory.getPhase(),
-                    StatusHistory.BusinessPhase.STOCK,
-                    stockRequest.getNickname()
+                    BusinessPhase.STOCK,
+                    stockDto.getNickname()
             );
 
             statusHistoryRepository.save(statusHistory);
 
         } catch (Exception e) {
-            log.error("Async failed. orderId={}, err={}", stockRequest.getFlowCode(), e.getMessage(), e);
+            log.error("Async failed. orderId={}, err={}", stockDto.getFlowCode(), e.getMessage(), e);
 
             statusHistory = StatusHistory.phaseChange(
                     stock.getFlowCode(),
                     lastHistory.getSourceType(),
                     lastHistory.getPhase(),
-                    StatusHistory.BusinessPhase.STOCK_FAIL,
-                    stockRequest.getNickname()
+                    BusinessPhase.STOCK_FAIL,
+                    stockDto.getNickname()
             );
 
             statusHistoryRepository.save(statusHistory);

@@ -6,5 +6,5 @@ import org.springframework.data.domain.Pageable;
 
 public interface CustomStockRepository {
     // 재고
-    CustomPage<StockDto.Response> findByStockProducts(String input, StockDto.StockCondition condition, Pageable pageable);
+    CustomPage<StockDto.Response> findByStockProducts(String input, String orderType, StockDto.StockCondition condition, Pageable pageable);
 }

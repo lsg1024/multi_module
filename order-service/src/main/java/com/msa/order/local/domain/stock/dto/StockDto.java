@@ -1,11 +1,11 @@
 package com.msa.order.local.domain.stock.dto;
 
-import com.msa.order.local.domain.order.entity.order_enum.ProductStatus;
 import com.querydsl.core.annotations.QueryProjection;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -22,8 +22,10 @@ public class StockDto {
         @Pattern(regexp = "\\d+", message = "상품 입력 값 오류.")
         private String productId;
         private String productSize;
-        private Integer productAddLaborCost;
-        private boolean isProductWeightSale;
+        private Integer productPurchaseCost;
+        private Integer addProductLaborCost;
+        private Integer addStoneLaborCost;
+        private Boolean isProductWeightSale;
         private String materialId;
         private String classificationId;
         private String colorId;
@@ -49,7 +51,7 @@ public class StockDto {
     @NoArgsConstructor
     public static class orderStockRequest {
         private String productSize;
-        private boolean isProductWeightSale;
+        private Boolean isProductWeightSale;
         private Integer addProductLaborCost;
         private Integer addStoneLaborCost;
         private Integer productPurchaseCost;
@@ -73,8 +75,8 @@ public class StockDto {
         private String productSize;
         private String mainStoneNote;
         private String assistanceStoneNote;
-        private String productNote;
-        private boolean isProductWeightSale;
+        private String stockNote;
+        private Boolean isProductWeightSale;
         private String productWeight;
         private String stoneWeight;
         private Integer addProductLaborCost;
@@ -94,47 +96,96 @@ public class StockDto {
         private Integer purchaseCost;
         private Integer laborCost;
         private Integer quantity;
-        private boolean productStoneMain;
-        private boolean includeQuantity;
-        private boolean includeWeight;
-        private boolean includeLabor;
+        private Boolean isMainStone;
+        private Boolean isIncludeStone;
     }
 
-    // 재고값 데이터
+    // 재고값 상세 조회 데이터
+    @Getter
+    @NoArgsConstructor
+    public static class ResponseDetail {
+        private String flowCode;
+        private String createAt;
+        private String originalProductStatus;
+        private String classificationName;
+        private String productName;
+        private String storeName;
+        private String materialName;
+        private String colorName;
+        private String mainStoneNote;
+        private String assistanceStoneNote;
+        private String productSize;
+        private String stockNote;
+        private Integer productLaborCost;
+        private Integer productAddLaborCost;
+        private Integer mainStoneLaborCost;
+        private Integer assistanceStoneLaborCost;
+        private Integer mainStoneQuantity;
+        private Integer assistanceStoneQuantity;
+        private String totalWeight;
+        private String stoneWeight;
+        private Integer productPurchaseCost;
+        private Integer stonePurchaseCost;
+
+        @Builder
+        public ResponseDetail(String flowCode, String createAt, String originalProductStatus, String classificationName, String productName, String storeName, String materialName, String colorName, String mainStoneNote, String assistanceStoneNote, String productSize, String stockNote, Integer productLaborCost, Integer productAddLaborCost, Integer mainStoneLaborCost, Integer assistanceStoneLaborCost, Integer mainStoneQuantity, Integer assistanceStoneQuantity, String totalWeight, String stoneWeight, Integer productPurchaseCost, Integer stonePurchaseCost) {
+            this.flowCode = flowCode;
+            this.createAt = createAt;
+            this.originalProductStatus = originalProductStatus;
+            this.classificationName = classificationName;
+            this.productName = productName;
+            this.storeName = storeName;
+            this.materialName = materialName;
+            this.colorName = colorName;
+            this.mainStoneNote = mainStoneNote;
+            this.assistanceStoneNote = assistanceStoneNote;
+            this.productSize = productSize;
+            this.stockNote = stockNote;
+            this.productLaborCost = productLaborCost;
+            this.productAddLaborCost = productAddLaborCost;
+            this.mainStoneLaborCost = mainStoneLaborCost;
+            this.assistanceStoneLaborCost = assistanceStoneLaborCost;
+            this.mainStoneQuantity = mainStoneQuantity;
+            this.assistanceStoneQuantity = assistanceStoneQuantity;
+            this.totalWeight = totalWeight;
+            this.stoneWeight = stoneWeight;
+            this.productPurchaseCost = productPurchaseCost;
+            this.stonePurchaseCost = stonePurchaseCost;
+        }
+    }
+
+    // 재고값 조회 데이터
     @Getter
     @NoArgsConstructor
     public static class Response {
-        private String orderCode;
+        private String flowCode;
         private String createAt;
-        private ProductStatus productStatus;
         private String storeName;
         private String productSize;
-        private String orderNote;
+        private String stockNote;
         private String materialName;
         private String classificationName;
         private String colorName;
-        private String productLaborCost;
-        private String productAddLaborCost;
-        private String mainStoneLaborCost;
-        private String assistanceLaborCost;
+        private Integer productLaborCost;
+        private Integer productAddLaborCost;
+        private Integer mainStoneLaborCost;
+        private Integer assistanceLaborCost;
         private String mainStoneNote;
         private String assistanceStoneNote;
-        private String mainStoneQuantity;
-        private String assistanceStoneQuantity;
+        private Integer mainStoneQuantity;
+        private Integer assistanceStoneQuantity;
         private String stoneWeight;
         private String totalWeight;
-        private String goldHarry;
-        private String productPurchaseCost;
-        private String stonePurchaseCost;
+        private Integer productPurchaseCost;
+        private Integer stonePurchaseCost;
 
         @QueryProjection
-        public Response(String orderCode, String createAt, ProductStatus productStatus, String storeName, String productSize, String orderNote, String materialName, String classificationName, String colorName, String productLaborCost, String productAddLaborCost, String mainStoneLaborCost, String assistanceLaborCost, String mainStoneNote, String assistanceStoneNote, String mainStoneQuantity, String assistanceStoneQuantity, String stoneWeight, String totalWeight, String goldHarry, String productPurchaseCost, String stonePurchaseCost) {
-            this.orderCode = orderCode;
+        public Response(String flowCode, String createAt, String storeName, String productSize, String stockNote, String materialName, String classificationName, String colorName, Integer productLaborCost, Integer productAddLaborCost, Integer mainStoneLaborCost, Integer assistanceLaborCost, String mainStoneNote, String assistanceStoneNote, Integer mainStoneQuantity, Integer assistanceStoneQuantity, String stoneWeight, String totalWeight, Integer productPurchaseCost, Integer stonePurchaseCost) {
+            this.flowCode = flowCode;
             this.createAt = createAt;
-            this.productStatus = productStatus;
             this.storeName = storeName;
             this.productSize = productSize;
-            this.orderNote = orderNote;
+            this.stockNote = stockNote;
             this.materialName = materialName;
             this.classificationName = classificationName;
             this.colorName = colorName;
@@ -148,7 +199,6 @@ public class StockDto {
             this.assistanceStoneQuantity = assistanceStoneQuantity;
             this.stoneWeight = stoneWeight;
             this.totalWeight = totalWeight;
-            this.goldHarry = goldHarry;
             this.productPurchaseCost = productPurchaseCost;
             this.stonePurchaseCost = stonePurchaseCost;
         }
