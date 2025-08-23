@@ -1,5 +1,8 @@
 package com.msa.order.local.domain.order.entity;
 
+import com.msa.order.local.domain.order.entity.order_enum.BusinessPhase;
+import com.msa.order.local.domain.order.entity.order_enum.Kind;
+import com.msa.order.local.domain.order.entity.order_enum.SourceType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -16,10 +19,6 @@ import java.time.ZoneId;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class StatusHistory {
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-
-    public enum SourceType { ORDER, FIX, NORMAL }
-    public enum BusinessPhase { ORDER, WAITING, ORDER_FAIL, STOCK, STOCK_FAIL, FIX, NORMAL, RENTAL, RETURN, SALE, DELETE}
-    public enum Kind { CREATE, UPDATE, DELETE, RESTORE, EXPECT }
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ID")
@@ -71,20 +70,13 @@ public class StatusHistory {
         return h;
     }
 
-    public static StatusHistory fieldChange(Long flowCode, SourceType src,
-                                            BusinessPhase phase, String from, String to,
-                                             String userName) {
-        StatusHistory h = base(flowCode, src, Kind.UPDATE, userName);
-        h.phase = phase;
-        h.fromValue = from;
-        h.toValue = to;
-        return h;
-    }
-
-
     protected static StatusHistory base(Long flow, SourceType src, Kind kind, String userName) {
         StatusHistory h = new StatusHistory();
         h.flowCode = flow; h.sourceType = src; h.kind = kind; h.userName = userName;
         return h;
+    }
+
+    public void updateFlowCode(Long newFlowCode) {
+        this.flowCode = newFlowCode;
     }
 }

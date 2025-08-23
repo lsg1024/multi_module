@@ -28,9 +28,7 @@ public class ProductDetailDto {
         private Integer purchaseCost;
         private Integer laborCost;
         private Integer quantity;
-        private boolean productStoneMain;
-        private boolean includeQuantity;
-        private boolean includeWeight;
-        private boolean includeLabor;
+        private boolean isMainStone;
+        private boolean isIncludeStone;
     }
 }
