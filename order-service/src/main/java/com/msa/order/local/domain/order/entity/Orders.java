@@ -1,10 +1,12 @@
 package com.msa.order.local.domain.order.entity;
 
+import com.github.f4b6a3.tsid.TsidCreator;
 import com.msa.order.local.domain.order.dto.FactoryDto;
 import com.msa.order.local.domain.order.dto.StoreDto;
 import com.msa.order.local.domain.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.domain.order.entity.order_enum.ProductStatus;
 import com.msa.order.local.domain.priority.entitiy.Priority;
+import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -30,8 +32,8 @@ public class Orders {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ORDER_ID")
     private Long orderId;
-    @Column(name = "ORDER_CODE")
-    private String orderCode;
+    @Tsid @Column(name = "FLOW_CODE")
+    private Long flowCode;
     @Column(name = "STORE_ID") //account - store
     private Long storeId;
     @Column(name = "STORE_NAME") //account - store
@@ -56,11 +58,8 @@ public class Orders {
     @OneToOne(mappedBy = "order", cascade = {PERSIST, MERGE})
     private OrderProduct orderProduct;
 
-    @OneToMany(mappedBy = "order", cascade = {PERSIST, MERGE})
+    @OneToMany(mappedBy = "order", cascade = {PERSIST, MERGE, REMOVE}, orphanRemoval = true)
     private List<OrderStone> orderStones = new ArrayList<>();
-
-    @OneToMany(mappedBy = "order", cascade = {PERSIST, MERGE})
-    private List<StatusHistory> statusHistory = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PRIORITY_ID")
@@ -76,9 +75,9 @@ public class Orders {
     private OrderStatus orderStatus;
 
     @Builder
-    public Orders(Long orderId, String orderCode, Long storeId, String storeName, Long factoryId, String factoryName, String orderNote, String orderMainStoneNote, String orderAssistanceStoneNote, OffsetDateTime orderDate, OffsetDateTime orderExpectDate, List<StatusHistory> statusHistory, ProductStatus productStatus, OrderStatus orderStatus) {
+    public Orders(Long orderId, Long flowCode, Long storeId, String storeName, Long factoryId, String factoryName, String orderNote, String orderMainStoneNote, String orderAssistanceStoneNote, OffsetDateTime orderDate, OffsetDateTime orderExpectDate, ProductStatus productStatus, OrderStatus orderStatus) {
         this.orderId = orderId;
-        this.orderCode = orderCode;
+        this.flowCode = flowCode;
         this.storeId = storeId;
         this.storeName = storeName;
         this.factoryId = factoryId;
@@ -88,7 +87,6 @@ public class Orders {
         this.orderAssistanceStoneNote = orderAssistanceStoneNote;
         this.orderDate = orderDate;
         this.orderExpectDate = orderExpectDate;
-        this.statusHistory = statusHistory;
         this.productStatus = productStatus;
         this.orderStatus = orderStatus;
     }
@@ -97,30 +95,18 @@ public class Orders {
         this.orderStones.add(orderStone);
         orderStone.setOrder(this);
     }
-    public void addStatusHistory(StatusHistory statusHistory) {
-        this.statusHistory.add(statusHistory);
-        statusHistory.setOrder(this);
-    }
 
     public void addOrderProduct(OrderProduct orderProduct) {
         this.orderProduct = orderProduct;
         orderProduct.setOrder(this);
-    }
-    public void addOrderCode(String orderCode) {
-        this.orderCode = orderCode;
     }
 
     public void addPriority(Priority priority) {
         this.priority = priority;
     }
 
-    public void updateOrderStatus(OrderStatus newStatus) {
-        this.orderStatus = newStatus;
-    }
-
-    public void updateProductStatus(ProductStatus productStatus) {
-        this.productStatus = productStatus;
-        this.orderStatus = OrderStatus.NONE;
+    public void updateProductStatus(ProductStatus newStatus) {
+        this.productStatus = newStatus;
     }
 
     public void updateStore(StoreDto.Response storeDto) {
@@ -142,5 +128,15 @@ public class Orders {
         this.orderDeleted = true;
     }
 
+    @PrePersist
+    private void onCreate() {
+        if (this.flowCode == null) {
+            this.flowCode = TsidCreator.getTsid().toLong();
+        }
+    }
+
+    public void updateOrderStatus(OrderStatus orderStatus) {
+        this.orderStatus = orderStatus;
+    }
 }
 

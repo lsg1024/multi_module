@@ -6,15 +6,12 @@ import java.util.Arrays;
 import java.util.Optional;
 
 public enum ProductStatus {
-    ORDER("주문"),
-    FAILED("실패"),
-    STOCK("재고"),
-    SALE("판매"),
-    RENT("대여"),
-    FIX("수리"),
-    FIX_STOCK("수리 재고"),
-    CANCEL("취소"),    // 운영상 필요한 경우 유지 권장
-    DELETE("삭제");
+    RECEIPT("접수"), // 접수,
+    WAITING("대기"), // 대기
+    RECEIPT_FAILED("접수 실패"), // 접수 실패
+    EXPECT("출고"),
+    DELETE("삭제"),
+    NONE("NONE");
 
     private final String displayName;
 

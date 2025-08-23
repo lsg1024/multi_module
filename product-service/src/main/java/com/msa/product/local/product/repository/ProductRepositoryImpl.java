@@ -148,6 +148,7 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                         product.productName,
                         material.materialName,
                         color.colorName,
+                        productWorkGradePolicyGroup.productPurchasePrice,
                         productWorkGradePolicy.laborCost
                 ))
                 .from(product)

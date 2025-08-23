@@ -6,24 +6,25 @@ import com.msa.order.local.domain.order.dto.StoreDto;
 import com.msa.order.local.domain.order.entity.OrderProduct;
 import com.msa.order.local.domain.order.entity.Orders;
 import com.msa.order.local.domain.order.entity.StatusHistory;
+import com.msa.order.local.domain.order.entity.order_enum.BusinessPhase;
 import com.msa.order.local.domain.order.entity.order_enum.OrderStatus;
-import com.msa.order.local.domain.order.entity.order_enum.ProductStatus;
 import com.msa.order.local.domain.order.external_client.*;
 import com.msa.order.local.domain.order.external_client.dto.ProductDetailDto;
 import com.msa.order.local.domain.order.repository.OrdersRepository;
+import com.msa.order.local.domain.order.repository.StatusHistoryRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 
 import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND;
 import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND_STONE;
+import static com.msa.order.local.domain.order.entity.order_enum.ProductStatus.RECEIPT_FAILED;
 
 @Slf4j
 @Service
-public class OrderAsyncService {
+public class KafkaOrderService {
     private final StoreClient storeClient;
     private final StoneClient stoneClient;
     private final ProductClient productClient;
@@ -32,8 +33,9 @@ public class OrderAsyncService {
     private final ClassificationClient classificationClient;
     private final ColorClient colorClient;
     private final OrdersRepository ordersRepository;
+    private final StatusHistoryRepository statusHistoryRepository;
 
-    public OrderAsyncService(StoreClient storeClient, StoneClient stoneClient, ProductClient productClient, FactoryClient factoryClient, MaterialClient materialClient, ClassificationClient classificationClient, ColorClient colorClient, OrdersRepository ordersRepository) {
+    public KafkaOrderService(StoreClient storeClient, StoneClient stoneClient, ProductClient productClient, FactoryClient factoryClient, MaterialClient materialClient, ClassificationClient classificationClient, ColorClient colorClient, OrdersRepository ordersRepository, StatusHistoryRepository statusHistoryRepository) {
         this.storeClient = storeClient;
         this.stoneClient = stoneClient;
         this.productClient = productClient;
@@ -42,6 +44,7 @@ public class OrderAsyncService {
         this.classificationClient = classificationClient;
         this.colorClient = colorClient;
         this.ordersRepository = ordersRepository;
+        this.statusHistoryRepository = statusHistoryRepository;
     }
 
     @Transactional
@@ -50,12 +53,17 @@ public class OrderAsyncService {
         // 멀티테넌시 컨텍스트 전파
         final String tenantId = evt.getTenantId();
 
-        Orders order = ordersRepository.findAggregate(evt.getOrderId())
+        Orders order = ordersRepository.findByFlowCode(evt.getFlowCode())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        if (order.getProductStatus() != ProductStatus.ORDER && order.getProductStatus() != ProductStatus.FIX) {
+        if (order.getOrderStatus() != OrderStatus.ORDER && order.getOrderStatus() != OrderStatus.FIX) {
             return;
         }
+
+        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        StatusHistory statusHistory;
 
         try {
             // 1) 외부 조회 (순차/병렬 선택 가능)
@@ -69,6 +77,7 @@ public class OrderAsyncService {
             OrderProduct orderProduct = order.getOrderProduct();
             orderProduct.updateOrder(
                     productInfo.getProductName(),
+                    productInfo.getPurchaseCost(),
                     productInfo.getLaborCost(),
                     materialName,
                     classificationName,
@@ -88,16 +97,29 @@ public class OrderAsyncService {
 
             ordersRepository.save(order);
 
+            statusHistory = StatusHistory.phaseChange(
+                    order.getFlowCode(),
+                    lastHistory.getSourceType(),
+                    lastHistory.getPhase(),
+                    BusinessPhase.ORDER,
+                    evt.getNickname()
+            );
+
+            statusHistoryRepository.save(statusHistory);
+
         } catch (Exception e) {
-            log.error("Async failed. orderId={}, err={}", evt.getOrderId(), e.getMessage(), e);
-            order.updateOrderStatus(OrderStatus.RECEIPT_FAILED);
-            order.addStatusHistory(StatusHistory.builder()
-                    .productStatus(ProductStatus.FAILED)
-                    .orderStatus(OrderStatus.RECEIPT_FAILED)
-                    .createAt(OffsetDateTime.now())
-                    .userName(evt.getNickname())
-                    .build());
-            ordersRepository.save(order);
+            log.error("Async failed. orderId={}, err={}", evt.getFlowCode(), e.getMessage(), e);
+            order.updateProductStatus(RECEIPT_FAILED);
+
+            statusHistory = StatusHistory.phaseChange(
+                    order.getFlowCode(),
+                    lastHistory.getSourceType(),
+                    lastHistory.getPhase(),
+                    BusinessPhase.ORDER_FAIL,
+                    evt.getNickname()
+            );
+
+            statusHistoryRepository.save(statusHistory);
         }
     }
 }

@@ -5,30 +5,32 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 import java.util.Optional;
 
-public enum OrderStatus {
+public enum BusinessPhase {
     ORDER("주문"),
-    FIX("수리"),
+    WAITING("대기"),
+    ORDER_FAIL("주문 실패"),
     STOCK("재고"),
+    STOCK_FAIL("재고 실패"),
+    FIX("수리"),
     NORMAL("일반"),
     RENTAL("대여"),
-    RETURN("반납"),
+    RETURN("반환"),
     SALE("판매"),
-    DELETE("삭제"),
-    NONE("NONE");
+    DELETE("삭제");
 
     private final String displayName;
 
-    OrderStatus(String displayName) {
+    BusinessPhase(String displayName) {
         this.displayName = displayName;
     }
-
     @JsonValue
-    public String getDisplayName() {return displayName; }
+    public String getDisplayName() {
+        return displayName;
+    }
 
-    public static Optional<OrderStatus> fromDisplayName(String displayName) {
+    public static Optional<BusinessPhase> fromDisplayName(String displayName) {
         return Arrays.stream(values())
                 .filter(s -> s.getDisplayName().equals(displayName))
                 .findFirst();
     }
 }
-

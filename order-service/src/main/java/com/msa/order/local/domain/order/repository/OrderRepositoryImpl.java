@@ -1,14 +1,16 @@
 package com.msa.order.local.domain.order.repository;
 
 import com.msa.common.global.util.CustomPage;
+import com.msa.order.local.domain.order.dto.StockCondition;
 import com.msa.order.local.domain.order.dto.OrderDto;
 import com.msa.order.local.domain.order.dto.QOrderDto_Response;
-import com.msa.order.local.domain.order.entity.OrderStone;
 import com.msa.order.local.domain.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.domain.order.entity.order_enum.ProductStatus;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.JPAExpressions;
+import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -22,12 +24,13 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Set;
 
 import static com.msa.order.local.domain.order.entity.QOrderProduct.orderProduct;
-import static com.msa.order.local.domain.order.entity.QOrderStone.orderStone;
 import static com.msa.order.local.domain.order.entity.QOrders.orders;
-import static com.msa.order.local.domain.order.entity.QStatusHistory.statusHistory;
 import static com.msa.order.local.domain.priority.entitiy.QPriority.priority;
+import static com.msa.order.local.domain.stock.entity.domain.QStock.stock;
+import static java.util.stream.Collectors.*;
 
 @Repository
 public class OrderRepositoryImpl implements CustomOrderRepository {
@@ -36,97 +39,6 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
     public OrderRepositoryImpl(EntityManager em) {
         this.query = new JPAQueryFactory(em);
-    }
-
-    @Override
-    public OrderDto.ResponseDetail findByOrderId(Long orderId) {
-        // 1. ORDER_STONE의 main/sub 집계 자바에서 계산
-        List<OrderStone> orderStones = query
-                .selectFrom(orderStone)
-                .where(orderStone.order.orderId.eq(orderId))
-                .fetch();
-
-        int mainCostSum = orderStones.stream()
-                .filter(OrderStone::getProductStoneMain)
-                .mapToInt(stone -> stone.getStoneLaborCost() * stone.getStoneQuantity())
-                .sum();
-
-        int subSum = orderStones.stream()
-                .filter(stone -> !stone.getProductStoneMain())
-                .mapToInt(stone -> stone.getStoneLaborCost() * stone.getStoneQuantity())
-                .sum();
-
-        int mainQuantitySum = orderStones.stream()
-                .filter(OrderStone::getProductStoneMain)
-                .mapToInt(OrderStone::getStoneQuantity)
-                .sum();
-
-        int subQuantitySum = orderStones.stream()
-                .filter(stone -> !stone.getProductStoneMain())
-                .mapToInt(OrderStone::getStoneQuantity)
-                .sum();
-
-        // 2. 주문 기본 정보는 Tuple로 select
-        Tuple tuple = query
-                .select(
-                        statusHistory.createAt,             // 0: OffsetDateTime
-                        priority.priorityDate,              // 1: Integer
-                        orders.orderId,                     // 2: Long
-                        orders.orderCode,                   // 3: String
-                        orders.storeName,                   // 4: String
-                        orders.orderProduct.productLaborCost,     // 5: Integer
-                        orders.orderProduct.productAddLaborCost,  // 6: Integer
-                        orders.orderProduct.productName,     // 7: String
-                        orderProduct.classificationName,     // 8: String
-                        orders.orderProduct.materialName,    // 9: String
-                        orderProduct.colorName,              // 10: String
-                        orderProduct.productSize,            // 11: String
-                        orders.orderNote,                    // 12: String
-                        orders.factoryName,                  // 13: String
-                        priority.priorityName,               // 14: String
-                        orders.productStatus,                // 15: Enum(ProductStatus)
-                        orders.orderStatus                   // 16: Enum(OrderStatus)
-                )
-                .from(orders)
-                .join(orders.orderProduct, orderProduct)
-                .join(orders.statusHistory, statusHistory)
-                .join(orders.priority, priority)
-                .where(orders.orderId.eq(orderId))
-                .fetchOne();
-
-        if (tuple == null) return null;
-
-        // 3. Java에서 날짜 계산
-        OffsetDateTime createAt = tuple.get(0, OffsetDateTime.class);
-        Integer priorityDate = tuple.get(1, Integer.class);
-        OffsetDateTime deliveryAt = (createAt != null && priorityDate != null)
-                ? createAt.plusDays(priorityDate)
-                : null;
-
-        // 4. DTO 직접 생성 (String 변환)
-        return new OrderDto.ResponseDetail(
-                createAt != null ? createAt.toString() : null,                // createAt
-                deliveryAt != null ? deliveryAt.toString() : null,            // deliveryAt
-                tuple.get(2, Long.class) != null ? tuple.get(2, Long.class).toString() : null, // orderId
-                tuple.get(3, String.class),                                   // orderCode
-                tuple.get(4, String.class),                                   // storeName
-                tuple.get(5, Integer.class) != null ? tuple.get(5, Integer.class).toString() : null, // productLaborCost
-                tuple.get(6, Integer.class) != null ? tuple.get(6, Integer.class).toString() : null, // productAddLaborCost
-                String.valueOf(mainCostSum),                                  // productStoneMainLaborCost
-                String.valueOf(subSum),                                       // productStoneAssistanceLaborCost
-                String.valueOf(mainQuantitySum),                              // productStoneMainQuantity
-                String.valueOf(subQuantitySum),                               // productStoneAssistanceQuantity
-                tuple.get(7, String.class),                                   // productName
-                tuple.get(8, String.class),                                   // classification
-                tuple.get(9, String.class),                                  // materialName
-                tuple.get(10, String.class),                                  // colorName
-                tuple.get(11, String.class),                                  // productSize
-                tuple.get(12, String.class),                                  // orderNote
-                tuple.get(13, String.class),                                  // factoryName
-                tuple.get(14, String.class),                                  // priority
-                tuple.get(15, ProductStatus.class).getDisplayName(),
-                tuple.get(16, OrderStatus.class).getDisplayName()
-        );
     }
 
     @Override
@@ -156,25 +68,37 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
     @NotNull
     private CustomPage<OrderDto.Response> getResponses(Pageable pageable, BooleanBuilder conditionBuilder, BooleanExpression statusBuilder, Boolean orderDeleted) {
+
+        JPQLQuery<Integer> stockQty = JPAExpressions
+                .select(stock.stockCode.count().intValue())
+                .from(stock)
+                .where(
+                        stock.stockDeleted.isFalse(),
+                        stock.orderStatus.eq(OrderStatus.NORMAL),
+                        stock.product.name.eq(orderProduct.productName),
+                        stock.product.materialName.eq(orderProduct.materialName),
+                        stock.product.colorName.eq(orderProduct.colorName)
+                );
+
         List<OrderDto.Response> content = query
                 .select(new QOrderDto_Response(
-                        orders.orderId.stringValue(),
-                        orders.orderCode,
+                        orders.orderExpectDate.stringValue(),
+                        orders.flowCode.stringValue(),
                         orders.storeName,
                         orders.orderProduct.productName,
-                        orderProduct.productSize,
+                        orders.orderProduct.productSize,
+                        stockQty,
                         orders.orderNote,
                         orders.factoryName,
                         orderProduct.materialName,
                         orderProduct.colorName,
                         priority.priorityName,
-                        statusHistory.createAt.stringValue(),
+                        orders.orderDate.stringValue(),
                         orders.productStatus,
                         orders.orderStatus
                 ))
                 .from(orders)
                 .join(orders.orderProduct, orderProduct)
-                .join(orders.statusHistory, statusHistory)
                 .join(orders.priority, priority)
                 .where(
                         statusBuilder,
@@ -186,7 +110,65 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         JPAQuery<Long> countQuery = query
                 .select(orders.count())
                 .from(orders)
-                .where(orders.orderDeleted.eq(orderDeleted));
+                .where(
+                        statusBuilder,
+                        conditionBuilder,
+                        orders.orderDeleted.eq(orderDeleted)
+                );
+
+        // querydsl에 list 직접 주입은 불가능 별도 쿼리 통해 (TUPLE) 반환해야됨
+        Set<StockCondition> stockConditions = content.stream()
+                .map(r -> new StockCondition(r.getProductName(), r.getMaterialName(), r.getColorName()))
+                .collect(toSet());
+
+        if (!stockConditions.isEmpty()) {
+            // 키 OR 조건 구성
+            BooleanBuilder keyOr = new BooleanBuilder();
+            for (StockCondition k : stockConditions) {
+                keyOr.or(
+                        stock.product.name.eq(k.pn())
+                                .and(stock.product.materialName.eq(k.mn()))
+                                .and(stock.product.colorName.eq(k.cn()))
+                );
+            }
+
+            // 해당 키들의 stock.flowCode 리스트를 한 번에 조회
+            List<Tuple> rows = query
+                    .select(
+                            stock.product.name,
+                            stock.product.materialName,
+                            stock.product.colorName,
+                            stock.flowCode.stringValue()
+                    )
+                    .from(stock)
+                    .where(
+                            stock.stockDeleted.isFalse(),
+                            stock.orderStatus.eq(OrderStatus.NORMAL),
+                            keyOr
+                    )
+                    .fetch();
+
+            // (p,m,c) → List<String> 맵으로 그룹핑
+            java.util.Map<StockCondition, List<String>> map = rows.stream().collect(
+                    groupingBy(
+                            t -> new StockCondition(
+                                    t.get(stock.product.name),
+                                    t.get(stock.product.materialName),
+                                    t.get(stock.product.colorName)
+                            ),
+                            mapping(
+                                    t -> t.get(stock.flowCode.stringValue()),
+                                    toList()
+                            )
+                    )
+            );
+
+            // DTO에 주입
+            content.forEach(r -> {
+                StockCondition k = new StockCondition(r.getProductName(), r.getMaterialName(), r.getColorName());
+                r.setStockFlowCodes(map.getOrDefault(k, java.util.Collections.emptyList()));
+            });
+        }
 
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
     }
@@ -219,10 +201,10 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 orders.orderDate.between(startDateTime, endDateTime);
 
         BooleanExpression statusIsReceiptOrWaiting =
-                statusHistory.orderStatus.in(OrderStatus.RECEIPT, OrderStatus.WAITING);
+                orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
 
         BooleanExpression statusIsOrder =
-                orders.productStatus.in(ProductStatus.ORDER);
+                orders.orderStatus.in(OrderStatus.ORDER);
 
         return statusIsReceiptOrWaiting.and(statusIsOrder).and(createdBetween);
     }
@@ -238,10 +220,10 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 orders.orderExpectDate.loe(endDateTime);
 
         BooleanExpression statusIsReceiptOrWaiting =
-                statusHistory.orderStatus.in(OrderStatus.RECEIPT, OrderStatus.WAITING);
+                orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
 
         BooleanExpression statusIsOrder =
-                orders.productStatus.in(ProductStatus.ORDER);
+                orders.orderStatus.in(OrderStatus.ORDER);
 
         return statusIsReceiptOrWaiting.and(statusIsOrder).and(createdBetween);
     }
@@ -260,10 +242,10 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 orders.orderExpectDate.between(startDateTime, endDateTime);
 
         BooleanExpression statusIsReceiptOrWaiting =
-                statusHistory.orderStatus.in(OrderStatus.RECEIPT, OrderStatus.WAITING);
+                orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
 
         BooleanExpression statusIsOrder =
-                orders.productStatus.in(ProductStatus.ORDER);
+                orders.orderStatus.in(OrderStatus.ORDER);
 
         return statusIsReceiptOrWaiting.and(statusIsOrder).and(deletedDate);
     }

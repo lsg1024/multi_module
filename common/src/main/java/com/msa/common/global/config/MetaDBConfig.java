@@ -1,17 +1,27 @@
 package com.msa.common.global.config;
 
-//@Profile("dev")
-//@Configuration
-//public class MetaDBConfig {
-//
-//    @Bean
-//    @ConfigurationProperties(prefix = "custom.datasource-meta")
-//    public DataSource metaDBSource() {
-//        return DataSourceBuilder.create().build();
-//    }
-//
-//    @Bean
-//    public PlatformTransactionManager metaTransactionManager() {
-//        return new DataSourceTransactionManager(metaDBSource());
-//    }
-//}
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.PlatformTransactionManager;
+
+import javax.sql.DataSource;
+
+@Profile("dev")
+@Configuration
+public class MetaDBConfig {
+
+    @Bean
+    @ConfigurationProperties(prefix = "custom.datasource-meta")
+    public DataSource metaDBSource() {
+        return DataSourceBuilder.create().build();
+    }
+
+    @Bean
+    public PlatformTransactionManager metaTransactionManager() {
+        return new DataSourceTransactionManager(metaDBSource());
+    }
+}

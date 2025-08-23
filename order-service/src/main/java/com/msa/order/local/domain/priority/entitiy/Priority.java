@@ -2,8 +2,10 @@ package com.msa.order.local.domain.priority.entitiy;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Getter
 @Table(name = "PRIORITY")
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

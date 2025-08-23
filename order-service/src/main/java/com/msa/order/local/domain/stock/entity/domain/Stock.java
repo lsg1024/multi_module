@@ -1,0 +1,165 @@
+package com.msa.order.local.domain.stock.entity.domain;
+
+import com.github.f4b6a3.tsid.TsidCreator;
+import com.msa.order.local.domain.order.dto.FactoryDto;
+import com.msa.order.local.domain.order.dto.StoreDto;
+import com.msa.order.local.domain.order.entity.OrderStone;
+import com.msa.order.local.domain.order.entity.Orders;
+import com.msa.order.local.domain.order.entity.order_enum.OrderStatus;
+import com.msa.order.local.domain.stock.dto.StockDto;
+import io.hypersistence.utils.hibernate.id.Tsid;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.hibernate.annotations.SQLDelete;
+
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
+
+import static jakarta.persistence.CascadeType.*;
+
+@Slf4j
+@Getter
+@Table(name = "STOCK")
+@Entity
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@SQLDelete(sql = "UPDATE STOCK SET STOCK_DELETED = TRUE WHERE STOCK_ID = ?")
+public class Stock {
+
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "STOCK_ID")
+    private Long stockId;
+    @Tsid @Column(name = "STOCK_CODE")
+    private Long stockCode;
+    @Column(name = "FLOW_CODE")
+    private Long flowCode;
+    @Column(name = "STORE_ID") //account - store
+    private Long storeId;
+    @Column(name = "STORE_NAME") //account - store
+    private String storeName;
+    @Column(name = "FACTORY_ID")
+    private Long factoryId;
+    @Column(name = "FACTORY_NAME")
+    private String factoryName;
+    @Column(name = "STOCK_NOTE")
+    private String stockNote;
+    @Column(name = "STOCK_MAIN_STONE_NOTE")
+    private String stockMainStoneNote;
+    @Column(name = "STOCK_ASSISTANCE_STONE_NOTE")
+    private String stockAssistanceStoneNote;
+    @Column(name = "MAIN_STONE_LABOR_COST")
+    private Integer mainStoneLaborCost;
+    @Column(name = "ASSISTANCE_STONE_LABOR_COST")
+    private Integer assistanceStoneLaborCost;
+    @Column(name = "TOTAL_STONE_PURCHASE_COST")
+    private Integer stonePurchaseCost;
+    @Column(name = "ADD_STONE_LABOR_COST")
+    private Integer addStoneLaborCost;
+    @Column(name = "STOCK_CREATE_AT", nullable = false, updatable = false)
+    private OffsetDateTime stockCreateAt;
+    @Column(name = "STOCK_DELETED", nullable = false)
+    private boolean stockDeleted = false;
+
+    @Embedded
+    private ProductSnapshot product;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ORDER_ID")
+    private Orders order;
+
+    @OneToMany(mappedBy = "stock", cascade = {PERSIST, MERGE, REMOVE}, orphanRemoval = true)
+    private List<OrderStone> orderStones = new ArrayList<>();
+
+    @Column(name = "ORDER_STATUS", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private OrderStatus orderStatus;
+
+    @Builder
+    public Stock(Long stockCode, Long flowCode, Long storeId, String storeName, Long factoryId, String factoryName, String stockNote, String stockMainStoneNote, String stockAssistanceStoneNote, Integer mainStoneLaborCost, Integer assistanceStoneLaborCost, Integer addStoneLaborCost, Integer stonePurchaseCost, boolean stockDeleted, ProductSnapshot product, Orders orders, List<OrderStone> orderStones, OrderStatus orderStatus) {
+        this.stockCode = stockCode;
+        this.flowCode = flowCode;
+        this.storeId = storeId;
+        this.storeName = storeName;
+        this.factoryId = factoryId;
+        this.factoryName = factoryName;
+        this.stockNote = stockNote;
+        this.stockMainStoneNote = stockMainStoneNote;
+        this.stockAssistanceStoneNote = stockAssistanceStoneNote;
+        this.mainStoneLaborCost = mainStoneLaborCost;
+        this.assistanceStoneLaborCost = assistanceStoneLaborCost;
+        this.addStoneLaborCost = addStoneLaborCost;
+        this.stonePurchaseCost = stonePurchaseCost;
+        this.stockDeleted = stockDeleted;
+        this.product = product;
+        this.order = orders;
+        this.orderStones = orderStones;
+        this.orderStatus = orderStatus;
+    }
+
+    public void setOrder(Orders orders) {
+        this.order = orders;
+        this.flowCode = orders.getFlowCode();
+    }
+
+    public void removeOrder() {
+        this.flowCode = TsidCreator.getTsid().toLong();
+        this.stockCode = flowCode;
+        this.order = null;
+    }
+
+    public void addStockStone(OrderStone orderStone) {
+        this.orderStones.add(orderStone);
+        orderStone.setStock(this);
+    }
+
+    public void updateStore(StoreDto.Response storeDto) {
+        this.storeId = storeDto.getStoreId();
+        this.storeName = storeDto.getStoreName();
+    }
+
+    public void updateFactory(FactoryDto.Response factoryDto) {
+        this.factoryId = factoryDto.getFactoryId();
+        this.factoryName = factoryDto.getFactoryName();
+    }
+
+    public void moveToRental(StockDto.StockRentalRequest rentalRequest) {
+        this.addStoneLaborCost = rentalRequest.getAddStoneLaborCost();
+        this.stockNote = rentalRequest.getStockNote();
+        this.stockMainStoneNote = rentalRequest.getMainStoneNote();
+        this.stockAssistanceStoneNote = rentalRequest.getAssistanceStoneNote();
+        this.orderStatus = OrderStatus.RENTAL;
+    }
+
+    @PrePersist
+    private void onCreate() {
+        if (this.stockCreateAt == null) this.stockCreateAt = OffsetDateTime.now(KST);
+        if (this.flowCode == null) {
+            this.stockCode = TsidCreator.getTsid().toLong();
+            this.flowCode = this.stockCode;   // 독립 재고 기본값}
+        }
+        if (this.stockCode == null) {
+            this.stockCode = this.flowCode;
+        }
+    }
+
+    public void updateStoneCost(int totalStonePurchaseCost, int mainLaborCost, int assistanceLaborCost) {
+        this.stonePurchaseCost = totalStonePurchaseCost;
+        this.mainStoneLaborCost = mainLaborCost;
+        this.assistanceStoneLaborCost = assistanceLaborCost;
+    }
+
+    public void updateAddStoneLaborCost(Integer addStoneLaborCost) {
+        this.addStoneLaborCost = addStoneLaborCost;
+    }
+
+    public void updateOrderStatus(OrderStatus orderStatus) {
+        this.orderStatus = orderStatus;
+    }
+}

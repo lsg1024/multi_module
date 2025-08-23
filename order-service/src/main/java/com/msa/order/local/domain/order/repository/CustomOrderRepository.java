@@ -5,9 +5,6 @@ import com.msa.order.local.domain.order.dto.OrderDto;
 import org.springframework.data.domain.Pageable;
 
 public interface CustomOrderRepository {
-    // 주문 상세 조회 - productStone 포함
-    OrderDto.ResponseDetail findByOrderId(Long orderId);
-
     // 주문 검색 = 제품 이름, 거래처, 공장, 접수일
     CustomPage<OrderDto.Response> findByOrders(OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable);
 

@@ -1,5 +1,7 @@
 package com.msa.order.local.domain.order.entity;
 
+import com.msa.order.local.domain.stock.dto.StockDto;
+import com.msa.order.local.domain.stock.entity.domain.Stock;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -24,11 +26,11 @@ public class OrderStone {
     @Column(name = "ORIGIN_STONE_NAME")
     private String originStoneName;
 
-    @Column(name = "ORIGIN_STONE_WEIGHT", precision = 5, scale = 2)
+    @Column(name = "ORIGIN_STONE_WEIGHT", precision = 8, scale = 2)
     private BigDecimal originStoneWeight;
 
-    @Column(name = "STONE_PURCHASE_PRICE")
-    private String stonePurchasePrice; // 매입 금액
+    @Column(name = "STONE_PURCHASE_COST")
+    private Integer stonePurchaseCost; // 매입 금액
 
     @Column(name = "STONE_LABOR_COST")
     private Integer stoneLaborCost; // 판매 금액
@@ -36,37 +38,49 @@ public class OrderStone {
     @Column(name = "STONE_QUANTITY")
     private Integer stoneQuantity; // 스톤 개수
 
-    @Column(name = "PRODUCT_STONE_MAIN")
-    private Boolean productStoneMain; // 메인 여부
+    @Column(name = "IS_MAIN_STONE")
+    private Boolean isMainStone; // 메인 여부
 
-    @Column(name = "INCLUDE_QUANTITY")
-    private Boolean includeQuantity; // 수량 포함 여부
-
-    @Column(name = "INCLUDE_WEIGHT")
-    private Boolean includeWeight; // 중량 포함 여부
-
-    @Column(name = "INCLUDE_LABOR")
-    private Boolean includeLabor; // 공임 포함 여부
+    @Column(name = "IS_INCLUDE_STONE")
+    private Boolean isIncludeStone; // 포함 여부
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ORDER_ID")
     private Orders order;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "STOCK_ID")
+    private Stock stock;
+
     @Builder
-    public OrderStone(Long originStoneId, String originStoneName, BigDecimal originStoneWeight, String stonePurchasePrice, Integer stoneLaborCost, Integer stoneQuantity, Boolean productStoneMain, Boolean includeQuantity, Boolean includeWeight, Boolean includeLabor) {
+    public OrderStone(Long originStoneId, String originStoneName, BigDecimal originStoneWeight, Integer stonePurchaseCost, Integer stoneLaborCost, Integer stoneQuantity, Boolean isMainStone, Boolean isIncludeStone) {
         this.originStoneId = originStoneId;
         this.originStoneName = originStoneName;
         this.originStoneWeight = originStoneWeight;
-        this.stonePurchasePrice = stonePurchasePrice;
+        this.stonePurchaseCost = stonePurchaseCost;
         this.stoneLaborCost = stoneLaborCost;
         this.stoneQuantity = stoneQuantity;
-        this.productStoneMain = productStoneMain;
-        this.includeQuantity = includeQuantity;
-        this.includeWeight = includeWeight;
-        this.includeLabor = includeLabor;
+        this.isMainStone = isMainStone;
+        this.isIncludeStone = isIncludeStone;
     }
 
     public void setOrder(Orders order) {
         this.order = order;
     }
+
+    public void setStock(Stock stock) {
+        this.stock = stock;
+    }
+
+    public void updateFrom(StockDto.StoneInfo s) {
+        this.originStoneId = Long.valueOf(s.getStoneId());
+        this.originStoneName = s.getStoneName();
+        this.originStoneWeight = new BigDecimal(s.getStoneWeight());
+        this.stonePurchaseCost = s.getPurchaseCost();
+        this.stoneLaborCost = s.getLaborCost();
+        this.stoneQuantity = s.getQuantity();
+        this.isMainStone = s.getIsMainStone();
+        this.isIncludeStone = s.getIsIncludeStone();
+    }
+
 }
