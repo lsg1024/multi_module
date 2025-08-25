@@ -1,6 +1,6 @@
 package com.msa.order.global.kafka.dto;
 
-import com.msa.order.local.domain.stock.dto.StockDto;
+import com.msa.order.local.stock.dto.StockDto;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
