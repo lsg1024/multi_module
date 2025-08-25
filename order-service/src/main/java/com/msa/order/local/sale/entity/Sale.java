@@ -1,10 +1,12 @@
-package com.msa.order.local.domain.sale.entity;
+package com.msa.order.local.sale.entity;
 
 import com.github.f4b6a3.tsid.TsidCreator;
-import com.msa.order.local.domain.sale.sale_enum.SaleStatus;
+import com.msa.order.local.sale.sale_enum.SaleStatus;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
@@ -13,8 +15,16 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
+@Getter
 @Entity
-@Table(name = "SALE")
+@Table(
+        name = "SALE",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "UK_SALE_STORE_DATE", columnNames = {"STORE_ID","SALE_DATE"}),
+                @UniqueConstraint(name = "UK_SALE_CODE",       columnNames = {"SALE_CODE"})
+        }
+)
+
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Sale {
 
@@ -40,7 +50,7 @@ public class Sale {
     private String storeName;
 
     @OneToMany(mappedBy="sale", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<SaleItem> items = new ArrayList<>();
+    private List<SaleItem> items = new ArrayList<>();
 
     @PrePersist
     void onCreate() {
@@ -55,6 +65,7 @@ public class Sale {
         }
     }
 
+    @Builder
     public Sale(SaleStatus saleStatus, Long storeId, String storeName, List<SaleItem> items) {
         this.saleStatus = saleStatus;
         this.storeId = storeId;

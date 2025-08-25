@@ -1,4 +1,4 @@
-package com.msa.order.local.domain.sale.sale_enum;
+package com.msa.order.local.sale.sale_enum;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
