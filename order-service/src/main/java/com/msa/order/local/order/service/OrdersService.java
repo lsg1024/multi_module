@@ -1,0 +1,338 @@
+package com.msa.order.local.order.service;
+
+import com.msa.common.global.jwt.JwtUtil;
+import com.msa.common.global.tenant.TenantContext;
+import com.msa.common.global.util.CustomPage;
+import com.msa.order.global.kafka.KafkaProducer;
+import com.msa.order.global.kafka.dto.OrderAsyncRequested;
+import com.msa.order.local.order.dto.DateDto;
+import com.msa.order.local.order.dto.FactoryDto;
+import com.msa.order.local.order.dto.OrderDto;
+import com.msa.order.local.order.dto.StoreDto;
+import com.msa.order.local.order.entity.OrderProduct;
+import com.msa.order.local.order.entity.OrderStone;
+import com.msa.order.local.order.entity.Orders;
+import com.msa.order.local.order.entity.StatusHistory;
+import com.msa.order.local.order.entity.order_enum.*;
+import com.msa.order.local.order.external_client.FactoryClient;
+import com.msa.order.local.order.external_client.StoreClient;
+import com.msa.order.local.order.external_client.dto.ProductDetailDto;
+import com.msa.order.local.order.repository.CustomOrderRepository;
+import com.msa.order.local.order.repository.OrdersRepository;
+import com.msa.order.local.order.repository.StatusHistoryRepository;
+import com.msa.order.local.order.util.DateUtil;
+import com.msa.order.local.order.util.StoneUtil;
+import com.msa.order.local.priority.entitiy.Priority;
+import com.msa.order.local.priority.repository.PriorityRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+
+import static com.msa.order.global.exception.ExceptionMessage.*;
+
+@Slf4j
+@Service
+@Transactional
+public class OrdersService {
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+
+    private final JwtUtil jwtUtil;
+    private final FactoryClient factoryClient;
+    private final StoreClient storeClient;
+    private final KafkaProducer kafkaProducer;
+    private final OrdersRepository ordersRepository;
+    private final CustomOrderRepository customOrderRepository;
+    private final StatusHistoryRepository statusHistoryRepository;
+    private final PriorityRepository priorityRepository;
+
+    public OrdersService(JwtUtil jwtUtil, FactoryClient factoryClient, StoreClient storeClient, KafkaProducer kafkaProducer, OrdersRepository ordersRepository, CustomOrderRepository customOrderRepository, StatusHistoryRepository statusHistoryRepository, PriorityRepository priorityRepository) {
+        this.jwtUtil = jwtUtil;
+        this.factoryClient = factoryClient;
+        this.storeClient = storeClient;
+        this.kafkaProducer = kafkaProducer;
+        this.ordersRepository = ordersRepository;
+        this.customOrderRepository = customOrderRepository;
+        this.statusHistoryRepository = statusHistoryRepository;
+        this.priorityRepository = priorityRepository;
+    }
+
+    // 주문 단건 조회
+    @Transactional(readOnly = true)
+    public OrderDto.ResponseDetail getOrder(Long flowCode) {
+        Orders order = ordersRepository.findByFlowCode(flowCode)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        int mainStoneQuantity = 0;
+        int assistanceStoneQuantity = 0;
+        int mainStoneLaborCost = 0;
+        int assistanceStoneLaborCost = 0;
+        List<OrderStone> orderStones = order.getOrderStones();
+        StoneUtil.countStoneQuantity(orderStones, mainStoneQuantity, assistanceStoneQuantity);
+        StoneUtil.countStoneLabor(orderStones, mainStoneLaborCost, assistanceStoneLaborCost);
+
+        return OrderDto.ResponseDetail.builder()
+                .createAt(order.getOrderDate().toString())
+                .deliveryAt(order.getOrderExpectDate().toString())
+                .flowCode(order.getFlowCode().toString())
+                .storeName(order.getStoreName())
+                .productLaborCost(order.getOrderProduct().getProductLaborCost())
+                .productAddLaborCost(order.getOrderProduct().getProductAddLaborCost())
+                .productStoneMainLaborCost(mainStoneLaborCost)
+                .productStoneAssistanceLaborCost(assistanceStoneLaborCost)
+                .productStoneMainQuantity(mainStoneQuantity)
+                .productStoneAssistanceQuantity(assistanceStoneQuantity)
+                .productName(order.getOrderProduct().getProductName())
+                .classification(order.getOrderProduct().getClassificationName())
+                .materialName(order.getOrderProduct().getMaterialName())
+                .colorName(order.getOrderProduct().getColorName())
+                .productSize(order.getOrderProduct().getProductSize())
+                .orderNote(order.getOrderNote())
+                .factoryName(order.getFactoryName())
+                .priority(order.getPriority().getPriorityName())
+                .productStatus(order.getProductStatus().getDisplayName())
+                .orderStatus(order.getOrderStatus().getDisplayName())
+                .build();
+
+    }
+
+    // 주문 전체 리스트 조회
+    @Transactional(readOnly = true)
+    public CustomPage<OrderDto.Response> getOrderProducts(OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable) {
+        return customOrderRepository.findByOrders(inputCondition, orderCondition, pageable);
+
+    }
+
+    //주문
+    public void saveOrder(String accessToken, String orderType, OrderDto.Request orderDto) {
+
+        String nickname = jwtUtil.getNickname(accessToken);
+        String tenantId = TenantContext.getTenant();
+
+        Long storeId = Long.valueOf(orderDto.getStoreId());
+        Long factoryId = Long.valueOf(orderDto.getFactoryId());
+        Long productId = Long.valueOf(orderDto.getProductId());
+        Long materialId = Long.valueOf(orderDto.getMaterialId());
+        Long classificationId = Long.valueOf(orderDto.getClassificationId());
+        Long colorId = Long.valueOf(orderDto.getColorId());
+
+        // priority 추가
+        Priority priority = priorityRepository.findByPriorityName(orderDto.getPriorityName())
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        Integer priorityDate = priority.getPriorityDate();
+
+        OffsetDateTime received = orderDto.getCreateAt()
+                .atZone(KST)
+                .toOffsetDateTime();
+
+        OffsetDateTime expectUtc =
+                DateUtil.plusBusinessDay(received, priorityDate);
+
+        ProductStatus productStatus = ProductStatus.fromDisplayName(orderDto.getProductStatus())
+                .orElseThrow(() -> new IllegalArgumentException(WRONG_STATUS));
+
+        // productInfo 값에 있는 Stone 값을 스냅샷해 저장한다. /
+        Orders order = Orders.builder()
+                .orderNote(orderDto.getOrderNote())
+                .productStatus(productStatus)
+                .orderStatus(OrderStatus.valueOf(orderType))
+                .orderMainStoneNote(orderDto.getMainStoneNote())
+                .orderAssistanceStoneNote(orderDto.getAssistanceStoneNote())
+                .orderDate(received)
+                .orderExpectDate(expectUtc)
+                .build();
+
+        // orderProduct 추가
+        OrderProduct orderProduct = OrderProduct.builder()
+                .productId(productId)
+                .isProductWeightSale(orderDto.isProductWeightSale())
+                .productWeight(orderDto.getProductWeight())
+                .stoneWeight(orderDto.getStoneWeight())
+                .productAddLaborCost(orderDto.getProductAddLaborCost())
+                .productSize(orderDto.getProductSize())
+                .build();
+
+        order.addOrderProduct(orderProduct);
+        order.addPriority(priority);
+
+        // orderStone 추가
+        List<Long> stoneIds = new ArrayList<>();
+        List<ProductDetailDto.StoneInfo> storeInfos = orderDto.getStoneInfos();
+        for (ProductDetailDto.StoneInfo stoneInfo : storeInfos) {
+            OrderStone orderStone = OrderStone.builder()
+                    .originStoneId(Long.valueOf(stoneInfo.getStoneId()))
+                    .originStoneName(stoneInfo.getStoneName())
+                    .originStoneWeight(new BigDecimal(stoneInfo.getStoneWeight()))
+                    .stonePurchaseCost(stoneInfo.getPurchaseCost())
+                    .stoneLaborCost(stoneInfo.getLaborCost())
+                    .stoneQuantity(stoneInfo.getQuantity())
+                    .isMainStone(stoneInfo.isMainStone())
+                    .isIncludeStone(stoneInfo.isIncludeStone())
+                    .build();
+
+            stoneIds.add(Long.valueOf(stoneInfo.getStoneId()));
+            order.addOrderStone(orderStone);
+        }
+
+        ordersRepository.save(order);
+
+        // statusHistory 추가
+        StatusHistory statusHistory = StatusHistory.create(
+                order.getFlowCode(),
+                SourceType.ORDER,
+                BusinessPhase.WAITING,
+                Kind.CREATE,
+                nickname
+        );
+
+        statusHistoryRepository.save(statusHistory);
+
+        OrderAsyncRequested evt = OrderAsyncRequested.builder()
+                .eventId(UUID.randomUUID().toString())
+                .flowCode(order.getFlowCode())
+                .tenantId(tenantId)
+                .storeId(storeId)
+                .factoryId(factoryId)
+                .productId(productId)
+                .materialId(materialId)
+                .classificationId(classificationId)
+                .colorId(colorId)
+                .nickname(nickname)
+                .stoneIds(stoneIds)
+                .orderStatus(orderType)
+                .build();
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                kafkaProducer.orderDetailAsync(evt);
+            }
+        });
+    }
+
+    //주문 상태 변경 (주문, 취소)
+    public List<String> getOrderStatusInfo(Long orderId) {
+        List<ProductStatus> productStatuses = Arrays.asList(ProductStatus.RECEIPT, ProductStatus.RECEIPT_FAILED, ProductStatus.WAITING);
+        List<String> statusDtos = new ArrayList<>();
+        for (ProductStatus productStatus : productStatuses) {
+            statusDtos.add(productStatus.getDisplayName());
+        }
+
+        boolean existsByOrderIdAndOrderStatusIn = ordersRepository.existsByOrderIdAndProductStatusIn(orderId, productStatuses);
+
+        if (existsByOrderIdAndOrderStatusIn) {
+            return statusDtos;
+        }
+        throw new IllegalArgumentException(NOT_FOUND);
+    }
+
+    //주문 상태 변경
+    public void updateOrderStatus(Long orderId, String status) {
+
+        List<String> allowed = Arrays.asList(
+                ProductStatus.RECEIPT.getDisplayName(),
+                ProductStatus.WAITING.getDisplayName());
+
+        if (!allowed.contains(status)) {
+            throw new IllegalArgumentException("주문 상태를 변경할 수 없습니다.");
+        }
+
+        Orders order = ordersRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        ProductStatus newStatus = ProductStatus.fromDisplayName(status)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        order.updateProductStatus(newStatus);
+        ordersRepository.save(order);
+
+    }
+
+    //거래처 변경 -> account -> store 리스트 호출 /store/list
+    public void updateOrderStore(String accessToken, Long orderId, StoreDto.Request storeDto) {
+        String tenantId = jwtUtil.getTenantId(accessToken);
+        Orders order = ordersRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        StoreDto.Response storeInfo = storeClient.getStoreInfo(tenantId, storeDto.getStoreId());
+
+        order.updateStore(storeInfo);
+    }
+
+    //제조사 변경 ->
+    public void updateOrderFactory(String accessToken, Long orderId, FactoryDto.Request factoryDto) {
+        String tenantId = jwtUtil.getTenantId(accessToken);
+        Orders order = ordersRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        FactoryDto.Response factoryInfo = factoryClient.getFactoryInfo(tenantId, factoryDto.getFactoryId());
+
+        order.updateFactory(factoryInfo);
+    }
+
+    //출고일 변경
+    public void updateOrderExpectDate(Long orderId, DateDto newDate) {
+        Orders order = ordersRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        OffsetDateTime received = newDate.getExpectDate();
+        OffsetDateTime receivedKst  = received.withOffsetSameInstant(ZoneOffset.ofHours(9));
+
+        order.updateExceptDate(receivedKst);
+    }
+
+    //기성 대체 -> 재고에 있는 제품 (이름, 색상, 재질 동일)
+
+    //주문 -> 삭제
+    public void deletedOrder(String accessToken, Long orderId) {
+        String nickname = jwtUtil.getNickname(accessToken);
+        String role = jwtUtil.getRole(accessToken);
+
+        if (role.equals("ADMIN") || role.equals("USER")) {
+            Orders order = ordersRepository.findById(orderId)
+                    .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+            StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
+                    .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+            StatusHistory statusHistory = StatusHistory.phaseChange(
+                    order.getFlowCode(),
+                    lastHistory.getSourceType(),
+                    BusinessPhase.valueOf(lastHistory.getFromValue()),
+                    BusinessPhase.DELETE,
+                    nickname
+            );
+
+            order.deletedOrder(OffsetDateTime.now());
+            statusHistoryRepository.save(statusHistory);
+            return;
+        }
+        throw new IllegalArgumentException(NOT_ACCESS);
+    }
+
+    // 출고 예정 목록 출력
+    @Transactional(readOnly = true)
+    public CustomPage<OrderDto.Response> getExpectProducts(OrderDto.InputCondition inputCondition, OrderDto.ExpectCondition expectCondition, Pageable pageable) {
+        return customOrderRepository.findByExpectOrders(inputCondition, expectCondition, pageable);
+    }
+
+    // 주문 상태에서 취소된 목록 출력
+    @Transactional(readOnly = true)
+    public CustomPage<OrderDto.Response> getDeletedProducts(OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable) {
+        return customOrderRepository.findByDeletedOrders(inputCondition, orderCondition, pageable);
+    }
+
+
+}
