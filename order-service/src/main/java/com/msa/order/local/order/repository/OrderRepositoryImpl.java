@@ -1,13 +1,12 @@
 package com.msa.order.local.order.repository;
 
 import com.msa.common.global.util.CustomPage;
-import com.msa.order.local.order.dto.StockCondition;
 import com.msa.order.local.order.dto.OrderDto;
 import com.msa.order.local.order.dto.QOrderDto_Response;
+import com.msa.order.local.order.dto.StockCondition;
+import com.msa.order.local.order.entity.QOrders;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.order.entity.order_enum.ProductStatus;
-import com.msa.order.local.order.entity.QOrderProduct;
-import com.msa.order.local.order.entity.QOrders;
 import com.msa.order.local.priority.entitiy.QPriority;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
@@ -29,7 +28,8 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Set;
 
-import static com.msa.order.local.domain.stock.entity.domain.QStock.stock;
+import static com.msa.order.local.order.entity.QOrderProduct.orderProduct;
+import static com.msa.order.local.stock.entity.QStock.stock;
 import static java.util.stream.Collectors.*;
 
 @Repository
@@ -75,9 +75,9 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 .where(
                         stock.stockDeleted.isFalse(),
                         stock.orderStatus.eq(OrderStatus.NORMAL),
-                        stock.product.name.eq(QOrderProduct.orderProduct.productName),
-                        stock.product.materialName.eq(QOrderProduct.orderProduct.materialName),
-                        stock.product.colorName.eq(QOrderProduct.orderProduct.colorName)
+                        stock.product.name.eq(orderProduct.productName),
+                        stock.product.materialName.eq(orderProduct.materialName),
+                        stock.product.colorName.eq(orderProduct.colorName)
                 );
 
         List<OrderDto.Response> content = query
@@ -90,15 +90,15 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                         stockQty,
                         QOrders.orders.orderNote,
                         QOrders.orders.factoryName,
-                        QOrderProduct.orderProduct.materialName,
-                        QOrderProduct.orderProduct.colorName,
+                        orderProduct.materialName,
+                        orderProduct.colorName,
                         QPriority.priority.priorityName,
                         QOrders.orders.orderDate.stringValue(),
                         QOrders.orders.productStatus,
                         QOrders.orders.orderStatus
                 ))
                 .from(QOrders.orders)
-                .join(QOrders.orders.orderProduct, QOrderProduct.orderProduct)
+                .join(QOrders.orders.orderProduct, orderProduct)
                 .join(QOrders.orders.priority, QPriority.priority)
                 .where(
                         statusBuilder,
@@ -179,7 +179,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
         String searchInput = orderCondition.getSearchInput();
         if (StringUtils.hasText(searchInput)) {
-            booleanInput.and(QOrderProduct.orderProduct.productName.containsIgnoreCase(searchInput));
+            booleanInput.and(orderProduct.productName.containsIgnoreCase(searchInput));
             booleanInput.or(QOrders.orders.storeName.containsIgnoreCase(searchInput));
             booleanInput.or(QOrders.orders.factoryName.containsIgnoreCase(searchInput));
         }

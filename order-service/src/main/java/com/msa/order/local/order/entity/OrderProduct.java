@@ -25,9 +25,9 @@ public class OrderProduct {
     private String productSize;
     @Column(name = "IS_PRODUCT_WEIGHT_SALE")
     private boolean isProductWeightSale;
-    @Column(name = "PRODUCT_WEIGHT", precision = 8, scale = 2)
+    @Column(name = "PRODUCT_WEIGHT", precision = 10, scale = 3)
     private BigDecimal productWeight;
-    @Column(name = "STONE_WEIGHT", precision = 8, scale = 2)
+    @Column(name = "STONE_WEIGHT", precision = 10, scale = 3)
     private BigDecimal stoneWeight;
     @Column(name = "PRODUCT_PURCHASE_COST")
     private Integer productPurchaseCost;
