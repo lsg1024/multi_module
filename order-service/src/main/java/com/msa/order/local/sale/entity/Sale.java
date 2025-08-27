@@ -24,7 +24,6 @@ import java.util.List;
                 @UniqueConstraint(name = "UK_SALE_CODE",       columnNames = {"SALE_CODE"})
         }
 )
-
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Sale {
 
@@ -37,7 +36,9 @@ public class Sale {
     private Long saleCode;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "SALE_STATUS")
     private SaleStatus saleStatus;
+
     @Column(name = "CREATE_AT", nullable = false, updatable = false)
     private OffsetDateTime createAt;
 
@@ -51,6 +52,9 @@ public class Sale {
 
     @OneToMany(mappedBy="sale", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SaleItem> items = new ArrayList<>();
+
+    @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SalePayment> salePayments = new ArrayList<>();
 
     @PrePersist
     void onCreate() {
@@ -76,5 +80,10 @@ public class Sale {
     public void addItem(SaleItem item) {
         this.items.add(item);
         item.setSale(this);
+    }
+
+    public void addPayment(SalePayment salePayment) {
+        this.salePayments.add(salePayment);
+        salePayment.setSale(this);
     }
 }
