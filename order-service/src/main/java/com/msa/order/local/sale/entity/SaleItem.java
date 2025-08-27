@@ -4,8 +4,13 @@ import com.msa.order.local.stock.entity.Stock;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+
+@Getter
 @Entity
 @Table(
         name = "SALE_ITEM",
@@ -17,6 +22,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class SaleItem {
 
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "SALE_ITEM_ID")
     private Long saleItemId;
@@ -25,17 +32,42 @@ public class SaleItem {
     @JoinColumn(name="SALE_ID")
     private Sale sale;
 
+    @Column(name = "SALE_CODE", nullable = false)
+    private Long saleCode;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="STOCK_ID")
     private Stock stock;
+
+    @Column(name = "FLOW_CODE", nullable = false)
+    private Long flowCode;
+
+    @Column(name="CREATED_BY")
+    private String createdBy;
+
+    @Column(name = "CREATE_AT", nullable = false, updatable = false)
+    private OffsetDateTime createAt;
 
     public void setSale(Sale sale) {
         this.sale = sale;
     }
 
-    @Builder
-    public SaleItem(Sale sale, Stock stock) {
-        this.sale = sale;
+    public void setStock(Stock stock) {
         this.stock = stock;
     }
+
+    @PrePersist
+    void onCreate() {
+        if (createAt == null) {
+            createAt = OffsetDateTime.now(KST);
+        }
+    }
+
+    @Builder
+    public SaleItem(String createdBy, Long saleCode, Long flowCode) {
+        this.createdBy = createdBy;
+        this.saleCode = saleCode;
+        this.flowCode = flowCode;
+    }
+
 }

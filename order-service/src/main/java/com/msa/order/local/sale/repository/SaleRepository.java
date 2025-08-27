@@ -8,4 +8,6 @@ import java.util.Optional;
 
 public interface SaleRepository extends JpaRepository<Sale, Long> {
     Optional<Sale> findByStoreIdAndSaleDate(Long storeId, LocalDate saleDate);
+
+    Optional<Sale> findBySaleCode(Long saleCode);
 }

@@ -22,7 +22,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
-import static com.msa.order.local.domain.stock.entity.domain.QStock.stock;
+import static com.msa.order.local.stock.entity.QStock.stock;
 
 @Repository
 public class StockRepositoryImpl implements CustomStockRepository {

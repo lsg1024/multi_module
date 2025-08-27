@@ -26,7 +26,7 @@ public class OrderStone {
     @Column(name = "ORIGIN_STONE_NAME")
     private String originStoneName;
 
-    @Column(name = "ORIGIN_STONE_WEIGHT", precision = 8, scale = 2)
+    @Column(name = "ORIGIN_STONE_WEIGHT", precision = 10, scale = 3)
     private BigDecimal originStoneWeight;
 
     @Column(name = "STONE_PURCHASE_COST")

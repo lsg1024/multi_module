@@ -2,15 +2,16 @@ package com.msa.order.local.sale.controller;
 
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.AccessToken;
+import com.msa.common.global.util.CustomPage;
+import com.msa.order.local.sale.entity.dto.SaleDto;
 import com.msa.order.local.sale.service.SaleService;
 import com.msa.order.local.stock.dto.StockDto;
 import com.msa.order.local.stock.service.StockService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 public class SaleController {
@@ -21,6 +22,19 @@ public class SaleController {
     public SaleController(SaleService saleService, StockService stockService) {
         this.saleService = saleService;
         this.stockService = stockService;
+    }
+
+    //판매 관리 데이터 목록들
+    @GetMapping("/sale")
+    public ResponseEntity<ApiResponse<CustomPage<SaleDto.Response>>> getSales(
+            @RequestParam(name = "date") String date,
+            @RequestParam(name = "input", required = false) String input,
+            @RequestParam(name = "type", required = false) String type,
+            @PageableDefault(size = 30) Pageable pageable) {
+
+        SaleDto.Condition condition = new SaleDto.Condition(date, input, type);
+        CustomPage<SaleDto.Response> sale = saleService.getSale(condition, pageable);
+        return ResponseEntity.ok(ApiResponse.success(sale));
     }
 
     //주문 -> 판매 type = SALE
@@ -43,6 +57,30 @@ public class SaleController {
             @Valid @RequestBody StockDto.stockRequest stockDto) {
         saleService.createSaleFromStock(accessToken, flowCode, stockDto);
         return ResponseEntity.ok(ApiResponse.success("등록 완료"));
+    }
+
+    //결제, DC, 결통, WG...
+    @PostMapping("/sale")
+    public ResponseEntity<ApiResponse<String>> createPayment(
+            @AccessToken String accessToken,
+            @RequestHeader(name = "Idempotency-Key", required = false) String idempKey,
+            @Valid @RequestBody SaleDto.Request saleDto) {
+
+        if (idempKey == null || idempKey.isBlank()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Idempotency-Key header required"));
+        }
+
+        saleService.createPayment(accessToken, idempKey, saleDto);
+        return ResponseEntity.ok(ApiResponse.success("등록 완료"));
+    }
+
+    @DeleteMapping("/sale")
+    public ResponseEntity<ApiResponse<String>> deletedSale(
+            @AccessToken String accessToken,
+            @RequestParam(name = "id") Long flowCode) {
+
+        saleService.cancelSale(accessToken, flowCode);
+        return ResponseEntity.ok(ApiResponse.success("삭제 완료"));
     }
 
 }
