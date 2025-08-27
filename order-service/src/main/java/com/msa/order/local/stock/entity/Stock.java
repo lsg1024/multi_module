@@ -54,14 +54,14 @@ public class Stock {
     private String stockMainStoneNote;
     @Column(name = "STOCK_ASSISTANCE_STONE_NOTE")
     private String stockAssistanceStoneNote;
-    @Column(name = "MAIN_STONE_LABOR_COST")
+    @Column(name = "MAIN_STONE_LABOR_COST") // 스톤 메인 매출 비용
     private Integer mainStoneLaborCost;
-    @Column(name = "ASSISTANCE_STONE_LABOR_COST")
+    @Column(name = "ASSISTANCE_STONE_LABOR_COST") // 스톤 보조 매출 비용
     private Integer assistanceStoneLaborCost;
-    @Column(name = "TOTAL_STONE_PURCHASE_COST")
-    private Integer stonePurchaseCost;
-    @Column(name = "ADD_STONE_LABOR_COST")
+    @Column(name = "ADD_STONE_LABOR_COST") // 추가 스톤 매입 비용
     private Integer addStoneLaborCost;
+    @Column(name = "TOTAL_STONE_PURCHASE_COST") // 총 스톤 매입 비용
+    private Integer stonePurchaseCost;
     @Column(name = "STOCK_CREATE_AT", nullable = false, updatable = false)
     private OffsetDateTime stockCreateAt;
     @Column(name = "STOCK_DELETED", nullable = false)
@@ -137,18 +137,6 @@ public class Stock {
         this.orderStatus = OrderStatus.RENTAL;
     }
 
-    @PrePersist
-    private void onCreate() {
-        if (this.stockCreateAt == null) this.stockCreateAt = OffsetDateTime.now(KST);
-        if (this.flowCode == null) {
-            this.stockCode = TsidCreator.getTsid().toLong();
-            this.flowCode = this.stockCode;   // 독립 재고 기본값}
-        }
-        if (this.stockCode == null) {
-            this.stockCode = this.flowCode;
-        }
-    }
-
     public void updateStoneCost(int totalStonePurchaseCost, int mainLaborCost, int assistanceLaborCost) {
         this.stonePurchaseCost = totalStonePurchaseCost;
         this.mainStoneLaborCost = mainLaborCost;
@@ -161,5 +149,24 @@ public class Stock {
 
     public void updateOrderStatus(OrderStatus orderStatus) {
         this.orderStatus = orderStatus;
+    }
+
+    public void updateStockInfo(StockDto.stockRequest stockDto) {
+        this.product.updateProductWeightAndSize(stockDto.getProductSize(), stockDto.getProductWeight(), stockDto.getStoneWeight());
+        this.stockMainStoneNote = stockDto.getMainStoneNote();
+        this.stockAssistanceStoneNote = stockDto.getAssistanceStoneNote();
+        this.stockNote = stockDto.getStockNote();
+    }
+
+    @PrePersist
+    private void onCreate() {
+        if (this.stockCreateAt == null) this.stockCreateAt = OffsetDateTime.now(KST);
+        if (this.flowCode == null) {
+            this.stockCode = TsidCreator.getTsid().toLong();
+            this.flowCode = this.stockCode;   // 독립 재고 기본값}
+        }
+        if (this.stockCode == null) {
+            this.stockCode = this.flowCode;
+        }
     }
 }

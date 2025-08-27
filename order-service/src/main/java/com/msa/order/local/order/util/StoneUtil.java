@@ -1,14 +1,17 @@
 package com.msa.order.local.order.util;
 
 import com.msa.order.local.order.entity.OrderStone;
+import com.msa.order.local.order.entity.Orders;
 import com.msa.order.local.stock.dto.StockDto;
 import com.msa.order.local.stock.entity.Stock;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class StoneUtil {
 
     public static Long parseLongOrNull(String s) {
@@ -91,17 +94,25 @@ public class StoneUtil {
         }
     }
 
-    public static void updateStoneInfo(List<StockDto.StoneInfo> stoneInfos, Stock stock) {
-        Map<Long, OrderStone> existingById = stock.getOrderStones().stream()
+    public static void updateStoneInfo(List<StockDto.StoneInfo> stoneInfos, Stock stock, List<OrderStone> originOrderStone) {
+        Map<Long, OrderStone> orderByOriginId = originOrderStone.stream()
                 .filter(s -> s.getOrderStoneId() != null)
                 .collect(Collectors.toMap(OrderStone::getOriginStoneId, Function.identity()));
 
+        Orders order = stock.getOrder();
+
         Set<Long> keepIds = new HashSet<>();
         for (StockDto.StoneInfo stoneInfo : stoneInfos) {
-            Long id = Long.valueOf(stoneInfo.getStoneId());
-            if (existingById.containsKey(id)) {
-                existingById.get(id).updateFrom(stoneInfo);
-                keepIds.add(id);
+            Long originId = Long.valueOf(stoneInfo.getStoneId());
+            keepIds.add(originId);
+
+            OrderStone os = orderByOriginId.get(originId);
+            if (os != null) {
+                if (isChanged(os, stoneInfo)) {
+                    os.updateFrom(stoneInfo);
+                }
+                os.setStock(stock);
+                stock.getOrderStones().add(os);
             } else {
                 OrderStone orderStone = OrderStone.builder()
                         .originStoneId(Long.valueOf(stoneInfo.getStoneId()))
@@ -115,13 +126,13 @@ public class StoneUtil {
                         .build();
 
                 orderStone.setStock(stock);
+                orderStone.setOrder(order);
                 stock.addStockStone(orderStone);
-                if (orderStone.getOrderStoneId() != null) keepIds.add(orderStone.getOrderStoneId());
             }
         }
 
-        stock.getOrderStones().removeIf(os ->
-                os.getOrderStoneId() != null && !keepIds.contains(os.getOrderStoneId()));
+        originOrderStone.removeIf(os ->
+                os.getOriginStoneId() != null && !keepIds.contains(os.getOriginStoneId()));
     }
 
 }

@@ -21,11 +21,11 @@ public class ProductSnapshot {
     private String size;
     @Column(name = "IS_PRODUCT_WEIGHT_SALE")
     private boolean isProductWeightSale;
-    @Column(name = "PRODUCT_LABOR_COST")
+    @Column(name = "PRODUCT_LABOR_COST") // 상품 매출 비용
     private Integer laborCost;
-    @Column(name = "PRODUCT_ADD_LABOR_COST")
+    @Column(name = "PRODUCT_ADD_LABOR_COST") // 상품 추가 매출 비용
     private Integer addLaborCost;
-    @Column(name = "PRODUCT_PURCHASE_COST")
+    @Column(name = "PRODUCT_PURCHASE_COST") // 상품 매입 비용
     private Integer productPurchaseCost;
     @Column(name = "MATERIAL_NAME")
     private String materialName;
@@ -33,9 +33,9 @@ public class ProductSnapshot {
     private String colorName;
     @Column(name = "CLASSIFICATION_NAME")
     private String classificationName;
-    @Column(name = "PRODUCT_WEIGHT", precision = 8, scale = 2)
+    @Column(name = "PRODUCT_WEIGHT", precision = 10, scale = 3) // 상품 총 무게
     private BigDecimal productWeight;
-    @Column(name = "STONE_WEIGHT", precision = 8, scale = 2)
+    @Column(name = "STONE_WEIGHT", precision = 10, scale = 3) // 상품 스톤 총 무게
     private BigDecimal stoneWeight;
 
     @Builder
@@ -62,6 +62,12 @@ public class ProductSnapshot {
         this.materialName = materialName;
         this.classificationName = classificationName;
         this.colorName = colorName;
+    }
+
+    public void updateProductWeightAndSize(String size, BigDecimal productWeight, BigDecimal stoneWeight) {
+        this.size = size;
+        this.productWeight = productWeight;
+        this.stoneWeight = stoneWeight;
     }
 }
 

@@ -4,6 +4,10 @@ spring:
   profiles:
     active: dev
   cloud:
+    loadbalancer:
+      cache:
+        enabled: true
+        ttl: 5s
     gateway:
       forwarded:
         enabled: true

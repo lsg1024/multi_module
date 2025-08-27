@@ -14,7 +14,6 @@ import com.msa.order.local.order.entity.order_enum.*;
 import com.msa.order.local.order.external_client.StoreClient;
 import com.msa.order.local.order.repository.OrdersRepository;
 import com.msa.order.local.order.repository.StatusHistoryRepository;
-import com.msa.order.local.order.util.StoneUtil;
 import com.msa.order.local.stock.dto.StockDto;
 import com.msa.order.local.stock.entity.ProductSnapshot;
 import com.msa.order.local.stock.entity.Stock;
@@ -33,8 +32,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.msa.order.global.exception.ExceptionMessage.*;
-import static com.msa.order.local.order.util.StoneUtil.countStoneCost;
-import static com.msa.order.local.order.util.StoneUtil.updateStoneInfo;
+import static com.msa.order.local.order.util.StoneUtil.*;
 
 @Slf4j
 @Service
@@ -70,7 +68,7 @@ public class StockService {
         int mainStoneQuantity = 0;
         int assistanceStoneQuantity = 0;
         List<OrderStone> orderStones = stock.getOrderStones();
-        StoneUtil.countStoneQuantity(orderStones, mainStoneQuantity, assistanceStoneQuantity);
+        countStoneQuantity(orderStones, mainStoneQuantity, assistanceStoneQuantity);
 
         return StockDto.ResponseDetail.builder()
                 .flowCode(stock.getFlowCode().toString())
@@ -155,8 +153,9 @@ public class StockService {
         stock.setOrder(order);
         stockRepository.save(stock);
 
-        updateStoneInfo(stockDto.getStoneInfos(), stock);
-        StoneUtil.updateStoneCostAndPurchase(stock);
+        List<OrderStone> orderStones = order.getOrderStones();
+        updateStoneInfo(stockDto.getStoneInfos(), stock, orderStones);
+        updateStoneCostAndPurchase(stock);
 
         order.updateOrderStatus(OrderStatus.valueOf(orderType));
         order.updateProductStatus(ProductStatus.EXPECT);
@@ -276,7 +275,8 @@ public class StockService {
             stock.updateStore(storeInfo);
 
             // 1) stone Update 필요 여부
-            updateStoneInfo(stockRentalDto.getStoneInfos(), stock);
+            List<OrderStone> orderStones = stock.getOrderStones();
+            updateStoneInfo(stockRentalDto.getStoneInfos(), stock, orderStones);
 
             // 2) stone Cost
             int totalStonePurchaseCost = 0;
