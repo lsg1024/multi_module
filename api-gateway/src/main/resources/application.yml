@@ -19,20 +19,41 @@ spring:
 
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
-
       globalcors:
+        add-to-simple-url-handler-mapping: true
         cors-configurations:
           '[/**]':
-            allowedOrigins: 'http://localhost:3000,http://lim.localtest.me:3000'
+            allowedOriginPatterns:
+              - "http://localhost:*"
+              - "http://*.localhost:*"
+              - "http://localtest.me:*"
+              - "http://*.localtest.me:*"
             allow-credentials: true
-            allowedHeaders: '*'
-            allowedMethods: GET,POST,PUT,DELETE,OPTIONS
-
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+            exposedHeaders:
+              - "*"
       routes:
 
         ################################
         # 외부 라우팅: 클라이언트 <-> 서비스 #
         ################################
+
+        - id: users-signup
+          uri: lb://users
+          predicates:
+            - Path=/users/signup
+            - Method=POST,OPTIONS
+          filters:
+            - StripPrefix=1
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
 
         - id: auth
           uri: lb://auth
