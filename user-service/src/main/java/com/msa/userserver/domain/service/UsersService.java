@@ -53,6 +53,17 @@ public class UsersService {
         usersRepository.save(user);
     }
 
+    //유저 정보
+    public UserDto.UserInfo getUserInfo(String accessToken) {
+        Users users = checkToken(accessToken);
+
+        return UserDto.UserInfo.builder()
+                .userId(users.getUserId())
+                .nickname(users.getNickname())
+                .build();
+    }
+
+
     //유저 정보 변경
     public void updateUserInfo(String accessToken, final UserDto.Update updateDto) {
         checkToken(accessToken);
@@ -92,7 +103,7 @@ public class UsersService {
 
     public UserDto.UserInfo login(UserDto.Login userDto) {
         Users userInfo = usersRepository.findByUserId(userDto.getUserId())
-                .orElseThrow(() -> new RuntimeException("유저 정보가 없습니다."));
+                .orElseThrow(() -> new UserNotFoundException("유저 정보가 없습니다."));
 
         boolean matches = encoder.matches(userDto.getPassword(), userInfo.getPassword());
 
@@ -105,6 +116,7 @@ public class UsersService {
                     .build();
         }
 
-        throw new RuntimeException("유저 정보가 없습니다");
+        throw new IllegalArgumentException("유저 정보가 없습니다");
     }
+
 }
