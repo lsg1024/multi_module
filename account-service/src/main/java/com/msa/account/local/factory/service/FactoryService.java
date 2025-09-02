@@ -36,8 +36,8 @@ public class FactoryService {
     }
 
     @Transactional(readOnly = true)
-    public CustomPage<FactoryDto.FactoryResponse> getFactoryList(Pageable pageable) {
-        return factoryRepository.findAllFactory(pageable);
+    public CustomPage<FactoryDto.FactoryResponse> getFactoryList(String name, Pageable pageable) {
+        return factoryRepository.findAllFactory(name, pageable);
     }
 
     public void createFactory(FactoryDto.FactoryRequest factoryInfo) throws NotFoundException {

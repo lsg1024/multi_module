@@ -4,6 +4,7 @@ import com.msa.account.local.store.dto.QStoreDto_StoreResponse;
 import com.msa.account.local.store.dto.QStoreDto_StoreSingleResponse;
 import com.msa.account.local.store.dto.StoreDto;
 import com.msa.common.global.util.CustomPage;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -65,7 +66,9 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
     }
 
     @Override
-    public CustomPage<StoreDto.StoreResponse> findAllStore(Pageable pageable) {
+    public CustomPage<StoreDto.StoreResponse> findAllStore(String name, Pageable pageable) {
+
+        BooleanExpression storeName = name != null ? store.storeName.contains(name) : null;
 
         List<StoreDto.StoreResponse> content = query
                 .select(new QStoreDto_StoreResponse(
@@ -88,13 +91,16 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                 .from(store)
                 .join(store.address, address)
                 .join(store.commonOption, commonOption)
-                .where(store.storeDeleted.isFalse())
+                .where(store.storeDeleted.isFalse().and(storeName))
                 .orderBy(store.storeName.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
                 .fetch();
 
         JPAQuery<Long> countQuery = query
                 .select(store.count())
-                .from(store);
+                .from(store)
+                .where(store.storeDeleted.isFalse().and(storeName));
 
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
     }

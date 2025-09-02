@@ -4,6 +4,7 @@ import com.msa.account.local.factory.dto.QFactoryDto_FactoryResponse;
 import com.msa.account.local.factory.dto.QFactoryDto_FactorySingleResponse;
 import com.msa.account.local.factory.dto.FactoryDto;
 import com.msa.common.global.util.CustomPage;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -58,7 +59,9 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
     }
 
     @Override
-    public CustomPage<FactoryDto.FactoryResponse> findAllFactory(Pageable pageable) {
+    public CustomPage<FactoryDto.FactoryResponse> findAllFactory(String name, Pageable pageable) {
+
+        BooleanExpression factoryName = name != null ? factory.factoryName.contains(name) : null;
 
         List<FactoryDto.FactoryResponse> content = query
                 .select(new QFactoryDto_FactoryResponse(
@@ -82,13 +85,16 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
                 .from(factory)
                 .join(factory.address, address)
                 .join(factory.commonOption, commonOption)
-                .where(factory.factoryDeleted.isFalse())
+                .where(factory.factoryDeleted.isFalse().and(factoryName))
                 .orderBy(factory.factoryName.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
                 .fetch();
 
         JPAQuery<Long> countQuery = query
                 .select(factory.count())
-                .from(factory);
+                .from(factory)
+                .where(factory.factoryDeleted.isFalse().and(factoryName));
 
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
     }
