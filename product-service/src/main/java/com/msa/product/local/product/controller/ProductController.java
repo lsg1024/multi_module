@@ -21,11 +21,11 @@ public class ProductController {
     }
 
     @PostMapping("/products")
-    public ResponseEntity<ApiResponse<Long>> createProduct(
+    public ResponseEntity<ApiResponse<String>> createProduct(
             HttpServletRequest request,
             @RequestBody ProductDto productDto) {
-        Long productId = productService.saveProduct(request, productDto);
-        return ResponseEntity.ok(ApiResponse.success("카테고리 생성완료.", productId));
+        productService.saveProduct(request, productDto);
+        return ResponseEntity.ok(ApiResponse.success("카테고리 생성완료"));
     }
     @GetMapping("/products/{id}")
     public ResponseEntity<ApiResponse<ProductDto.Detail>> getProduct(
@@ -37,7 +37,7 @@ public class ProductController {
     @GetMapping("/products")
     public ResponseEntity<ApiResponse<CustomPage<ProductDto.Page>>> getProducts(
             @RequestParam(name = "name", required = false) String productName,
-            @PageableDefault(size = 16) Pageable pageable) {
+            @PageableDefault(size = 20) Pageable pageable) {
         CustomPage<ProductDto.Page> products = productService.getProducts(productName, pageable);
         return ResponseEntity.ok(ApiResponse.success(products));
     }

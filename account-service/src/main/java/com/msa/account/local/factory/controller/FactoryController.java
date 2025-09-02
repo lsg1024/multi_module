@@ -31,11 +31,12 @@ public class FactoryController {
     }
 
     //목록 조회
-    @GetMapping("/factory/list")
+    @GetMapping("/factories")
     public ResponseEntity<ApiResponse<CustomPage<FactoryDto.FactoryResponse>>> getFactoryList(
-            @PageableDefault(size = 30) Pageable pageable) {
+            @RequestParam(name = "search", required = false) String name,
+            @PageableDefault(size = 12) Pageable pageable) {
 
-        CustomPage<FactoryDto.FactoryResponse> factoryList = factoryService.getFactoryList(pageable);
+        CustomPage<FactoryDto.FactoryResponse> factoryList = factoryService.getFactoryList(name, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(factoryList));
     }

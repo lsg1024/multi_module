@@ -1,6 +1,5 @@
 package com.msa.product.local.stone.stone.dto;
 
-import com.msa.product.local.stone.stone.entity.StoneWorkGradePolicy;
 import com.querydsl.core.annotations.QueryProjection;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -22,7 +21,7 @@ public class StoneDto {
     private String stoneName;
     private String stoneNote;
     private String stoneWeight;
-    private String stonePurchasePrice;
+    private Integer stonePurchasePrice;
     @Valid
     private List<StoneWorkGradePolicyDto> stoneWorkGradePolicyDto;
 
@@ -33,12 +32,12 @@ public class StoneDto {
         private String stoneName;
         private String stoneNote;
         private String stoneWeight;
-        private String stonePurchasePrice;
+        private Integer stonePurchasePrice;
         private List<StoneWorkGradePolicyDto.Response> stoneWorkGradePolicyDto;
 
         @Builder
         @QueryProjection
-        public ResponseSingle(String stoneId, String stoneName, String stoneNote, String stoneWeight, String stonePurchasePrice, List<StoneWorkGradePolicyDto.Response> stoneWorkGradePolicyDto) {
+        public ResponseSingle(String stoneId, String stoneName, String stoneNote, String stoneWeight, Integer stonePurchasePrice, List<StoneWorkGradePolicyDto.Response> stoneWorkGradePolicyDto) {
             this.stoneId = stoneId;
             this.stoneName = stoneName;
             this.stoneNote = stoneNote;
@@ -55,13 +54,12 @@ public class StoneDto {
         private String stoneName;
         private String stoneNote;
         private String stoneWeight;
-        private String stonePurchasePrice;
-        private List<StoneWorkGradePolicy> stoneWorkGradePolicyDto;
+        private Integer stonePurchasePrice;
+        private List<StoneWorkGradePolicyDto.Response> stoneWorkGradePolicyDto;
 
         @Builder
         @QueryProjection
-        public PageDto(String stoneId, String stoneName, String stoneNote, String stoneWeight, String stonePurchasePrice, List<StoneWorkGradePolicy> stoneWorkGradePolicyDto) {
-            this.stoneId = stoneId;
+        public PageDto(String stoneId, String stoneName, String stoneNote, String stoneWeight, Integer stonePurchasePrice, List<StoneWorkGradePolicyDto.Response> stoneWorkGradePolicyDto) {            this.stoneId = stoneId;
             this.stoneName = stoneName;
             this.stoneNote = stoneNote;
             this.stoneWeight = stoneWeight;

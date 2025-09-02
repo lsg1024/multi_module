@@ -8,5 +8,5 @@ import java.util.Optional;
 
 public interface CustomFactoryRepository {
     Optional<FactoryDto.FactorySingleResponse> findByFactoryId(Long factoryId);
-    CustomPage<FactoryDto.FactoryResponse> findAllFactory(Pageable pageable);
+    CustomPage<FactoryDto.FactoryResponse> findAllFactory(String name, Pageable pageable);
 }

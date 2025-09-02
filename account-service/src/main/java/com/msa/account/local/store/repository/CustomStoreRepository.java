@@ -9,5 +9,5 @@ import java.util.Optional;
 public interface CustomStoreRepository {
 
     Optional<StoreDto.StoreSingleResponse> findByStoreId(Long storeId);
-    CustomPage<StoreDto.StoreResponse> findAllStore(Pageable pageable);
+    CustomPage<StoreDto.StoreResponse> findAllStore(String name, Pageable pageable);
 }

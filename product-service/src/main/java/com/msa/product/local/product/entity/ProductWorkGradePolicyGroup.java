@@ -37,14 +37,18 @@ public class ProductWorkGradePolicyGroup {
     @OneToMany(mappedBy = "workGradePolicyGroup", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductWorkGradePolicy> gradePolicies = new ArrayList<>();
 
+    @Column(name = "PRODUCT_NOTE")
+    private String note;
+
     @Builder
-    public ProductWorkGradePolicyGroup(Long productWorkGradePolicyGroupId, Integer productPurchasePrice, Product product, Color color, boolean productWorkGradePolicyGroupDefault, List<ProductWorkGradePolicy> gradePolicies) {
+    public ProductWorkGradePolicyGroup(Long productWorkGradePolicyGroupId, Integer productPurchasePrice, Product product, Color color, boolean productWorkGradePolicyGroupDefault, List<ProductWorkGradePolicy> gradePolicies, String note) {
         this.productWorkGradePolicyGroupId = productWorkGradePolicyGroupId;
         this.productPurchasePrice = productPurchasePrice;
         this.product = product;
         this.color = color;
         this.productWorkGradePolicyGroupDefault = productWorkGradePolicyGroupDefault;
         this.gradePolicies = gradePolicies;
+        this.note = note;
     }
     public void addGradePolicy(ProductWorkGradePolicy detail) {
         gradePolicies.add(detail);
@@ -57,7 +61,8 @@ public class ProductWorkGradePolicyGroup {
     public void setColor(Color color) {
         this.color = color;
     }
-    public void updateProductPurchasePrice(Integer productPurchasePrice) {
+    public void updateProductPurchasePrice(Integer productPurchasePrice, String note) {
         this.productPurchasePrice = productPurchasePrice;
+        this.note = note;
     }
 }

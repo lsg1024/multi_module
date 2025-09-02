@@ -47,7 +47,7 @@ public class StoneController {
     // 복수 조회 + 검색 + 페이징
     @GetMapping("/stones")
     public ResponseEntity<ApiResponse<CustomPage<StoneDto.PageDto>>> getStones(
-            @RequestParam(name = "name", required = false) String stoneName,
+            @RequestParam(name = "search", required = false) String stoneName,
             @PageableDefault(size = 20) Pageable pageable) {
         CustomPage<StoneDto.PageDto> result = stoneService.getStones(stoneName, pageable);
         return ResponseEntity.ok(ApiResponse.success(result));

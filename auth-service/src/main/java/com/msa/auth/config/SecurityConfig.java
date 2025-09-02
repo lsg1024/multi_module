@@ -67,7 +67,7 @@ public class SecurityConfig {
                         .accessDeniedHandler((req, res, exDenied) ->
                                 res.sendError(HttpServletResponse.SC_FORBIDDEN)));
 
-        // 3) 커스텀 로그인 필터 — /auth/login
+        // 4) 커스텀 로그인 필터 — /auth/login
         CustomLoginFilter loginFilter = new CustomLoginFilter(
                 authenticationManager(), ACCESS_TTL, REFRESH_TTL, jwtUtil, redisService, userClient
         );
@@ -76,13 +76,12 @@ public class SecurityConfig {
         http
                 .addFilterAt(loginFilter, UsernamePasswordAuthenticationFilter.class);
 
-        // 4) JWT 검사 필터 — 로그인 이후 모든 요청에서
+        // 5) JWT 검사 필터 — 로그인 이후 모든 요청에서
         http
                 .addFilterBefore(new JwtFilter(jwtUtil), CustomLoginFilter.class);
 
-        // 5) 커스텀 로그아웃 필터 - /auth/logout
-        CustomLogoutFilter logoutFilter = new CustomLogoutFilter(jwtUtil, redisService);;
-
+        // 6) 커스텀 로그아웃 필터 - /auth/logout
+        CustomLogoutFilter logoutFilter = new CustomLogoutFilter(jwtUtil, redisService);
         http
                 .addFilterBefore(logoutFilter, LogoutFilter.class);
 

@@ -35,9 +35,10 @@ public class StoreController {
     //상점 목록 조회
     @GetMapping("/store/list")
     public ResponseEntity<ApiResponse<CustomPage<StoreDto.StoreResponse>>> getStoreList(
-            @PageableDefault(size = 30) Pageable pageable) {
+            @RequestParam(name = "search", required = false) String name,
+            @PageableDefault(size = 12) Pageable pageable) {
 
-        CustomPage<StoreDto.StoreResponse> storeList = storeService.getStoreList(pageable);
+        CustomPage<StoreDto.StoreResponse> storeList = storeService.getStoreList(name, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(storeList));
     }

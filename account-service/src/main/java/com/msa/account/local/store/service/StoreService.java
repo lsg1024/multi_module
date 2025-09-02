@@ -40,8 +40,8 @@ public class StoreService {
     }
     //상점 목록 호출(infoList)
     @Transactional(readOnly = true)
-    public CustomPage<StoreDto.StoreResponse> getStoreList(Pageable pageable) {
-        return storeRepository.findAllStore(pageable);
+    public CustomPage<StoreDto.StoreResponse> getStoreList(String name, Pageable pageable) {
+        return storeRepository.findAllStore(name, pageable);
     }
 
     //상점 추가

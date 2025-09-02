@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
-public class ReissueController {
+public class AuthController {
 
     @Value("${jwt.access_ttl}")
     private Long ACCESS_TTL;
@@ -20,10 +20,10 @@ public class ReissueController {
     @Value("${jwt.refresh_ttl}")
     private Long REFRESH_TTL;
 
-    private final ReissueService reissueService;
+    private final RefreshTokenService refreshTokenService;
 
-    public ReissueController(ReissueService reissueService) {
-        this.reissueService = reissueService;
+    public AuthController(RefreshTokenService refreshTokenService) {
+        this.refreshTokenService = refreshTokenService;
     }
 
     @PostMapping("/reissue")
@@ -39,7 +39,7 @@ public class ReissueController {
             }
         }
 
-        String[] tokens = reissueService.reissueRefreshToken(refreshToken, ACCESS_TTL, REFRESH_TTL);
+        String[] tokens = refreshTokenService.reissueRefreshToken(refreshToken, ACCESS_TTL, REFRESH_TTL);
 
         response.setHeader("Authorization", "Bearer " + tokens[0]);
         response.addCookie(createCookie("refreshToken", tokens[1], REFRESH_TTL));

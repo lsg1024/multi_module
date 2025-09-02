@@ -2,6 +2,7 @@ package com.msa.product.local.classification.repository;
 
 import com.msa.product.local.classification.dto.ClassificationDto;
 import com.msa.product.local.classification.dto.QClassificationDto_ResponseSingle;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 
@@ -19,6 +20,9 @@ public class ClassificationRepositoryImpl implements CustomClassificationReposit
 
     @Override
     public List<ClassificationDto.ResponseSingle> findAllOrderByAsc(String classificationName) {
+
+        BooleanExpression isClassificationName = classificationName != null ? classification.classificationName.contains(classificationName) : null;
+
         return query
                 .select(new QClassificationDto_ResponseSingle(
                         classification.classificationId.stringValue(),
@@ -26,7 +30,7 @@ public class ClassificationRepositoryImpl implements CustomClassificationReposit
                         classification.classificationNote
                 ))
                 .from(classification)
-                .where(classification.classificationName.contains(classificationName))
+                .where(isClassificationName)
                 .orderBy(classification.classificationName.asc())
                 .fetch();
     }

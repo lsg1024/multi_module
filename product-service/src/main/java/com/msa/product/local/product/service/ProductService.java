@@ -69,7 +69,7 @@ public class ProductService {
     }
 
     //생성
-    public Long saveProduct(HttpServletRequest request, ProductDto productDto) {
+    public void saveProduct(HttpServletRequest request, ProductDto productDto) {
         boolean existsByProductName = productRepository.existsByProductName(productDto.getProductName());
 
         if (existsByProductName) {
@@ -123,13 +123,14 @@ public class ProductService {
             Stone stone = stoneRepository.findById(stoneId)
                     .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
+            log.info("productStoneDto value = {}", productStoneDto.toString());
+
             ProductStone productStone = ProductStone.builder()
                     .stone(stone)
-                    .productStoneMain(productStoneDto.isProductStoneMain())
-                    .includeQuantity(productStoneDto.isIncludeQuantity())
-                    .includeWeight(productStoneDto.isIncludeWeight())
-                    .includeLabor(productStoneDto.isIncludeLabor())
+                    .isMainStone(productStoneDto.isMainStone())
+                    .isIncludeStone(productStoneDto.isIncludeStone())
                     .stoneQuantity(productStoneDto.getStoneQuantity())
+                    .productStoneNote(productStoneDto.getProductStoneNote())
                     .build();
 
             product.addProductStone(productStone);
@@ -150,13 +151,13 @@ public class ProductService {
                     .color(color)
                     .gradePolicies(new ArrayList<>())
                     .productWorkGradePolicyGroupDefault(isFirst)
+                    .note(groupDto.getNote())
                     .build();
 
             for (ProductWorkGradePolicyDto policyDto : groupDto.getPolicyDtos()) {
                 ProductWorkGradePolicy policy = ProductWorkGradePolicy.builder()
                         .grade(policyDto.getGrade())
                         .laborCost(policyDto.getLaborCost())
-                        .productPolicyNote(policyDto.getNote())
                         .build();
                 groups.addGradePolicy(policy);
             }
@@ -164,9 +165,7 @@ public class ProductService {
             isFirst = false;
         }
 
-        Product savedProduct = productRepository.save(product);
-
-        return savedProduct.getProductId();
+        productRepository.save(product);
     }
 
     //조회
@@ -242,11 +241,11 @@ public class ProductService {
     }
 
     private String validFactory(HttpServletRequest request, Long productDto) {
-        String factoryName = accountClient.getFactoryInfo(request, productDto);
-        if (factoryName == null || factoryName.isBlank()) {
+        FactoryDto.Response factoryInfo = accountClient.getFactoryInfo(request, productDto);
+        if (factoryInfo.getFactoryName() == null || factoryInfo.getFactoryName().isBlank()) {
             throw new IllegalArgumentException(productDto + " " + NOT_FOUND);
         }
-        return factoryName;
+        return factoryInfo.getFactoryName();
     }
 
     private void extractedProductStone(ProductDto.Update productDto, Product product) {
@@ -301,7 +300,7 @@ public class ProductService {
                         .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
                 group.setColor(color);
             }
-            group.updateProductPurchasePrice(dto.getProductPurchasePrice());
+            group.updateProductPurchasePrice(dto.getProductPurchasePrice(), dto.getNote());
             updatePolicies(group, dto.getGradePolicyDtos());
         }
     }

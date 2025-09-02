@@ -14,7 +14,6 @@ public class ProductWorkGradePolicyDto {
     @EnumValue(enumClass = WorkGrade.class, message = "잘못된 입력 양식입니다.")
     private String grade;
     private Integer laborCost;
-    private String note;
 
     @Getter
     @NoArgsConstructor
@@ -22,16 +21,14 @@ public class ProductWorkGradePolicyDto {
         private String workGradePolicyId;
         private String grade;
         private Integer laborCost;
-        private String note;
         private Long groupId;
 
         @Builder
         @QueryProjection
-        public Response(String workGradePolicyId, String grade, Integer laborCost, String note, Long groupId) {
+        public Response(String workGradePolicyId, String grade, Integer laborCost, Long groupId) {
             this.workGradePolicyId = workGradePolicyId;
             this.grade = grade;
             this.laborCost = laborCost;
-            this.note = note;
             this.groupId = groupId;
         }
     }
@@ -43,7 +40,6 @@ public class ProductWorkGradePolicyDto {
         private String workGradePolicyId;
         private String grade;
         private Integer laborCost;
-        private String note;
         private Long groupId;
     }
 }
