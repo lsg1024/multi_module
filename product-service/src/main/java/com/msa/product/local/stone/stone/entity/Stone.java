@@ -26,12 +26,12 @@ public class Stone {
     @Column(name = "STONE_WEIGHT", precision = 5, scale = 2)
     private BigDecimal stoneWeight;
     @Column(name = "STONE_PURCHASE_PRICE")
-    private String stonePurchasePrice;
+    private Integer stonePurchasePrice;
     @OneToMany(mappedBy = "stone", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<StoneWorkGradePolicy> gradePolicies = new ArrayList<>();
 
     @Builder
-    public Stone(String stoneName, String stoneNote, BigDecimal stoneWeight, String stonePurchasePrice, List<StoneWorkGradePolicy> gradePolicies) {
+    public Stone(String stoneName, String stoneNote, BigDecimal stoneWeight, Integer stonePurchasePrice, List<StoneWorkGradePolicy> gradePolicies) {
         this.stoneName = stoneName;
         this.stoneNote = stoneNote;
         this.stoneWeight = stoneWeight;
