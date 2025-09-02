@@ -9,12 +9,12 @@ import org.springframework.stereotype.Service;
 import static com.msa.auth.util.ValidationTokenUtil.*;
 
 @Service
-public class ReissueService {
+public class RefreshTokenService {
 
     private final JwtUtil jwtUtil;
     private final RedisRefreshTokenService redisRefreshTokenService;
 
-    public ReissueService(JwtUtil jwtUtil, RedisRefreshTokenService redisRefreshTokenService) {
+    public RefreshTokenService(JwtUtil jwtUtil, RedisRefreshTokenService redisRefreshTokenService) {
         this.jwtUtil = jwtUtil;
         this.redisRefreshTokenService = redisRefreshTokenService;
     }
