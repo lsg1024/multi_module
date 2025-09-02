@@ -30,11 +30,12 @@ public class ProductStoneRepositoryImpl implements CustomProductStoneRepository 
                         productStone.productStoneId.stringValue(),
                         stone.stoneId.stringValue(),
                         stone.stoneName,
-                        productStone.productStoneMain,
-                        productStone.includeQuantity,
-                        productStone.includeWeight,
-                        productStone.includeLabor,
-                        productStone.stoneQuantity
+                        stone.stoneWeight,
+                        stone.stonePurchasePrice,
+                        productStone.isMainStone,
+                        productStone.isIncludeStone,
+                        productStone.stoneQuantity,
+                        productStone.productStoneNote
                 ))
                 .from(productStone)
                 .join(productStone.stone, stone)

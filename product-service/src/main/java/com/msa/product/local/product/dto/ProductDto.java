@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -86,23 +87,29 @@ public class ProductDto {
         private String productId;
         private String productName;
         private String productWeight;
+        private String productMaterial;
         private String productColor;
         private String productNote;
         private String productLaborCost;
         private String productPriceInfo; // productStandard + (stoneGrade_1Price * count) * stoneCount
         private String productImagePath;
+        private List<ProductStoneDto.Response> productStones;
 
         @Builder
         @QueryProjection
-        public Page(String productId, String productName, String productWeight, String productColor, String productNote, String productLaborCost, String productPriceInfo, String productImagePath) {
+        public Page(String productId, String productName, String productWeight, String productMaterial, String productColor, String productNote, String productLaborCost, String productPriceInfo, String productImagePath, List<ProductStoneDto.Response> productStones) {
             this.productId = productId;
             this.productName = productName;
             this.productWeight = productWeight;
+            this.productMaterial = productMaterial;
             this.productColor = productColor;
             this.productNote = productNote;
             this.productLaborCost = productLaborCost;
             this.productPriceInfo = productPriceInfo;
             this.productImagePath = productImagePath;
+            this.productStones = (productStones != null)
+                    ? new ArrayList<>(productStones)
+                    : new ArrayList<>();
         }
     }
 }

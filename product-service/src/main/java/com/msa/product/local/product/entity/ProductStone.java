@@ -27,44 +27,31 @@ public class ProductStone {
     @JoinColumn(name = "STONE_ID", nullable = false)
     private Stone stone; // 판매 단가 호출 필요
 
-    @Column(name = "PRODUCT_STONE_MAIN")
-    private Boolean productStoneMain;
+    @Column(name = "IS_MAIN_STONE")
+    private Boolean isMainStone; // 메인 여부
 
-    @Column(name = "INCLUDE_QUANTITY")
-    private Boolean includeQuantity;
-
-    @Column(name = "INCLUDE_WEIGHT")
-    private Boolean includeWeight;
-
-    @Column(name = "INCLUDE_LABOR")
-    private Boolean includeLabor;
+    @Column(name = "IS_INCLUDE_STONE")
+    private Boolean isIncludeStone; // 포함 여부
 
     @Column(name = "STONE_QUANTITY")
     private Integer stoneQuantity;
 
+    @Column(name = "PRODUCT_STONE_NOTE")
+    private String productStoneNote;
+
     @Builder
-    public ProductStone(Product product, Stone stone, Boolean productStoneMain, Boolean includeQuantity, Boolean includeWeight, Boolean includeLabor, Integer stoneQuantity) {
+    public ProductStone(Product product, Stone stone, Boolean isMainStone, Boolean isIncludeStone, Boolean includeWeight, Boolean includeLabor, Integer stoneQuantity, String productStoneNote) {
         this.product = product;
         this.stone = stone;
-        this.productStoneMain = productStoneMain;
-        this.includeQuantity = includeQuantity;
-        this.includeWeight = includeWeight;
-        this.includeLabor = includeLabor;
+        this.isMainStone = isMainStone;
+        this.isIncludeStone = isIncludeStone;
         this.stoneQuantity = stoneQuantity;
-    }
-
-    public void updateIncludeQuantity(Boolean includeQuantity) {
-        this.includeQuantity = includeQuantity;
-    }
-
-    public void updateStoneQuantity(Integer stoneQuantity) {
-        this.stoneQuantity = stoneQuantity;
+        this.productStoneNote = productStoneNote;
     }
 
     public void updateStone(ProductStoneDto.Request dto) {
-        this.includeQuantity = dto.isIncludeQuantity();
-        this.includeWeight = dto.isIncludeWeight();
-        this.includeLabor = dto.isIncludeLabor();
+        this.isMainStone = dto.isMainStone();
+        this.isIncludeStone = dto.isIncludeStone();
         this.stoneQuantity = dto.getStoneQuantity();
     }
 
