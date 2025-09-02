@@ -16,8 +16,10 @@ public class ProductWorkGradePolicyGroupDto {
     private String productGroupId;
     private Integer productPurchasePrice;
     private String colorId;
+    private boolean defaultProductPolicy;
     @Valid
     private List<ProductWorkGradePolicyDto> policyDtos;
+    private String note;
 
     @Getter
     @NoArgsConstructor
@@ -25,15 +27,19 @@ public class ProductWorkGradePolicyGroupDto {
         private String productGroupId;
         private Integer productPurchasePrice;
         private String colorName;
+        private boolean defaultProductPolicy;
         private List<ProductWorkGradePolicyDto.Response> gradePolicyDtos;
+        private String note;
 
         @Builder
         @QueryProjection
-        public Response(String productGroupId, Integer productPurchasePrice, String colorName, List<ProductWorkGradePolicyDto.Response> gradePolicyDtos) {
+        public Response(String productGroupId, Integer productPurchasePrice, String colorName, boolean defaultProductPolicy, List<ProductWorkGradePolicyDto.Response> gradePolicyDtos, String note) {
             this.productGroupId = productGroupId;
             this.productPurchasePrice = productPurchasePrice;
             this.colorName = colorName;
+            this.defaultProductPolicy = defaultProductPolicy;
             this.gradePolicyDtos = gradePolicyDtos;
+            this.note = note;
         }
     }
 
@@ -45,7 +51,9 @@ public class ProductWorkGradePolicyGroupDto {
         private Integer productPurchasePrice;
         private String colorId;
         private String colorName;
+        private boolean defaultProductPolicy;
         private List<ProductWorkGradePolicyDto.Request> gradePolicyDtos;
+        private String note;
     }
 
 }

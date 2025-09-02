@@ -29,7 +29,9 @@ public class ProductWorkGradePolicyRepositoryGroupImpl implements CustomProductW
                 .select(new QProductWorkGradePolicyGroupInfo(
                         productWorkGradePolicyGroup.productWorkGradePolicyGroupId,
                         productWorkGradePolicyGroup.productPurchasePrice,
-                        color.colorName
+                        color.colorName,
+                        productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault,
+                        productWorkGradePolicyGroup.note
                 ))
                 .from(productWorkGradePolicyGroup)
                 .leftJoin(productWorkGradePolicyGroup.color, color)
@@ -46,7 +48,6 @@ public class ProductWorkGradePolicyRepositoryGroupImpl implements CustomProductW
                         productWorkGradePolicy.productWorkGradePolicyId.stringValue(), // String 변환
                         productWorkGradePolicy.grade.stringValue(),
                         productWorkGradePolicy.laborCost,
-                        productWorkGradePolicy.productPolicyNote,
                         productWorkGradePolicy.workGradePolicyGroup.productWorkGradePolicyGroupId
                 ))
                 .from(productWorkGradePolicy)
@@ -65,7 +66,9 @@ public class ProductWorkGradePolicyRepositoryGroupImpl implements CustomProductW
                         .productGroupId(group.getGroupId().toString())
                         .productPurchasePrice(group.getProductPurchasePrice())
                         .colorName(group.getColorName())
+                        .defaultProductPolicy(group.isDefaultProductPolicy())
                         .gradePolicyDtos(policyMap.getOrDefault(group.getGroupId(), List.of()))
+                        .note(group.getNote())
                         .build())
                 .toList();
     }

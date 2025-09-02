@@ -39,7 +39,10 @@ public class ProductImageService {
 
     public void uploadProductImages(Long productId, List<MultipartFile> images) {
 
-        Product product = productRepository.findById(productId).orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        boolean existsProductImage = productImageRepository.existsByProduct_ProductId(productId);
 
         if (images != null && !images.isEmpty()) {
             String productDirPath = baseUploadPath + "/products/" + productId;
@@ -50,12 +53,25 @@ public class ProductImageService {
                 String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
                 String imagePath = "/products/" + productId + "/" + fileName;
                 try {
-                    ProductImage image = ProductImage.builder()
-                            .imagePath(imagePath)
-                            .imageOriginName(file.getOriginalFilename())
-                            .imageName(fileName)
-                            .product(product)
-                            .build();
+                    ProductImage image;
+                    if (existsProductImage) {
+                        image = ProductImage.builder()
+                                .imagePath(imagePath)
+                                .imageOriginName(file.getOriginalFilename())
+                                .imageName(fileName)
+                                .product(product)
+                                .build();
+                    } else {
+                        image = ProductImage.builder()
+                                .imagePath(imagePath)
+                                .imageOriginName(file.getOriginalFilename())
+                                .imageName(fileName)
+                                .product(product)
+                                .imageMain(true)
+                                .build();
+
+                        existsProductImage = true;
+                    }
 
                     product.addImage(image);
 
