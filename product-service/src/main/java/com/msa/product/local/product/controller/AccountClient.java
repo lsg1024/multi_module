@@ -2,6 +2,7 @@ package com.msa.product.local.product.controller;
 
 import com.msa.common.global.api.ApiResponse;
 import com.msa.product.global.util.RestClientUtil;
+import com.msa.product.local.product.dto.FactoryDto;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -21,11 +22,11 @@ public class AccountClient {
         this.restClientUtil = restClientUtil;
     }
 
-    public String getFactoryInfo(HttpServletRequest request, Long factoryId) {
+    public FactoryDto.Response getFactoryInfo(HttpServletRequest request, Long factoryId) {
 
         String tenantId = request.getHeader("X-Tenant-ID");
 
-        ResponseEntity<ApiResponse<String>> response;
+        ResponseEntity<ApiResponse<FactoryDto.Response>> response;
         try {
             String url = "http://" + tenantId + baseUrl + "/factory/" + factoryId;
             response = restClientUtil.get(request, url, new ParameterizedTypeReference<>() {});
