@@ -38,6 +38,15 @@ public class UsersController {
         return ResponseEntity.ok(ApiResponse.success("가입 완료"));
     }
 
+    @GetMapping("/info")
+    public ResponseEntity<ApiResponse<UserDto.UserInfo>> getUserInfo(
+            @AccessToken String accessToken) {
+
+        UserDto.UserInfo userInfo = usersService.getUserInfo(accessToken);
+
+        return ResponseEntity.ok(ApiResponse.success(userInfo));
+    }
+
     //유저 수정
     @PatchMapping("/info")
     public ResponseEntity<ApiResponse<String>> updateUserInfo(
