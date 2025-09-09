@@ -36,12 +36,36 @@ public class ProductStoneDto {
     public static class Request {
         private String productStoneId;
         private String stoneId;
-        private String stoneName;
+        @JsonProperty("isMainStone")
         private boolean isMainStone;
+        @JsonProperty("isIncludeStone")
         private boolean isIncludeStone;
         private Integer stoneQuantity;
         private String productStoneNote;
-        private List<StoneWorkGradePolicyDto.Response> stoneWorkGradePolicyDtos;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class PageResponse {
+        private String productStoneId;
+        private String stoneId;
+        private String stoneName;
+        @JsonProperty("isMainStone")
+        private boolean isMainStone;
+        @JsonProperty("isIncludeStone")
+        private boolean isIncludeStone;
+        private Integer stoneQuantity;
+        private Integer laborCost;
+        @Builder
+        public PageResponse(String productStoneId, String stoneId, String stoneName, boolean isMainStone, boolean isIncludeStone, Integer stoneQuantity, Integer laborCost) {
+            this.productStoneId = productStoneId;
+            this.stoneId = stoneId;
+            this.stoneName = stoneName;
+            this.isMainStone = isMainStone;
+            this.isIncludeStone = isIncludeStone;
+            this.stoneQuantity = stoneQuantity;
+            this.laborCost = laborCost;
+        }
     }
 
     @Setter
@@ -53,11 +77,24 @@ public class ProductStoneDto {
         private String stoneName;
         private BigDecimal stoneWeight;
         private Integer stonePurchase;
+        @JsonProperty("isMainStone")
         private boolean isMainStone;
+        @JsonProperty("isIncludeStone")
         private boolean isIncludeStone;
         private Integer stoneQuantity;
         private String productStoneNote;
         private List<StoneWorkGradePolicyDto.Response> stoneWorkGradePolicyDtos;
+
+        @Builder
+        public Response(String productStoneId, String stoneId, String stoneName, Integer stoneQuantity, boolean isMainStone, boolean isIncludeStone, List<StoneWorkGradePolicyDto.Response> stoneWorkGradePolicyDtos) {
+            this.productStoneId = productStoneId;
+            this.stoneId = stoneId;
+            this.stoneName = stoneName;
+            this.stoneQuantity = stoneQuantity;
+            this.isMainStone = isMainStone;
+            this.isIncludeStone = isIncludeStone;
+            this.stoneWorkGradePolicyDtos = stoneWorkGradePolicyDtos;
+        }
 
         @Builder
         @QueryProjection

@@ -38,8 +38,6 @@ public class ProductWorkGradePolicyDto {
     @AllArgsConstructor
     public static class Request {
         private String workGradePolicyId;
-        private String grade;
         private Integer laborCost;
-        private Long groupId;
     }
 }

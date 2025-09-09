@@ -7,7 +7,6 @@ import com.msa.product.local.material.dto.QMaterialDto_ResponseSingle;
 import com.msa.product.local.product.dto.*;
 import com.msa.product.local.product.entity.QProductWorkGradePolicy;
 import com.msa.product.local.set.dto.QSetTypeDto_ResponseSingle;
-import com.msa.product.local.stone.stone.dto.StoneWorkGradePolicyDto;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.Expressions;
@@ -17,7 +16,6 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Pageable;
 
-import java.math.BigDecimal;
 import java.util.*;
 
 import static com.msa.product.local.classification.entity.QClassification.classification;
@@ -79,7 +77,7 @@ public class ProductRepositoryImpl implements CustomProductRepository {
     }
 
     @Override
-    public CustomPage<ProductDto.Page> findByAllProductName(String productName, Pageable pageable) {
+    public CustomPage<ProductDto.Page> findByAllProductName(String productName, String factoryName, String classificationId, String setTypeId, Pageable pageable) {
 
         QProductWorkGradePolicy productWorkGradePolicySub = new QProductWorkGradePolicy("productWorkGradePolicySub");
 
@@ -89,16 +87,27 @@ public class ProductRepositoryImpl implements CustomProductRepository {
             builder.and(product.productName.containsIgnoreCase(productName));
         }
 
+        if (factoryName != null && !factoryName.isBlank()) {
+            builder.and(product.factoryName.containsIgnoreCase(factoryName));
+        }
+
+        if (classificationId != null && !classificationId.isBlank()) {
+            builder.and(product.classification.classificationId.eq(Long.parseLong(classificationId)));
+        }
+
+        if (setTypeId != null && !setTypeId.isBlank()) {
+            builder.and(product.setType.setTypeId.eq(Long.parseLong(setTypeId)));
+        }
+
         List<ProductDto.Page> content = query
                 .select(new QProductDto_Page(
                         product.productId.stringValue(),
                         product.productName,
                         product.standardWeight.stringValue(),
                         material.materialName,
-                        productWorkGradePolicyGroup.color.colorName,
                         product.productNote,
+                        productWorkGradePolicyGroup.productPurchasePrice.stringValue(),
                         productWorkGradePolicy.laborCost.coalesce(0).stringValue(),
-                        productStone.stoneQuantity.multiply(stoneWorkGradePolicy.laborCost).coalesce(0).sum().stringValue(),
                         JPAExpressions
                                 .select(productImage.imagePath)
                                 .from(productImage)
@@ -109,6 +118,8 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 .from(product)
                 .leftJoin(productStone).on(product.productId.eq(productStone.product.productId))
                 .leftJoin(product.material, material)
+                .leftJoin(product.setType, setType)
+                .leftJoin(product.classification, classification)
                 .leftJoin(product.productWorkGradePolicyGroups, productWorkGradePolicyGroup)
                 .leftJoin(productWorkGradePolicyGroup.gradePolicies, productWorkGradePolicy)
                 .on(productWorkGradePolicy.grade.eq(WorkGrade.GRADE_1)
@@ -140,18 +151,22 @@ public class ProductRepositoryImpl implements CustomProductRepository {
         JPAQuery<Long> countQuery = query
                 .select(product.count())
                 .from(product)
-                .where(builder);
+                .leftJoin(product.productWorkGradePolicyGroups, productWorkGradePolicyGroup)
+                .where(
+                        productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue()
+                                .and(builder)
+                );
 
         if (!content.isEmpty()) {
             List<Long> productIds = content.stream()
                     .map(p -> Long.valueOf(p.getProductId()))
                     .toList();
 
-            Map<Long, List<ProductStoneDto.Response>> stonesMap = loadStonesByProductIds(productIds);
+            Map<Long, List<ProductStoneDto.PageResponse>> stonesMap = loadStonesByProductIds(productIds);
 
             for (ProductDto.Page dto : content) {
                 Long pid = Long.valueOf(dto.getProductId());
-                List<ProductStoneDto.Response> stones = stonesMap.getOrDefault(pid, Collections.emptyList());
+                List<ProductStoneDto.PageResponse> stones = stonesMap.getOrDefault(pid, Collections.emptyList());
                 dto.getProductStones().addAll(stones);
             }
         }
@@ -159,20 +174,17 @@ public class ProductRepositoryImpl implements CustomProductRepository {
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
     }
 
-    private Map<Long, List<ProductStoneDto.Response>> loadStonesByProductIds(List<Long> productIds) {
+    private Map<Long, List<ProductStoneDto.PageResponse>> loadStonesByProductIds(List<Long> productIds) {
 
-        // 한 번에 평탄하게 읽어온 뒤 자바에서 그룹핑
         List<Tuple> rows = query
                 .select(
                         product.productId,                        // 0
                         productStone.productStoneId,              // 1
                         stone.stoneId,                            // 2
                         stone.stoneName,                          // 3
-                        stone.stoneWeight,
-                        productStone.isMainStone,            // 4
-                        productStone.isIncludeStone,             // 5
-                        productStone.stoneQuantity,               // 6
-                        productStone.productStoneNote,
+                        productStone.stoneQuantity,
+                        productStone.isMainStone,
+                        productStone.isIncludeStone,
                         stoneWorkGradePolicy.stoneWorkGradePolicyId, // 7 (nullable)
                         stoneWorkGradePolicy.grade,               // 8 (nullable)
                         stoneWorkGradePolicy.laborCost            // 9 (nullable)
@@ -181,51 +193,33 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 .join(productStone.product, product)
                 .join(productStone.stone, stone)
                 .leftJoin(stone.gradePolicies, stoneWorkGradePolicy).on(stoneWorkGradePolicy.grade.eq(WorkGrade.GRADE_1))
-                .where(product.productId.in(productIds))
+                .where(
+                        product.productId.in(productIds)
+                        .and(productStone.isIncludeStone.isTrue()))
                 .orderBy(product.productId.asc(), productStone.productStoneId.asc())
                 .fetch();
 
-        Map<Long, List<ProductStoneDto.Response>> result = new LinkedHashMap<>();
+        Map<Long, List<ProductStoneDto.PageResponse>> result = new LinkedHashMap<>();
 
         for (Tuple t : rows) {
-            Long pId   = t.get(product.productId);
-            Long psId  = t.get(productStone.productStoneId);
-            Integer psP = t.get(stone.stonePurchasePrice);
-            Long sId   = t.get(stone.stoneId);
-            String sNm = t.get(stone.stoneName);
-            BigDecimal psw = t.get(stone.stoneWeight);
-
-            boolean main = Boolean.TRUE.equals(t.get(productStone.isMainStone));
-            boolean include = Boolean.TRUE.equals(t.get(productStone.isIncludeStone));
-            Integer qty  = Optional.ofNullable(t.get(productStone.stoneQuantity)).orElse(0);
-            String sN = t.get(productStone.productStoneNote);
-
-            Long    polId = t.get(stoneWorkGradePolicy.stoneWorkGradePolicyId);
+            Long productId   = t.get(product.productId);
+            Long productStoneId  = t.get(productStone.productStoneId);
+            Long stoneId   = t.get(stone.stoneId);
+            String stoneName = t.get(stone.stoneName);
+            Integer quantity  = Optional.ofNullable(t.get(productStone.stoneQuantity)).orElse(0);
+            boolean main    = Optional.ofNullable(t.get(productStone.isMainStone)).orElse(false);
+            boolean include = Optional.ofNullable(t.get(productStone.isIncludeStone)).orElse(false);
+            Long    policyId = t.get(stoneWorkGradePolicy.stoneWorkGradePolicyId);
             Integer cost  = t.get(stoneWorkGradePolicy.laborCost);
 
-            ProductStoneDto.Response resp = new ProductStoneDto.Response(
-                    psId != null ? psId.toString() : null,
-                    sId  != null ? sId.toString()  : null,
-                    sNm != null ? sNm : "",
-                    psw != null ? psw : BigDecimal.valueOf(0),
-                    psP != null ? psP : 0,
-                    main, include, qty, sN
+            ProductStoneDto.PageResponse resp = new ProductStoneDto.PageResponse(
+                    productStoneId != null ? productStoneId.toString() : null,
+                    stoneId  != null ? stoneId.toString()  : null,
+                    stoneName != null ? stoneName : "",
+                    main, include, quantity, cost
             );
 
-            if (polId != null && cost != null) {
-                resp.setStoneWorkGradePolicyDtos(
-                        List.of(
-                                StoneWorkGradePolicyDto.Response.builder()
-                                        .workGradePolicyId(polId.toString())
-                                        .grade(WorkGrade.GRADE_1.name())
-                                        .laborCost(cost)
-                                        .build()
-                        )
-                );
-            } else {
-                resp.setStoneWorkGradePolicyDtos(Collections.emptyList());
-            }
-            result.computeIfAbsent(pId, k -> new ArrayList<>()).add(resp);
+            result.computeIfAbsent(productId, k -> new ArrayList<>()).add(resp);
         }
 
         return result;

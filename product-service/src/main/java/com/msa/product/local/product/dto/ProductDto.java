@@ -5,6 +5,9 @@ import com.msa.product.local.material.dto.MaterialDto;
 import com.msa.product.local.set.dto.SetTypeDto;
 import com.querydsl.core.annotations.QueryProjection;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,8 +20,11 @@ import java.util.List;
 @NoArgsConstructor
 public class ProductDto {
 
+    @NotNull(message = "필수 입력 값입니다.")
+    @Positive(message = "factoryId는 1 이상의 정수여야 합니다.")
     private Long factoryId;
     private String productFactoryName;
+    @NotBlank(message = "필수 입력 값입니다.")
     private String productName;
     private String setType; // setId
     private String classification; // classificationId
@@ -79,6 +85,7 @@ public class ProductDto {
         private String productNote;
         private List<ProductWorkGradePolicyGroupDto.Request> productWorkGradePolicyGroupDto; // 상품 판매 공임
         private List<ProductStoneDto.Request> productStoneDtos; //상품용 <- stone 호출
+
     }
 
     @Getter
@@ -88,28 +95,24 @@ public class ProductDto {
         private String productName;
         private String productWeight;
         private String productMaterial;
-        private String productColor;
         private String productNote;
+        private String productPurchaseCost;
         private String productLaborCost;
-        private String productPriceInfo; // productStandard + (stoneGrade_1Price * count) * stoneCount
         private String productImagePath;
-        private List<ProductStoneDto.Response> productStones;
+        private List<ProductStoneDto.PageResponse> productStones;
 
         @Builder
         @QueryProjection
-        public Page(String productId, String productName, String productWeight, String productMaterial, String productColor, String productNote, String productLaborCost, String productPriceInfo, String productImagePath, List<ProductStoneDto.Response> productStones) {
+        public Page(String productId, String productName, String productWeight, String productMaterial, String productNote, String productPurchaseCost, String productLaborCost, String productImagePath, List<ProductStoneDto.Response> productStones) {
             this.productId = productId;
             this.productName = productName;
             this.productWeight = productWeight;
             this.productMaterial = productMaterial;
-            this.productColor = productColor;
             this.productNote = productNote;
+            this.productPurchaseCost = productPurchaseCost;
             this.productLaborCost = productLaborCost;
-            this.productPriceInfo = productPriceInfo;
             this.productImagePath = productImagePath;
-            this.productStones = (productStones != null)
-                    ? new ArrayList<>(productStones)
-                    : new ArrayList<>();
+            this.productStones = new ArrayList<>();
         }
     }
 }

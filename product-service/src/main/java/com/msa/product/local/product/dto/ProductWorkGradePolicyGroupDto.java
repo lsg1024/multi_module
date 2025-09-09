@@ -2,6 +2,7 @@ package com.msa.product.local.product.dto;
 
 import com.querydsl.core.annotations.QueryProjection;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,6 +16,7 @@ public class ProductWorkGradePolicyGroupDto {
 
     private String productGroupId;
     private Integer productPurchasePrice;
+    @NotBlank(message = "필수 입력 값입니다.")
     private String colorId;
     private boolean defaultProductPolicy;
     @Valid
@@ -26,6 +28,7 @@ public class ProductWorkGradePolicyGroupDto {
     public static class Response {
         private String productGroupId;
         private Integer productPurchasePrice;
+        private String colorId;
         private String colorName;
         private boolean defaultProductPolicy;
         private List<ProductWorkGradePolicyDto.Response> gradePolicyDtos;
@@ -33,9 +36,10 @@ public class ProductWorkGradePolicyGroupDto {
 
         @Builder
         @QueryProjection
-        public Response(String productGroupId, Integer productPurchasePrice, String colorName, boolean defaultProductPolicy, List<ProductWorkGradePolicyDto.Response> gradePolicyDtos, String note) {
+        public Response(String productGroupId, Integer productPurchasePrice, String colorId, String colorName, boolean defaultProductPolicy, List<ProductWorkGradePolicyDto.Response> gradePolicyDtos, String note) {
             this.productGroupId = productGroupId;
             this.productPurchasePrice = productPurchasePrice;
+            this.colorId = colorId;
             this.colorName = colorName;
             this.defaultProductPolicy = defaultProductPolicy;
             this.gradePolicyDtos = gradePolicyDtos;
@@ -50,8 +54,6 @@ public class ProductWorkGradePolicyGroupDto {
         private String productGroupId;
         private Integer productPurchasePrice;
         private String colorId;
-        private String colorName;
-        private boolean defaultProductPolicy;
         private List<ProductWorkGradePolicyDto.Request> gradePolicyDtos;
         private String note;
     }

@@ -29,9 +29,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.msa.product.global.exception.ExceptionMessage.*;
@@ -95,25 +97,25 @@ public class ProductService {
                 .productImages(new ArrayList<>())
                 .build();
 
-        if (productDto.getSetType() != null) {
-            Long setTypeId = Long.valueOf(productDto.getSetType());
+        if (StringUtils.hasText(productDto.getSetType())) {
+            Long setTypeId = Long.valueOf(productDto.getSetType().trim());
             SetType setType = setTypeRepository.findById(setTypeId)
                     .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
             product.setSetType(setType);
         }
 
-        if (productDto.getClassification() != null) {
-            Long classificationId = Long.valueOf(productDto.getClassification());
-            Classification classification = classificationRepository.findById(classificationId)
+        if (StringUtils.hasText(productDto.getClassification())) {
+            Long classificationId = Long.valueOf(productDto.getClassification().trim());
+            Classification c = classificationRepository.findById(classificationId)
                     .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-            product.setClassification(classification);
+            product.setClassification(c);
         }
 
-        if (productDto.getMaterial() != null) {
-            Long materialId = Long.valueOf(productDto.getMaterial());
-            Material material = materialRepository.findById(materialId)
+        if (StringUtils.hasText(productDto.getMaterial())) {
+            Long materialId = Long.valueOf(productDto.getMaterial().trim());
+            Material m = materialRepository.findById(materialId)
                     .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-            product.setMaterial(material);
+            product.setMaterial(m);
         }
 
         List<ProductStoneDto> productStoneDtos = productDto.getProductStoneDtos();
@@ -122,8 +124,6 @@ public class ProductService {
 
             Stone stone = stoneRepository.findById(stoneId)
                     .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-
-            log.info("productStoneDto value = {}", productStoneDto.toString());
 
             ProductStone productStone = ProductStone.builder()
                     .stone(stone)
@@ -185,12 +185,13 @@ public class ProductService {
     }
     //복수 조회
     @Transactional(readOnly = true)
-    public CustomPage<ProductDto.Page> getProducts(String productName, Pageable pageable) {
-        return productRepository.findByAllProductName(productName, pageable);
+    public CustomPage<ProductDto.Page> getProducts(String productName, String factoryName, String classificationId, String setTypeId, Pageable pageable) {
+        return productRepository.findByAllProductName(productName, factoryName, classificationId, setTypeId, pageable);
     }
 
     //수정 - 이미지 수정은 별도
     public void updateProduct(HttpServletRequest request, Long productId, ProductDto.Update updateDto) {
+
         validProductSameName(updateDto.getProductName(), productId);
 
         String factoryName = validFactory(request, updateDto.getFactoryId());
@@ -249,30 +250,79 @@ public class ProductService {
     }
 
     private void extractedProductStone(ProductDto.Update productDto, Product product) {
-        List<Long> groupIds = productDto.getProductStoneDtos().stream()
-                .map(dto -> Long.valueOf(dto.getProductStoneId()))
+        List<ProductStoneDto.Request> reqs =
+                productDto.getProductStoneDtos() != null ? productDto.getProductStoneDtos() : Collections.emptyList();
+
+        // 1) 기존 행(요청 중 "숫자 양수"인 ID만) 조회
+        List<Long> existingIds = reqs.stream()
+                .map(ProductStoneDto.Request::getProductStoneId)
+                .filter(this::isNumericPositive)       // "" / null / "new_..." / "0" / "-1" → false
+                .map(Long::parseLong)
                 .toList();
 
-        List<ProductStone> groups = productStoneRepository
-                .findByProductStoneIds(groupIds);
+        Map<Long, ProductStone> existingMap = existingIds.isEmpty()
+                ? Collections.emptyMap()
+                : productStoneRepository.findByProductStoneIds(existingIds).stream()
+                .collect(Collectors.toMap(ProductStone::getProductStoneId, Function.identity()));
 
-        Map<Long, ProductStone> groupMap = groups.stream()
-                .collect(Collectors.toMap(
-                        ProductStone::getProductStoneId,
-                        p -> p
-                ));
+        Set<Long> keepIds = new HashSet<>();
 
-        for (ProductStoneDto.Request productStoneDto : productDto.getProductStoneDtos()) {
-            Long productStoneId = Long.valueOf(productStoneDto.getProductStoneId());
-            ProductStone productStone = groupMap.get(productStoneId);
+        // 2) 요청 하나씩 처리
+        for (ProductStoneDto.Request r : reqs) {
+            String idStr = r.getProductStoneId();
 
-            Long newStoneId = Long.valueOf(productStoneDto.getStoneId());
-            if (!productStone.getStone().getStoneId().equals(newStoneId)) {
-                Stone stone = stoneRepository.findById(newStoneId)
+            if (isNumericPositive(idStr)) {
+                // ---- 기존 행 업데이트 ----
+                long psId = Long.parseLong(idStr);
+                ProductStone ps = existingMap.get(psId);
+                if (ps == null) {
+                    continue;
+                }
+
+                long stoneId = parseLongRequired(r.getStoneId()); // 필수값
+                if (!Objects.equals(ps.getStone().getStoneId(), stoneId)) {
+                    Stone stone = stoneRepository.findById(stoneId)
+                            .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+                    ps.setStone(stone);
+                }
+                ps.updateStone(r);
+                keepIds.add(psId);
+
+            } else {
+                // ---- 신규 행 생성 ----
+                long stoneId = parseLongRequired(r.getStoneId()); // 필수값
+                Stone stone = stoneRepository.findById(stoneId)
                         .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-                productStone.setStone(stone);
+
+                ProductStone productStone = ProductStone.builder()
+                        .stone(stone)
+                        .isMainStone(r.isMainStone())
+                        .isIncludeStone(r.isIncludeStone())
+                        .stoneQuantity(r.getStoneQuantity())
+                        .productStoneNote(r.getProductStoneNote())
+                        .build();
+
+                product.addProductStone(productStone);
             }
-            productStone.updateStone(productStoneDto);
+        }
+
+        Set<Long> requestedExistingIds = reqs.stream()
+                .map(ProductStoneDto.Request::getProductStoneId)
+                .filter(this::isNumericPositive)
+                .map(Long::parseLong)
+                .collect(Collectors.toSet());
+
+        List<Long> currentExistingIds = product.getProductStones().stream()
+                .map(ProductStone::getProductStoneId)
+                .filter(Objects::nonNull)
+                .toList();
+
+        List<Long> toDelete = currentExistingIds.stream()
+                .filter(id -> !requestedExistingIds.contains(id))
+                .toList();
+
+        if (!toDelete.isEmpty()) {
+            productStoneRepository.deleteAllByIdInBatch(toDelete);
         }
     }
 
@@ -302,6 +352,24 @@ public class ProductService {
             }
             group.updateProductPurchasePrice(dto.getProductPurchasePrice(), dto.getNote());
             updatePolicies(group, dto.getGradePolicyDtos());
+        }
+    }
+
+    private boolean isNumericPositive(String s) {
+        if (s == null || s.isBlank()) return false;
+        try {
+            return Long.parseLong(s) > 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private long parseLongRequired(String s) {
+        if (s == null || s.isBlank()) throw new IllegalArgumentException("ID_REQUIRED");
+        try {
+            return Long.parseLong(s);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("ID_INVALID");
         }
     }
 

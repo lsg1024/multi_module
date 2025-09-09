@@ -1,10 +1,15 @@
 package com.msa.product.local.product.repository.work_grade_policy_group;
 
-import com.msa.product.local.product.dto.*;
+import com.msa.product.local.product.dto.ProductWorkGradePolicyDto;
+import com.msa.product.local.product.dto.ProductWorkGradePolicyGroupDto;
+import com.msa.product.local.product.dto.QProductWorkGradePolicyDto_Response;
+import com.msa.product.local.product.dto.QProductWorkGradePolicyGroupDto_Response;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -25,12 +30,14 @@ public class ProductWorkGradePolicyRepositoryGroupImpl implements CustomProductW
     @Override
     public List<ProductWorkGradePolicyGroupDto.Response> findByWorkGradePolicyGroupByProductId(Long productId) {
 
-        List<ProductWorkGradePolicyGroupInfo> groups = query
-                .select(new QProductWorkGradePolicyGroupInfo(
-                        productWorkGradePolicyGroup.productWorkGradePolicyGroupId,
+        List<ProductWorkGradePolicyGroupDto.Response> groups = query
+                .select(new QProductWorkGradePolicyGroupDto_Response(
+                        productWorkGradePolicyGroup.productWorkGradePolicyGroupId.stringValue(),
                         productWorkGradePolicyGroup.productPurchasePrice,
+                        color.colorId.stringValue(),
                         color.colorName,
                         productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault,
+                        Expressions.constant(Collections.emptyList()),
                         productWorkGradePolicyGroup.note
                 ))
                 .from(productWorkGradePolicyGroup)
@@ -38,9 +45,16 @@ public class ProductWorkGradePolicyRepositoryGroupImpl implements CustomProductW
                 .where(productWorkGradePolicyGroup.product.productId.eq(productId))
                 .fetch();
 
-        // 2. 그룹 ID 추출
         List<Long> groupIds = groups.stream()
-                .map(ProductWorkGradePolicyGroupInfo::getGroupId)
+                .map(ProductWorkGradePolicyGroupDto.Response::getProductGroupId)
+                .filter(s -> !s.isEmpty())
+                .map(s -> {
+                    try {
+                        return Long.parseLong(s);
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
+                })
                 .toList();
 
         List<ProductWorkGradePolicyDto.Response> policyDtos = query
@@ -52,9 +66,7 @@ public class ProductWorkGradePolicyRepositoryGroupImpl implements CustomProductW
                 ))
                 .from(productWorkGradePolicy)
                 .where(productWorkGradePolicy.workGradePolicyGroup.productWorkGradePolicyGroupId.in(groupIds))
-                .groupBy()
                 .fetch();
-
 
         // 4. 그룹별로 정책 묶기
         Map<Long, List<ProductWorkGradePolicyDto.Response>> policyMap = policyDtos.stream()
@@ -63,11 +75,12 @@ public class ProductWorkGradePolicyRepositoryGroupImpl implements CustomProductW
         // 5. DTO 조합해서 반환
         return groups.stream()
                 .map(group -> ProductWorkGradePolicyGroupDto.Response.builder()
-                        .productGroupId(group.getGroupId().toString())
+                        .productGroupId(group.getProductGroupId())
                         .productPurchasePrice(group.getProductPurchasePrice())
+                        .colorId(group.getColorId())
                         .colorName(group.getColorName())
                         .defaultProductPolicy(group.isDefaultProductPolicy())
-                        .gradePolicyDtos(policyMap.getOrDefault(group.getGroupId(), List.of()))
+                        .gradePolicyDtos(policyMap.getOrDefault(Long.parseLong(group.getProductGroupId()), List.of()))
                         .note(group.getNote())
                         .build())
                 .toList();

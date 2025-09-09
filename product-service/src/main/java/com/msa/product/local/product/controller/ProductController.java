@@ -7,11 +7,14 @@ import com.msa.product.local.product.dto.ProductDetailDto;
 import com.msa.product.local.product.dto.ProductDto;
 import com.msa.product.local.product.service.ProductService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 public class ProductController {
     private final ProductService productService;
@@ -23,7 +26,7 @@ public class ProductController {
     @PostMapping("/products")
     public ResponseEntity<ApiResponse<String>> createProduct(
             HttpServletRequest request,
-            @RequestBody ProductDto productDto) {
+            @Valid @RequestBody ProductDto productDto) {
         productService.saveProduct(request, productDto);
         return ResponseEntity.ok(ApiResponse.success("카테고리 생성완료"));
     }
@@ -37,8 +40,11 @@ public class ProductController {
     @GetMapping("/products")
     public ResponseEntity<ApiResponse<CustomPage<ProductDto.Page>>> getProducts(
             @RequestParam(name = "name", required = false) String productName,
-            @PageableDefault(size = 20) Pageable pageable) {
-        CustomPage<ProductDto.Page> products = productService.getProducts(productName, pageable);
+            @RequestParam(name = "factory", required = false) String factoryName,
+            @RequestParam(name = "classification", required = false) String classificationId,
+            @RequestParam(name = "setType", required = false) String setTypeId,
+            @PageableDefault(size = 12) Pageable pageable) { // 검색 옵션으로 제조사, 제조번호
+        CustomPage<ProductDto.Page> products = productService.getProducts(productName, factoryName, classificationId, setTypeId, pageable);
         return ResponseEntity.ok(ApiResponse.success(products));
     }
 
@@ -48,6 +54,7 @@ public class ProductController {
             @PathVariable(name = "id") Long productId,
             @RequestBody ProductDto.Update productDto) {
         productService.updateProduct(request, productId, productDto);
+
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
 
