@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StoneShapeDto {
-    private String name;
-    private String note;
+    private String stoneShapeName;
+    private String stoneShapeNote;
 
     @Getter
     @NoArgsConstructor

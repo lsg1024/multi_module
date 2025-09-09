@@ -34,7 +34,7 @@ public class StoneShape {
     }
 
     public void updateStoneShape(StoneShapeDto stoneShapeDto) {
-        this.stoneShapeName = stoneShapeDto.getName();
-        this.stoneShapeNote = stoneShapeDto.getNote();
+        this.stoneShapeName = stoneShapeDto.getStoneShapeName();
+        this.stoneShapeNote = stoneShapeDto.getStoneShapeName();
     }
 }

@@ -2,6 +2,7 @@ package com.msa.product.local.stone.shape.repository;
 
 import com.msa.product.local.stone.shape.dto.QStoneShapeDto_ResponseSingle;
 import com.msa.product.local.stone.shape.dto.StoneShapeDto;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 
@@ -19,6 +20,9 @@ public class StoneShapeRepositoryImpl implements CustomStoneShapeRepository{
 
     @Override
     public List<StoneShapeDto.ResponseSingle> findByStoneShapeAllOrderByAsc(String stoneShapeName) {
+
+        BooleanExpression searchCondition = stoneShapeName != null ? stoneShape.stoneShapeName.containsIgnoreCase(stoneShapeName) : null;
+
         return query
                 .select(new QStoneShapeDto_ResponseSingle(
                         stoneShape.stoneShapeId.stringValue(),
@@ -26,7 +30,7 @@ public class StoneShapeRepositoryImpl implements CustomStoneShapeRepository{
                         stoneShape.stoneShapeNote
                 ))
                 .from(stoneShape)
-                .where(stoneShape.stoneShapeName.contains(stoneShapeName))
+                .where(searchCondition)
                 .orderBy(stoneShape.stoneShapeName.asc())
                 .fetch();
     }

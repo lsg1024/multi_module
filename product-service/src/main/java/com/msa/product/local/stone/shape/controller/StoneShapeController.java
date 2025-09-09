@@ -19,7 +19,7 @@ public class StoneShapeController {
         this.stoneShapeService = stoneShapeService;
     }
 
-    @PostMapping("/stoneshapes")
+    @PostMapping("/stone/shapes")
     public ResponseEntity<ApiResponse<String>> createStoneShape(
             @Valid @RequestBody StoneShapeDto stoneShapeDto) {
 
@@ -35,7 +35,7 @@ public class StoneShapeController {
         return ResponseEntity.ok(ApiResponse.success("생성 완료"));
     }
 
-    @GetMapping("/stoneshapes/{id}")
+    @GetMapping("/stone/shapes/{id}")
     public ResponseEntity<ApiResponse<StoneShapeDto.ResponseSingle>> getStoneShape(
             @PathVariable(name = "id") Long stoneShapeId) {
 
@@ -43,7 +43,7 @@ public class StoneShapeController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @GetMapping("/stoneshapes")
+    @GetMapping("/stone/shapes")
     public ResponseEntity<ApiResponse<List<StoneShapeDto.ResponseSingle>>> getStoneShapes(
             @RequestParam(name = "name", required = false) String stoneShapeName) {
 
@@ -52,7 +52,7 @@ public class StoneShapeController {
         return ResponseEntity.ok(ApiResponse.success(stoneShapes));
     }
 
-    @PatchMapping("/stoneshapes/{id}")
+    @PatchMapping("/stone/shapes/{id}")
     public ResponseEntity<ApiResponse<String>> updateStoneShape(
             @PathVariable(name = "id") Long stoneShapeId,
             @Valid @RequestBody StoneShapeDto stoneShapeDto) {
@@ -61,7 +61,7 @@ public class StoneShapeController {
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
 
-    @DeleteMapping("/stoneshapes/{id}")
+    @DeleteMapping("/stone/shapes/{id}")
     public ResponseEntity<ApiResponse<String>> deleteStoneShape(
             @AccessToken String accessToken,
             @PathVariable(name = "id") Long stoneShapeId) {

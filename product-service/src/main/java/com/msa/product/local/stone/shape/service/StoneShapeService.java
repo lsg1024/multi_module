@@ -25,14 +25,14 @@ public class StoneShapeService {
 
     // 생성
     public void saveStoneShape(StoneShapeDto stoneShapeDto) {
-        boolean existsByShapeName = stoneShapeRepository.existsByStoneShapeName(stoneShapeDto.getName());
+        boolean existsByShapeName = stoneShapeRepository.existsByStoneShapeName(stoneShapeDto.getStoneShapeName());
         if (existsByShapeName) {
             throw new IllegalArgumentException(IS_EXIST);
         }
 
         StoneShape stoneShape = StoneShape.builder()
-                .stoneShapeName(stoneShapeDto.getName())
-                .stoneShapeNote(stoneShapeDto.getNote())
+                .stoneShapeName(stoneShapeDto.getStoneShapeName())
+                .stoneShapeNote(stoneShapeDto.getStoneShapeNote())
                 .build();
 
         stoneShapeRepository.save(stoneShape);
@@ -62,7 +62,7 @@ public class StoneShapeService {
         StoneShape stoneShape = stoneShapeRepository.findById(stoneShapeId)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        boolean existsByShapeName = stoneShapeRepository.existsByStoneShapeName(stoneShapeDto.getName());
+        boolean existsByShapeName = stoneShapeRepository.existsByStoneShapeName(stoneShapeDto.getStoneShapeName());
         if (existsByShapeName) {
             throw new IllegalArgumentException(IS_EXIST);
         }
