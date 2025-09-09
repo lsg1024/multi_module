@@ -33,15 +33,11 @@ spring:
               - GET
               - POST
               - PUT
+              - PATCH
               - DELETE
               - OPTIONS
             allowedHeaders:
-              - Authorization
-              - Content-Type
-              - X-Requested-With
-              - X-Tenant-ID
-              - Accept
-              - Origin
+              - "*"
             exposedHeaders:
               - Authorization
               - Location
