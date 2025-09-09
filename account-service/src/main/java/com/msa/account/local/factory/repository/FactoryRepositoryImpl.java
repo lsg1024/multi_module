@@ -65,6 +65,7 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
 
         List<FactoryDto.FactoryResponse> content = query
                 .select(new QFactoryDto_FactoryResponse(
+                        factory.factoryId,
                         factory.factoryName,
                         factory.factoryOwnerName,
                         factory.factoryPhoneNumber,

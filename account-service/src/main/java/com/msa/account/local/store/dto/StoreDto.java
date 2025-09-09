@@ -27,6 +27,7 @@ public class StoreDto {
     @Getter
     @NoArgsConstructor
     public static class StoreResponse {
+        private Long storeId;
         private String storeName;
         private String storeOwnerName;
         private String storePhoneNumber;
@@ -40,7 +41,8 @@ public class StoreDto {
         private String goldHarryLoss;
 
         @QueryProjection
-        public StoreResponse(String storeName, String storeOwnerName, String storePhoneNumber, String storeContactNumber1, String storeContactNumber2, String storeFaxNumber, String storeNote, String address, String tradeType, String level, String goldHarryLoss) {
+        public StoreResponse(Long storeId, String storeName, String storeOwnerName, String storePhoneNumber, String storeContactNumber1, String storeContactNumber2, String storeFaxNumber, String storeNote, String address, String tradeType, String level, String goldHarryLoss) {
+            this.storeId = storeId;
             this.storeName = storeName;
             this.storeOwnerName = storeOwnerName;
             this.storePhoneNumber = storePhoneNumber;

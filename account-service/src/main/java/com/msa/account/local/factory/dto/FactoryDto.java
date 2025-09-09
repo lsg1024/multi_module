@@ -25,6 +25,7 @@ public class FactoryDto {
     @Getter
     @NoArgsConstructor
     public static class FactoryResponse {
+        private Long factoryId;
         private String factoryName;
         private String factoryOwnerName;
         private String factoryPhoneNumber;
@@ -38,7 +39,8 @@ public class FactoryDto {
         private String goldHarryLoss;
 
         @QueryProjection
-        public FactoryResponse(String factoryName, String factoryOwnerName, String factoryPhoneNumber, String factoryContactNumber1, String factoryContactNumber2, String factoryFaxNumber, String factoryNote, String address, String tradeType, String level, String goldHarryLoss) {
+        public FactoryResponse(Long factoryId, String factoryName, String factoryOwnerName, String factoryPhoneNumber, String factoryContactNumber1, String factoryContactNumber2, String factoryFaxNumber, String factoryNote, String address, String tradeType, String level, String goldHarryLoss) {
+            this.factoryId = factoryId;
             this.factoryName = factoryName;
             this.factoryOwnerName = factoryOwnerName;
             this.factoryPhoneNumber = factoryPhoneNumber;

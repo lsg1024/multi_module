@@ -72,6 +72,7 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
 
         List<StoreDto.StoreResponse> content = query
                 .select(new QStoreDto_StoreResponse(
+                        store.storeId,
                         store.storeName,
                         store.storeOwnerName,
                         store.storePhoneNumber,
