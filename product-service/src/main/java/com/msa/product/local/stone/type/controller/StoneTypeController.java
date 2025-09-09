@@ -19,7 +19,7 @@ public class StoneTypeController {
         this.stoneTypeService = stoneTypeService;
     }
 
-    @PostMapping("/stonetypes")
+    @PostMapping("/stone/types")
     public ResponseEntity<ApiResponse<String>> createStoneType(
             @Valid @RequestBody StoneTypeDto stoneTypeDto) {
 
@@ -35,7 +35,7 @@ public class StoneTypeController {
         return ResponseEntity.ok(ApiResponse.success("생성 완료"));
     }
 
-    @GetMapping("/stonetypes/{id}")
+    @GetMapping("/stone/types/{id}")
     public ResponseEntity<ApiResponse<StoneTypeDto.ResponseSingle>> getStoneType(
             @PathVariable(name = "id") Long stoneTypeId) {
 
@@ -43,17 +43,17 @@ public class StoneTypeController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @GetMapping("/stonetypes")
+    @GetMapping("/stone/types")
     public ResponseEntity<ApiResponse<List<StoneTypeDto.ResponseSingle>>> getStoneTypes(
             @RequestParam(name = "name", required = false) String stoneTypeName) {
 
         List<StoneTypeDto.ResponseSingle> responses =
-                stoneTypeService.getStoneTypes(stoneTypeName == null ? "" : stoneTypeName);
+                stoneTypeService.getStoneTypes(stoneTypeName);
 
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
-    @PatchMapping("/stonetypes/{id}")
+    @PatchMapping("/stone/types/{id}")
     public ResponseEntity<ApiResponse<String>> updateStoneType(
             @PathVariable(name = "id") Long stoneTypeId,
             @Valid @RequestBody StoneTypeDto stoneTypeDto) {
@@ -62,7 +62,7 @@ public class StoneTypeController {
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
 
-    @DeleteMapping("/stonetypes/{id}")
+    @DeleteMapping("/stone/types/{id}")
     public ResponseEntity<ApiResponse<String>> deleteStoneType(
             @AccessToken String accessToken,
             @PathVariable(name = "id") Long stoneTypeId) {
