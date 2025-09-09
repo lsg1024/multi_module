@@ -22,14 +22,14 @@ public class StoneController {
     }
 
     // 생성
-    @PostMapping("/stones")
+    @PostMapping("/stone")
     public ResponseEntity<ApiResponse<String>> createStone(
             @Valid @RequestBody StoneDto stoneDto) {
         stoneService.saveStone(stoneDto);
         return ResponseEntity.ok(ApiResponse.success("생성 완료"));
     }
 
-    @PostMapping("/stoness")
+    @PostMapping("/stones")
     public ResponseEntity<ApiResponse<String>> createStones(
             @Valid @RequestBody List<StoneDto> stoneDto) {
         stoneDto.forEach(stoneService::saveStone);
@@ -48,9 +48,19 @@ public class StoneController {
     @GetMapping("/stones")
     public ResponseEntity<ApiResponse<CustomPage<StoneDto.PageDto>>> getStones(
             @RequestParam(name = "search", required = false) String stoneName,
-            @PageableDefault(size = 20) Pageable pageable) {
+            @PageableDefault(size = 12) Pageable pageable) {
         CustomPage<StoneDto.PageDto> result = stoneService.getStones(stoneName, pageable);
         return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    // 검증
+    @GetMapping("/stones/exists")
+    public ResponseEntity<ApiResponse<Boolean>> existStone(
+            @RequestParam(name = "stone-type") String stoneTypeName,
+            @RequestParam(name = "stone-shape") String stoneShapeName,
+            @RequestParam(name = "stone-size") String stoneSize) {
+        Boolean existStoneName = stoneService.getExistStoneName(stoneTypeName, stoneShapeName, stoneSize);
+        return ResponseEntity.ok(ApiResponse.success(existStoneName));
     }
 
     // 수정

@@ -43,18 +43,27 @@ public class StoneService {
                 .map(BigDecimal::new)
                 .orElse(BigDecimal.ZERO);
 
+        String note = Optional.ofNullable(stoneDto.getStoneNote())
+                .orElse("");
+
+        Integer purchasePrice = Optional.ofNullable(stoneDto.getStonePurchasePrice())
+                .orElse(0);
+
         Stone stone = Stone.builder()
                 .stoneName(stoneDto.getStoneName())
-                .stoneNote(stoneDto.getStoneNote())
+                .stoneNote(note)
                 .stoneWeight(weight)
-                .stonePurchasePrice(stoneDto.getStonePurchasePrice())
+                .stonePurchasePrice(purchasePrice)
                 .gradePolicies(new ArrayList<>())
                 .build();
 
         for (StoneWorkGradePolicyDto dto : stoneDto.getStoneWorkGradePolicyDto()) {
+            Integer laborCost = Optional.ofNullable(dto.getLaborCost())
+                    .orElse(0);
+
             StoneWorkGradePolicy stoneWorkGradePolicy = StoneWorkGradePolicy.builder()
                     .grade(dto.getGrade())
-                    .laborCost(dto.getLaborCost())
+                    .laborCost(laborCost)
                     .build();
 
             stone.addGradePolicy(stoneWorkGradePolicy);
@@ -127,5 +136,10 @@ public class StoneService {
 
     public Boolean getExistStoneId(Long id) {
         return stoneRepository.existsByStoneId(id);
+    }
+
+    public Boolean getExistStoneName(String stoneTypeName, String stoneShapeName, String stoneSize) {
+        String stoneName = stoneTypeName + "/" + stoneShapeName + "/" + stoneSize;
+        return stoneRepository.existsByStoneName(stoneName);
     }
 }

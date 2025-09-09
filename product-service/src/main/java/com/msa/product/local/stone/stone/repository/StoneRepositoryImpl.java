@@ -37,7 +37,7 @@ public class StoneRepositoryImpl implements CustomStoneRepository {
     @Override
     public CustomPage<StoneDto.PageDto> findByAllOrderByAsc(String stoneName, Pageable pageable) {
 
-        BooleanExpression cond = stoneName != null ? stone.stoneName.contains(stoneName) : null;
+        BooleanExpression cond = stoneName != null ? stone.stoneName.containsIgnoreCase(stoneName) : null;
 
         List<Long> ids = query
                 .select(stone.stoneId)

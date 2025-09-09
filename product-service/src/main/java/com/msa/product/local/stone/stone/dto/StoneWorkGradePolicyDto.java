@@ -16,15 +16,6 @@ public class StoneWorkGradePolicyDto {
     private String grade;
     private Integer laborCost;
 
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class Request {
-        private String workGradePolicyId;
-        private String grade;
-        private Integer laborCost;
-    }
-
     @Getter
     @Builder
     public static class Response {
