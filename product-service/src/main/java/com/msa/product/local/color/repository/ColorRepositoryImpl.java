@@ -2,6 +2,7 @@ package com.msa.product.local.color.repository;
 
 import com.msa.product.local.color.dto.ColorDto;
 import com.msa.product.local.color.dto.QColorDto_ResponseSingle;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 
@@ -19,6 +20,8 @@ public class ColorRepositoryImpl implements CustomColorRepository{
 
     @Override
     public List<ColorDto.ResponseSingle> findAllOrderByAsc(String colorName) {
+
+        BooleanExpression name = colorName != null ? color.colorName.contains(colorName) : null;
         return query
                 .select(new QColorDto_ResponseSingle(
                         color.colorId.stringValue(),
@@ -26,7 +29,7 @@ public class ColorRepositoryImpl implements CustomColorRepository{
                         color.colorNote
                 ))
                 .from(color)
-                .where(color.colorName.contains(colorName))
+                .where(name)
                 .orderBy(color.colorName.asc())
                 .fetch();
     }
