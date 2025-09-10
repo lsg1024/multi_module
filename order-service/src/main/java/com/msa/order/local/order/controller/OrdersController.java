@@ -48,11 +48,11 @@ public class OrdersController {
     }
 
     //복수 값
-    @GetMapping("/orders") // URL 경로는 고정
+    @GetMapping("/orders") // URL 경로는 고정 -> 거래처, 상점 파라미터 추가 필요
     public ResponseEntity<ApiResponse<CustomPage<OrderDto.Response>>> getOrders(
-            @RequestParam(required = false) String input,
-            @RequestParam(required = false) String startAt,
-            @RequestParam(required = false) String endAt,
+            @RequestParam(name = "search", required = false) String input,
+            @RequestParam(name = "start", required = false) String startAt,
+            @RequestParam(name = "end", required = false) String endAt,
             @PageableDefault(size = 16) Pageable pageable) {
 
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
