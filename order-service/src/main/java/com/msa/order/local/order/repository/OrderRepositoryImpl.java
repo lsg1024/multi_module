@@ -4,10 +4,8 @@ import com.msa.common.global.util.CustomPage;
 import com.msa.order.local.order.dto.OrderDto;
 import com.msa.order.local.order.dto.QOrderDto_Response;
 import com.msa.order.local.order.dto.StockCondition;
-import com.msa.order.local.order.entity.QOrders;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.order.entity.order_enum.ProductStatus;
-import com.msa.order.local.priority.entitiy.QPriority;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
@@ -26,9 +24,12 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static com.msa.order.local.order.entity.QOrderProduct.orderProduct;
+import static com.msa.order.local.order.entity.QOrders.orders;
+import static com.msa.order.local.priority.entitiy.QPriority.priority;
 import static com.msa.order.local.stock.entity.QStock.stock;
 import static java.util.stream.Collectors.*;
 
@@ -82,38 +83,38 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
         List<OrderDto.Response> content = query
                 .select(new QOrderDto_Response(
-                        QOrders.orders.orderExpectDate.stringValue(),
-                        QOrders.orders.flowCode.stringValue(),
-                        QOrders.orders.storeName,
-                        QOrders.orders.orderProduct.productName,
-                        QOrders.orders.orderProduct.productSize,
+                        orders.orderExpectDate.stringValue(),
+                        orders.flowCode.stringValue(),
+                        orders.storeName,
+                        orders.orderProduct.productName,
+                        orders.orderProduct.productSize,
                         stockQty,
-                        QOrders.orders.orderNote,
-                        QOrders.orders.factoryName,
+                        orders.orderNote,
+                        orders.factoryName,
                         orderProduct.materialName,
                         orderProduct.colorName,
-                        QPriority.priority.priorityName,
-                        QOrders.orders.orderDate.stringValue(),
-                        QOrders.orders.productStatus,
-                        QOrders.orders.orderStatus
+                        priority.priorityName,
+                        orders.orderDate.stringValue(),
+                        orders.productStatus,
+                        orders.orderStatus
                 ))
-                .from(QOrders.orders)
-                .join(QOrders.orders.orderProduct, orderProduct)
-                .join(QOrders.orders.priority, QPriority.priority)
+                .from(orders)
+                .join(orders.orderProduct, orderProduct)
+                .join(orders.priority, priority)
                 .where(
                         statusBuilder,
                         conditionBuilder,
-                        QOrders.orders.orderDeleted.eq(orderDeleted)
+                        orders.orderDeleted.eq(orderDeleted)
                 )
                 .fetch();
 
         JPAQuery<Long> countQuery = query
-                .select(QOrders.orders.count())
-                .from(QOrders.orders)
+                .select(orders.count())
+                .from(orders)
                 .where(
                         statusBuilder,
                         conditionBuilder,
-                        QOrders.orders.orderDeleted.eq(orderDeleted)
+                        orders.orderDeleted.eq(orderDeleted)
                 );
 
         // querydsl에 list 직접 주입은 불가능 별도 쿼리 통해 (TUPLE) 반환해야됨
@@ -149,7 +150,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                     .fetch();
 
             // (p,m,c) → List<String> 맵으로 그룹핑
-            java.util.Map<StockCondition, List<String>> map = rows.stream().collect(
+            Map<StockCondition, List<String>> map = rows.stream().collect(
                     groupingBy(
                             t -> new StockCondition(
                                     t.get(stock.product.name),
@@ -180,8 +181,8 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         String searchInput = orderCondition.getSearchInput();
         if (StringUtils.hasText(searchInput)) {
             booleanInput.and(orderProduct.productName.containsIgnoreCase(searchInput));
-            booleanInput.or(QOrders.orders.storeName.containsIgnoreCase(searchInput));
-            booleanInput.or(QOrders.orders.factoryName.containsIgnoreCase(searchInput));
+            booleanInput.or(orders.storeName.containsIgnoreCase(searchInput));
+            booleanInput.or(orders.factoryName.containsIgnoreCase(searchInput));
         }
 
         return booleanInput;
@@ -198,13 +199,13 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
 
         BooleanExpression createdBetween =
-                QOrders.orders.orderDate.between(startDateTime, endDateTime);
+                orders.orderDate.between(startDateTime, endDateTime);
 
         BooleanExpression statusIsReceiptOrWaiting =
-                QOrders.orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
+                orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
 
         BooleanExpression statusIsOrder =
-                QOrders.orders.orderStatus.in(OrderStatus.ORDER);
+                orders.orderStatus.in(OrderStatus.ORDER);
 
         return statusIsReceiptOrWaiting.and(statusIsOrder).and(createdBetween);
     }
@@ -217,13 +218,13 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
 
         BooleanExpression createdBetween =
-                QOrders.orders.orderExpectDate.loe(endDateTime);
+                orders.orderExpectDate.loe(endDateTime);
 
         BooleanExpression statusIsReceiptOrWaiting =
-                QOrders.orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
+                orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
 
         BooleanExpression statusIsOrder =
-                QOrders.orders.orderStatus.in(OrderStatus.ORDER);
+                orders.orderStatus.in(OrderStatus.ORDER);
 
         return statusIsReceiptOrWaiting.and(statusIsOrder).and(createdBetween);
     }
@@ -239,13 +240,13 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
 
         BooleanExpression deletedDate =
-                QOrders.orders.orderExpectDate.between(startDateTime, endDateTime);
+                orders.orderExpectDate.between(startDateTime, endDateTime);
 
         BooleanExpression statusIsReceiptOrWaiting =
-                QOrders.orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
+                orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
 
         BooleanExpression statusIsOrder =
-                QOrders.orders.orderStatus.in(OrderStatus.ORDER);
+                orders.orderStatus.in(OrderStatus.ORDER);
 
         return statusIsReceiptOrWaiting.and(statusIsOrder).and(deletedDate);
     }
