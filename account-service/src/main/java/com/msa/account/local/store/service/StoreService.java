@@ -92,10 +92,15 @@ public class StoreService {
         Store store = storeRepository.findById(Long.valueOf(storeId))
                 .orElseThrow(() -> new NotFoundException(NOT_FOUND_STORE));
 
+        if (store.isStoreDefault()) {
+            throw new IllegalArgumentException("기본 값은 삭제가 불가능 합니다.");
+        }
+
         if (authorityUserRoleUtil.storeVerification(token, store)) {
             storeRepository.delete(store);
             return;
         }
+
         throw new NotAuthorityException(NO_ROLE);
     }
 

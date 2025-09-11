@@ -41,6 +41,8 @@ public class Store extends BaseEntity {
     private String storeFaxNumber;
     @Column(name = "STORE_NOTE")
     private String storeNote;
+    @Column(name = "STORE_DEFAULT", nullable = false)
+    private boolean storeDefault = false;
     @Column(name = "STORE_DELETED", nullable = false)
     private boolean storeDeleted = false;
 
