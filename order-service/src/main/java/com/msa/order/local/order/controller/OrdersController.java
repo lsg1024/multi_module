@@ -51,8 +51,8 @@ public class OrdersController {
     @GetMapping("/orders") // URL 경로는 고정 -> 거래처, 상점 파라미터 추가 필요
     public ResponseEntity<ApiResponse<CustomPage<OrderDto.Response>>> getOrders(
             @RequestParam(name = "search", required = false) String input,
-            @RequestParam(name = "start", required = false) String startAt,
-            @RequestParam(name = "end", required = false) String endAt,
+            @RequestParam(name = "start") String startAt,
+            @RequestParam(name = "end") String endAt,
             @PageableDefault(size = 16) Pageable pageable) {
 
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
@@ -118,8 +118,8 @@ public class OrdersController {
     // 출고 예정 조회
     @GetMapping("/orders/expect")
     public ResponseEntity<ApiResponse<CustomPage<OrderDto.Response>>> getOrderExpect(
-            @RequestParam(required = false) String input,
-            @RequestParam(required = false) String endAt,
+            @RequestParam(name = "search", required = false) String input,
+            @RequestParam(name = "end") String endAt,
             @PageableDefault(size = 16) Pageable pageable) {
 
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
@@ -131,9 +131,9 @@ public class OrdersController {
 
     @GetMapping("/orders/delete")
     public ResponseEntity<ApiResponse<CustomPage<OrderDto.Response>>> getOrderDeleted(
-            @RequestParam(required = false) String input,
-            @RequestParam(required = false) String startAt,
-            @RequestParam(required = false) String endAt,
+            @RequestParam(name = "search", required = false) String input,
+            @RequestParam(name = "start") String startAt,
+            @RequestParam(name = "end") String endAt,
             @PageableDefault(size = 16) Pageable pageable) {
 
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
@@ -141,6 +141,33 @@ public class OrdersController {
         CustomPage<OrderDto.Response> deletedProducts = ordersService.getDeletedProducts(inputCondition, orderCondition, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(deletedProducts));
+    }
+
+    // 공장 리스트 배열
+    @GetMapping("/filters/factory")
+    public ResponseEntity<ApiResponse<String[]>> getFactoryNames(
+            @RequestParam(name = "start") String startAt,
+            @RequestParam(name = "end") String endAt) {
+
+        return null;
+    }
+
+    // 상점 리스트 배열
+    @GetMapping("/filters/store")
+    public ResponseEntity<ApiResponse<String[]>> getStoreNames(
+            @RequestParam(name = "start") String startAt,
+            @RequestParam(name = "end") String endAt) {
+
+        return null;
+    }
+
+    // 유형 리스트 배열
+    @GetMapping("/filters/set-type")
+    public ResponseEntity<ApiResponse<String[]>> getSetTypeNames(
+            @RequestParam(name = "start") String startAt,
+            @RequestParam(name = "end") String endAt) {
+
+        return null;
     }
 
 }
