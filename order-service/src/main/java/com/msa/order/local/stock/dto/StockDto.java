@@ -29,6 +29,7 @@ public class StockDto {
         private String materialId;
         private String classificationId;
         private String colorId;
+        private String setTypeId;
         private String mainStoneNote;
         private String assistanceStoneNote;
         private String stockNote;
@@ -112,6 +113,7 @@ public class StockDto {
         private String storeName;
         private String materialName;
         private String colorName;
+        private String setTypeName;
         private String mainStoneNote;
         private String assistanceStoneNote;
         private String productSize;
@@ -128,7 +130,7 @@ public class StockDto {
         private Integer stonePurchaseCost;
 
         @Builder
-        public ResponseDetail(String flowCode, String createAt, String originalProductStatus, String classificationName, String productName, String storeName, String materialName, String colorName, String mainStoneNote, String assistanceStoneNote, String productSize, String stockNote, Integer productLaborCost, Integer productAddLaborCost, Integer mainStoneLaborCost, Integer assistanceStoneLaborCost, Integer mainStoneQuantity, Integer assistanceStoneQuantity, String totalWeight, String stoneWeight, Integer productPurchaseCost, Integer stonePurchaseCost) {
+        public ResponseDetail(String flowCode, String createAt, String originalProductStatus, String classificationName, String productName, String storeName, String materialName, String colorName, String setTypeName, String mainStoneNote, String assistanceStoneNote, String productSize, String stockNote, Integer productLaborCost, Integer productAddLaborCost, Integer mainStoneLaborCost, Integer assistanceStoneLaborCost, Integer mainStoneQuantity, Integer assistanceStoneQuantity, String totalWeight, String stoneWeight, Integer productPurchaseCost, Integer stonePurchaseCost) {
             this.flowCode = flowCode;
             this.createAt = createAt;
             this.originalProductStatus = originalProductStatus;
@@ -137,6 +139,7 @@ public class StockDto {
             this.storeName = storeName;
             this.materialName = materialName;
             this.colorName = colorName;
+            this.setTypeName = setTypeName;
             this.mainStoneNote = mainStoneNote;
             this.assistanceStoneNote = assistanceStoneNote;
             this.productSize = productSize;

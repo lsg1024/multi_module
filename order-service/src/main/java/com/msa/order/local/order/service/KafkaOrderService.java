@@ -32,10 +32,11 @@ public class KafkaOrderService {
     private final MaterialClient materialClient;
     private final ClassificationClient classificationClient;
     private final ColorClient colorClient;
+    private final SetTypeClient setTypeClient;
     private final OrdersRepository ordersRepository;
     private final StatusHistoryRepository statusHistoryRepository;
 
-    public KafkaOrderService(StoreClient storeClient, StoneClient stoneClient, ProductClient productClient, FactoryClient factoryClient, MaterialClient materialClient, ClassificationClient classificationClient, ColorClient colorClient, OrdersRepository ordersRepository, StatusHistoryRepository statusHistoryRepository) {
+    public KafkaOrderService(StoreClient storeClient, StoneClient stoneClient, ProductClient productClient, FactoryClient factoryClient, MaterialClient materialClient, ClassificationClient classificationClient, ColorClient colorClient, SetTypeClient setTypeClient, OrdersRepository ordersRepository, StatusHistoryRepository statusHistoryRepository) {
         this.storeClient = storeClient;
         this.stoneClient = stoneClient;
         this.productClient = productClient;
@@ -43,6 +44,7 @@ public class KafkaOrderService {
         this.materialClient = materialClient;
         this.classificationClient = classificationClient;
         this.colorClient = colorClient;
+        this.setTypeClient = setTypeClient;
         this.ordersRepository = ordersRepository;
         this.statusHistoryRepository = statusHistoryRepository;
     }
@@ -72,6 +74,7 @@ public class KafkaOrderService {
             String materialName = materialClient.getMaterialInfo(tenantId, evt.getMaterialId());
             String classificationName = classificationClient.getClassificationInfo(tenantId, evt.getClassificationId());
             String colorName = colorClient.getColorInfo(tenantId, evt.getColorId());
+            String setTypeName = setTypeClient.getSetTypeName(tenantId, evt.getSetTypeId());
             ProductDetailDto productInfo = productClient.getProductInfo(tenantId, evt.getProductId(), storeInfo.getGrade());
 
             OrderProduct orderProduct = order.getOrderProduct();
@@ -81,7 +84,8 @@ public class KafkaOrderService {
                     productInfo.getLaborCost(),
                     materialName,
                     classificationName,
-                    colorName
+                    colorName,
+                    setTypeName
             );
 
             List<Long> stoneIds = evt.getStoneIds();

@@ -34,17 +34,19 @@ public class KafkaStockService {
     private final ProductClient productClient;
     private final MaterialClient materialClient;
     private final ColorClient colorClient;
+    private final SetTypeClient setTypeClient;
     private final ClassificationClient classificationClient;
     private final StockRepository stockRepository;
     private final StatusHistoryRepository statusHistoryRepository;
 
-    public KafkaStockService(StoneClient stoneClient, StoreClient storeClient, FactoryClient factoryClient, ProductClient productClient, MaterialClient materialClient, ColorClient colorClient, ClassificationClient classificationClient, StockRepository stockRepository, StatusHistoryRepository statusHistoryRepository) {
+    public KafkaStockService(StoneClient stoneClient, StoreClient storeClient, FactoryClient factoryClient, ProductClient productClient, MaterialClient materialClient, ColorClient colorClient, SetTypeClient setTypeClient, ClassificationClient classificationClient, StockRepository stockRepository, StatusHistoryRepository statusHistoryRepository) {
         this.stoneClient = stoneClient;
         this.storeClient = storeClient;
         this.factoryClient = factoryClient;
         this.productClient = productClient;
         this.materialClient = materialClient;
         this.colorClient = colorClient;
+        this.setTypeClient = setTypeClient;
         this.classificationClient = classificationClient;
         this.stockRepository = stockRepository;
         this.statusHistoryRepository = statusHistoryRepository;
@@ -72,6 +74,7 @@ public class KafkaStockService {
             String materialName;
             String classificationName;
             String colorName;
+            String setTypeName;
 
             if (stockDto.getStoreId() != null) {
                 storeInfo = storeClient.getStoreInfo(tenantId, stockDto.getStoreId());
@@ -103,6 +106,12 @@ public class KafkaStockService {
                 colorName = colorClient.getColorInfo(tenantId, 1L);
             }
 
+            if (stockDto.getSetTypeId() != null) {
+                setTypeName = setTypeClient.getSetTypeName(tenantId, stockDto.getSetTypeId());
+            } else {
+                setTypeName = setTypeClient.getSetTypeName(tenantId, 1L);
+            }
+
             ProductDetailDto productInfo = productClient.getProductInfo(tenantId, stockDto.getProductId(), storeInfo.getGrade());
 
             ProductSnapshot product = stock.getProduct();
@@ -111,7 +120,8 @@ public class KafkaStockService {
                     productInfo.getLaborCost(),
                     materialName,
                     classificationName,
-                    colorName
+                    colorName,
+                    setTypeName
             );
 
             List<Long> stoneIds = stockDto.getStoneIds();

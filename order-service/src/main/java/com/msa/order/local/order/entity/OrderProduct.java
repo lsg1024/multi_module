@@ -36,11 +36,13 @@ public class OrderProduct {
     @Column(name = "PRODUCT_ADD_LABOR_COST")
     private Integer productAddLaborCost;
     @Column(name = "MATERIAL_NAME")
-    private String materialName;
+    private String materialName; // 재질
     @Column(name = "CLASSIFICATION_NAME")
-    private String classificationName;
+    private String classificationName; // 분류
     @Column(name = "COLOR_NAME")
-    private String colorName;
+    private String colorName; // 색
+    @Column(name = "SET_TYPE") // 세트
+    private String setType;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ORDER_ID")
@@ -67,13 +69,14 @@ public class OrderProduct {
         this.order = order;
     }
 
-    public void updateOrder(String productName, Integer productPurchaseCost, Integer productLaborCost, String materialName, String classificationName, String colorName) {
+    public void updateOrder(String productName, Integer productPurchaseCost, Integer productLaborCost, String materialName, String classificationName, String colorName, String setType) {
         this.productName = productName;
         this.productPurchaseCost = productPurchaseCost;
         this.productLaborCost = productLaborCost;
         this.materialName = materialName;
         this.classificationName = classificationName;
         this.colorName = colorName;
+        this.setType = setType;
     }
 
 }

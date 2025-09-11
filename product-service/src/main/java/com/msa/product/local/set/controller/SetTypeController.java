@@ -51,7 +51,7 @@ public class SetTypeController {
 
     @PatchMapping("/set-types")
     public ResponseEntity<ApiResponse<String>> updateSetType(
-            @PathVariable(name = "id") Long setTypeId,
+            @RequestParam(name = "id") Long setTypeId,
             @Valid @RequestBody SetTypeDto setTypeDto) {
         setTypeService.updateSetType(setTypeId, setTypeDto);
 
@@ -64,6 +64,12 @@ public class SetTypeController {
             @PathVariable(name = "id") Long setTypeId) {
         setTypeService.deletedSetType(accessToken, setTypeId);
         return ResponseEntity.ok(ApiResponse.success("삭제 완료"));
+    }
+
+    @GetMapping("/api/set-type/{id}")
+    public ResponseEntity<ApiResponse<String>> getMaterialInfo(@PathVariable Long id) {
+        String setTypeName = setTypeService.getSetTypeName(id);
+        return ResponseEntity.ok(ApiResponse.success(setTypeName));
     }
 
 }

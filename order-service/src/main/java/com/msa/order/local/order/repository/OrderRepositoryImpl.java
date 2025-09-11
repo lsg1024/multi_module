@@ -67,6 +67,41 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         return getResponses(pageable, conditionBuilder, statusBuilder, true);
     }
 
+    @Override
+    public List<String> findByFilterFactories(OrderDto.OrderCondition condition) {
+
+        BooleanExpression ordersStatusBuilder = getOrdersStatusBuilder(condition);
+
+        return query
+                .selectDistinct(orders.factoryName)
+                .from(orders)
+                .where(ordersStatusBuilder)
+                .fetch();
+    }
+
+    @Override
+    public List<String> findByFilterStores(OrderDto.OrderCondition condition) {
+        BooleanExpression ordersStatusBuilder = getOrdersStatusBuilder(condition);
+
+        return query
+                .selectDistinct(orders.storeName)
+                .from(orders)
+                .where(ordersStatusBuilder)
+                .fetch();
+    }
+
+    @Override
+    public List<String> findByFilterSetType(OrderDto.OrderCondition condition) {
+        BooleanExpression ordersStatusBuilder = getOrdersStatusBuilder(condition);
+
+        return query
+                .selectDistinct(orders.orderProduct.setType)
+                .from(orders)
+                .join(orders.orderProduct, orderProduct)
+                .where(ordersStatusBuilder)
+                .fetch();
+    }
+
     @NotNull
     private CustomPage<OrderDto.Response> getResponses(Pageable pageable, BooleanBuilder conditionBuilder, BooleanExpression statusBuilder, Boolean orderDeleted) {
 
@@ -76,6 +111,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 .where(
                         stock.stockDeleted.isFalse(),
                         stock.orderStatus.eq(OrderStatus.NORMAL),
+                        stock.storeId.eq(1L),
                         stock.product.name.eq(orderProduct.productName),
                         stock.product.materialName.eq(orderProduct.materialName),
                         stock.product.colorName.eq(orderProduct.colorName)
@@ -87,6 +123,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                         orders.flowCode.stringValue(),
                         orders.storeName,
                         orders.orderProduct.productName,
+                        orderProduct.setType,
                         orders.orderProduct.productSize,
                         stockQty,
                         orders.orderNote,
@@ -106,6 +143,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                         conditionBuilder,
                         orders.orderDeleted.eq(orderDeleted)
                 )
+                .orderBy(orders.orderDate.desc(), orders.flowCode.desc())
                 .fetch();
 
         JPAQuery<Long> countQuery = query
@@ -126,10 +164,9 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
             // 키 OR 조건 구성
             BooleanBuilder keyOr = new BooleanBuilder();
             for (StockCondition k : stockConditions) {
-                keyOr.or(
-                        stock.product.name.eq(k.pn())
-                                .and(stock.product.materialName.eq(k.mn()))
-                                .and(stock.product.colorName.eq(k.cn()))
+                keyOr.or(stock.product.name.eq(k.pn())
+                        .and(stock.product.materialName.eq(k.mn()))
+                        .and(stock.product.colorName.eq(k.cn()))
                 );
             }
 
@@ -144,6 +181,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                     .from(stock)
                     .where(
                             stock.stockDeleted.isFalse(),
+                            stock.storeId.eq(1L),
                             stock.orderStatus.eq(OrderStatus.NORMAL),
                             keyOr
                     )
