@@ -90,4 +90,8 @@ public class SetTypeService {
 
         kafkaProducer.sendSetTypeUpdate(tenantId, setTypeId);
     }
+
+    public String getSetTypeName(Long id) {
+        return setTypeRepository.findByMaterialName(id);
+    }
 }
