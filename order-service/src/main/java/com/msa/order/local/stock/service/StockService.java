@@ -185,6 +185,7 @@ public class StockService {
         Long materialId = Long.valueOf(stockDto.getMaterialId());
         Long classificationId = Long.valueOf(stockDto.getClassificationId());
         Long colorId = Long.valueOf(stockDto.getColorId());
+        Long setTypeId = Long.valueOf(stockDto.getSetTypeId());
 
         ProductSnapshot product = ProductSnapshot.builder()
                 .id(productId)
@@ -195,6 +196,7 @@ public class StockService {
                 .stoneWeight(stockDto.getStoneWeight())
                 .build();
 
+        // 자체 재고는 store에서 자신을 선택해야함
         Stock stock = Stock.builder()
                 .stockNote(stockDto.getStockNote())
                 .orderStatus(OrderStatus.NORMAL)
@@ -244,6 +246,7 @@ public class StockService {
                 .materialId(materialId)
                 .classificationId(classificationId)
                 .colorId(colorId)
+                .setTypeId(setTypeId)
                 .nickname(nickname)
                 .addProductLaborCost(stockDto.getAddProductLaborCost())
                 .addStoneLaborCost(stockDto.getAddStoneLaborCost())

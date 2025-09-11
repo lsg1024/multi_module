@@ -145,29 +145,32 @@ public class OrdersController {
 
     // 공장 리스트 배열
     @GetMapping("/filters/factory")
-    public ResponseEntity<ApiResponse<String[]>> getFactoryNames(
+    public ResponseEntity<ApiResponse<List<String>>> getFactoryNames(
             @RequestParam(name = "start") String startAt,
             @RequestParam(name = "end") String endAt) {
 
-        return null;
+        List<String> filterFactories = ordersService.getFilterFactories(startAt, endAt);
+        return ResponseEntity.ok(ApiResponse.success(filterFactories));
     }
 
     // 상점 리스트 배열
     @GetMapping("/filters/store")
-    public ResponseEntity<ApiResponse<String[]>> getStoreNames(
+    public ResponseEntity<ApiResponse<List<String>>> getStoreNames(
             @RequestParam(name = "start") String startAt,
             @RequestParam(name = "end") String endAt) {
 
-        return null;
+        List<String> filterStores = ordersService.getFilterStores(startAt, endAt);
+        return ResponseEntity.ok(ApiResponse.success(filterStores));
     }
 
     // 유형 리스트 배열
     @GetMapping("/filters/set-type")
-    public ResponseEntity<ApiResponse<String[]>> getSetTypeNames(
+    public ResponseEntity<ApiResponse<List<String>>> getSetTypeNames(
             @RequestParam(name = "start") String startAt,
             @RequestParam(name = "end") String endAt) {
 
-        return null;
+        List<String> filterSetType = ordersService.getFilterSetType(startAt, endAt);
+        return ResponseEntity.ok(ApiResponse.success(filterSetType));
     }
 
 }

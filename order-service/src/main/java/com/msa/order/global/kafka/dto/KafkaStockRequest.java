@@ -18,6 +18,7 @@ public class KafkaStockRequest {
     private Long productId;
     private Long materialId;
     private Long colorId;
+    private Long setTypeId;
     private Long classificationId;
     private String nickname;
     private Integer addProductLaborCost;
@@ -26,7 +27,7 @@ public class KafkaStockRequest {
     private List<StockDto.StoneInfo> stoneInfos;
 
     @Builder
-    public KafkaStockRequest(String eventId, Long flowCode, String tenantId, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, Long classificationId, String nickname, Integer addProductLaborCost, Integer addStoneLaborCost, List<Long> stoneIds, List<StockDto.StoneInfo> stoneInfos) {
+    public KafkaStockRequest(String eventId, Long flowCode, String tenantId, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, Long setTypeId, Long classificationId, String nickname, Integer addProductLaborCost, Integer addStoneLaborCost, List<Long> stoneIds, List<StockDto.StoneInfo> stoneInfos) {
         this.eventId = eventId;
         this.flowCode = flowCode;
         this.tenantId = tenantId;
@@ -35,6 +36,7 @@ public class KafkaStockRequest {
         this.productId = productId;
         this.materialId = materialId;
         this.colorId = colorId;
+        this.setTypeId = setTypeId;
         this.classificationId = classificationId;
         this.nickname = nickname;
         this.addProductLaborCost = addProductLaborCost;

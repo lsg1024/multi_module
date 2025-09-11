@@ -19,13 +19,14 @@ public class OrderAsyncRequested {
     private Long materialId;
     private Long classificationId;
     private Long colorId;
+    private Long setTypeId;
     private List<Long> stoneIds;
     private String orderStatus;
 
     private String nickname;
 
     @Builder
-    public OrderAsyncRequested(String eventId, Long flowCode, String tenantId, Long storeId, Long factoryId, Long productId, Long materialId, Long classificationId, Long colorId, List<Long> stoneIds, String orderStatus, String nickname) {
+    public OrderAsyncRequested(String eventId, Long flowCode, String tenantId, Long storeId, Long factoryId, Long productId, Long materialId, Long classificationId, Long colorId, Long setTypeId, List<Long> stoneIds, String orderStatus, String nickname) {
         this.eventId = eventId;
         this.flowCode = flowCode;
         this.tenantId = tenantId;
@@ -35,6 +36,7 @@ public class OrderAsyncRequested {
         this.materialId = materialId;
         this.classificationId = classificationId;
         this.colorId = colorId;
+        this.setTypeId = setTypeId;
         this.stoneIds = stoneIds;
         this.orderStatus = orderStatus;
         this.nickname = nickname;

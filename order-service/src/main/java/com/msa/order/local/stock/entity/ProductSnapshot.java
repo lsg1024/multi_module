@@ -33,6 +33,8 @@ public class ProductSnapshot {
     private String colorName;
     @Column(name = "CLASSIFICATION_NAME")
     private String classificationName;
+    @Column(name = "SET_TYPE_NAME")
+    private String setTypeName;
     @Column(name = "PRODUCT_WEIGHT", precision = 10, scale = 3) // 상품 총 무게
     private BigDecimal productWeight;
     @Column(name = "STONE_WEIGHT", precision = 10, scale = 3) // 상품 스톤 총 무게
@@ -56,12 +58,13 @@ public class ProductSnapshot {
         this.stoneWeight = stoneWeight;
     }
 
-    public void updateProduct(String productName, Integer productLaborCost, String materialName, String classificationName, String colorName) {
+    public void updateProduct(String productName, Integer productLaborCost, String materialName, String classificationName, String colorName, String setTypeName) {
         this.name = productName;
         this.laborCost = productLaborCost;
         this.materialName = materialName;
         this.classificationName = classificationName;
         this.colorName = colorName;
+        this.setTypeName = setTypeName;
     }
 
     public void updateProductWeightAndSize(String size, BigDecimal productWeight, BigDecimal stoneWeight) {

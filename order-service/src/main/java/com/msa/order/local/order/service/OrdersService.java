@@ -126,6 +126,7 @@ public class OrdersService {
         Long materialId = Long.valueOf(orderDto.getMaterialId());
         Long classificationId = Long.valueOf(orderDto.getClassificationId());
         Long colorId = Long.valueOf(orderDto.getColorId());
+        Long setType = Long.valueOf(orderDto.getSetType());
 
         // priority 추가
         Priority priority = priorityRepository.findByPriorityName(orderDto.getPriorityName())
@@ -209,6 +210,7 @@ public class OrdersService {
                 .materialId(materialId)
                 .classificationId(classificationId)
                 .colorId(colorId)
+                .setTypeId(setType)
                 .nickname(nickname)
                 .stoneIds(stoneIds)
                 .orderStatus(orderType)
@@ -335,4 +337,18 @@ public class OrdersService {
     }
 
 
+    public List<String> getFilterFactories(String startAt, String endAt) {
+        OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt);
+        return customOrderRepository.findByFilterFactories(condition);
+    }
+
+    public List<String> getFilterStores(String startAt, String endAt) {
+        OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt);
+        return customOrderRepository.findByFilterStores(condition);
+    }
+
+    public List<String> getFilterSetType(String startAt, String endAt) {
+        OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt);
+        return customOrderRepository.findByFilterSetType(condition);
+    }
 }
