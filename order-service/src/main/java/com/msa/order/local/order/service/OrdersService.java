@@ -337,18 +337,21 @@ public class OrdersService {
     }
 
 
-    public List<String> getFilterFactories(String startAt, String endAt) {
-        OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt);
+    @Transactional(readOnly = true)
+    public List<String> getFilterFactories(String startAt, String endAt, String factoryName, String storeName, String setTypeName) {
+        OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, factoryName, storeName, setTypeName);
         return customOrderRepository.findByFilterFactories(condition);
     }
 
-    public List<String> getFilterStores(String startAt, String endAt) {
-        OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt);
+    @Transactional(readOnly = true)
+    public List<String> getFilterStores(String startAt, String endAt, String factoryName, String storeName, String setTypeName) {
+        OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, factoryName, storeName, setTypeName);
         return customOrderRepository.findByFilterStores(condition);
     }
 
-    public List<String> getFilterSetType(String startAt, String endAt) {
-        OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt);
+    @Transactional(readOnly = true)
+    public List<String> getFilterSetType(String startAt, String endAt, String factoryName, String storeName, String setTypeName) {
+        OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, factoryName, storeName, setTypeName);
         return customOrderRepository.findByFilterSetType(condition);
     }
 }

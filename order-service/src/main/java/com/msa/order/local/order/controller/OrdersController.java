@@ -53,10 +53,13 @@ public class OrdersController {
             @RequestParam(name = "search", required = false) String input,
             @RequestParam(name = "start") String startAt,
             @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "factory", required = false) String factoryName,
+            @RequestParam(name = "store", required = false) String storeName,
+            @RequestParam(name = "setType", required = false) String setTypeName,
             @PageableDefault(size = 16) Pageable pageable) {
 
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
-        OrderDto.OrderCondition orderCondition = new OrderDto.OrderCondition(startAt, endAt);
+        OrderDto.OrderCondition orderCondition = new OrderDto.OrderCondition(startAt, endAt, factoryName, storeName, setTypeName);
         CustomPage<OrderDto.Response> orderProducts = ordersService.getOrderProducts(inputCondition, orderCondition, pageable);
         return ResponseEntity.ok(ApiResponse.success(orderProducts));
     }
@@ -134,22 +137,28 @@ public class OrdersController {
             @RequestParam(name = "search", required = false) String input,
             @RequestParam(name = "start") String startAt,
             @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "factory", required = false) String factoryName,
+            @RequestParam(name = "store", required = false) String storeName,
+            @RequestParam(name = "setType", required = false) String setTypeName,
             @PageableDefault(size = 16) Pageable pageable) {
 
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
-        OrderDto.OrderCondition orderCondition = new OrderDto.OrderCondition(startAt, endAt);
+        OrderDto.OrderCondition orderCondition = new OrderDto.OrderCondition(startAt, endAt, factoryName, storeName, setTypeName);
         CustomPage<OrderDto.Response> deletedProducts = ordersService.getDeletedProducts(inputCondition, orderCondition, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(deletedProducts));
     }
 
-    // 공장 리스트 배열
+    // 공장 리스트 배열 // 페이징 처리하면 로딩된 페이징 값의 데이터로만 구성 가능하니 별도 호출이 필요
     @GetMapping("/filters/factory")
     public ResponseEntity<ApiResponse<List<String>>> getFactoryNames(
             @RequestParam(name = "start") String startAt,
-            @RequestParam(name = "end") String endAt) {
+            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "factory", required = false) String factoryName,
+            @RequestParam(name = "store", required = false) String storeName,
+            @RequestParam(name = "setType", required = false) String setTypeName) {
 
-        List<String> filterFactories = ordersService.getFilterFactories(startAt, endAt);
+        List<String> filterFactories = ordersService.getFilterFactories(startAt, endAt, factoryName, storeName, setTypeName);
         return ResponseEntity.ok(ApiResponse.success(filterFactories));
     }
 
@@ -157,9 +166,12 @@ public class OrdersController {
     @GetMapping("/filters/store")
     public ResponseEntity<ApiResponse<List<String>>> getStoreNames(
             @RequestParam(name = "start") String startAt,
-            @RequestParam(name = "end") String endAt) {
+            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "factory", required = false) String factoryName,
+            @RequestParam(name = "store", required = false) String storeName,
+            @RequestParam(name = "setType", required = false) String setTypeName) {
 
-        List<String> filterStores = ordersService.getFilterStores(startAt, endAt);
+        List<String> filterStores = ordersService.getFilterStores(startAt, endAt, factoryName, storeName, setTypeName);
         return ResponseEntity.ok(ApiResponse.success(filterStores));
     }
 
@@ -167,9 +179,12 @@ public class OrdersController {
     @GetMapping("/filters/set-type")
     public ResponseEntity<ApiResponse<List<String>>> getSetTypeNames(
             @RequestParam(name = "start") String startAt,
-            @RequestParam(name = "end") String endAt) {
+            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "factory", required = false) String factoryName,
+            @RequestParam(name = "store", required = false) String storeName,
+            @RequestParam(name = "setType", required = false) String setTypeName) {
 
-        List<String> filterSetType = ordersService.getFilterSetType(startAt, endAt);
+        List<String> filterSetType = ordersService.getFilterSetType(startAt, endAt, factoryName, storeName, setTypeName);
         return ResponseEntity.ok(ApiResponse.success(filterSetType));
     }
 

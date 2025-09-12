@@ -73,6 +73,8 @@ public class OrderDto {
         private String setType;
         private String productSize;
         private Integer stockQuantity;
+        private String orderMainStoneNote;
+        private String orderAssistanceStoneNote;
         private List<String> stockFlowCodes;
         private String orderNote;
         private String factoryName;
@@ -85,8 +87,10 @@ public class OrderDto {
         }
 
         @QueryProjection
-        public Response(String orderExpectDate, String flowCode, String storeName, String productName, String setType, String productSize, Integer stockQuantity, String orderNote, String factoryName, String materialName, String colorName, String priority, String orderDate, ProductStatus productStatus, OrderStatus orderStatus) {
+        public Response(String orderExpectDate, String flowCode, String storeName, String productName, String setType, String productSize, Integer stockQuantity, String orderMainStoneNote, String orderAssistanceStoneNote, String orderNote, String factoryName, String materialName, String colorName, String priority, String orderDate, ProductStatus productStatus, OrderStatus orderStatus) {
             this.setType = setType;
+            this.orderMainStoneNote = orderMainStoneNote;
+            this.orderAssistanceStoneNote = orderAssistanceStoneNote;
             this.orderDate = orderDate;
             this.orderExpectDate = orderExpectDate;
             this.flowCode = flowCode;
@@ -165,6 +169,9 @@ public class OrderDto {
     public static class OrderCondition {
         private String startAt;
         private String endAt;
+        private String factoryName;
+        private String storeName;
+        private String setTypeName;
     }
 
     @Getter
