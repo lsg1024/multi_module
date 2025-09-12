@@ -126,6 +126,8 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                         orderProduct.setType,
                         orders.orderProduct.productSize,
                         stockQty,
+                        orders.orderMainStoneNote,
+                        orders.orderAssistanceStoneNote,
                         orders.orderNote,
                         orders.factoryName,
                         orderProduct.materialName,
@@ -245,6 +247,19 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression statusIsOrder =
                 orders.orderStatus.in(OrderStatus.ORDER);
 
+        if (StringUtils.hasText(orderCondition.getFactoryName())) {
+            BooleanExpression hasFactory = orders.factoryName.eq(orderCondition.getFactoryName());
+            statusIsReceiptOrWaiting.and(hasFactory);
+        }
+        if (StringUtils.hasText(orderCondition.getStoreName())) {
+            BooleanExpression hasStore = orders.storeName.eq(orderCondition.getStoreName());
+            statusIsReceiptOrWaiting.and(hasStore);
+        }
+        if (StringUtils.hasText(orderCondition.getSetTypeName())) {
+            BooleanExpression hasSetType = orders.storeName.eq(orderCondition.getSetTypeName());
+            statusIsReceiptOrWaiting.and(hasSetType);
+        }
+
         return statusIsReceiptOrWaiting.and(statusIsOrder).and(createdBetween);
     }
 
@@ -285,6 +300,19 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
         BooleanExpression statusIsOrder =
                 orders.orderStatus.in(OrderStatus.ORDER);
+
+        if (StringUtils.hasText(orderCondition.getFactoryName())) {
+            BooleanExpression hasFactory = orders.factoryName.eq(orderCondition.getFactoryName());
+            statusIsReceiptOrWaiting.and(hasFactory);
+        }
+        if (StringUtils.hasText(orderCondition.getStoreName())) {
+            BooleanExpression hasStore = orders.storeName.eq(orderCondition.getStoreName());
+            statusIsReceiptOrWaiting.and(hasStore);
+        }
+        if (StringUtils.hasText(orderCondition.getSetTypeName())) {
+            BooleanExpression hasSetType = orders.storeName.eq(orderCondition.getSetTypeName());
+            statusIsReceiptOrWaiting.and(hasSetType);
+        }
 
         return statusIsReceiptOrWaiting.and(statusIsOrder).and(deletedDate);
     }
