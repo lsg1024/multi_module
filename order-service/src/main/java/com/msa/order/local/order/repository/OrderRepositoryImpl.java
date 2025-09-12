@@ -1,9 +1,7 @@
 package com.msa.order.local.order.repository;
 
 import com.msa.common.global.util.CustomPage;
-import com.msa.order.local.order.dto.OrderDto;
-import com.msa.order.local.order.dto.QOrderDto_Response;
-import com.msa.order.local.order.dto.StockCondition;
+import com.msa.order.local.order.dto.*;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.order.entity.order_enum.ProductStatus;
 import com.querydsl.core.BooleanBuilder;
@@ -43,7 +41,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
     }
 
     @Override
-    public CustomPage<OrderDto.Response> findByOrders(OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable) {
+    public CustomPage<OrderQueryDto> findByOrders(OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable) {
 
         BooleanBuilder conditionBuilder = getSearchBuilder(inputCondition);
         BooleanExpression statusBuilder = getOrdersStatusBuilder(orderCondition);
@@ -52,7 +50,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
     }
 
     @Override
-    public CustomPage<OrderDto.Response> findByExpectOrders(OrderDto.InputCondition inputCondition, OrderDto.ExpectCondition orderCondition, Pageable pageable) {
+    public CustomPage<OrderQueryDto> findByExpectOrders(OrderDto.InputCondition inputCondition, OrderDto.ExpectCondition orderCondition, Pageable pageable) {
         BooleanBuilder conditionBuilder = getSearchBuilder(inputCondition);
         BooleanExpression statusBuilder = getExpectStatusBuilder(orderCondition);
 
@@ -60,7 +58,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
     }
 
     @Override
-    public CustomPage<OrderDto.Response> findByDeletedOrders(OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable) {
+    public CustomPage<OrderQueryDto> findByDeletedOrders(OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable) {
         BooleanBuilder conditionBuilder = getSearchBuilder(inputCondition);
         BooleanExpression statusBuilder = getOrdersDeletedStatusBuilder(orderCondition);
 
@@ -103,7 +101,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
     }
 
     @NotNull
-    private CustomPage<OrderDto.Response> getResponses(Pageable pageable, BooleanBuilder conditionBuilder, BooleanExpression statusBuilder, Boolean orderDeleted) {
+    private CustomPage<OrderQueryDto> getResponses(Pageable pageable, BooleanBuilder conditionBuilder, BooleanExpression statusBuilder, Boolean orderDeleted) {
 
         JPQLQuery<Integer> stockQty = JPAExpressions
                 .select(stock.stockCode.count().intValue())
@@ -117,12 +115,16 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                         stock.product.colorName.eq(orderProduct.colorName)
                 );
 
-        List<OrderDto.Response> content = query
-                .select(new QOrderDto_Response(
+        List<OrderQueryDto> content = query
+                .select(new QOrderQueryDto(
+                        orders.orderProduct.productId,
+                        orders.orderDate.stringValue(),
                         orders.orderExpectDate.stringValue(),
                         orders.flowCode.stringValue(),
                         orders.storeName,
                         orders.orderProduct.productName,
+                        orders.orderProduct.materialName,
+                        orderProduct.colorName,
                         orderProduct.setType,
                         orders.orderProduct.productSize,
                         stockQty,
@@ -130,10 +132,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                         orders.orderAssistanceStoneNote,
                         orders.orderNote,
                         orders.factoryName,
-                        orderProduct.materialName,
-                        orderProduct.colorName,
                         priority.priorityName,
-                        orders.orderDate.stringValue(),
                         orders.productStatus,
                         orders.orderStatus
                 ))

@@ -3,7 +3,6 @@ package com.msa.order.local.order.dto;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.order.entity.order_enum.ProductStatus;
 import com.msa.order.local.order.external_client.dto.ProductDetailDto;
-import com.querydsl.core.annotations.QueryProjection;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -14,6 +13,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 @Getter
@@ -81,30 +81,33 @@ public class OrderDto {
         private String priority;
         private ProductStatus productStatus;
         private OrderStatus orderStatus;
+        private String imagePath;
 
-        public void setStockFlowCodes(List<String> stockFlowCodes) {
-            this.stockFlowCodes = stockFlowCodes;
-        }
+        public static Response from(OrderQueryDto queryDto, String imagePath) {
+            Response response = new Response();
+            response.orderDate = queryDto.getOrderDate();
+            response.orderExpectDate = queryDto.getOrderExpectDate();
+            response.flowCode = queryDto.getFlowCode();
+            response.storeName = queryDto.getStoreName();
+            response.productName = queryDto.getProductName();
+            response.materialName = queryDto.getMaterialName();
+            response.colorName = queryDto.getColorName();
+            response.setType = queryDto.getSetType();
+            response.productSize = queryDto.getProductSize();
+            response.stockQuantity = queryDto.getStockQuantity();
+            response.orderMainStoneNote = queryDto.getOrderMainStoneNote();
+            response.orderAssistanceStoneNote = queryDto.getOrderAssistanceStoneNote();
+            response.orderNote = queryDto.getOrderNote();
+            response.factoryName = queryDto.getFactoryName();
+            response.priority = queryDto.getPriority();
+            response.productStatus = queryDto.getProductStatus();
+            response.orderStatus = queryDto.getOrderStatus();
+            response.imagePath = (imagePath != null) ? imagePath : "";
+            response.stockFlowCodes = (queryDto.getStockFlowCodes() != null)
+                    ? queryDto.getStockFlowCodes()
+                    : Collections.emptyList();
 
-        @QueryProjection
-        public Response(String orderExpectDate, String flowCode, String storeName, String productName, String setType, String productSize, Integer stockQuantity, String orderMainStoneNote, String orderAssistanceStoneNote, String orderNote, String factoryName, String materialName, String colorName, String priority, String orderDate, ProductStatus productStatus, OrderStatus orderStatus) {
-            this.setType = setType;
-            this.orderMainStoneNote = orderMainStoneNote;
-            this.orderAssistanceStoneNote = orderAssistanceStoneNote;
-            this.orderDate = orderDate;
-            this.orderExpectDate = orderExpectDate;
-            this.flowCode = flowCode;
-            this.storeName = storeName;
-            this.productName = productName;
-            this.productSize = productSize;
-            this.stockQuantity = stockQuantity;
-            this.orderNote = orderNote;
-            this.factoryName = factoryName;
-            this.materialName = materialName;
-            this.colorName = colorName;
-            this.priority = priority;
-            this.productStatus = productStatus;
-            this.orderStatus = orderStatus;
+            return response;
         }
     }
 

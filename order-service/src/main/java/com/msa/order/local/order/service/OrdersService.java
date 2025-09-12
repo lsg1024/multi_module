@@ -5,18 +5,17 @@ import com.msa.common.global.tenant.TenantContext;
 import com.msa.common.global.util.CustomPage;
 import com.msa.order.global.kafka.KafkaProducer;
 import com.msa.order.global.kafka.dto.OrderAsyncRequested;
-import com.msa.order.local.order.dto.DateDto;
-import com.msa.order.local.order.dto.FactoryDto;
-import com.msa.order.local.order.dto.OrderDto;
-import com.msa.order.local.order.dto.StoreDto;
+import com.msa.order.local.order.dto.*;
 import com.msa.order.local.order.entity.OrderProduct;
 import com.msa.order.local.order.entity.OrderStone;
 import com.msa.order.local.order.entity.Orders;
 import com.msa.order.local.order.entity.StatusHistory;
 import com.msa.order.local.order.entity.order_enum.*;
 import com.msa.order.local.order.external_client.FactoryClient;
+import com.msa.order.local.order.external_client.ProductClient;
 import com.msa.order.local.order.external_client.StoreClient;
 import com.msa.order.local.order.external_client.dto.ProductDetailDto;
+import com.msa.order.local.order.external_client.dto.ProductImageDto;
 import com.msa.order.local.order.repository.CustomOrderRepository;
 import com.msa.order.local.order.repository.OrdersRepository;
 import com.msa.order.local.order.repository.StatusHistoryRepository;
@@ -35,10 +34,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static com.msa.order.global.exception.ExceptionMessage.*;
 
@@ -51,16 +47,18 @@ public class OrdersService {
     private final JwtUtil jwtUtil;
     private final FactoryClient factoryClient;
     private final StoreClient storeClient;
+    private final ProductClient productClient;
     private final KafkaProducer kafkaProducer;
     private final OrdersRepository ordersRepository;
     private final CustomOrderRepository customOrderRepository;
     private final StatusHistoryRepository statusHistoryRepository;
     private final PriorityRepository priorityRepository;
 
-    public OrdersService(JwtUtil jwtUtil, FactoryClient factoryClient, StoreClient storeClient, KafkaProducer kafkaProducer, OrdersRepository ordersRepository, CustomOrderRepository customOrderRepository, StatusHistoryRepository statusHistoryRepository, PriorityRepository priorityRepository) {
+    public OrdersService(JwtUtil jwtUtil, FactoryClient factoryClient, StoreClient storeClient, ProductClient productClient, KafkaProducer kafkaProducer, OrdersRepository ordersRepository, CustomOrderRepository customOrderRepository, StatusHistoryRepository statusHistoryRepository, PriorityRepository priorityRepository) {
         this.jwtUtil = jwtUtil;
         this.factoryClient = factoryClient;
         this.storeClient = storeClient;
+        this.productClient = productClient;
         this.kafkaProducer = kafkaProducer;
         this.ordersRepository = ordersRepository;
         this.customOrderRepository = customOrderRepository;
@@ -109,11 +107,30 @@ public class OrdersService {
 
     // 주문 전체 리스트 조회
     @Transactional(readOnly = true)
-    public CustomPage<OrderDto.Response> getOrderProducts(OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable) {
-        return customOrderRepository.findByOrders(inputCondition, orderCondition, pageable);
+    public CustomPage<OrderDto.Response> getOrderProducts(String accessToken, OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable) {
+        String tenantId = jwtUtil.getTenantId(accessToken);
 
+        CustomPage<OrderQueryDto> queryDtoPage = customOrderRepository.findByOrders(inputCondition, orderCondition, pageable);
+        List<OrderQueryDto> queryDtos = queryDtoPage.getContent();
+
+        List<Long> productIds = queryDtos.stream()
+                .map(OrderQueryDto::getProductId)
+                .distinct()
+                .toList();
+
+        Map<Long, ProductImageDto> productImages = productClient.getProductImages(tenantId, productIds);
+
+        List<OrderDto.Response> finalResponse = queryDtos.stream()
+                .map(queryDto -> {
+                    ProductImageDto image = productImages.get(queryDto.getProductId());
+                    String imagePath = (image != null) ? image.getImagePath() : null;
+
+                    return OrderDto.Response.from(queryDto, imagePath);
+                })
+                .toList();
+
+        return new CustomPage<>(finalResponse, pageable, queryDtoPage.getTotalElements());
     }
-
     //주문
     public void saveOrder(String accessToken, String orderType, OrderDto.Request orderDto) {
 
@@ -225,14 +242,15 @@ public class OrdersService {
     }
 
     //주문 상태 변경 (주문, 취소)
-    public List<String> getOrderStatusInfo(Long orderId) {
+    public List<String> getOrderStatusInfo(String id) {
         List<ProductStatus> productStatuses = Arrays.asList(ProductStatus.RECEIPT, ProductStatus.RECEIPT_FAILED, ProductStatus.WAITING);
         List<String> statusDtos = new ArrayList<>();
         for (ProductStatus productStatus : productStatuses) {
             statusDtos.add(productStatus.getDisplayName());
         }
 
-        boolean existsByOrderIdAndOrderStatusIn = ordersRepository.existsByOrderIdAndProductStatusIn(orderId, productStatuses);
+        long flowCode = Long.parseLong(id);
+        boolean existsByOrderIdAndOrderStatusIn = ordersRepository.existsByFlowCodeAndProductStatusIn(flowCode, productStatuses);
 
         if (existsByOrderIdAndOrderStatusIn) {
             return statusDtos;
@@ -241,31 +259,33 @@ public class OrdersService {
     }
 
     //주문 상태 변경
-    public void updateOrderStatus(Long orderId, String status) {
+    public void updateOrderStatus(String id, String status) {
 
         List<String> allowed = Arrays.asList(
-                ProductStatus.RECEIPT.getDisplayName(),
-                ProductStatus.WAITING.getDisplayName());
+                ProductStatus.RECEIPT.name(),
+                ProductStatus.WAITING.name());
 
-        if (!allowed.contains(status)) {
+        if (!allowed.contains(status.toUpperCase())) {
             throw new IllegalArgumentException("주문 상태를 변경할 수 없습니다.");
         }
 
-        Orders order = ordersRepository.findById(orderId)
+        long flowCode = Long.parseLong(id);
+        Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        ProductStatus newStatus = ProductStatus.fromDisplayName(status)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+        ProductStatus newStatus = ProductStatus.valueOf(status.toUpperCase());
 
         order.updateProductStatus(newStatus);
         ordersRepository.save(order);
 
     }
 
-    //거래처 변경 -> account -> store 리스트 호출 /store/list
-    public void updateOrderStore(String accessToken, Long orderId, StoreDto.Request storeDto) {
+    //판매처 변경 -> account -> store 리스트 호출 /store/list
+    public void updateOrderStore(String accessToken, String id, StoreDto.Request storeDto) {
         String tenantId = jwtUtil.getTenantId(accessToken);
-        Orders order = ordersRepository.findById(orderId)
+
+        long flowCode = Long.parseLong(id);
+        Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         StoreDto.Response storeInfo = storeClient.getStoreInfo(tenantId, storeDto.getStoreId());
@@ -274,9 +294,10 @@ public class OrdersService {
     }
 
     //제조사 변경 ->
-    public void updateOrderFactory(String accessToken, Long orderId, FactoryDto.Request factoryDto) {
+    public void updateOrderFactory(String accessToken, String id, FactoryDto.Request factoryDto) {
         String tenantId = jwtUtil.getTenantId(accessToken);
-        Orders order = ordersRepository.findById(orderId)
+        long flowCode = Long.parseLong(id);
+        Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         FactoryDto.Response factoryInfo = factoryClient.getFactoryInfo(tenantId, factoryDto.getFactoryId());
@@ -285,8 +306,10 @@ public class OrdersService {
     }
 
     //출고일 변경
-    public void updateOrderExpectDate(Long orderId, DateDto newDate) {
-        Orders order = ordersRepository.findById(orderId)
+    public void updateOrderExpectDate(String id, DateDto newDate) {
+
+        long flowCode = Long.parseLong(id);
+        Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         OffsetDateTime received = newDate.getExpectDate();
@@ -298,12 +321,13 @@ public class OrdersService {
     //기성 대체 -> 재고에 있는 제품 (이름, 색상, 재질 동일)
 
     //주문 -> 삭제
-    public void deletedOrder(String accessToken, Long orderId) {
+    public void deletedOrder(String accessToken, String id) {
         String nickname = jwtUtil.getNickname(accessToken);
         String role = jwtUtil.getRole(accessToken);
 
         if (role.equals("ADMIN") || role.equals("USER")) {
-            Orders order = ordersRepository.findById(orderId)
+            long flowCode = Long.parseLong(id);
+            Orders order = ordersRepository.findByFlowCode(flowCode)
                     .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
             StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
@@ -326,14 +350,52 @@ public class OrdersService {
 
     // 출고 예정 목록 출력
     @Transactional(readOnly = true)
-    public CustomPage<OrderDto.Response> getExpectProducts(OrderDto.InputCondition inputCondition, OrderDto.ExpectCondition expectCondition, Pageable pageable) {
-        return customOrderRepository.findByExpectOrders(inputCondition, expectCondition, pageable);
+    public CustomPage<OrderDto.Response> getExpectProducts(String accessToken, OrderDto.InputCondition inputCondition, OrderDto.ExpectCondition expectCondition, Pageable pageable) {
+        String tenantId = jwtUtil.getTenantId(accessToken);
+        CustomPage<OrderQueryDto> expectOrderPages = customOrderRepository.findByExpectOrders(inputCondition, expectCondition, pageable);
+
+        List<Long> productIds = expectOrderPages.stream()
+                .map(OrderQueryDto::getProductId)
+                .distinct()
+                .toList();
+
+        Map<Long, ProductImageDto> productImages = productClient.getProductImages(tenantId, productIds);
+
+        List<OrderDto.Response> finalResponse = expectOrderPages.stream()
+                .map(queryDto -> {
+                    ProductImageDto imageDto = productImages.get(queryDto.getProductId());
+                    String imagePath = (imageDto != null) ? imageDto.getImagePath() : null;
+
+                    return OrderDto.Response.from(queryDto, imagePath);
+                })
+                .toList();
+
+        return new CustomPage<>(finalResponse, pageable, expectOrderPages.getTotalElements());
     }
 
     // 주문 상태에서 취소된 목록 출력
     @Transactional(readOnly = true)
-    public CustomPage<OrderDto.Response> getDeletedProducts(OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable) {
-        return customOrderRepository.findByDeletedOrders(inputCondition, orderCondition, pageable);
+    public CustomPage<OrderDto.Response> getDeletedProducts(String accessToken, OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable) {
+        String tenantId = jwtUtil.getTenantId(accessToken);
+        CustomPage<OrderQueryDto> expectOrderPages = customOrderRepository.findByDeletedOrders(inputCondition, orderCondition, pageable);
+
+        List<Long> productIds = expectOrderPages.stream()
+                .map(OrderQueryDto::getProductId)
+                .distinct()
+                .toList();
+
+        Map<Long, ProductImageDto> productImages = productClient.getProductImages(tenantId, productIds);
+
+        List<OrderDto.Response> finalResponse = expectOrderPages.stream()
+                .map(queryDto -> {
+                    ProductImageDto imageDto = productImages.get(queryDto.getProductId());
+                    String imagePath = (imageDto != null) ? imageDto.getImagePath() : null;
+
+                    return OrderDto.Response.from(queryDto, imagePath);
+                })
+                .toList();
+
+        return new CustomPage<>(finalResponse, pageable, expectOrderPages.getTotalElements());
     }
 
 

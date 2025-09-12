@@ -14,10 +14,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 import static com.msa.product.global.exception.ExceptionMessage.NOT_FOUND;
 
@@ -166,5 +163,14 @@ public class ProductImageService {
                 throw new RuntimeException("파일 삭제 실패: " + file.getAbsolutePath());
             }
         }
+    }
+
+    public Map<Long, ProductImageDto.ApiResponse> getImagesByProductIds(List<Long> productIds) {
+
+        if (productIds == null || productIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        return productImageRepository.findMainImagesByProductIds(productIds);
     }
 }
