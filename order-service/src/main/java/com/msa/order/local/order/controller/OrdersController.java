@@ -50,6 +50,7 @@ public class OrdersController {
     //복수 값
     @GetMapping("/orders") // URL 경로는 고정 -> 거래처, 상점 파라미터 추가 필요
     public ResponseEntity<ApiResponse<CustomPage<OrderDto.Response>>> getOrders(
+            @AccessToken String accessToken,
             @RequestParam(name = "search", required = false) String input,
             @RequestParam(name = "start") String startAt,
             @RequestParam(name = "end") String endAt,
@@ -60,14 +61,14 @@ public class OrdersController {
 
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
         OrderDto.OrderCondition orderCondition = new OrderDto.OrderCondition(startAt, endAt, factoryName, storeName, setTypeName);
-        CustomPage<OrderDto.Response> orderProducts = ordersService.getOrderProducts(inputCondition, orderCondition, pageable);
+        CustomPage<OrderDto.Response> orderProducts = ordersService.getOrderProducts(accessToken, inputCondition, orderCondition, pageable);
         return ResponseEntity.ok(ApiResponse.success(orderProducts));
     }
 
     // 주문 상태 호출
     @GetMapping("/orders/status")
     public ResponseEntity<ApiResponse<List<String>>> getStatus (
-            @RequestParam Long id) {
+            @RequestParam String id) {
         List<String> orderStatusInfo = ordersService.getOrderStatusInfo(id);
         return ResponseEntity.ok(ApiResponse.success(orderStatusInfo));
     }
@@ -75,8 +76,8 @@ public class OrdersController {
     // 주문 상태 변경
     @PatchMapping("/orders/status")
     public ResponseEntity<ApiResponse<String>> updateOrderStatus (
-            @RequestParam Long id,
-            @RequestParam(name = "status", required = false) String orderStatus) {
+            @RequestParam String id,
+            @RequestParam(name = "status") String orderStatus) {
         ordersService.updateOrderStatus(id, orderStatus);
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
@@ -84,7 +85,7 @@ public class OrdersController {
     // 출고일 변경
     @PatchMapping("/orders/expect_date")
     public ResponseEntity<ApiResponse<String>> updateOrderExpectDate (
-            @RequestParam Long id,
+            @RequestParam String id,
             @RequestBody DateDto updateDate) {
         ordersService.updateOrderExpectDate(id, updateDate);
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
@@ -94,7 +95,7 @@ public class OrdersController {
     @PatchMapping("/orders/store")
     public ResponseEntity<ApiResponse<String>> updateOrderStore (
             @AccessToken String accessToken,
-            @RequestParam Long id,
+            @RequestParam String id,
             @RequestBody StoreDto.Request updateStoreDto) {
         ordersService.updateOrderStore(accessToken, id, updateStoreDto);
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
@@ -103,7 +104,7 @@ public class OrdersController {
     @PatchMapping("/orders/factory")
     public ResponseEntity<ApiResponse<String>> updateOrderFactory (
             @AccessToken String accessToken,
-            @RequestParam Long id,
+            @RequestParam String id,
             @RequestBody FactoryDto.Request updateFactoryDto) {
         ordersService.updateOrderFactory(accessToken, id, updateFactoryDto);
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
@@ -113,7 +114,7 @@ public class OrdersController {
     @DeleteMapping("/orders")
     public ResponseEntity<ApiResponse<String>> deletedOrder(
             @AccessToken String accessToken,
-            @RequestParam Long id) {
+            @RequestParam String id) {
         ordersService.deletedOrder(accessToken, id);
         return ResponseEntity.ok(ApiResponse.success("삭제 완료"));
     }
@@ -121,19 +122,21 @@ public class OrdersController {
     // 출고 예정 조회
     @GetMapping("/orders/expect")
     public ResponseEntity<ApiResponse<CustomPage<OrderDto.Response>>> getOrderExpect(
+            @AccessToken String accessToken,
             @RequestParam(name = "search", required = false) String input,
             @RequestParam(name = "end") String endAt,
             @PageableDefault(size = 16) Pageable pageable) {
 
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
         OrderDto.ExpectCondition expectCondition = new OrderDto.ExpectCondition(endAt);
-        CustomPage<OrderDto.Response> expectProducts = ordersService.getExpectProducts(inputCondition, expectCondition, pageable);
+        CustomPage<OrderDto.Response> expectProducts = ordersService.getExpectProducts(accessToken, inputCondition, expectCondition, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(expectProducts));
     }
 
     @GetMapping("/orders/delete")
     public ResponseEntity<ApiResponse<CustomPage<OrderDto.Response>>> getOrderDeleted(
+            @AccessToken String accessToken,
             @RequestParam(name = "search", required = false) String input,
             @RequestParam(name = "start") String startAt,
             @RequestParam(name = "end") String endAt,
@@ -144,7 +147,7 @@ public class OrdersController {
 
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
         OrderDto.OrderCondition orderCondition = new OrderDto.OrderCondition(startAt, endAt, factoryName, storeName, setTypeName);
-        CustomPage<OrderDto.Response> deletedProducts = ordersService.getDeletedProducts(inputCondition, orderCondition, pageable);
+        CustomPage<OrderDto.Response> deletedProducts = ordersService.getDeletedProducts(accessToken, inputCondition, orderCondition, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(deletedProducts));
     }

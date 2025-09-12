@@ -35,6 +35,20 @@ public class ProductImageDto {
 
     @Getter
     @NoArgsConstructor
+    public static class ApiResponse {
+        private Long productId;
+        private String imagePath;
+
+        @Builder
+        @QueryProjection
+        public ApiResponse(Long productId, String imagePath) {
+            this.productId = productId;
+            this.imagePath = imagePath;
+        }
+    }
+
+    @Getter
+    @NoArgsConstructor
     public static class Request {
         private int mainImageIndex;
         @Valid

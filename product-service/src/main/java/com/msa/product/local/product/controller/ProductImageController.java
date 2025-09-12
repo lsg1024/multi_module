@@ -2,15 +2,16 @@ package com.msa.product.local.product.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.msa.common.global.api.ApiResponse;
 import com.msa.product.local.product.dto.ProductImageDto;
 import com.msa.product.local.product.service.ProductImageService;
-import com.msa.common.global.api.ApiResponse;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 public class ProductImageController {
@@ -47,4 +48,12 @@ public class ProductImageController {
         productImageService.updateImages(productId, images, metaData);
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
+
+    @GetMapping("/api/products/images")
+    public ResponseEntity<ApiResponse<Map<Long, ProductImageDto.ApiResponse>>> getProductImages(
+            @RequestParam("ids") List<Long> productIds) {
+        Map<Long, ProductImageDto.ApiResponse> imagesByProductIds = productImageService.getImagesByProductIds(productIds);
+        return ResponseEntity.ok(ApiResponse.success(imagesByProductIds));
+    }
+
 }
