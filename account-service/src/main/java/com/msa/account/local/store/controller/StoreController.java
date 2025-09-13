@@ -33,7 +33,7 @@ public class StoreController {
     }
 
     //상점 목록 조회
-    @GetMapping("/store/list")
+    @GetMapping("/stores")
     public ResponseEntity<ApiResponse<CustomPage<StoreDto.StoreResponse>>> getStoreList(
             @RequestParam(name = "search", required = false) String name,
             @PageableDefault(size = 12) Pageable pageable) {
@@ -54,7 +54,7 @@ public class StoreController {
     }
 
     //상점 수정
-    @PatchMapping("/store/{id}")
+    @PatchMapping("/stores/{id}")
     public ResponseEntity<ApiResponse<String>> updateStore(
             @AccessToken String accessToken,
             @PathVariable("id") String storeId,
@@ -66,7 +66,7 @@ public class StoreController {
     }
 
     //상점 삭제
-    @DeleteMapping("/store/{id}")
+    @DeleteMapping("/stores/{id}")
     public ResponseEntity<ApiResponse<String>> deleteStore(
             @AccessToken String accessToken,
             @PathVariable("id") String storeId) {
