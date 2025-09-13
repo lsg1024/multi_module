@@ -56,8 +56,9 @@ public class ProductStoneDto {
         private boolean isIncludeStone;
         private Integer stoneQuantity;
         private Integer laborCost;
+        private Integer purchasePrice;
         @Builder
-        public PageResponse(String productStoneId, String stoneId, String stoneName, boolean isMainStone, boolean isIncludeStone, Integer stoneQuantity, Integer laborCost) {
+        public PageResponse(String productStoneId, String stoneId, String stoneName, boolean isMainStone, boolean isIncludeStone, Integer stoneQuantity, Integer laborCost, Integer purchasePrice) {
             this.productStoneId = productStoneId;
             this.stoneId = stoneId;
             this.stoneName = stoneName;
@@ -65,6 +66,7 @@ public class ProductStoneDto {
             this.isIncludeStone = isIncludeStone;
             this.stoneQuantity = stoneQuantity;
             this.laborCost = laborCost;
+            this.purchasePrice = purchasePrice;
         }
     }
 

@@ -43,8 +43,9 @@ public class ProductController {
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "classification", required = false) String classificationId,
             @RequestParam(name = "setType", required = false) String setTypeId,
-            @PageableDefault(size = 12) Pageable pageable) { // 검색 옵션으로 제조사, 제조번호
-        CustomPage<ProductDto.Page> products = productService.getProducts(productName, factoryName, classificationId, setTypeId, pageable);
+            @RequestParam(name = "level", required = false) String level,
+            @PageableDefault(size = 12) Pageable pageable) { // 검색 옵션으로 제조사, 제조번호, 등급
+        CustomPage<ProductDto.Page> products = productService.getProducts(productName, factoryName, classificationId, setTypeId, pageable, level);
         return ResponseEntity.ok(ApiResponse.success(products));
     }
 

@@ -49,8 +49,8 @@ public class FactoryDto {
             this.factoryFaxNumber = factoryFaxNumber;
             this.factoryNote = factoryNote;
             this.address = address;
-            this.tradeType = tradeType;
-            this.level = level;
+            this.tradeType = getTradeTypeTitle(tradeType);
+            this.level = getLevelTypeTitle(level);
             this.goldHarryLoss = goldHarryLoss;
         }
     }

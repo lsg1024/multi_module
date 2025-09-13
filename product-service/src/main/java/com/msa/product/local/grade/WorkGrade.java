@@ -21,6 +21,15 @@ public enum WorkGrade {
         return null;
     }
 
+    public static WorkGrade fromLevel(String level) {
+        for (WorkGrade grade : WorkGrade.values()) {
+            if (grade.level.equals(level)) {
+                return grade;
+            }
+        }
+        throw new IllegalArgumentException("No enum constant with level " + level);
+    }
+
     public String getLevel() {
         return this.level;
     }
