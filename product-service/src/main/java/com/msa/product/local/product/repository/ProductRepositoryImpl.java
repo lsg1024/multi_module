@@ -15,6 +15,7 @@ import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Pageable;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
 
@@ -77,7 +78,7 @@ public class ProductRepositoryImpl implements CustomProductRepository {
     }
 
     @Override
-    public CustomPage<ProductDto.Page> findByAllProductName(String productName, String factoryName, String classificationId, String setTypeId, Pageable pageable) {
+    public CustomPage<ProductDto.Page> findByAllProductName(String productName, String factoryName, String classificationId, String setTypeId, String level, Pageable pageable) {
 
         QProductWorkGradePolicy productWorkGradePolicySub = new QProductWorkGradePolicy("productWorkGradePolicySub");
 
@@ -97,6 +98,13 @@ public class ProductRepositoryImpl implements CustomProductRepository {
 
         if (setTypeId != null && !setTypeId.isBlank()) {
             builder.and(product.setType.setTypeId.eq(Long.parseLong(setTypeId)));
+        }
+
+        WorkGrade grade;
+        if (!StringUtils.hasText(level)) {
+            grade = WorkGrade.GRADE_1;
+        } else {
+            grade = WorkGrade.fromLevel(level);
         }
 
         List<ProductDto.Page> content = query
@@ -122,16 +130,16 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 .leftJoin(product.classification, classification)
                 .leftJoin(product.productWorkGradePolicyGroups, productWorkGradePolicyGroup)
                 .leftJoin(productWorkGradePolicyGroup.gradePolicies, productWorkGradePolicy)
-                .on(productWorkGradePolicy.grade.eq(WorkGrade.GRADE_1)
+                .on(productWorkGradePolicy.grade.eq(grade)
                         .and(productWorkGradePolicy.productWorkGradePolicyId.eq(
                                 JPAExpressions
                                         .select(productWorkGradePolicySub.productWorkGradePolicyId.min())
                                         .from(productWorkGradePolicySub)
                                         .where(productWorkGradePolicySub.workGradePolicyGroup.product.eq(product))
-                                        .where(productWorkGradePolicySub.grade.eq(WorkGrade.GRADE_1))
+                                        .where(productWorkGradePolicySub.grade.eq(grade))
                         )))
                 .leftJoin(stoneWorkGradePolicy).on(productStone.stone.stoneId.eq(stoneWorkGradePolicy.stone.stoneId)
-                        .and(stoneWorkGradePolicy.grade.eq(WorkGrade.GRADE_1)))
+                        .and(stoneWorkGradePolicy.grade.eq(grade)))
                 .where(
                         productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue()
                         .and(builder)
@@ -162,7 +170,7 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                     .map(p -> Long.valueOf(p.getProductId()))
                     .toList();
 
-            Map<Long, List<ProductStoneDto.PageResponse>> stonesMap = loadStonesByProductIds(productIds);
+            Map<Long, List<ProductStoneDto.PageResponse>> stonesMap = loadStonesByProductIds(productIds, grade);
 
             for (ProductDto.Page dto : content) {
                 Long pid = Long.valueOf(dto.getProductId());
@@ -174,7 +182,7 @@ public class ProductRepositoryImpl implements CustomProductRepository {
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
     }
 
-    private Map<Long, List<ProductStoneDto.PageResponse>> loadStonesByProductIds(List<Long> productIds) {
+    private Map<Long, List<ProductStoneDto.PageResponse>> loadStonesByProductIds(List<Long> productIds, WorkGrade grade) {
 
         List<Tuple> rows = query
                 .select(
@@ -185,14 +193,15 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                         productStone.stoneQuantity,
                         productStone.isMainStone,
                         productStone.isIncludeStone,
-                        stoneWorkGradePolicy.stoneWorkGradePolicyId, // 7 (nullable)
-                        stoneWorkGradePolicy.grade,               // 8 (nullable)
-                        stoneWorkGradePolicy.laborCost            // 9 (nullable)
+                        stone.stonePurchasePrice,
+                        stoneWorkGradePolicy.stoneWorkGradePolicyId,
+                        stoneWorkGradePolicy.grade,
+                        stoneWorkGradePolicy.laborCost
                 )
                 .from(productStone)
                 .join(productStone.product, product)
                 .join(productStone.stone, stone)
-                .leftJoin(stone.gradePolicies, stoneWorkGradePolicy).on(stoneWorkGradePolicy.grade.eq(WorkGrade.GRADE_1))
+                .leftJoin(stone.gradePolicies, stoneWorkGradePolicy).on(stoneWorkGradePolicy.grade.eq(grade))
                 .where(
                         product.productId.in(productIds)
                         .and(productStone.isIncludeStone.isTrue()))
@@ -209,15 +218,15 @@ public class ProductRepositoryImpl implements CustomProductRepository {
             Integer quantity  = Optional.ofNullable(t.get(productStone.stoneQuantity)).orElse(0);
             boolean main    = Optional.ofNullable(t.get(productStone.isMainStone)).orElse(false);
             boolean include = Optional.ofNullable(t.get(productStone.isIncludeStone)).orElse(false);
-            Long    policyId = t.get(stoneWorkGradePolicy.stoneWorkGradePolicyId);
             Integer cost  = t.get(stoneWorkGradePolicy.laborCost);
+            Integer purchasePrice = t.get(stone.stonePurchasePrice);
 
             ProductStoneDto.PageResponse resp = new ProductStoneDto.PageResponse(
                     productStoneId != null ? productStoneId.toString() : null,
                     stoneId  != null ? stoneId.toString()  : null,
                     stoneName != null ? stoneName : "",
-                    main, include, quantity, cost
-            );
+                    main, include, quantity, cost,
+                    purchasePrice);
 
             result.computeIfAbsent(productId, k -> new ArrayList<>()).add(resp);
         }
