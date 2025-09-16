@@ -8,11 +8,12 @@ import com.msa.order.local.order.entity.Orders;
 import com.msa.order.local.order.entity.StatusHistory;
 import com.msa.order.local.order.entity.order_enum.BusinessPhase;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
+import com.msa.order.local.order.entity.order_enum.ProductStatus;
 import com.msa.order.local.order.external_client.*;
+import com.msa.order.local.order.external_client.dto.AssistantStoneDto;
 import com.msa.order.local.order.external_client.dto.ProductDetailDto;
 import com.msa.order.local.order.repository.OrdersRepository;
 import com.msa.order.local.order.repository.StatusHistoryRepository;
-import com.msa.order.local.order.entity.order_enum.ProductStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND_STONE;
 @Slf4j
 @Service
 public class KafkaOrderService {
+
     private final StoreClient storeClient;
     private final StoneClient stoneClient;
     private final ProductClient productClient;
@@ -33,10 +35,11 @@ public class KafkaOrderService {
     private final ClassificationClient classificationClient;
     private final ColorClient colorClient;
     private final SetTypeClient setTypeClient;
+    private final AssistantStoneClient assistantStoneClient;
     private final OrdersRepository ordersRepository;
     private final StatusHistoryRepository statusHistoryRepository;
 
-    public KafkaOrderService(StoreClient storeClient, StoneClient stoneClient, ProductClient productClient, FactoryClient factoryClient, MaterialClient materialClient, ClassificationClient classificationClient, ColorClient colorClient, SetTypeClient setTypeClient, OrdersRepository ordersRepository, StatusHistoryRepository statusHistoryRepository) {
+    public KafkaOrderService(StoreClient storeClient, StoneClient stoneClient, ProductClient productClient, FactoryClient factoryClient, MaterialClient materialClient, ClassificationClient classificationClient, ColorClient colorClient, SetTypeClient setTypeClient, AssistantStoneClient assistantStoneClient, OrdersRepository ordersRepository, StatusHistoryRepository statusHistoryRepository) {
         this.storeClient = storeClient;
         this.stoneClient = stoneClient;
         this.productClient = productClient;
@@ -45,6 +48,7 @@ public class KafkaOrderService {
         this.classificationClient = classificationClient;
         this.colorClient = colorClient;
         this.setTypeClient = setTypeClient;
+        this.assistantStoneClient = assistantStoneClient;
         this.ordersRepository = ordersRepository;
         this.statusHistoryRepository = statusHistoryRepository;
     }
@@ -77,16 +81,35 @@ public class KafkaOrderService {
             String setTypeName = setTypeClient.getSetTypeName(tenantId, evt.getSetTypeId());
             ProductDetailDto productInfo = productClient.getProductInfo(tenantId, evt.getProductId(), storeInfo.getGrade());
 
+            log.info("setTypeId = {}, setTypeName = {}", evt.getSetTypeId(), setTypeName);
+
+            AssistantStoneDto.Response assistantStoneInfo;
             OrderProduct orderProduct = order.getOrderProduct();
-            orderProduct.updateOrder(
-                    productInfo.getProductName(),
-                    productInfo.getPurchaseCost(),
-                    productInfo.getLaborCost(),
-                    materialName,
-                    classificationName,
-                    colorName,
-                    setTypeName
-            );
+            if (evt.isAssistantStone()) {
+                assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(tenantId, evt.getAssistantStoneId());
+                orderProduct.updateOrder(
+                        productInfo.getProductName(),
+                        productInfo.getPurchaseCost(),
+                        productInfo.getLaborCost(),
+                        materialName,
+                        classificationName,
+                        colorName,
+                        setTypeName,
+                        evt.isAssistantStone(),
+                        assistantStoneInfo.getAssistantName(),
+                        evt.getAssistantStoneCreateAt()
+                );
+            } else {
+                orderProduct.updateOrder(
+                        productInfo.getProductName(),
+                        productInfo.getPurchaseCost(),
+                        productInfo.getLaborCost(),
+                        materialName,
+                        classificationName,
+                        colorName,
+                        setTypeName
+                );
+            }
 
             List<Long> stoneIds = evt.getStoneIds();
             for (Long stoneId : stoneIds) {

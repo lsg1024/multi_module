@@ -1,6 +1,6 @@
 package com.msa.order.local.order.entity;
 
-import com.msa.order.local.stock.dto.StockDto;
+import com.msa.order.global.dto.StoneDto;
 import com.msa.order.local.stock.entity.Stock;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -35,14 +35,17 @@ public class OrderStone {
     @Column(name = "STONE_LABOR_COST")
     private Integer stoneLaborCost; // 판매 금액
 
+    @Column(name = "STONE_ADD_LABOR_COST")
+    private Integer stoneAddLaborCost; // 추가 판매 금액
+
     @Column(name = "STONE_QUANTITY")
     private Integer stoneQuantity; // 스톤 개수
 
     @Column(name = "IS_MAIN_STONE")
-    private Boolean isMainStone; // 메인 여부
+    private Boolean mainStone; // 메인 여부
 
     @Column(name = "IS_INCLUDE_STONE")
-    private Boolean isIncludeStone; // 포함 여부
+    private Boolean includeStone; // 포함 여부
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ORDER_ID")
@@ -53,15 +56,16 @@ public class OrderStone {
     private Stock stock;
 
     @Builder
-    public OrderStone(Long originStoneId, String originStoneName, BigDecimal originStoneWeight, Integer stonePurchaseCost, Integer stoneLaborCost, Integer stoneQuantity, Boolean isMainStone, Boolean isIncludeStone) {
+    public OrderStone(Long originStoneId, String originStoneName, BigDecimal originStoneWeight, Integer stonePurchaseCost, Integer stoneLaborCost, Integer stoneAddLaborCost, Integer stoneQuantity, Boolean mainStone, Boolean includeStone) {
         this.originStoneId = originStoneId;
         this.originStoneName = originStoneName;
         this.originStoneWeight = originStoneWeight;
         this.stonePurchaseCost = stonePurchaseCost;
         this.stoneLaborCost = stoneLaborCost;
+        this.stoneAddLaborCost = stoneAddLaborCost;
         this.stoneQuantity = stoneQuantity;
-        this.isMainStone = isMainStone;
-        this.isIncludeStone = isIncludeStone;
+        this.mainStone = mainStone;
+        this.includeStone = includeStone;
     }
 
     public void setOrder(Orders order) {
@@ -72,15 +76,15 @@ public class OrderStone {
         this.stock = stock;
     }
 
-    public void updateFrom(StockDto.StoneInfo s) {
+    public void updateFrom(StoneDto.StoneInfo s) {
         this.originStoneId = Long.valueOf(s.getStoneId());
         this.originStoneName = s.getStoneName();
         this.originStoneWeight = new BigDecimal(s.getStoneWeight());
         this.stonePurchaseCost = s.getPurchaseCost();
         this.stoneLaborCost = s.getLaborCost();
         this.stoneQuantity = s.getQuantity();
-        this.isMainStone = s.getIsMainStone();
-        this.isIncludeStone = s.getIsIncludeStone();
+        this.mainStone = s.isMainStone();
+        this.includeStone = s.isIncludeStone();
     }
 
 }

@@ -1,8 +1,8 @@
 package com.msa.order.local.order.dto;
 
+import com.msa.order.global.dto.StoneDto;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.order.entity.order_enum.ProductStatus;
-import com.msa.order.local.order.external_client.dto.ProductDetailDto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -48,16 +48,23 @@ public class OrderDto {
         private String setType;
         private String priorityName;
 
-        private BigDecimal productWeight;
+        private BigDecimal goldWeight;
         private BigDecimal stoneWeight;
+        private Integer stoneTotalLaborCost;
         private String mainStoneNote;
         private String assistanceStoneNote;
+
+        // 보조석
+        private boolean assistantStone;
+        private String assistantStoneId;
+        private String assistantStoneCreateAt;
 
         private LocalDateTime createAt;
         private String productStatus; // 주문 상태 설정 값 기본은 RECEIPT
 
         @Valid
-        private List<ProductDetailDto.StoneInfo> stoneInfos;
+        private List<StoneDto.StoneInfo> stoneInfos;
+
     }
 
     @Getter
@@ -122,6 +129,7 @@ public class OrderDto {
         private Integer productAddLaborCost;
         private Integer productStoneMainLaborCost;
         private Integer productStoneAssistanceLaborCost;
+        private Integer productStoneAddLaborCost;
         private Integer productStoneMainQuantity;
         private Integer productStoneAssistanceQuantity;
         private String productName;
@@ -136,7 +144,7 @@ public class OrderDto {
         private String orderStatus;
 
         @Builder
-        public ResponseDetail(String createAt, String deliveryAt, String flowCode, String storeName, Integer productLaborCost, Integer productAddLaborCost, Integer productStoneMainLaborCost, Integer productStoneAssistanceLaborCost, Integer productStoneMainQuantity, Integer productStoneAssistanceQuantity, String productName, String classification, String materialName, String colorName, String productSize, String orderNote, String factoryName, String priority, String productStatus, String orderStatus) {
+        public ResponseDetail(String createAt, String deliveryAt, String flowCode, String storeName, Integer productLaborCost, Integer productAddLaborCost, Integer productStoneMainLaborCost, Integer productStoneAssistanceLaborCost, Integer productStoneAddLaborCost, Integer productStoneMainQuantity, Integer productStoneAssistanceQuantity, String productName, String classification, String materialName, String colorName, String productSize, String orderNote, String factoryName, String priority, String productStatus, String orderStatus) {
             this.createAt = createAt;
             this.deliveryAt = deliveryAt;
             this.flowCode = flowCode;
@@ -145,6 +153,7 @@ public class OrderDto {
             this.productAddLaborCost = productAddLaborCost;
             this.productStoneMainLaborCost = productStoneMainLaborCost;
             this.productStoneAssistanceLaborCost = productStoneAssistanceLaborCost;
+            this.productStoneAddLaborCost = productStoneAddLaborCost;
             this.productStoneMainQuantity = productStoneMainQuantity;
             this.productStoneAssistanceQuantity = productStoneAssistanceQuantity;
             this.productName = productName;

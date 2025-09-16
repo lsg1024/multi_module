@@ -3,8 +3,10 @@ package com.msa.order.local.order.service;
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.tenant.TenantContext;
 import com.msa.common.global.util.CustomPage;
+import com.msa.order.global.dto.StoneDto;
 import com.msa.order.global.kafka.KafkaProducer;
 import com.msa.order.global.kafka.dto.OrderAsyncRequested;
+import com.msa.order.global.util.DateConversionUtil;
 import com.msa.order.local.order.dto.*;
 import com.msa.order.local.order.entity.OrderProduct;
 import com.msa.order.local.order.entity.OrderStone;
@@ -14,7 +16,6 @@ import com.msa.order.local.order.entity.order_enum.*;
 import com.msa.order.local.order.external_client.FactoryClient;
 import com.msa.order.local.order.external_client.ProductClient;
 import com.msa.order.local.order.external_client.StoreClient;
-import com.msa.order.local.order.external_client.dto.ProductDetailDto;
 import com.msa.order.local.order.external_client.dto.ProductImageDto;
 import com.msa.order.local.order.repository.CustomOrderRepository;
 import com.msa.order.local.order.repository.OrdersRepository;
@@ -89,6 +90,7 @@ public class OrdersService {
                 .productAddLaborCost(order.getOrderProduct().getProductAddLaborCost())
                 .productStoneMainLaborCost(mainStoneLaborCost)
                 .productStoneAssistanceLaborCost(assistanceStoneLaborCost)
+                .productStoneAddLaborCost(order.getOrderProduct().getStoneTotalAddLaborCost())
                 .productStoneMainQuantity(mainStoneQuantity)
                 .productStoneAssistanceQuantity(assistanceStoneQuantity)
                 .productName(order.getOrderProduct().getProductName())
@@ -132,7 +134,8 @@ public class OrdersService {
         return new CustomPage<>(finalResponse, pageable, queryDtoPage.getTotalElements());
     }
     //주문
-    public void saveOrder(String accessToken, String orderType, OrderDto.Request orderDto) {
+    public void
+    saveOrder(String accessToken, String orderType, OrderDto.Request orderDto) {
 
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = TenantContext.getTenant();
@@ -144,6 +147,7 @@ public class OrdersService {
         Long classificationId = Long.valueOf(orderDto.getClassificationId());
         Long colorId = Long.valueOf(orderDto.getColorId());
         Long setType = Long.valueOf(orderDto.getSetType());
+        Long assistantId = Long.valueOf(orderDto.getAssistantStoneId());
 
         // priority 추가
         Priority priority = priorityRepository.findByPriorityName(orderDto.getPriorityName())
@@ -166,8 +170,6 @@ public class OrdersService {
                 .orderNote(orderDto.getOrderNote())
                 .productStatus(productStatus)
                 .orderStatus(OrderStatus.valueOf(orderType))
-                .orderMainStoneNote(orderDto.getMainStoneNote())
-                .orderAssistanceStoneNote(orderDto.getAssistanceStoneNote())
                 .orderDate(received)
                 .orderExpectDate(expectUtc)
                 .build();
@@ -175,10 +177,13 @@ public class OrdersService {
         // orderProduct 추가
         OrderProduct orderProduct = OrderProduct.builder()
                 .productId(productId)
-                .isProductWeightSale(orderDto.isProductWeightSale())
-                .productWeight(orderDto.getProductWeight())
+                .isGoldWeightSale(orderDto.isProductWeightSale())
+                .goldWeight(orderDto.getGoldWeight())
                 .stoneWeight(orderDto.getStoneWeight())
                 .productAddLaborCost(orderDto.getProductAddLaborCost())
+                .stoneTotalAddLaborCost(orderDto.getStoneTotalLaborCost())
+                .orderMainStoneNote(orderDto.getMainStoneNote())
+                .orderAssistanceStoneNote(orderDto.getAssistanceStoneNote())
                 .productSize(orderDto.getProductSize())
                 .build();
 
@@ -187,17 +192,18 @@ public class OrdersService {
 
         // orderStone 추가
         List<Long> stoneIds = new ArrayList<>();
-        List<ProductDetailDto.StoneInfo> storeInfos = orderDto.getStoneInfos();
-        for (ProductDetailDto.StoneInfo stoneInfo : storeInfos) {
+        List<StoneDto.StoneInfo> storeInfos = orderDto.getStoneInfos();
+        for (StoneDto.StoneInfo stoneInfo : storeInfos) {
             OrderStone orderStone = OrderStone.builder()
                     .originStoneId(Long.valueOf(stoneInfo.getStoneId()))
                     .originStoneName(stoneInfo.getStoneName())
                     .originStoneWeight(new BigDecimal(stoneInfo.getStoneWeight()))
                     .stonePurchaseCost(stoneInfo.getPurchaseCost())
                     .stoneLaborCost(stoneInfo.getLaborCost())
+                    .stoneAddLaborCost(stoneInfo.getAddLaborCost())
                     .stoneQuantity(stoneInfo.getQuantity())
-                    .isMainStone(stoneInfo.isMainStone())
-                    .isIncludeStone(stoneInfo.isIncludeStone())
+                    .mainStone(stoneInfo.isMainStone())
+                    .includeStone(stoneInfo.isIncludeStone())
                     .build();
 
             stoneIds.add(Long.valueOf(stoneInfo.getStoneId()));
@@ -217,21 +223,45 @@ public class OrdersService {
 
         statusHistoryRepository.save(statusHistory);
 
-        OrderAsyncRequested evt = OrderAsyncRequested.builder()
-                .eventId(UUID.randomUUID().toString())
-                .flowCode(order.getFlowCode())
-                .tenantId(tenantId)
-                .storeId(storeId)
-                .factoryId(factoryId)
-                .productId(productId)
-                .materialId(materialId)
-                .classificationId(classificationId)
-                .colorId(colorId)
-                .setTypeId(setType)
-                .nickname(nickname)
-                .stoneIds(stoneIds)
-                .orderStatus(orderType)
-                .build();
+        OrderAsyncRequested evt;
+        if (orderDto.isAssistantStone()) {
+            OffsetDateTime assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(orderDto.getAssistantStoneCreateAt());
+            evt = OrderAsyncRequested.builder()
+                    .eventId(UUID.randomUUID().toString())
+                    .flowCode(order.getFlowCode())
+                    .tenantId(tenantId)
+                    .storeId(storeId)
+                    .factoryId(factoryId)
+                    .productId(productId)
+                    .materialId(materialId)
+                    .classificationId(classificationId)
+                    .colorId(colorId)
+                    .setTypeId(setType)
+                    .assistantStone(orderDto.isAssistantStone())
+                    .assistantStoneId(assistantId)
+                    .assistantStoneCreateAt(assistantStoneCreateAt)
+                    .nickname(nickname)
+                    .stoneIds(stoneIds)
+                    .orderStatus(orderType)
+                    .build();
+        } else {
+            evt = OrderAsyncRequested.builder()
+                    .eventId(UUID.randomUUID().toString())
+                    .flowCode(order.getFlowCode())
+                    .tenantId(tenantId)
+                    .storeId(storeId)
+                    .factoryId(factoryId)
+                    .productId(productId)
+                    .materialId(materialId)
+                    .classificationId(classificationId)
+                    .colorId(colorId)
+                    .setTypeId(setType)
+                    .assistantStone(false)
+                    .nickname(nickname)
+                    .stoneIds(stoneIds)
+                    .orderStatus(orderType)
+                    .build();
+        }
 
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override

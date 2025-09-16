@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 
 @Getter
 @Table(name = "ORDER_PRODUCT")
@@ -23,12 +24,18 @@ public class OrderProduct {
     private String productName;
     @Column(name = "PRODUCT_SIZE")
     private String productSize;
-    @Column(name = "IS_PRODUCT_WEIGHT_SALE")
-    private boolean isProductWeightSale;
-    @Column(name = "PRODUCT_WEIGHT", precision = 10, scale = 3)
-    private BigDecimal productWeight;
+    @Column(name = "IS_GOLD_WEIGHT_SALE")
+    private boolean isGoldWeightSale;
+    @Column(name = "GOLD_WEIGHT", precision = 10, scale = 3)
+    private BigDecimal goldWeight;
     @Column(name = "STONE_WEIGHT", precision = 10, scale = 3)
     private BigDecimal stoneWeight;
+    @Column(name = "STONE_TOTAL_ADD_LABOR_COST")
+    private Integer stoneTotalAddLaborCost;
+    @Column(name = "ORDER_MAIN_STONE_NOTE")
+    private String orderMainStoneNote;
+    @Column(name = "ORDER_ASSISTANCE_STONE_NOTE")
+    private String orderAssistanceStoneNote;
     @Column(name = "PRODUCT_PURCHASE_COST")
     private Integer productPurchaseCost;
     @Column(name = "PRODUCT_LABOR_COST")
@@ -43,30 +50,55 @@ public class OrderProduct {
     private String colorName; // 색
     @Column(name = "SET_TYPE") // 세트
     private String setType;
+    @Column(name = "ASSISTANT_STONE")
+    private boolean assistantStone = false;
+    @Column(name = "ASSISTANT_STONE_NAME")
+    private String assistantStoneName; //보조석
+    @Column(name = "ASSISTANT_STONE_CREATE_AT")
+    private OffsetDateTime assistantStoneCreateAt;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ORDER_ID")
     private Orders order;
 
     @Builder
-    public OrderProduct(Long productId, String productName, String productSize, boolean isProductWeightSale, BigDecimal productWeight, BigDecimal stoneWeight, Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost, String materialName, String classificationName, String colorName, Orders order) {
+    public OrderProduct(Long productId, String productName, String productSize, boolean isGoldWeightSale, BigDecimal goldWeight, BigDecimal stoneWeight, Integer stoneTotalAddLaborCost, String orderMainStoneNote, String orderAssistanceStoneNote, Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost, String materialName, String classificationName, String colorName, boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, Orders order) {
         this.productId = productId;
         this.productName = productName;
         this.productSize = productSize;
-        this.isProductWeightSale = isProductWeightSale;
-        this.productWeight = productWeight;
+        this.isGoldWeightSale = isGoldWeightSale;
+        this.goldWeight = goldWeight;
         this.stoneWeight = stoneWeight;
+        this.stoneTotalAddLaborCost = stoneTotalAddLaborCost;
+        this.orderMainStoneNote = orderMainStoneNote;
+        this.orderAssistanceStoneNote = orderAssistanceStoneNote;
         this.productPurchaseCost = productPurchaseCost;
         this.productLaborCost = productLaborCost;
         this.productAddLaborCost = productAddLaborCost;
         this.materialName = materialName;
         this.classificationName = classificationName;
         this.colorName = colorName;
+        this.assistantStone = assistantStone;
+        this.assistantStoneName = assistantStoneName;
+        this.assistantStoneCreateAt = assistantStoneCreateAt;
         this.order = order;
     }
 
     public void setOrder(Orders order) {
         this.order = order;
+    }
+
+    public void updateOrder(String productName, Integer productPurchaseCost, Integer productLaborCost, String materialName, String classificationName, String colorName, String setType, boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt) {
+        this.productName = productName;
+        this.productPurchaseCost = productPurchaseCost;
+        this.productLaborCost = productLaborCost;
+        this.materialName = materialName;
+        this.classificationName = classificationName;
+        this.colorName = colorName;
+        this.setType = setType;
+        this.assistantStone = assistantStone;
+        this.assistantStoneName = assistantStoneName;
+        this.assistantStoneCreateAt = assistantStoneCreateAt;
     }
 
     public void updateOrder(String productName, Integer productPurchaseCost, Integer productLaborCost, String materialName, String classificationName, String colorName, String setType) {
