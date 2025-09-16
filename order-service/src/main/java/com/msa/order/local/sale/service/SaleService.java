@@ -2,10 +2,12 @@ package com.msa.order.local.sale.service;
 
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.util.CustomPage;
+import com.msa.order.global.dto.StoneDto;
 import com.msa.order.local.order.entity.OrderStone;
 import com.msa.order.local.order.entity.StatusHistory;
 import com.msa.order.local.order.entity.order_enum.BusinessPhase;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
+import com.msa.order.local.order.repository.CustomOrderStoneRepository;
 import com.msa.order.local.order.repository.StatusHistoryRepository;
 import com.msa.order.local.sale.entity.Sale;
 import com.msa.order.local.sale.entity.SaleItem;
@@ -30,6 +32,8 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.msa.order.global.exception.ExceptionMessage.*;
 import static com.msa.order.local.order.util.StoneUtil.countStoneCost;
@@ -44,15 +48,17 @@ public class SaleService {
     private final JwtUtil jwtUtil;
     private final StockRepository stockRepository;
     private final SaleRepository saleRepository;
+    private final CustomOrderStoneRepository customOrderStoneRepository;
     private final SaleItemRepository saleItemRepository;
     private final SalePaymentRepository salePaymentRepository;
     private final CustomSaleRepository customSaleRepository;
     private final StatusHistoryRepository statusHistoryRepository;
 
-    public SaleService(JwtUtil jwtUtil, StockRepository stockRepository, SaleRepository saleRepository, SaleItemRepository saleItemRepository, SalePaymentRepository salePaymentRepository, CustomSaleRepository customSaleRepository, StatusHistoryRepository statusHistoryRepository) {
+    public SaleService(JwtUtil jwtUtil, StockRepository stockRepository, SaleRepository saleRepository, CustomOrderStoneRepository customOrderStoneRepository, SaleItemRepository saleItemRepository, SalePaymentRepository salePaymentRepository, CustomSaleRepository customSaleRepository, StatusHistoryRepository statusHistoryRepository) {
         this.jwtUtil = jwtUtil;
         this.stockRepository = stockRepository;
         this.saleRepository = saleRepository;
+        this.customOrderStoneRepository = customOrderStoneRepository;
         this.saleItemRepository = saleItemRepository;
         this.salePaymentRepository = salePaymentRepository;
         this.customSaleRepository = customSaleRepository;
@@ -105,7 +111,7 @@ public class SaleService {
             throw new IllegalStateException("판매로 전환 불가 상태: " + stock.getOrderStatus());
         }
 
-        List<StockDto.StoneInfo> stoneInfos = stockDto.getStoneInfos();
+        List<StoneDto.StoneInfo> stoneInfos = stockDto.getStoneInfos();
         List<OrderStone> orderStones = stock.getOrderStones();
         updateStoneInfo(stoneInfos, stock, orderStones);
 
@@ -296,4 +302,37 @@ public class SaleService {
         }
     }
 
+    public List<SaleDto.SaleDetailDto> findSaleProductNameAndMaterial(Long storeId, Long productId, String materialName) {
+        List<SaleDto.SaleDetailDto> saleDetailDtos = customSaleRepository.findSalePast(storeId, productId, materialName);
+
+        if (saleDetailDtos.isEmpty()) {
+            return saleDetailDtos;
+        }
+
+        List<Long> flowCodes = saleDetailDtos.stream()
+                .map(SaleDto.SaleDetailDto::getFlowCode)
+                .distinct()
+                .toList();
+
+        List<SaleDto.StoneCountDto> stoneCounts = customOrderStoneRepository.findStoneCountsByStockIds(flowCodes);
+
+        Map<Long, Map<Boolean, Integer>> stoneCountMaps = stoneCounts.stream()
+                .collect(Collectors.groupingBy(
+                        SaleDto.StoneCountDto::getFlowCode,
+                        Collectors.toMap(SaleDto.StoneCountDto::getMainStone, SaleDto.StoneCountDto::getTotalQuantity)
+                ));
+
+        saleDetailDtos.forEach(dto -> {
+            Map<Boolean, Integer> counts = stoneCountMaps.get(dto.getFlowCode());
+            if (counts != null) {
+                dto.setMainStoneQuantity(counts.getOrDefault(true, 0));
+                dto.setAssistanceStoneQuantity(counts.getOrDefault(false, 0));
+            } else {
+                dto.setMainStoneQuantity(0);
+                dto.setAssistanceStoneQuantity(0);
+            }
+        });
+
+        return saleDetailDtos;
+    }
 }

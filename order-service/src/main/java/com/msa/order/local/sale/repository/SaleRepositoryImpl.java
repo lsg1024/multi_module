@@ -54,22 +54,60 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
         return new CustomPage<>(content, pageable, total);
     }
 
+    public List<SaleDto.SaleDetailDto> findSalePast(Long storeId, Long productId, String materialName) {
+        return query.select(Projections.constructor(SaleDto.SaleDetailDto.class,
+                        stock.flowCode,
+                        sale.createAt,
+                        stock.product.name,
+                        stock.product.materialName,
+                        stock.product.colorName,
+                        stock.stockMainStoneNote,
+                        stock.stockAssistanceStoneNote,
+                        stock.product.size,
+                        stock.stockNote,
+                        stock.product.goldWeight,
+                        stock.product.stoneWeight,
+                        Expressions.nullExpression(Integer.class), // mainStoneQuantity
+                        Expressions.nullExpression(Integer.class), // assistanceStoneQuantity
+                        stock.product.laborCost,
+                        stock.product.addLaborCost,
+                        stock.mainStoneLaborCost,
+                        stock.assistanceStoneLaborCost,
+                        stock.addStoneLaborCost,
+                        stock.product.assistantStone,
+                        stock.product.assistantStoneName,
+                        stock.product.assistantStoneCreateAt,
+                        sale.storeName
+                ))
+                .from(sale)
+                .join(sale.items, saleItem)
+                .join(saleItem.stock, stock)
+                .where(
+                        sale.storeId.eq(storeId),
+                        stock.product.id.eq(productId),
+                        stock.product.materialName.eq(materialName)
+                )
+                .orderBy(sale.createAt.desc())
+                .limit(4)
+                .fetch();
+    }
+
     private List<SaleRow> fetchItems(String date) {
 
         NumberExpression<Integer> mainQty = new CaseBuilder()
-                .when(orderStone.isIncludeStone.isTrue().and(orderStone.isMainStone.isTrue()))
+                .when(orderStone.includeStone.isTrue().and(orderStone.mainStone.isTrue()))
                 .then(orderStone.stoneQuantity).otherwise(0);
         NumberExpression<Integer> asstQty = new CaseBuilder()
-                .when(orderStone.isIncludeStone.isTrue().and(orderStone.isMainStone.isFalse()))
+                .when(orderStone.includeStone.isTrue().and(orderStone.mainStone.isFalse()))
                 .then(orderStone.stoneQuantity).otherwise(0);
         NumberExpression<Integer> mainLabor = new CaseBuilder()
-                .when(orderStone.isIncludeStone.isTrue().and(orderStone.isMainStone.isTrue()))
+                .when(orderStone.includeStone.isTrue().and(orderStone.mainStone.isTrue()))
                 .then(orderStone.stoneLaborCost.multiply(orderStone.stoneQuantity)).otherwise(0);
         NumberExpression<Integer> asstLabor = new CaseBuilder()
-                .when(orderStone.isIncludeStone.isTrue().and(orderStone.isMainStone.isFalse()))
+                .when(orderStone.includeStone.isTrue().and(orderStone.mainStone.isFalse()))
                 .then(orderStone.stoneLaborCost.multiply(orderStone.stoneQuantity)).otherwise(0);
         NumberExpression<Integer> stonePurchase = new CaseBuilder()
-                .when(orderStone.isIncludeStone.isTrue())
+                .when(orderStone.includeStone.isTrue())
                 .then(orderStone.stonePurchaseCost.multiply(orderStone.stoneQuantity)).otherwise(0);
 
         NumberExpression<Integer> sumMainQty   = mainQty.sum().coalesce(0);
@@ -97,7 +135,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                     stock.stockNote,                         // note
                     sumMainQty,                           // mainStoneQuantity
                     sumAsstQty,                           // assistanceQuantity
-                    stock.product.productWeight, // totalGoldWeight
+                    stock.product.goldWeight, // totalGoldWeight
                     stock.product.stoneWeight,
                     stock.product.laborCost,                 // mainProductCost
                     stock.product.addLaborCost,              // addProductCost
