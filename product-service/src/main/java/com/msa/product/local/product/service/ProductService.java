@@ -100,21 +100,21 @@ public class ProductService {
         if (StringUtils.hasText(productDto.getSetType())) {
             Long setTypeId = Long.valueOf(productDto.getSetType().trim());
             SetType setType = setTypeRepository.findById(setTypeId)
-                    .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+                    .orElseThrow(() -> new IllegalArgumentException("setType: " + NOT_FOUND));
             product.setSetType(setType);
         }
 
         if (StringUtils.hasText(productDto.getClassification())) {
             Long classificationId = Long.valueOf(productDto.getClassification().trim());
             Classification c = classificationRepository.findById(classificationId)
-                    .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+                    .orElseThrow(() -> new IllegalArgumentException("classification: " + NOT_FOUND));
             product.setClassification(c);
         }
 
         if (StringUtils.hasText(productDto.getMaterial())) {
             Long materialId = Long.valueOf(productDto.getMaterial().trim());
             Material m = materialRepository.findById(materialId)
-                    .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+                    .orElseThrow(() -> new IllegalArgumentException("material: " + NOT_FOUND));
             product.setMaterial(m);
         }
 
@@ -123,12 +123,12 @@ public class ProductService {
             Long stoneId = Long.valueOf(productStoneDto.getStoneId());
 
             Stone stone = stoneRepository.findById(stoneId)
-                    .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+                    .orElseThrow(() -> new IllegalArgumentException("stone: " + NOT_FOUND));
 
             ProductStone productStone = ProductStone.builder()
                     .stone(stone)
-                    .isMainStone(productStoneDto.isMainStone())
-                    .isIncludeStone(productStoneDto.isIncludeStone())
+                    .mainStone(productStoneDto.isMainStone())
+                    .includeStone(productStoneDto.isIncludeStone())
                     .stoneQuantity(productStoneDto.getStoneQuantity())
                     .productStoneNote(productStoneDto.getProductStoneNote())
                     .build();
@@ -144,7 +144,7 @@ public class ProductService {
         for (ProductWorkGradePolicyGroupDto groupDto : groupDtos) {
             Long colorId = Long.valueOf(groupDto.getColorId());
             Color color = colorRepository.findById(colorId)
-                    .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+                    .orElseThrow(() -> new IllegalArgumentException("color: " + NOT_FOUND));
 
             ProductWorkGradePolicyGroup groups = ProductWorkGradePolicyGroup.builder()
                     .productPurchasePrice(groupDto.getProductPurchasePrice())
@@ -216,6 +216,8 @@ public class ProductService {
             product.setClassification(classification);
         }
 
+        log.info("ProductDto Update = {}", updateDto.toString());
+
         extractedProductColorWorkGradePolicy(updateDto, product);
         extractedProductStone(updateDto, product);
     }
@@ -256,7 +258,7 @@ public class ProductService {
         // 1) 기존 행(요청 중 "숫자 양수"인 ID만) 조회
         List<Long> existingIds = reqs.stream()
                 .map(ProductStoneDto.Request::getProductStoneId)
-                .filter(this::isNumericPositive)       // "" / null / "new_..." / "0" / "-1" → false
+                .filter(this::isNumericPositive) // "" / null / "new_..." / "0" / "-1" → false
                 .map(Long::parseLong)
                 .toList();
 
@@ -296,8 +298,8 @@ public class ProductService {
 
                 ProductStone productStone = ProductStone.builder()
                         .stone(stone)
-                        .isMainStone(r.isMainStone())
-                        .isIncludeStone(r.isIncludeStone())
+                        .mainStone(r.isMainStone())
+                        .includeStone(r.isIncludeStone())
                         .stoneQuantity(r.getStoneQuantity())
                         .productStoneNote(r.getProductStoneNote())
                         .build();
@@ -341,6 +343,7 @@ public class ProductService {
                 ));
 
         for (ProductWorkGradePolicyGroupDto.Request dto : productDto.getProductWorkGradePolicyGroupDto()) {
+
             Long groupId = Long.valueOf(dto.getProductGroupId());
             ProductWorkGradePolicyGroup group = groupMap.get(groupId);
 

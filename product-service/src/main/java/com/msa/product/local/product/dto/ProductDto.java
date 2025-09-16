@@ -93,6 +93,8 @@ public class ProductDto {
     public static class Page {
         private String productId;
         private String productName;
+        private String factoryId;
+        private String factoryName;
         private String productWeight;
         private String productMaterial;
         private String productNote;
@@ -103,7 +105,7 @@ public class ProductDto {
 
         @Builder
         @QueryProjection
-        public Page(String productId, String productName, String productWeight, String productMaterial, String productNote, String productPurchaseCost, String productLaborCost, String productImagePath, List<ProductStoneDto.Response> productStones) {
+        public Page(String productId, String productName, String productWeight, String productMaterial, String productNote, String productPurchaseCost, String productLaborCost, String productImagePath, List<ProductStoneDto.Response> productStones, String factoryId, String factoryName) {
             this.productId = productId;
             this.productName = productName;
             this.productWeight = productWeight;
@@ -112,6 +114,8 @@ public class ProductDto {
             this.productPurchaseCost = productPurchaseCost;
             this.productLaborCost = productLaborCost;
             this.productImagePath = productImagePath;
+            this.factoryId = factoryId;
+            this.factoryName = factoryName;
             this.productStones = new ArrayList<>();
         }
     }

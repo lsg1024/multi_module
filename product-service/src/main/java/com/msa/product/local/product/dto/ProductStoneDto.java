@@ -1,6 +1,5 @@
 package com.msa.product.local.product.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.msa.product.local.stone.stone.dto.StoneWorkGradePolicyDto;
 import com.querydsl.core.annotations.QueryProjection;
 import lombok.Builder;
@@ -15,18 +14,16 @@ import java.util.List;
 @NoArgsConstructor
 public class ProductStoneDto {
     private String stoneId;
-    @JsonProperty("isMainStone")
-    private boolean isMainStone;
-    @JsonProperty("isIncludeStone")
-    private boolean isIncludeStone;
+    private boolean mainStone;
+    private boolean includeStone;
     private Integer stoneQuantity;
     private String productStoneNote;
 
     @Builder
-    public ProductStoneDto(String stoneId, boolean isMainStone, boolean isIncludeStone, Integer stoneQuantity, String productStoneNote) {
+    public ProductStoneDto(String stoneId, boolean mainStone, boolean includeStone, Integer stoneQuantity, String productStoneNote) {
         this.stoneId = stoneId;
-        this.isMainStone = isMainStone;
-        this.isIncludeStone = isIncludeStone;
+        this.mainStone = mainStone;
+        this.includeStone = includeStone;
         this.stoneQuantity = stoneQuantity;
         this.productStoneNote = productStoneNote;
     }
@@ -36,12 +33,11 @@ public class ProductStoneDto {
     public static class Request {
         private String productStoneId;
         private String stoneId;
-        @JsonProperty("isMainStone")
-        private boolean isMainStone;
-        @JsonProperty("isIncludeStone")
-        private boolean isIncludeStone;
+        private boolean mainStone;
+        private boolean includeStone;
         private Integer stoneQuantity;
         private String productStoneNote;
+
     }
 
     @Getter
@@ -50,20 +46,18 @@ public class ProductStoneDto {
         private String productStoneId;
         private String stoneId;
         private String stoneName;
-        @JsonProperty("isMainStone")
-        private boolean isMainStone;
-        @JsonProperty("isIncludeStone")
-        private boolean isIncludeStone;
+        private boolean mainStone;
+        private boolean includeStone;
         private Integer stoneQuantity;
         private Integer laborCost;
         private Integer purchasePrice;
         @Builder
-        public PageResponse(String productStoneId, String stoneId, String stoneName, boolean isMainStone, boolean isIncludeStone, Integer stoneQuantity, Integer laborCost, Integer purchasePrice) {
+        public PageResponse(String productStoneId, String stoneId, String stoneName, boolean mainStone, boolean includeStone, Integer stoneQuantity, Integer laborCost, Integer purchasePrice) {
             this.productStoneId = productStoneId;
             this.stoneId = stoneId;
             this.stoneName = stoneName;
-            this.isMainStone = isMainStone;
-            this.isIncludeStone = isIncludeStone;
+            this.mainStone = mainStone;
+            this.includeStone = includeStone;
             this.stoneQuantity = stoneQuantity;
             this.laborCost = laborCost;
             this.purchasePrice = purchasePrice;
@@ -79,47 +73,45 @@ public class ProductStoneDto {
         private String stoneName;
         private BigDecimal stoneWeight;
         private Integer stonePurchase;
-        @JsonProperty("isMainStone")
-        private boolean isMainStone;
-        @JsonProperty("isIncludeStone")
-        private boolean isIncludeStone;
+        private boolean mainStone;
+        private boolean includeStone;
         private Integer stoneQuantity;
         private String productStoneNote;
         private List<StoneWorkGradePolicyDto.Response> stoneWorkGradePolicyDtos;
 
         @Builder
-        public Response(String productStoneId, String stoneId, String stoneName, Integer stoneQuantity, boolean isMainStone, boolean isIncludeStone, List<StoneWorkGradePolicyDto.Response> stoneWorkGradePolicyDtos) {
+        public Response(String productStoneId, String stoneId, String stoneName, Integer stoneQuantity, boolean mainStone, boolean includeStone, List<StoneWorkGradePolicyDto.Response> stoneWorkGradePolicyDtos) {
             this.productStoneId = productStoneId;
             this.stoneId = stoneId;
             this.stoneName = stoneName;
             this.stoneQuantity = stoneQuantity;
-            this.isMainStone = isMainStone;
-            this.isIncludeStone = isIncludeStone;
+            this.mainStone = mainStone;
+            this.includeStone = includeStone;
             this.stoneWorkGradePolicyDtos = stoneWorkGradePolicyDtos;
         }
 
         @Builder
         @QueryProjection
-        public Response(String productStoneId, String stoneId, String stoneName, BigDecimal stoneWeight, Integer stonePurchase, boolean isMainStone, boolean isIncludeStone, Integer stoneQuantity, List<StoneWorkGradePolicyDto.Response> stoneWorkGradePolicyDtos, String productStoneNote) {
-            essential(productStoneId, stoneId, stoneName, stoneWeight, stonePurchase, isMainStone, isIncludeStone, stoneQuantity, productStoneNote);
+        public Response(String productStoneId, String stoneId, String stoneName, BigDecimal stoneWeight, Integer stonePurchase, boolean mainStone, boolean includeStone, Integer stoneQuantity, List<StoneWorkGradePolicyDto.Response> stoneWorkGradePolicyDtos, String productStoneNote) {
+            essential(productStoneId, stoneId, stoneName, stoneWeight, stonePurchase, mainStone, includeStone, stoneQuantity, productStoneNote);
             this.stoneWorkGradePolicyDtos = stoneWorkGradePolicyDtos;
         }
 
 
         @Builder
         @QueryProjection
-        public Response(String productStoneId, String stoneId, String stoneName, BigDecimal stoneWeight, Integer stonePurchase, boolean isMainStone, boolean isIncludeStone, Integer stoneQuantity, String productStoneNote) {
-            essential(productStoneId, stoneId, stoneName, stoneWeight, stonePurchase, isMainStone, isIncludeStone, stoneQuantity, productStoneNote);
+        public Response(String productStoneId, String stoneId, String stoneName, BigDecimal stoneWeight, Integer stonePurchase, boolean mainStone, boolean includeStone, Integer stoneQuantity, String productStoneNote) {
+            essential(productStoneId, stoneId, stoneName, stoneWeight, stonePurchase, mainStone, includeStone, stoneQuantity, productStoneNote);
         }
 
-        private void essential(String productStoneId, String stoneId, String stoneName, BigDecimal stoneWeight, Integer stonePurchase, boolean isMainStone, boolean isIncludeStone, Integer stoneQuantity, String productStoneNote) {
+        private void essential(String productStoneId, String stoneId, String stoneName, BigDecimal stoneWeight, Integer stonePurchase, boolean mainStone, boolean includeStone, Integer stoneQuantity, String productStoneNote) {
             this.productStoneId = productStoneId;
             this.stoneId = stoneId;
             this.stoneName = stoneName;
             this.stoneWeight = stoneWeight;
             this.stonePurchase = stonePurchase;
-            this.isMainStone = isMainStone;
-            this.isIncludeStone = isIncludeStone;
+            this.mainStone = mainStone;
+            this.includeStone = includeStone;
             this.stoneQuantity = stoneQuantity;
             this.productStoneNote = productStoneNote;
         }

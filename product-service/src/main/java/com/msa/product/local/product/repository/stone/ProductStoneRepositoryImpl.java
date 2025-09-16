@@ -32,8 +32,8 @@ public class ProductStoneRepositoryImpl implements CustomProductStoneRepository 
                         stone.stoneName,
                         stone.stoneWeight,
                         stone.stonePurchasePrice,
-                        productStone.isMainStone,
-                        productStone.isIncludeStone,
+                        productStone.mainStone,
+                        productStone.includeStone,
                         productStone.stoneQuantity,
                         productStone.productStoneNote
                 ))

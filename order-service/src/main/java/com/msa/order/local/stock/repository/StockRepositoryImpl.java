@@ -61,21 +61,21 @@ public class StockRepositoryImpl implements CustomStockRepository {
                         stock.stockMainStoneNote,
                         stock.stockAssistanceStoneNote,
                         Expressions.cases()
-                                .when(QOrderStone.orderStone.isIncludeStone.isTrue().and(QOrderStone.orderStone.isMainStone.isTrue()))
+                                .when(QOrderStone.orderStone.includeStone.isTrue().and(QOrderStone.orderStone.mainStone.isTrue()))
                                 .then(QOrderStone.orderStone.stoneQuantity)
                                 .otherwise(0)
                                 .sum()
                                 .coalesce(0)
                                 .intValue(),
                         Expressions.cases()
-                                .when(QOrderStone.orderStone.isIncludeStone.isTrue().and(QOrderStone.orderStone.isMainStone.isFalse()))
+                                .when(QOrderStone.orderStone.includeStone.isTrue().and(QOrderStone.orderStone.mainStone.isFalse()))
                                 .then(QOrderStone.orderStone.stoneQuantity)
                                 .otherwise(0)
                                 .sum()
                                 .coalesce(0)
                                 .intValue(),
                         stock.product.stoneWeight.stringValue(),
-                        stock.product.productWeight.stringValue(),
+                        stock.product.goldWeight.stringValue(),
                         stock.product.productPurchaseCost,
                         stock.stonePurchaseCost
                 ))

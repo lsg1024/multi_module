@@ -39,5 +39,6 @@ public class ProductWorkGradePolicyDto {
     public static class Request {
         private String workGradePolicyId;
         private Integer laborCost;
+
     }
 }

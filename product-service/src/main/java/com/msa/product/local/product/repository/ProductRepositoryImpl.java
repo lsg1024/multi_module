@@ -121,7 +121,9 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                                 .from(productImage)
                                 .where(productImage.product.productId.eq(product.productId))
                                 .limit(1),
-                        Expressions.constant(Collections.emptyList())
+                        Expressions.constant(Collections.emptyList()),
+                        product.factoryId.stringValue(),
+                        product.factoryName
                 ))
                 .from(product)
                 .leftJoin(productStone).on(product.productId.eq(productStone.product.productId))
@@ -191,8 +193,8 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                         stone.stoneId,                            // 2
                         stone.stoneName,                          // 3
                         productStone.stoneQuantity,
-                        productStone.isMainStone,
-                        productStone.isIncludeStone,
+                        productStone.mainStone,
+                        productStone.includeStone,
                         stone.stonePurchasePrice,
                         stoneWorkGradePolicy.stoneWorkGradePolicyId,
                         stoneWorkGradePolicy.grade,
@@ -204,7 +206,7 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 .leftJoin(stone.gradePolicies, stoneWorkGradePolicy).on(stoneWorkGradePolicy.grade.eq(grade))
                 .where(
                         product.productId.in(productIds)
-                        .and(productStone.isIncludeStone.isTrue()))
+                        .and(productStone.includeStone.isTrue()))
                 .orderBy(product.productId.asc(), productStone.productStoneId.asc())
                 .fetch();
 
@@ -216,8 +218,8 @@ public class ProductRepositoryImpl implements CustomProductRepository {
             Long stoneId   = t.get(stone.stoneId);
             String stoneName = t.get(stone.stoneName);
             Integer quantity  = Optional.ofNullable(t.get(productStone.stoneQuantity)).orElse(0);
-            boolean main    = Optional.ofNullable(t.get(productStone.isMainStone)).orElse(false);
-            boolean include = Optional.ofNullable(t.get(productStone.isIncludeStone)).orElse(false);
+            boolean main    = Optional.ofNullable(t.get(productStone.mainStone)).orElse(false);
+            boolean include = Optional.ofNullable(t.get(productStone.includeStone)).orElse(false);
             Integer cost  = t.get(stoneWorkGradePolicy.laborCost);
             Integer purchasePrice = t.get(stone.stonePurchasePrice);
 
@@ -265,8 +267,8 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                         stone.stonePurchasePrice,
                         stoneWorkGradePolicy.laborCost,
                         productStone.stoneQuantity,
-                        productStone.isMainStone,
-                        productStone.isIncludeStone,
+                        productStone.mainStone,
+                        productStone.includeStone,
                         productStone.productStoneNote
                 ))
                 .from(productStone)

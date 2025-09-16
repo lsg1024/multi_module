@@ -1,5 +1,6 @@
 package com.msa.order.local.stock.service;
 
+import com.msa.order.global.dto.StoneDto;
 import com.msa.order.global.kafka.dto.KafkaStockRequest;
 import com.msa.order.local.order.dto.FactoryDto;
 import com.msa.order.local.order.dto.StoreDto;
@@ -9,11 +10,10 @@ import com.msa.order.local.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.order.external_client.*;
 import com.msa.order.local.order.external_client.dto.ProductDetailDto;
 import com.msa.order.local.order.repository.StatusHistoryRepository;
-import com.msa.order.local.stock.dto.StockDto;
+import com.msa.order.local.order.util.StoneUtil;
 import com.msa.order.local.stock.entity.ProductSnapshot;
 import com.msa.order.local.stock.entity.Stock;
 import com.msa.order.local.stock.repository.StockRepository;
-import com.msa.order.local.order.util.StoneUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,10 +36,11 @@ public class KafkaStockService {
     private final ColorClient colorClient;
     private final SetTypeClient setTypeClient;
     private final ClassificationClient classificationClient;
+    private final AssistantStoneClient assistantStoneClient;
     private final StockRepository stockRepository;
     private final StatusHistoryRepository statusHistoryRepository;
 
-    public KafkaStockService(StoneClient stoneClient, StoreClient storeClient, FactoryClient factoryClient, ProductClient productClient, MaterialClient materialClient, ColorClient colorClient, SetTypeClient setTypeClient, ClassificationClient classificationClient, StockRepository stockRepository, StatusHistoryRepository statusHistoryRepository) {
+    public KafkaStockService(StoneClient stoneClient, StoreClient storeClient, FactoryClient factoryClient, ProductClient productClient, MaterialClient materialClient, ColorClient colorClient, SetTypeClient setTypeClient, ClassificationClient classificationClient, AssistantStoneClient assistantStoneClient, StockRepository stockRepository, StatusHistoryRepository statusHistoryRepository) {
         this.stoneClient = stoneClient;
         this.storeClient = storeClient;
         this.factoryClient = factoryClient;
@@ -48,6 +49,7 @@ public class KafkaStockService {
         this.colorClient = colorClient;
         this.setTypeClient = setTypeClient;
         this.classificationClient = classificationClient;
+        this.assistantStoneClient = assistantStoneClient;
         this.stockRepository = stockRepository;
         this.statusHistoryRepository = statusHistoryRepository;
     }
@@ -75,6 +77,7 @@ public class KafkaStockService {
             String classificationName;
             String colorName;
             String setTypeName;
+            String assistantStoneName;
 
             if (stockDto.getStoreId() != null) {
                 storeInfo = storeClient.getStoreInfo(tenantId, stockDto.getStoreId());
@@ -112,6 +115,12 @@ public class KafkaStockService {
                 setTypeName = setTypeClient.getSetTypeName(tenantId, 1L);
             }
 
+            if (stockDto.getAssistantStoneId() != null) {
+                assistantStoneName =assistantStoneClient.getAssistantStoneInfo(tenantId, stockDto.getAssistantStoneId()).getAssistantName();
+            } else {
+                assistantStoneName = "";
+            }
+
             ProductDetailDto productInfo = productClient.getProductInfo(tenantId, stockDto.getProductId(), storeInfo.getGrade());
 
             ProductSnapshot product = stock.getProduct();
@@ -121,7 +130,10 @@ public class KafkaStockService {
                     materialName,
                     classificationName,
                     colorName,
-                    setTypeName
+                    setTypeName,
+                    stockDto.isAssistantStone(),
+                    assistantStoneName,
+                    stockDto.getAssistantStoneCreateAt()
             );
 
             List<Long> stoneIds = stockDto.getStoneIds();
@@ -137,12 +149,12 @@ public class KafkaStockService {
             int totalStonePurchaseCost = 0;
             int mainStoneCost = 0;
             int assistanceStoneCost = 0;
-            for (StockDto.StoneInfo stoneInfo : stockDto.getStoneInfos()) {
+            for (StoneDto.StoneInfo stoneInfo : stockDto.getStoneInfos()) {
                 Integer laborCost = stoneInfo.getLaborCost();
                 Integer quantity = stoneInfo.getQuantity();
                 Integer purchaseCost = stoneInfo.getPurchaseCost();
-                if (Boolean.TRUE.equals(stoneInfo.getIsIncludeStone())) {
-                    if (Boolean.TRUE.equals(stoneInfo.getIsMainStone())) {
+                if (Boolean.TRUE.equals(stoneInfo.isIncludeStone())) {
+                    if (Boolean.TRUE.equals(stoneInfo.isMainStone())) {
                         mainStoneCost += laborCost * quantity;
                     } else {
                         assistanceStoneCost += laborCost * quantity;

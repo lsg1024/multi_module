@@ -3,15 +3,19 @@ package com.msa.order.local.stock.service;
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.tenant.TenantContext;
 import com.msa.common.global.util.CustomPage;
+import com.msa.order.global.dto.StoneDto;
 import com.msa.order.global.kafka.KafkaProducer;
 import com.msa.order.global.kafka.dto.KafkaStockRequest;
+import com.msa.order.global.util.DateConversionUtil;
 import com.msa.order.local.order.dto.StoreDto;
 import com.msa.order.local.order.entity.OrderProduct;
 import com.msa.order.local.order.entity.OrderStone;
 import com.msa.order.local.order.entity.Orders;
 import com.msa.order.local.order.entity.StatusHistory;
 import com.msa.order.local.order.entity.order_enum.*;
+import com.msa.order.local.order.external_client.AssistantStoneClient;
 import com.msa.order.local.order.external_client.StoreClient;
+import com.msa.order.local.order.external_client.dto.AssistantStoneDto;
 import com.msa.order.local.order.repository.OrdersRepository;
 import com.msa.order.local.order.repository.StatusHistoryRepository;
 import com.msa.order.local.stock.dto.StockDto;
@@ -27,6 +31,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -38,19 +43,20 @@ import static com.msa.order.local.order.util.StoneUtil.*;
 @Service
 @Transactional
 public class StockService {
-
     private final JwtUtil jwtUtil;
     private final KafkaProducer kafkaProducer;
     private final StoreClient storeClient;
+    private final AssistantStoneClient assistantStoneClient;
     private final StockRepository stockRepository;
     private final OrdersRepository ordersRepository;
     private final CustomStockRepository customStockRepository;
     private final StatusHistoryRepository statusHistoryRepository;
 
-    public StockService(JwtUtil jwtUtil, KafkaProducer kafkaProducer, StoreClient storeClient, StockRepository stockRepository, OrdersRepository ordersRepository, CustomStockRepository customStockRepository, StatusHistoryRepository statusHistoryRepository) {
+    public StockService(JwtUtil jwtUtil, KafkaProducer kafkaProducer, StoreClient storeClient, AssistantStoneClient assistantStoneClient, StockRepository stockRepository, OrdersRepository ordersRepository, CustomStockRepository customStockRepository, StatusHistoryRepository statusHistoryRepository) {
         this.jwtUtil = jwtUtil;
         this.kafkaProducer = kafkaProducer;
         this.storeClient = storeClient;
+        this.assistantStoneClient = assistantStoneClient;
         this.stockRepository = stockRepository;
         this.ordersRepository = ordersRepository;
         this.customStockRepository = customStockRepository;
@@ -89,7 +95,7 @@ public class StockService {
                 .assistanceStoneLaborCost(stock.getAssistanceStoneLaborCost())
                 .mainStoneQuantity(mainStoneQuantity)
                 .assistanceStoneQuantity(assistanceStoneQuantity)
-                .totalWeight(stock.getProduct().getProductWeight().toPlainString())
+                .goldWeight(stock.getProduct().getGoldWeight().toPlainString())
                 .stoneWeight(stock.getProduct().getStoneWeight().toPlainString())
                 .productPurchaseCost(stock.getProduct().getProductPurchaseCost())
                 .stonePurchaseCost(stock.getStonePurchaseCost()).build();
@@ -103,6 +109,7 @@ public class StockService {
 
     //주문 -> 재고 변경
     public void updateOrderStatus(String accessToken, Long flowCode, String orderType, StockDto.stockRequest stockDto) {
+        String tenantId = jwtUtil.getTenantId(accessToken);
         String nickname = jwtUtil.getNickname(accessToken);
         Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
@@ -115,20 +122,29 @@ public class StockService {
             throw new IllegalArgumentException(READY_TO_EXPECT);
         }
 
+        AssistantStoneDto.Response assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(tenantId, Long.valueOf(stockDto.getAssistantStoneId()));
+
+        OffsetDateTime assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(stockDto.getAssistantStoneCreateAt());
+
         OrderProduct orderProduct = order.getOrderProduct();
+        log.info("orderProduct info = {}", orderProduct.getSetType());
         ProductSnapshot product = ProductSnapshot.builder()
                 .id(orderProduct.getProductId())
                 .name(orderProduct.getProductName())
                 .size(stockDto.getProductSize())
                 .classificationName(orderProduct.getClassificationName())
-                .isProductWeightSale(stockDto.getIsProductWeightSale())
+                .isGoldWeightSale(stockDto.getIsProductWeightSale())
                 .laborCost(orderProduct.getProductLaborCost())
                 .addLaborCost(stockDto.getAddProductLaborCost())
                 .productPurchaseCost(stockDto.getProductPurchaseCost())
                 .materialName(orderProduct.getMaterialName())
+                .setTypeName(orderProduct.getSetType())
                 .classificationName(orderProduct.getClassificationName())
                 .colorName(orderProduct.getColorName())
-                .productWeight(stockDto.getProductWeight())
+                .assistantStone(stockDto.isAssistantStone())
+                .assistantStoneName(assistantStoneInfo.getAssistantName())
+                .assistantStoneCreateAt(assistantStoneCreateAt)
+                .goldWeight(stockDto.getGoldWeight())
                 .stoneWeight(stockDto.getStoneWeight())
                 .build();
 
@@ -192,7 +208,7 @@ public class StockService {
                 .size(stockDto.getProductSize())
                 .productPurchaseCost(stockDto.getProductPurchaseCost())
                 .addLaborCost(stockDto.getAddProductLaborCost())
-                .productWeight(stockDto.getProductWeight())
+                .goldWeight(stockDto.getGoldWeight())
                 .stoneWeight(stockDto.getStoneWeight())
                 .build();
 
@@ -207,8 +223,8 @@ public class StockService {
                 .build();
 
         List<Long> stoneIds = new ArrayList<>();
-        List<StockDto.StoneInfo> stoneInfos = stockDto.getStoneInfos();
-        for (StockDto.StoneInfo stoneInfo : stoneInfos) {
+        List<StoneDto.StoneInfo> stoneInfos = stockDto.getStoneInfos();
+        for (StoneDto.StoneInfo stoneInfo : stoneInfos) {
             OrderStone orderStone = OrderStone.builder()
                     .originStoneId(Long.valueOf(stoneInfo.getStoneId()))
                     .originStoneName(stoneInfo.getStoneName())
@@ -216,8 +232,8 @@ public class StockService {
                     .stonePurchaseCost(stoneInfo.getPurchaseCost())
                     .stoneLaborCost(stoneInfo.getLaborCost())
                     .stoneQuantity(stoneInfo.getQuantity())
-                    .isMainStone(stoneInfo.getIsMainStone())
-                    .isIncludeStone(stoneInfo.getIsIncludeStone())
+                    .mainStone(stoneInfo.isMainStone())
+                    .includeStone(stoneInfo.isIncludeStone())
                     .build();
 
             stoneIds.add(Long.valueOf(stoneInfo.getStoneId()));
@@ -236,6 +252,8 @@ public class StockService {
 
         statusHistoryRepository.save(statusHistory);
 
+        OffsetDateTime assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(stockDto.getAssistantStoneCreateAt());
+
         KafkaStockRequest stockRequest = KafkaStockRequest.builder()
                 .eventId(UUID.randomUUID().toString())
                 .flowCode(stock.getStockCode())
@@ -250,6 +268,9 @@ public class StockService {
                 .nickname(nickname)
                 .addProductLaborCost(stockDto.getAddProductLaborCost())
                 .addStoneLaborCost(stockDto.getAddStoneLaborCost())
+                .assistantStone(stockDto.isAssistantStone())
+                .assistantStoneId(Long.valueOf(stockDto.getAssistantStoneId()))
+                .assistantStoneCreateAt(assistantStoneCreateAt)
                 .stoneIds(stoneIds)
                 .stoneInfos(stockDto.getStoneInfos())
                 .build();
