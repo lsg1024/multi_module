@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Getter
@@ -20,13 +21,16 @@ public class OrderAsyncRequested {
     private Long classificationId;
     private Long colorId;
     private Long setTypeId;
+    private boolean assistantStone;
+    private Long assistantStoneId;
+    private OffsetDateTime assistantStoneCreateAt;
     private List<Long> stoneIds;
     private String orderStatus;
 
     private String nickname;
 
     @Builder
-    public OrderAsyncRequested(String eventId, Long flowCode, String tenantId, Long storeId, Long factoryId, Long productId, Long materialId, Long classificationId, Long colorId, Long setTypeId, List<Long> stoneIds, String orderStatus, String nickname) {
+    public OrderAsyncRequested(String eventId, Long flowCode, String tenantId, Long storeId, Long factoryId, Long productId, Long materialId, Long classificationId, Long colorId, Long setTypeId, boolean assistantStone, Long assistantStoneId, OffsetDateTime assistantStoneCreateAt, List<Long> stoneIds, String orderStatus, String nickname) {
         this.eventId = eventId;
         this.flowCode = flowCode;
         this.tenantId = tenantId;
@@ -37,6 +41,9 @@ public class OrderAsyncRequested {
         this.classificationId = classificationId;
         this.colorId = colorId;
         this.setTypeId = setTypeId;
+        this.assistantStone = assistantStone;
+        this.assistantStoneId = assistantStoneId;
+        this.assistantStoneCreateAt = assistantStoneCreateAt;
         this.stoneIds = stoneIds;
         this.orderStatus = orderStatus;
         this.nickname = nickname;

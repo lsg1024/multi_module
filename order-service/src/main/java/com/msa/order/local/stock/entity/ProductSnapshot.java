@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 
 @Getter
 @Embeddable
@@ -19,8 +20,8 @@ public class ProductSnapshot {
     private String name;
     @Column(name = "PRODUCT_SIZE")
     private String size;
-    @Column(name = "IS_PRODUCT_WEIGHT_SALE")
-    private boolean isProductWeightSale;
+    @Column(name = "IS_GOLD_WEIGHT_SALE")
+    private boolean isGoldWeightSale;
     @Column(name = "PRODUCT_LABOR_COST") // 상품 매출 비용
     private Integer laborCost;
     @Column(name = "PRODUCT_ADD_LABOR_COST") // 상품 추가 매출 비용
@@ -35,41 +36,54 @@ public class ProductSnapshot {
     private String classificationName;
     @Column(name = "SET_TYPE_NAME")
     private String setTypeName;
-    @Column(name = "PRODUCT_WEIGHT", precision = 10, scale = 3) // 상품 총 무게
-    private BigDecimal productWeight;
+    @Column(name = "ASSISTANT_STONE")
+    private boolean assistantStone = false; //보조석
+    @Column(name = "ASSISTANT_STONE_NAME")
+    private String assistantStoneName; //보조석
+    @Column(name = "ASSISTANT_STONE_CREATE_AT")
+    private OffsetDateTime assistantStoneCreateAt;
+    @Column(name = "GOLD_WEIGHT", precision = 10, scale = 3) // 상품 총 무게
+    private BigDecimal goldWeight;
     @Column(name = "STONE_WEIGHT", precision = 10, scale = 3) // 상품 스톤 총 무게
     private BigDecimal stoneWeight;
 
     @Builder
-    private ProductSnapshot(Long id, String name, String size, boolean isProductWeightSale, Integer laborCost,
+    private ProductSnapshot(Long id, String name, String size, boolean isGoldWeightSale, Integer laborCost,
                             Integer addLaborCost, Integer productPurchaseCost, String materialName, String colorName,
-                            String classificationName, BigDecimal productWeight, BigDecimal stoneWeight) {
+                            String classificationName, String setTypeName, boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, BigDecimal goldWeight, BigDecimal stoneWeight) {
         this.id = id;
         this.name = name;
         this.size = size;
-        this.isProductWeightSale = isProductWeightSale;
+        this.isGoldWeightSale = isGoldWeightSale;
         this.laborCost = laborCost;
         this.addLaborCost = addLaborCost;
         this.productPurchaseCost = productPurchaseCost;
         this.materialName = materialName;
         this.colorName = colorName;
         this.classificationName = classificationName;
-        this.productWeight = productWeight;
+        this.setTypeName = setTypeName;
+        this.assistantStone = assistantStone;
+        this.assistantStoneName = assistantStoneName;
+        this.assistantStoneCreateAt = assistantStoneCreateAt;
+        this.goldWeight = goldWeight;
         this.stoneWeight = stoneWeight;
     }
 
-    public void updateProduct(String productName, Integer productLaborCost, String materialName, String classificationName, String colorName, String setTypeName) {
+    public void updateProduct(String productName, Integer productLaborCost, String materialName, String classificationName, String colorName, String setTypeName, boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt) {
         this.name = productName;
         this.laborCost = productLaborCost;
         this.materialName = materialName;
         this.classificationName = classificationName;
         this.colorName = colorName;
         this.setTypeName = setTypeName;
+        this.assistantStone = assistantStone;
+        this.assistantStoneName = assistantStoneName;
+        this.assistantStoneCreateAt = assistantStoneCreateAt;
     }
 
     public void updateProductWeightAndSize(String size, BigDecimal productWeight, BigDecimal stoneWeight) {
         this.size = size;
-        this.productWeight = productWeight;
+        this.goldWeight = productWeight;
         this.stoneWeight = stoneWeight;
     }
 }

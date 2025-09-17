@@ -27,11 +27,11 @@ public class ProductStone {
     @JoinColumn(name = "STONE_ID", nullable = false)
     private Stone stone; // 판매 단가 호출 필요
 
-    @Column(name = "IS_MAIN_STONE")
-    private Boolean isMainStone; // 메인 여부
+    @Column(name = "MAIN_STONE")
+    private Boolean mainStone; // 메인 여부
 
-    @Column(name = "IS_INCLUDE_STONE")
-    private Boolean isIncludeStone; // 포함 여부
+    @Column(name = "INCLUDE_STONE")
+    private Boolean includeStone; // 포함 여부
 
     @Column(name = "STONE_QUANTITY")
     private Integer stoneQuantity;
@@ -40,18 +40,18 @@ public class ProductStone {
     private String productStoneNote;
 
     @Builder
-    public ProductStone(Product product, Stone stone, Boolean isMainStone, Boolean isIncludeStone, Boolean includeWeight, Boolean includeLabor, Integer stoneQuantity, String productStoneNote) {
+    public ProductStone(Product product, Stone stone, Boolean mainStone, Boolean includeStone, Boolean includeWeight, Boolean includeLabor, Integer stoneQuantity, String productStoneNote) {
         this.product = product;
         this.stone = stone;
-        this.isMainStone = isMainStone;
-        this.isIncludeStone = isIncludeStone;
+        this.mainStone = mainStone;
+        this.includeStone = includeStone;
         this.stoneQuantity = stoneQuantity;
         this.productStoneNote = productStoneNote;
     }
 
     public void updateStone(ProductStoneDto.Request dto) {
-        this.isMainStone = dto.isMainStone();
-        this.isIncludeStone = dto.isIncludeStone();
+        this.mainStone = dto.isMainStone();
+        this.includeStone = dto.isIncludeStone();
         this.stoneQuantity = dto.getStoneQuantity();
     }
 

@@ -152,7 +152,7 @@ public class Stock {
     }
 
     public void updateStockInfo(StockDto.stockRequest stockDto) {
-        this.product.updateProductWeightAndSize(stockDto.getProductSize(), stockDto.getProductWeight(), stockDto.getStoneWeight());
+        this.product.updateProductWeightAndSize(stockDto.getProductSize(), stockDto.getGoldWeight(), stockDto.getStoneWeight());
         this.stockMainStoneNote = stockDto.getMainStoneNote();
         this.stockAssistanceStoneNote = stockDto.getAssistanceStoneNote();
         this.stockNote = stockDto.getStockNote();

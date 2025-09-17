@@ -27,7 +27,7 @@ public class KafkaConsumer {
         this.kafkaStockService = kafkaStockService;
     }
 
-    @KafkaListener(topics = "order.async.requested", containerFactory = "kafkaListenerContainerFactory")
+    @KafkaListener(topics = "order.async.requested", groupId = "kafka.order-group", concurrency = "3")
     @RetryableTopic(attempts = "2", backoff = @Backoff(delay = 1000, maxDelay = 5000, random = true), include = KafkaProcessingException.class)
     public void orderInfoAsyncRequested(String message) {
         try {
@@ -43,7 +43,7 @@ public class KafkaConsumer {
         }
     }
 
-    @KafkaListener(topics = "stock.async.requested", containerFactory = "kafkaListenerContainerFactory")
+    @KafkaListener(topics = "stock.async.requested", groupId = "kafka.stock-group", containerFactory = "kafkaListenerContainerFactory")
     @RetryableTopic(attempts = "2", backoff = @Backoff(delay = 1000, maxDelay = 5000, random = true), include = KafkaProcessingException.class)
     public void stockInfoAsyncRequested(String message) {
         try {

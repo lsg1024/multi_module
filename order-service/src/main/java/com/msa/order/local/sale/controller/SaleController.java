@@ -13,6 +13,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 public class SaleController {
 
@@ -81,6 +83,16 @@ public class SaleController {
 
         saleService.cancelSale(accessToken, flowCode);
         return ResponseEntity.ok(ApiResponse.success("삭제 완료"));
+    }
+
+    //판매 기록
+    @GetMapping("/sale/past")
+    public ResponseEntity<ApiResponse<List<SaleDto.SaleDetailDto>>> findLastSaleHistory(
+            @RequestParam(name = "store") Long storeId,
+            @RequestParam(name = "product") Long productId,
+            @RequestParam(name = "material") String materialName) {
+        List<SaleDto.SaleDetailDto> saleDetailDtos = saleService.findSaleProductNameAndMaterial(storeId, productId, materialName);
+        return ResponseEntity.ok(ApiResponse.success(saleDetailDtos));
     }
 
 }
