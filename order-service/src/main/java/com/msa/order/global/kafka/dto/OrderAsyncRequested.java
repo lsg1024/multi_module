@@ -18,9 +18,7 @@ public class OrderAsyncRequested {
     private Long factoryId;
     private Long productId;
     private Long materialId;
-    private Long classificationId;
     private Long colorId;
-    private Long setTypeId;
     private boolean assistantStone;
     private Long assistantStoneId;
     private OffsetDateTime assistantStoneCreateAt;
@@ -30,7 +28,7 @@ public class OrderAsyncRequested {
     private String nickname;
 
     @Builder
-    public OrderAsyncRequested(String eventId, Long flowCode, String tenantId, Long storeId, Long factoryId, Long productId, Long materialId, Long classificationId, Long colorId, Long setTypeId, boolean assistantStone, Long assistantStoneId, OffsetDateTime assistantStoneCreateAt, List<Long> stoneIds, String orderStatus, String nickname) {
+    public OrderAsyncRequested(String eventId, Long flowCode, String tenantId, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, boolean assistantStone, Long assistantStoneId, OffsetDateTime assistantStoneCreateAt, List<Long> stoneIds, String orderStatus, String nickname) {
         this.eventId = eventId;
         this.flowCode = flowCode;
         this.tenantId = tenantId;
@@ -38,9 +36,7 @@ public class OrderAsyncRequested {
         this.factoryId = factoryId;
         this.productId = productId;
         this.materialId = materialId;
-        this.classificationId = classificationId;
         this.colorId = colorId;
-        this.setTypeId = setTypeId;
         this.assistantStone = assistantStone;
         this.assistantStoneId = assistantStoneId;
         this.assistantStoneCreateAt = assistantStoneCreateAt;

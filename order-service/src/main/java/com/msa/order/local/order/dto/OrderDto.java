@@ -12,7 +12,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
@@ -43,14 +42,12 @@ public class OrderDto {
         @NotBlank(message = "재질 값은 필수입니다.")
         @Pattern(regexp = "\\d+", message = "재질 ID는 숫자여야 합니다.")
         private String materialId;
-        private String classificationId;
         private String colorId;
-        private String setType;
+        private String classificationName;
+        private String setTypeName;
         private String priorityName;
 
-        private BigDecimal goldWeight;
         private BigDecimal stoneWeight;
-        private Integer stoneTotalLaborCost;
         private String mainStoneNote;
         private String assistanceStoneNote;
 
@@ -59,7 +56,7 @@ public class OrderDto {
         private String assistantStoneId;
         private String assistantStoneCreateAt;
 
-        private LocalDateTime createAt;
+        private String createAt;
         private String productStatus; // 주문 상태 설정 값 기본은 RECEIPT
 
         @Valid
