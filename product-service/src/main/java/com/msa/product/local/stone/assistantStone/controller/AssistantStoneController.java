@@ -19,7 +19,7 @@ public class AssistantStoneController {
         this.assistantStoneService = assistantStoneService;
     }
 
-    @GetMapping("/assistants")
+    @GetMapping("/assistant_stones")
     public ResponseEntity<ApiResponse<List<AssistantStoneDto.Response>>> getAssistants() {
         List<AssistantStoneDto.Response> assistantStoneInfo = assistantStoneService.getAssistantStoneAll();
         return ResponseEntity.ok(ApiResponse.success(assistantStoneInfo));
