@@ -6,7 +6,6 @@ import com.msa.common.global.util.CustomPage;
 import com.msa.order.global.dto.StoneDto;
 import com.msa.order.global.kafka.KafkaProducer;
 import com.msa.order.global.kafka.dto.OrderAsyncRequested;
-import com.msa.order.global.util.DateConversionUtil;
 import com.msa.order.local.order.dto.*;
 import com.msa.order.local.order.entity.OrderProduct;
 import com.msa.order.local.order.entity.OrderStone;
@@ -20,7 +19,6 @@ import com.msa.order.local.order.external_client.dto.ProductImageDto;
 import com.msa.order.local.order.repository.CustomOrderRepository;
 import com.msa.order.local.order.repository.OrdersRepository;
 import com.msa.order.local.order.repository.StatusHistoryRepository;
-import com.msa.order.local.order.util.DateUtil;
 import com.msa.order.local.order.util.StoneUtil;
 import com.msa.order.local.priority.entitiy.Priority;
 import com.msa.order.local.priority.repository.PriorityRepository;
@@ -32,12 +30,14 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.*;
 
 import static com.msa.order.global.exception.ExceptionMessage.*;
+import static com.msa.order.global.util.DateConversionUtil.*;
 
 @Slf4j
 @Service
@@ -134,8 +134,7 @@ public class OrdersService {
         return new CustomPage<>(finalResponse, pageable, queryDtoPage.getTotalElements());
     }
     //주문
-    public void
-    saveOrder(String accessToken, String orderType, OrderDto.Request orderDto) {
+    public void saveOrder(String accessToken, String orderType, OrderDto.Request orderDto) {
 
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = TenantContext.getTenant();
@@ -144,9 +143,7 @@ public class OrdersService {
         Long factoryId = Long.valueOf(orderDto.getFactoryId());
         Long productId = Long.valueOf(orderDto.getProductId());
         Long materialId = Long.valueOf(orderDto.getMaterialId());
-        Long classificationId = Long.valueOf(orderDto.getClassificationId());
         Long colorId = Long.valueOf(orderDto.getColorId());
-        Long setType = Long.valueOf(orderDto.getSetType());
         Long assistantId = Long.valueOf(orderDto.getAssistantStoneId());
 
         // priority 추가
@@ -155,12 +152,8 @@ public class OrdersService {
 
         Integer priorityDate = priority.getPriorityDate();
 
-        OffsetDateTime received = orderDto.getCreateAt()
-                .atZone(KST)
-                .toOffsetDateTime();
-
-        OffsetDateTime expectUtc =
-                DateUtil.plusBusinessDay(received, priorityDate);
+        OffsetDateTime createAt = StringToOffsetDateTime(orderDto.getCreateAt());
+        OffsetDateTime expectAt = plusBusinessDay(createAt, priorityDate);
 
         ProductStatus productStatus = ProductStatus.fromDisplayName(orderDto.getProductStatus())
                 .orElseThrow(() -> new IllegalArgumentException(WRONG_STATUS));
@@ -170,27 +163,12 @@ public class OrdersService {
                 .orderNote(orderDto.getOrderNote())
                 .productStatus(productStatus)
                 .orderStatus(OrderStatus.valueOf(orderType))
-                .orderDate(received)
-                .orderExpectDate(expectUtc)
+                .orderDate(createAt)
+                .orderExpectDate(expectAt)
                 .build();
-
-        // orderProduct 추가
-        OrderProduct orderProduct = OrderProduct.builder()
-                .productId(productId)
-                .isGoldWeightSale(orderDto.isProductWeightSale())
-                .goldWeight(orderDto.getGoldWeight())
-                .stoneWeight(orderDto.getStoneWeight())
-                .productAddLaborCost(orderDto.getProductAddLaborCost())
-                .stoneTotalAddLaborCost(orderDto.getStoneTotalLaborCost())
-                .orderMainStoneNote(orderDto.getMainStoneNote())
-                .orderAssistanceStoneNote(orderDto.getAssistanceStoneNote())
-                .productSize(orderDto.getProductSize())
-                .build();
-
-        order.addOrderProduct(orderProduct);
-        order.addPriority(priority);
 
         // orderStone 추가
+        int totalStoneCost = 0;
         List<Long> stoneIds = new ArrayList<>();
         List<StoneDto.StoneInfo> storeInfos = orderDto.getStoneInfos();
         for (StoneDto.StoneInfo stoneInfo : storeInfos) {
@@ -208,7 +186,26 @@ public class OrdersService {
 
             stoneIds.add(Long.valueOf(stoneInfo.getStoneId()));
             order.addOrderStone(orderStone);
+            totalStoneCost += stoneInfo.getLaborCost() * stoneInfo.getQuantity() + stoneInfo.getAddLaborCost();
         }
+
+        // orderProduct 추가
+        OrderProduct orderProduct = OrderProduct.builder()
+                .productId(productId)
+                .isGoldWeightSale(orderDto.isProductWeightSale())
+                .goldWeight(new BigDecimal(BigInteger.ZERO))
+                .stoneWeight(orderDto.getStoneWeight())
+                .productAddLaborCost(orderDto.getProductAddLaborCost())
+                .stoneTotalAddLaborCost(totalStoneCost)
+                .orderMainStoneNote(orderDto.getMainStoneNote())
+                .orderAssistanceStoneNote(orderDto.getAssistanceStoneNote())
+                .productSize(orderDto.getProductSize())
+                .classificationName(orderDto.getClassificationName())
+                .setType(orderDto.getSetTypeName())
+                .build();
+
+        order.addOrderProduct(orderProduct);
+        order.addPriority(priority);
 
         ordersRepository.save(order);
 
@@ -225,7 +222,7 @@ public class OrdersService {
 
         OrderAsyncRequested evt;
         if (orderDto.isAssistantStone()) {
-            OffsetDateTime assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(orderDto.getAssistantStoneCreateAt());
+            OffsetDateTime assistantStoneCreateAt = StringToOffsetDateTime(orderDto.getAssistantStoneCreateAt());
             evt = OrderAsyncRequested.builder()
                     .eventId(UUID.randomUUID().toString())
                     .flowCode(order.getFlowCode())
@@ -234,9 +231,7 @@ public class OrdersService {
                     .factoryId(factoryId)
                     .productId(productId)
                     .materialId(materialId)
-                    .classificationId(classificationId)
                     .colorId(colorId)
-                    .setTypeId(setType)
                     .assistantStone(orderDto.isAssistantStone())
                     .assistantStoneId(assistantId)
                     .assistantStoneCreateAt(assistantStoneCreateAt)
@@ -253,9 +248,7 @@ public class OrdersService {
                     .factoryId(factoryId)
                     .productId(productId)
                     .materialId(materialId)
-                    .classificationId(classificationId)
                     .colorId(colorId)
-                    .setTypeId(setType)
                     .assistantStone(false)
                     .nickname(nickname)
                     .stoneIds(stoneIds)
