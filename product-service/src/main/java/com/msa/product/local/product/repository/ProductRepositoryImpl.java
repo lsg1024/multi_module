@@ -242,13 +242,14 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 .select(new QProductDetailDto(
                         product.productId,
                         product.productName,
-                        material.materialName,
-                        color.colorName,
+                        classification.classificationName,
+                        setType.setTypeName,
                         productWorkGradePolicyGroup.productPurchasePrice,
                         productWorkGradePolicy.laborCost
                 ))
                 .from(product)
-                .join(product.material, material)
+                .join(product.classification, classification)
+                .join(product.setType, setType)
                 .join(product.productWorkGradePolicyGroups, productWorkGradePolicyGroup)
                 .join(productWorkGradePolicyGroup.color, color)
                 .join(productWorkGradePolicyGroup.gradePolicies, productWorkGradePolicy)
