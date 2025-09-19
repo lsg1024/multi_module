@@ -62,7 +62,7 @@ public class OrderProduct {
     private Orders order;
 
     @Builder
-    public OrderProduct(Long productId, String productName, String productSize, boolean isGoldWeightSale, BigDecimal goldWeight, BigDecimal stoneWeight, Integer stoneTotalAddLaborCost, String orderMainStoneNote, String orderAssistanceStoneNote, Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost, String materialName, String classificationName, String colorName, boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, Orders order) {
+    public OrderProduct(Long productId, String productName, String productSize, boolean isGoldWeightSale, BigDecimal goldWeight, BigDecimal stoneWeight, Integer stoneTotalAddLaborCost, String orderMainStoneNote, String orderAssistanceStoneNote, Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost, String materialName, String classificationName, String colorName, String setType, boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, Orders order) {
         this.productId = productId;
         this.productName = productName;
         this.productSize = productSize;
@@ -78,6 +78,7 @@ public class OrderProduct {
         this.materialName = materialName;
         this.classificationName = classificationName;
         this.colorName = colorName;
+        this.setType = setType;
         this.assistantStone = assistantStone;
         this.assistantStoneName = assistantStoneName;
         this.assistantStoneCreateAt = assistantStoneCreateAt;
@@ -88,27 +89,23 @@ public class OrderProduct {
         this.order = order;
     }
 
-    public void updateOrder(String productName, Integer productPurchaseCost, Integer productLaborCost, String materialName, String classificationName, String colorName, String setType, boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt) {
+    public void updateOrder(String productName, Integer productPurchaseCost, Integer productLaborCost, String materialName, String colorName, boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt) {
         this.productName = productName;
         this.productPurchaseCost = productPurchaseCost;
         this.productLaborCost = productLaborCost;
         this.materialName = materialName;
-        this.classificationName = classificationName;
         this.colorName = colorName;
-        this.setType = setType;
         this.assistantStone = assistantStone;
         this.assistantStoneName = assistantStoneName;
         this.assistantStoneCreateAt = assistantStoneCreateAt;
     }
 
-    public void updateOrder(String productName, Integer productPurchaseCost, Integer productLaborCost, String materialName, String classificationName, String colorName, String setType) {
+    public void updateOrder(String productName, Integer productPurchaseCost, Integer productLaborCost, String materialName, String colorName) {
         this.productName = productName;
         this.productPurchaseCost = productPurchaseCost;
         this.productLaborCost = productLaborCost;
         this.materialName = materialName;
-        this.classificationName = classificationName;
         this.colorName = colorName;
-        this.setType = setType;
     }
 
 }
