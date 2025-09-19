@@ -118,8 +118,8 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         List<OrderQueryDto> content = query
                 .select(new QOrderQueryDto(
                         orders.orderProduct.productId,
-                        orders.orderDate.stringValue(),
-                        orders.orderExpectDate.stringValue(),
+                        orders.createAt.stringValue(),
+                        orders.shippingAt.stringValue(),
                         orders.flowCode.stringValue(),
                         orders.storeName,
                         orders.orderProduct.productName,
@@ -144,7 +144,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                         conditionBuilder,
                         orders.orderDeleted.eq(orderDeleted)
                 )
-                .orderBy(orders.orderDate.desc(), orders.flowCode.desc())
+                .orderBy(orders.createAt.desc(), orders.flowCode.desc())
                 .fetch();
 
         JPAQuery<Long> countQuery = query
@@ -238,7 +238,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
 
         BooleanExpression createdBetween =
-                orders.orderDate.between(startDateTime, endDateTime);
+                orders.createAt.between(startDateTime, endDateTime);
 
         BooleanExpression statusIsReceiptOrWaiting =
                 orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
@@ -270,7 +270,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
 
         BooleanExpression createdBetween =
-                orders.orderExpectDate.loe(endDateTime);
+                orders.shippingAt.loe(endDateTime);
 
         BooleanExpression statusIsReceiptOrWaiting =
                 orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
@@ -292,7 +292,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
 
         BooleanExpression deletedDate =
-                orders.orderExpectDate.between(startDateTime, endDateTime);
+                orders.shippingAt.between(startDateTime, endDateTime);
 
         BooleanExpression statusIsReceiptOrWaiting =
                 orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);

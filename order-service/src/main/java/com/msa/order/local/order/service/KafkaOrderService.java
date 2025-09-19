@@ -33,19 +33,17 @@ public class KafkaOrderService {
     private final FactoryClient factoryClient;
     private final MaterialClient materialClient;
     private final ColorClient colorClient;
-    private final SetTypeClient setTypeClient;
     private final AssistantStoneClient assistantStoneClient;
     private final OrdersRepository ordersRepository;
     private final StatusHistoryRepository statusHistoryRepository;
 
-    public KafkaOrderService(StoreClient storeClient, StoneClient stoneClient, ProductClient productClient, FactoryClient factoryClient, MaterialClient materialClient, ColorClient colorClient, SetTypeClient setTypeClient, AssistantStoneClient assistantStoneClient, OrdersRepository ordersRepository, StatusHistoryRepository statusHistoryRepository) {
+    public KafkaOrderService(StoreClient storeClient, StoneClient stoneClient, ProductClient productClient, FactoryClient factoryClient, MaterialClient materialClient, ColorClient colorClient, AssistantStoneClient assistantStoneClient, OrdersRepository ordersRepository, StatusHistoryRepository statusHistoryRepository) {
         this.storeClient = storeClient;
         this.stoneClient = stoneClient;
         this.productClient = productClient;
         this.factoryClient = factoryClient;
         this.materialClient = materialClient;
         this.colorClient = colorClient;
-        this.setTypeClient = setTypeClient;
         this.assistantStoneClient = assistantStoneClient;
         this.ordersRepository = ordersRepository;
         this.statusHistoryRepository = statusHistoryRepository;
@@ -87,6 +85,8 @@ public class KafkaOrderService {
                         productInfo.getLaborCost(),
                         materialName,
                         colorName,
+                        productInfo.getClassificationName(),
+                        productInfo.getSetType(),
                         evt.isAssistantStone(),
                         assistantStoneInfo.getAssistantName(),
                         evt.getAssistantStoneCreateAt()
@@ -97,7 +97,9 @@ public class KafkaOrderService {
                         productInfo.getPurchaseCost(),
                         productInfo.getLaborCost(),
                         materialName,
-                        colorName
+                        colorName,
+                        productInfo.getClassificationName(),
+                        productInfo.getSetType()
                 );
             }
 

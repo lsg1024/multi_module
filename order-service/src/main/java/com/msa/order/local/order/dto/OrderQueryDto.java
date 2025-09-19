@@ -12,8 +12,8 @@ import java.util.List;
 @NoArgsConstructor
 public class OrderQueryDto {
     private Long productId;
-    private String orderDate;
-    private String orderExpectDate;
+    private String createAt;
+    private String shippingAt;
     private String flowCode;
     private String storeName;
     private String productName;
@@ -36,10 +36,10 @@ public class OrderQueryDto {
     }
 
     @QueryProjection
-    public OrderQueryDto(Long productId, String orderDate, String orderExpectDate, String flowCode, String storeName, String productName, String materialName, String colorName, String setType, String productSize, Integer stockQuantity, String orderMainStoneNote, String orderAssistanceStoneNote, String orderNote, String factoryName, String priority, ProductStatus productStatus, OrderStatus orderStatus) {
+    public OrderQueryDto(Long productId, String createAt, String shippingAt, String flowCode, String storeName, String productName, String materialName, String colorName, String setType, String productSize, Integer stockQuantity, String orderMainStoneNote, String orderAssistanceStoneNote, String orderNote, String factoryName, String priority, ProductStatus productStatus, OrderStatus orderStatus) {
         this.productId = productId;
-        this.orderDate = orderDate;
-        this.orderExpectDate = orderExpectDate;
+        this.createAt = createAt;
+        this.shippingAt = shippingAt;
         this.flowCode = flowCode;
         this.storeName = storeName;
         this.productName = productName;

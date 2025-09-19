@@ -42,10 +42,10 @@ public class Orders {
     private String factoryName;
     @Column(name = "ORDER_NOTE")
     private String orderNote;
-    @Column(name = "ORDER_DATE")
-    private OffsetDateTime orderDate;
-    @Column(name = "ORDER_EXPECT_DATE")
-    private OffsetDateTime orderExpectDate;
+    @Column(name = "CREATE_AT")
+    private OffsetDateTime createAt;
+    @Column(name = "SHIPPING_AT")
+    private OffsetDateTime shippingAt;
     @Column(name = "ORDER_DELETED", nullable = false)
     private boolean orderDeleted = false;
 
@@ -69,7 +69,7 @@ public class Orders {
     private OrderStatus orderStatus;
 
     @Builder
-    public Orders(Long orderId, Long flowCode, Long storeId, String storeName, Long factoryId, String factoryName, String orderNote, OffsetDateTime orderDate, OffsetDateTime orderExpectDate, ProductStatus productStatus, OrderStatus orderStatus) {
+    public Orders(Long orderId, Long flowCode, Long storeId, String storeName, Long factoryId, String factoryName, String orderNote, OffsetDateTime createAt, OffsetDateTime shippingAt, ProductStatus productStatus, OrderStatus orderStatus) {
         this.orderId = orderId;
         this.flowCode = flowCode;
         this.storeId = storeId;
@@ -77,8 +77,8 @@ public class Orders {
         this.factoryId = factoryId;
         this.factoryName = factoryName;
         this.orderNote = orderNote;
-        this.orderDate = orderDate;
-        this.orderExpectDate = orderExpectDate;
+        this.createAt = createAt;
+        this.shippingAt = shippingAt;
         this.productStatus = productStatus;
         this.orderStatus = orderStatus;
     }
@@ -112,11 +112,11 @@ public class Orders {
     }
 
     public void updateExceptDate(OffsetDateTime orderExpectDate) {
-        this.orderExpectDate = orderExpectDate;
+        this.shippingAt = orderExpectDate;
     }
 
     public void deletedOrder(OffsetDateTime orderExpectDate) {
-        this.orderExpectDate = orderExpectDate;
+        this.shippingAt = orderExpectDate;
         this.orderDeleted = true;
     }
 

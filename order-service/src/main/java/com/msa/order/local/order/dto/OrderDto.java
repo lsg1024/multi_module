@@ -67,8 +67,8 @@ public class OrderDto {
     @Getter
     @NoArgsConstructor
     public static class Response {
-        private String orderDate;
-        private String orderExpectDate;
+        private String createAt;
+        private String shippingAt;
         private String flowCode;
         private String storeName;
         private String productName;
@@ -89,8 +89,8 @@ public class OrderDto {
 
         public static Response from(OrderQueryDto queryDto, String imagePath) {
             Response response = new Response();
-            response.orderDate = queryDto.getOrderDate();
-            response.orderExpectDate = queryDto.getOrderExpectDate();
+            response.createAt = queryDto.getCreateAt();
+            response.shippingAt = queryDto.getShippingAt();
             response.flowCode = queryDto.getFlowCode();
             response.storeName = queryDto.getStoreName();
             response.productName = queryDto.getProductName();
@@ -119,16 +119,9 @@ public class OrderDto {
     @NoArgsConstructor
     public static class ResponseDetail {
         private String createAt;
-        private String deliveryAt;
+        private String shippingAt;
         private String flowCode;
         private String storeName;
-        private Integer productLaborCost;
-        private Integer productAddLaborCost;
-        private Integer productStoneMainLaborCost;
-        private Integer productStoneAssistanceLaborCost;
-        private Integer productStoneAddLaborCost;
-        private Integer productStoneMainQuantity;
-        private Integer productStoneAssistanceQuantity;
         private String productName;
         private String classification;
         private String materialName;
@@ -139,20 +132,14 @@ public class OrderDto {
         private String priority;
         private String productStatus;
         private String orderStatus;
+        private List<StoneDto.StoneResponse> stoneInfos;
 
         @Builder
-        public ResponseDetail(String createAt, String deliveryAt, String flowCode, String storeName, Integer productLaborCost, Integer productAddLaborCost, Integer productStoneMainLaborCost, Integer productStoneAssistanceLaborCost, Integer productStoneAddLaborCost, Integer productStoneMainQuantity, Integer productStoneAssistanceQuantity, String productName, String classification, String materialName, String colorName, String productSize, String orderNote, String factoryName, String priority, String productStatus, String orderStatus) {
+        public ResponseDetail(String createAt, String shippingAt, String flowCode, String storeName, String productName, String classification, String materialName, String colorName, String productSize, String orderNote, String factoryName, String priority, String productStatus, String orderStatus, List<StoneDto.StoneResponse> stoneInfos) {
             this.createAt = createAt;
-            this.deliveryAt = deliveryAt;
+            this.shippingAt = shippingAt;
             this.flowCode = flowCode;
             this.storeName = storeName;
-            this.productLaborCost = productLaborCost;
-            this.productAddLaborCost = productAddLaborCost;
-            this.productStoneMainLaborCost = productStoneMainLaborCost;
-            this.productStoneAssistanceLaborCost = productStoneAssistanceLaborCost;
-            this.productStoneAddLaborCost = productStoneAddLaborCost;
-            this.productStoneMainQuantity = productStoneMainQuantity;
-            this.productStoneAssistanceQuantity = productStoneAssistanceQuantity;
             this.productName = productName;
             this.classification = classification;
             this.materialName = materialName;
@@ -163,6 +150,7 @@ public class OrderDto {
             this.priority = priority;
             this.productStatus = productStatus;
             this.orderStatus = orderStatus;
+            this.stoneInfos = stoneInfos;
         }
     }
 

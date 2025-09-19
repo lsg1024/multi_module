@@ -10,8 +10,8 @@ import java.util.List;
 public class ProductDetailDto {
     private Long productId;
     private String productName;
-    private String materialName;
-    private String colorName;
+    private String classificationName;
+    private String setType;
     private Integer purchaseCost;
     private Integer laborCost;
     private Integer addLaborCost;

@@ -19,7 +19,6 @@ import com.msa.order.local.order.external_client.dto.ProductImageDto;
 import com.msa.order.local.order.repository.CustomOrderRepository;
 import com.msa.order.local.order.repository.OrdersRepository;
 import com.msa.order.local.order.repository.StatusHistoryRepository;
-import com.msa.order.local.order.util.StoneUtil;
 import com.msa.order.local.priority.entitiy.Priority;
 import com.msa.order.local.priority.repository.PriorityRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +36,8 @@ import java.time.ZoneOffset;
 import java.util.*;
 
 import static com.msa.order.global.exception.ExceptionMessage.*;
-import static com.msa.order.global.util.DateConversionUtil.*;
+import static com.msa.order.global.util.DateConversionUtil.StringToOffsetDateTime;
+import static com.msa.order.global.util.DateConversionUtil.plusBusinessDay;
 
 @Slf4j
 @Service
@@ -73,26 +73,28 @@ public class OrdersService {
         Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        int mainStoneQuantity = 0;
-        int assistanceStoneQuantity = 0;
-        int mainStoneLaborCost = 0;
-        int assistanceStoneLaborCost = 0;
         List<OrderStone> orderStones = order.getOrderStones();
-        StoneUtil.countStoneQuantity(orderStones, mainStoneQuantity, assistanceStoneQuantity);
-        StoneUtil.countStoneLabor(orderStones, mainStoneLaborCost, assistanceStoneLaborCost);
+
+        List<StoneDto.StoneResponse> stonesDtos = new ArrayList<>();
+        for (OrderStone orderStone : orderStones) {
+            StoneDto.StoneResponse stoneDto = new StoneDto.StoneResponse(
+                orderStone.getOriginStoneName(),
+                orderStone.getOriginStoneWeight().toPlainString(),
+                orderStone.getStonePurchaseCost(),
+                orderStone.getStoneLaborCost(),
+                orderStone.getStoneAddLaborCost(),
+                orderStone.getStoneQuantity(),
+                orderStone.getMainStone(),
+                orderStone.getIncludeStone()
+            );
+            stonesDtos.add(stoneDto);
+        }
 
         return OrderDto.ResponseDetail.builder()
-                .createAt(order.getOrderDate().toString())
-                .deliveryAt(order.getOrderExpectDate().toString())
+                .createAt(order.getCreateAt().toString())
+                .shippingAt(order.getShippingAt().toString())
                 .flowCode(order.getFlowCode().toString())
                 .storeName(order.getStoreName())
-                .productLaborCost(order.getOrderProduct().getProductLaborCost())
-                .productAddLaborCost(order.getOrderProduct().getProductAddLaborCost())
-                .productStoneMainLaborCost(mainStoneLaborCost)
-                .productStoneAssistanceLaborCost(assistanceStoneLaborCost)
-                .productStoneAddLaborCost(order.getOrderProduct().getStoneTotalAddLaborCost())
-                .productStoneMainQuantity(mainStoneQuantity)
-                .productStoneAssistanceQuantity(assistanceStoneQuantity)
                 .productName(order.getOrderProduct().getProductName())
                 .classification(order.getOrderProduct().getClassificationName())
                 .materialName(order.getOrderProduct().getMaterialName())
@@ -103,6 +105,7 @@ public class OrdersService {
                 .priority(order.getPriority().getPriorityName())
                 .productStatus(order.getProductStatus().getDisplayName())
                 .orderStatus(order.getOrderStatus().getDisplayName())
+                .stoneInfos(stonesDtos)
                 .build();
 
     }
@@ -163,8 +166,8 @@ public class OrdersService {
                 .orderNote(orderDto.getOrderNote())
                 .productStatus(productStatus)
                 .orderStatus(OrderStatus.valueOf(orderType))
-                .orderDate(createAt)
-                .orderExpectDate(expectAt)
+                .createAt(createAt)
+                .shippingAt(expectAt)
                 .build();
 
         // orderStone 추가

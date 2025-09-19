@@ -89,23 +89,25 @@ public class OrderProduct {
         this.order = order;
     }
 
-    public void updateOrder(String productName, Integer productPurchaseCost, Integer productLaborCost, String materialName, String colorName, boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt) {
-        this.productName = productName;
-        this.productPurchaseCost = productPurchaseCost;
-        this.productLaborCost = productLaborCost;
-        this.materialName = materialName;
-        this.colorName = colorName;
+    public void updateOrder(String productName, Integer productPurchaseCost, Integer productLaborCost, String materialName, String colorName, String classificationName, String setType, boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt) {
+        commonOrder(productName, productPurchaseCost, productLaborCost, materialName, colorName, classificationName, setType);
         this.assistantStone = assistantStone;
         this.assistantStoneName = assistantStoneName;
         this.assistantStoneCreateAt = assistantStoneCreateAt;
     }
 
-    public void updateOrder(String productName, Integer productPurchaseCost, Integer productLaborCost, String materialName, String colorName) {
+    public void updateOrder(String productName, Integer productPurchaseCost, Integer productLaborCost, String materialName, String colorName, String classificationName, String setType) {
+        commonOrder(productName, productPurchaseCost, productLaborCost, materialName, colorName, classificationName, setType);
+    }
+
+    private void commonOrder(String productName, Integer productPurchaseCost, Integer productLaborCost, String materialName, String colorName, String classificationName, String setType) {
         this.productName = productName;
         this.productPurchaseCost = productPurchaseCost;
         this.productLaborCost = productLaborCost;
         this.materialName = materialName;
         this.colorName = colorName;
+        this.classificationName = classificationName;
+        this.setType = setType;
     }
 
 }
