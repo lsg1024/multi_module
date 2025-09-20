@@ -145,6 +145,8 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                         orders.orderDeleted.eq(orderDeleted)
                 )
                 .orderBy(orders.createAt.desc(), orders.flowCode.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
                 .fetch();
 
         JPAQuery<Long> countQuery = query

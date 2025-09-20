@@ -1,6 +1,7 @@
 package com.msa.order.local.order.service;
 
 import com.msa.order.global.kafka.dto.OrderAsyncRequested;
+import com.msa.order.global.kafka.dto.OrderUpdateRequest;
 import com.msa.order.local.order.dto.FactoryDto;
 import com.msa.order.local.order.dto.StoreDto;
 import com.msa.order.local.order.entity.OrderProduct;
@@ -79,7 +80,7 @@ public class KafkaOrderService {
             OrderProduct orderProduct = order.getOrderProduct();
             if (evt.isAssistantStone()) {
                 assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(tenantId, evt.getAssistantStoneId());
-                orderProduct.updateOrder(
+                orderProduct.updateOrderProduct(
                         productInfo.getProductName(),
                         productInfo.getPurchaseCost(),
                         productInfo.getLaborCost(),
@@ -92,7 +93,7 @@ public class KafkaOrderService {
                         evt.getAssistantStoneCreateAt()
                 );
             } else {
-                orderProduct.updateOrder(
+                orderProduct.updateOrderProduct(
                         productInfo.getProductName(),
                         productInfo.getPurchaseCost(),
                         productInfo.getLaborCost(),
@@ -136,6 +137,99 @@ public class KafkaOrderService {
                     lastHistory.getPhase(),
                     BusinessPhase.ORDER_FAIL,
                     evt.getNickname()
+            );
+
+            statusHistoryRepository.save(statusHistory);
+        }
+    }
+
+    @Transactional
+    public void updateHandle(OrderUpdateRequest updateRequest) {
+
+        // 멀티테넌시 컨텍스트 전파
+        final String tenantId = updateRequest.getTenantId();
+
+        Orders order = ordersRepository.findByFlowCode(updateRequest.getFlowCode())
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        if (order.getOrderStatus() != OrderStatus.ORDER && order.getOrderStatus() != OrderStatus.FIX) {
+            return;
+        }
+
+        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        StatusHistory statusHistory;
+
+        try {
+            // 1) 외부 조회 (순차/병렬 선택 가능)
+            StoreDto.Response storeInfo = storeClient.getStoreInfo(tenantId, updateRequest.getStoreId());
+            String factoryName = factoryClient.getFactoryInfo(tenantId, updateRequest.getFactoryId()).getFactoryName();
+            String materialName = materialClient.getMaterialInfo(tenantId, updateRequest.getMaterialId());
+            String colorName = colorClient.getColorInfo(tenantId, updateRequest.getColorId());
+            ProductDetailDto productInfo = productClient.getProductInfo(tenantId, updateRequest.getProductId(), storeInfo.getGrade());
+
+            AssistantStoneDto.Response assistantStoneInfo;
+            OrderProduct orderProduct = order.getOrderProduct();
+            if (updateRequest.isAssistantStone()) {
+                assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(tenantId, updateRequest.getAssistantStoneId());
+                orderProduct.updateOrderProduct(
+                        productInfo.getProductName(),
+                        productInfo.getPurchaseCost(),
+                        productInfo.getLaborCost(),
+                        materialName,
+                        colorName,
+                        productInfo.getClassificationName(),
+                        productInfo.getSetType(),
+                        updateRequest.isAssistantStone(),
+                        assistantStoneInfo.getAssistantName(),
+                        updateRequest.getAssistantStoneCreateAt()
+                );
+            } else {
+                orderProduct.updateOrderProduct(
+                        productInfo.getProductName(),
+                        productInfo.getPurchaseCost(),
+                        productInfo.getLaborCost(),
+                        materialName,
+                        colorName,
+                        productInfo.getClassificationName(),
+                        productInfo.getSetType()
+                );
+            }
+
+            List<Long> stoneIds = updateRequest.getStoneIds();
+            for (Long stoneId : stoneIds) {
+                Boolean existStoneId = stoneClient.getExistStoneId(tenantId, stoneId);
+                if (!existStoneId) {
+                    throw new IllegalArgumentException(NOT_FOUND_STONE);
+                }
+            }
+
+            order.updateStore(new StoreDto.Response(updateRequest.getStoreId(), storeInfo.getStoreName()));
+            order.updateFactory(new FactoryDto.Response(updateRequest.getFactoryId(), factoryName));
+
+            ordersRepository.save(order);
+
+            statusHistory = StatusHistory.phaseChange(
+                    order.getFlowCode(),
+                    lastHistory.getSourceType(),
+                    lastHistory.getPhase(),
+                    BusinessPhase.ORDER,
+                    updateRequest.getNickname()
+            );
+
+            statusHistoryRepository.save(statusHistory);
+
+        } catch (Exception e) {
+            log.error("Async failed. orderId={}, err={}", updateRequest.getFlowCode(), e.getMessage(), e);
+            order.updateProductStatus(ProductStatus.CHANG_FAILED);
+
+            statusHistory = StatusHistory.phaseChange(
+                    order.getFlowCode(),
+                    lastHistory.getSourceType(),
+                    lastHistory.getPhase(),
+                    BusinessPhase.ORDER_UPDATE_FAIL,
+                    updateRequest.getNickname()
             );
 
             statusHistoryRepository.save(statusHistory);

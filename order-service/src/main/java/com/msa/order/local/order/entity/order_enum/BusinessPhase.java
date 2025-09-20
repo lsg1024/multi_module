@@ -9,6 +9,7 @@ public enum BusinessPhase {
     ORDER("주문"),
     WAITING("대기"),
     ORDER_FAIL("주문 실패"),
+    ORDER_UPDATE_FAIL("주문 업데이트 실패"),
     STOCK("재고"),
     STOCK_FAIL("재고 실패"),
     FIX("수리"),

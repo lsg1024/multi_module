@@ -57,12 +57,22 @@ public class OrdersController {
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
-            @PageableDefault(size = 16) Pageable pageable) {
+            @PageableDefault(size = 20) Pageable pageable) {
 
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
         OrderDto.OrderCondition orderCondition = new OrderDto.OrderCondition(startAt, endAt, factoryName, storeName, setTypeName);
         CustomPage<OrderDto.Response> orderProducts = ordersService.getOrderProducts(accessToken, inputCondition, orderCondition, pageable);
         return ResponseEntity.ok(ApiResponse.success(orderProducts));
+    }
+
+    //주문 전체 수정
+    @PatchMapping("/order")
+    public ResponseEntity<ApiResponse<OrderDto.Request>> updateOrder(
+            @AccessToken String accessToken,
+            @RequestParam(name = "id") Long flowCode,
+            @Valid @RequestBody OrderDto.Request orderDto) {
+        ordersService.updateOrder(accessToken, flowCode, orderDto);
+
     }
 
     // 주문 상태 호출

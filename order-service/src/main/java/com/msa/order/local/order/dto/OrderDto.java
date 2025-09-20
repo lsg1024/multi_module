@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 
@@ -132,10 +133,13 @@ public class OrderDto {
         private String priority;
         private String productStatus;
         private String orderStatus;
+        private boolean assistantStone;
+        private String assistantStoneName;
+        private OffsetDateTime assistantStoneCreateAt;
         private List<StoneDto.StoneResponse> stoneInfos;
 
         @Builder
-        public ResponseDetail(String createAt, String shippingAt, String flowCode, String storeName, String productName, String classification, String materialName, String colorName, String productSize, String orderNote, String factoryName, String priority, String productStatus, String orderStatus, List<StoneDto.StoneResponse> stoneInfos) {
+        public ResponseDetail(String createAt, String shippingAt, String flowCode, String storeName, String productName, String classification, String materialName, String colorName, String productSize, String orderNote, String factoryName, String priority, String productStatus, String orderStatus, boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, List<StoneDto.StoneResponse> stoneInfos) {
             this.createAt = createAt;
             this.shippingAt = shippingAt;
             this.flowCode = flowCode;
@@ -150,6 +154,9 @@ public class OrderDto {
             this.priority = priority;
             this.productStatus = productStatus;
             this.orderStatus = orderStatus;
+            this.assistantStone = assistantStone;
+            this.assistantStoneName = assistantStoneName;
+            this.assistantStoneCreateAt = assistantStoneCreateAt;
             this.stoneInfos = stoneInfos;
         }
     }

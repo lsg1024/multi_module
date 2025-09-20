@@ -89,16 +89,19 @@ public class OrderProduct {
         this.order = order;
     }
 
-    public void updateOrder(String productName, Integer productPurchaseCost, Integer productLaborCost, String materialName, String colorName, String classificationName, String setType, boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt) {
+    public void updateOrderProduct(String productName, Integer productPurchaseCost, Integer productLaborCost, String materialName, String colorName, String classificationName, String setType, boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt) {
         commonOrder(productName, productPurchaseCost, productLaborCost, materialName, colorName, classificationName, setType);
         this.assistantStone = assistantStone;
         this.assistantStoneName = assistantStoneName;
         this.assistantStoneCreateAt = assistantStoneCreateAt;
     }
 
-    public void updateOrder(String productName, Integer productPurchaseCost, Integer productLaborCost, String materialName, String colorName, String classificationName, String setType) {
+
+    public void updateOrderProduct(String productName, Integer productPurchaseCost, Integer productLaborCost, String materialName, String colorName, String classificationName, String setType) {
         commonOrder(productName, productPurchaseCost, productLaborCost, materialName, colorName, classificationName, setType);
     }
+
+
 
     private void commonOrder(String productName, Integer productPurchaseCost, Integer productLaborCost, String materialName, String colorName, String classificationName, String setType) {
         this.productName = productName;
@@ -110,4 +113,15 @@ public class OrderProduct {
         this.setType = setType;
     }
 
+    public void updateOrderProductInfo(Long productId, BigDecimal stoneWeight, Integer productAddLaborCost, Integer stoneTotalAddLaborCost, String mainStoneNote, String assistanceStoneNote, String productSize, String classificationName, String setTypeName) {
+        this.productId = productId;
+        this.stoneWeight = stoneWeight;
+        this.productAddLaborCost = productAddLaborCost;
+        this.orderMainStoneNote = mainStoneNote;
+        this.orderAssistanceStoneNote = assistanceStoneNote;
+        this.stoneTotalAddLaborCost = stoneTotalAddLaborCost;
+        this.productSize = productSize;
+        this.classificationName = classificationName;
+        this.setType = setTypeName;
+    }
 }
