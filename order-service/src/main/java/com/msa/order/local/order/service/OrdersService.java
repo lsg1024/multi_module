@@ -32,20 +32,17 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.*;
 
 import static com.msa.order.global.exception.ExceptionMessage.*;
 import static com.msa.order.global.util.DateConversionUtil.StringToOffsetDateTime;
-import static com.msa.order.global.util.DateConversionUtil.plusBusinessDay;
+import static com.msa.order.local.order.util.StoneUtil.updateOrderStoneInfo;
 
 @Slf4j
 @Service
 @Transactional
 public class OrdersService {
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-
     private final JwtUtil jwtUtil;
     private final FactoryClient factoryClient;
     private final StoreClient storeClient;
@@ -79,6 +76,7 @@ public class OrdersService {
         List<StoneDto.StoneResponse> stonesDtos = new ArrayList<>();
         for (OrderStone orderStone : orderStones) {
             StoneDto.StoneResponse stoneDto = new StoneDto.StoneResponse(
+                orderStone.getOriginStoneId().toString(),
                 orderStone.getOriginStoneName(),
                 orderStone.getOriginStoneWeight().toPlainString(),
                 orderStone.getStonePurchaseCost(),
@@ -97,14 +95,20 @@ public class OrdersService {
                 .createAt(order.getCreateAt().toString())
                 .shippingAt(order.getShippingAt().toString())
                 .flowCode(order.getFlowCode().toString())
+                .storeId(order.getStoreId().toString())
                 .storeName(order.getStoreName())
+                .factoryId(order.getFactoryId().toString())
+                .factoryName(order.getFactoryName())
+                .productId(orderProduct.getProductId().toString())
                 .productName(orderProduct.getProductName())
                 .classification(orderProduct.getClassificationName())
                 .materialName(orderProduct.getMaterialName())
                 .colorName(orderProduct.getColorName())
+                .setType(orderProduct.getSetTypeName())
                 .productSize(orderProduct.getProductSize())
                 .orderNote(order.getOrderNote())
-                .factoryName(order.getFactoryName())
+                .mainStoneNote(orderProduct.getOrderMainStoneNote())
+                .assistanceStoneNote(orderProduct.getOrderAssistanceStoneNote())
                 .priority(order.getPriority().getPriorityName())
                 .productStatus(order.getProductStatus().getDisplayName())
                 .orderStatus(order.getOrderStatus().getDisplayName())
@@ -142,8 +146,9 @@ public class OrdersService {
 
         return new CustomPage<>(finalResponse, pageable, queryDtoPage.getTotalElements());
     }
+
     //주문
-    public void saveOrder(String accessToken, String orderType, OrderDto.Request orderDto) {
+    public void saveOrder(String accessToken, String orderStatus, OrderDto.Request orderDto) {
 
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = TenantContext.getTenant();
@@ -159,10 +164,8 @@ public class OrdersService {
         Priority priority = priorityRepository.findByPriorityName(orderDto.getPriorityName())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        Integer priorityDate = priority.getPriorityDate();
-
         OffsetDateTime createAt = StringToOffsetDateTime(orderDto.getCreateAt());
-        OffsetDateTime expectAt = plusBusinessDay(createAt, priorityDate);
+        OffsetDateTime shippingAt = StringToOffsetDateTime(orderDto.getShippingAt());
 
         ProductStatus productStatus = ProductStatus.fromDisplayName(orderDto.getProductStatus())
                 .orElseThrow(() -> new IllegalArgumentException(WRONG_STATUS));
@@ -170,13 +173,12 @@ public class OrdersService {
         Orders order = Orders.builder()
                 .orderNote(orderDto.getOrderNote())
                 .productStatus(productStatus)
-                .orderStatus(OrderStatus.valueOf(orderType))
+                .orderStatus(OrderStatus.valueOf(orderStatus))
                 .createAt(createAt)
-                .shippingAt(expectAt)
+                .shippingAt(shippingAt)
                 .build();
 
         // orderStone 추가
-        int totalStoneCost = 0;
         List<Long> stoneIds = new ArrayList<>();
         List<StoneDto.StoneInfo> storeInfos = orderDto.getStoneInfos();
         for (StoneDto.StoneInfo stoneInfo : storeInfos) {
@@ -194,7 +196,6 @@ public class OrdersService {
 
             stoneIds.add(Long.valueOf(stoneInfo.getStoneId()));
             order.addOrderStone(orderStone);
-            totalStoneCost += stoneInfo.getLaborCost() * stoneInfo.getQuantity() + stoneInfo.getAddLaborCost();
         }
 
         // orderProduct 추가
@@ -204,12 +205,11 @@ public class OrdersService {
                 .goldWeight(new BigDecimal(BigInteger.ZERO))
                 .stoneWeight(orderDto.getStoneWeight())
                 .productAddLaborCost(orderDto.getProductAddLaborCost())
-                .stoneTotalAddLaborCost(totalStoneCost)
                 .orderMainStoneNote(orderDto.getMainStoneNote())
                 .orderAssistanceStoneNote(orderDto.getAssistanceStoneNote())
                 .productSize(orderDto.getProductSize())
                 .classificationName(orderDto.getClassificationName())
-                .setType(orderDto.getSetTypeName())
+                .setTypeName(orderDto.getSetTypeName())
                 .build();
 
         order.addOrderProduct(orderProduct);
@@ -220,7 +220,7 @@ public class OrdersService {
         // statusHistory 추가
         StatusHistory statusHistory = StatusHistory.create(
                 order.getFlowCode(),
-                SourceType.ORDER,
+                SourceType.valueOf(orderStatus),
                 BusinessPhase.WAITING,
                 Kind.CREATE,
                 nickname
@@ -245,7 +245,7 @@ public class OrdersService {
                     .assistantStoneCreateAt(assistantStoneCreateAt)
                     .nickname(nickname)
                     .stoneIds(stoneIds)
-                    .orderStatus(orderType)
+                    .orderStatus(orderStatus)
                     .build();
         } else {
             evt = OrderAsyncRequested.builder()
@@ -260,7 +260,7 @@ public class OrdersService {
                     .assistantStone(false)
                     .nickname(nickname)
                     .stoneIds(stoneIds)
-                    .orderStatus(orderType)
+                    .orderStatus(orderStatus)
                     .build();
         }
 
@@ -273,28 +273,21 @@ public class OrdersService {
     }
 
     //주문 수정
-    public void updateOrder(String accessToken, Long flowCode, OrderDto.Request orderDto) {
+    public void updateOrder(String accessToken, Long flowCode, String orderStatus, OrderDto.Request orderDto) {
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = TenantContext.getTenant();
 
-        Long storeId = Long.valueOf(orderDto.getStoreId());
-        Long factoryId = Long.valueOf(orderDto.getFactoryId());
-        Long productId = Long.valueOf(orderDto.getProductId());
-        Long materialId = Long.valueOf(orderDto.getMaterialId());
-        Long colorId = Long.valueOf(orderDto.getColorId());
-        Long assistantId = Long.valueOf(orderDto.getAssistantStoneId());
+        log.info("updateOrder = {}", orderDto.toString());
 
         // priority 추가
         Priority priority = priorityRepository.findByPriorityName(orderDto.getPriorityName())
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-
-        Integer priorityDate = priority.getPriorityDate();
+                .orElseThrow(() -> new IllegalArgumentException("등급: " + NOT_FOUND));
 
         OffsetDateTime createAt = StringToOffsetDateTime(orderDto.getCreateAt());
-        OffsetDateTime shippingAt = plusBusinessDay(createAt, priorityDate);
+        OffsetDateTime shippingAt = StringToOffsetDateTime(orderDto.getShippingAt());
 
         Orders order = ordersRepository.findByFlowCode(flowCode)
-                .orElseThrow(() -> new IllegalArgumentException("주문" + NOT_FOUND));
+                .orElseThrow(() -> new IllegalArgumentException("주문 수정: " + NOT_FOUND));
 
         order.updateOrderNote(order.getOrderNote());
         order.updateCreateDate(createAt);
@@ -302,28 +295,46 @@ public class OrdersService {
         order.addPriority(priority);
 
         // 스톤 값을 업데이트 (기존 그대로,추가,삭제)
+        List<OrderStone> orderStones = order.getOrderStones();
+        updateOrderStoneInfo(orderDto.getStoneInfos(), order, orderStones);
 
+        Long productId = Long.valueOf(orderDto.getProductId());
+        Long orderId = order.getOrderId();
+
+        OrderUpdateRequest.OrderUpdateRequestBuilder updateRequestBuilder = OrderUpdateRequest.builder()
+                .eventId(UUID.randomUUID().toString())
+                .flowCode(order.getFlowCode())
+                .tenantId(tenantId)
+                .nickname(nickname);
 
         // orderProduct 추가
         OrderProduct orderProduct = order.getOrderProduct();
-        orderProduct.updateOrderProductInfo(
-                productId,
-                orderDto.getStoneWeight(),
-                orderDto.getProductAddLaborCost(),
-                null, // 스톤 업데이트 후
-                orderDto.getMainStoneNote(),
-                orderDto.getAssistanceStoneNote(),
-                orderDto.getProductSize(),
-                orderDto.getClassificationName(),
-                orderDto.getSetTypeName()
-        );
+        if (orderId.equals(productId)) {
+            orderProduct.updateOrderProductInfo(
+                    orderDto.getStoneWeight(),
+                    orderDto.getProductAddLaborCost(),
+                    orderDto.getMainStoneNote(),
+                    orderDto.getAssistanceStoneNote(),
+                    orderDto.getProductSize()
+            );
+        } else {
+            orderProduct.updateOrderProductInfo(
+                    productId,
+                    orderDto.getStoneWeight(),
+                    orderDto.getProductAddLaborCost(),
+                    orderDto.getMainStoneNote(),
+                    orderDto.getAssistanceStoneNote(),
+                    orderDto.getProductSize()
+            );
+            updateRequestBuilder.productId(productId);
+        }
 
         ordersRepository.save(order);
 
         // statusHistory 추가
         StatusHistory statusHistory = StatusHistory.create(
                 order.getFlowCode(),
-                SourceType.ORDER,
+                SourceType.valueOf(orderStatus),
                 BusinessPhase.WAITING,
                 Kind.UPDATE,
                 nickname
@@ -331,49 +342,50 @@ public class OrdersService {
 
         statusHistoryRepository.save(statusHistory);
 
-        OrderUpdateRequest updateRequest;
+        Long storeId = Long.valueOf(orderDto.getStoreId());
+        Long factoryId = Long.valueOf(orderDto.getFactoryId());
+        Long materialId = Long.valueOf(orderDto.getMaterialId());
+        Long colorId = Long.valueOf(orderDto.getColorId());
+        Long assistantId = Long.valueOf(orderDto.getAssistantStoneId());
+
+        if (!Objects.equals(storeId, order.getStoreId())) {
+            updateRequestBuilder.storeId(storeId);
+        }
+
+        if (!Objects.equals(factoryId, order.getFactoryId())) {
+            updateRequestBuilder.factoryId(factoryId);
+        }
+
+        if (!Objects.equals(materialId, orderProduct.getMaterialId())) {
+            updateRequestBuilder.materialId(materialId);
+        }
+
+        if (!Objects.equals(colorId, orderProduct.getColorId())) {
+            updateRequestBuilder.colorId(colorId);
+        }
+
         if (orderDto.isAssistantStone()) {
             OffsetDateTime assistantStoneCreateAt = StringToOffsetDateTime(orderDto.getAssistantStoneCreateAt());
-            updateRequest = OrderUpdateRequest.builder()
-                    .eventId(UUID.randomUUID().toString())
-                    .flowCode(order.getFlowCode())
-                    .tenantId(tenantId)
-                    .storeId(storeId)
-                    .factoryId(factoryId)
-                    .productId(productId)
-                    .materialId(materialId)
-                    .colorId(colorId)
+             updateRequestBuilder
                     .assistantStone(orderDto.isAssistantStone())
                     .assistantStoneId(assistantId)
-                    .assistantStoneCreateAt(assistantStoneCreateAt)
-                    .nickname(nickname)
-//                    .stoneIds(stoneIds)
-                    .build();
+                    .assistantStoneCreateAt(assistantStoneCreateAt);
         } else {
-            updateRequest = OrderUpdateRequest.builder()
-                    .eventId(UUID.randomUUID().toString())
-                    .flowCode(order.getFlowCode())
-                    .tenantId(tenantId)
-                    .storeId(storeId)
-                    .factoryId(factoryId)
-                    .productId(productId)
-                    .materialId(materialId)
-                    .colorId(colorId)
-                    .assistantStone(false)
-                    .nickname(nickname)
-//                    .stoneIds(stoneIds)
-                    .build();
+           updateRequestBuilder
+                    .assistantStone(false);
         }
+
+        OrderUpdateRequest orderUpdateRequest = updateRequestBuilder.build();
 
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                kafkaProducer.orderDetailUpdateAsync(updateRequest);
+                kafkaProducer.orderDetailUpdateAsync(orderUpdateRequest);
             }
         });
     }
 
-    //주문 상태 변경 (주문, 취소)
+    //주문 상태 조회 (주문, 취소)
     public List<String> getOrderStatusInfo(String id) {
         List<ProductStatus> productStatuses = Arrays.asList(ProductStatus.RECEIPT, ProductStatus.RECEIPT_FAILED, ProductStatus.WAITING);
         List<String> statusDtos = new ArrayList<>();
@@ -392,7 +404,6 @@ public class OrdersService {
 
     //주문 상태 변경
     public void updateOrderStatus(String id, String status) {
-
         List<String> allowed = Arrays.asList(
                 ProductStatus.RECEIPT.name(),
                 ProductStatus.WAITING.name());
@@ -409,7 +420,6 @@ public class OrdersService {
 
         order.updateProductStatus(newStatus);
         ordersRepository.save(order);
-
     }
 
     //판매처 변경 -> account -> store 리스트 호출 /store/list
@@ -480,6 +490,32 @@ public class OrdersService {
         throw new IllegalArgumentException(NOT_ACCESS);
     }
 
+    // 수리 예정 목록 출력
+    @Transactional(readOnly = true)
+    public CustomPage<OrderDto.Response> getFixProducts(String accessToken, OrderDto.InputCondition inputCondition, OrderDto.OrderCondition fixCondition, Pageable pageable) {
+        String tenantId = jwtUtil.getTenantId(accessToken);
+
+        CustomPage<OrderQueryDto> fixOrders = customOrderRepository.findByFixOrders(inputCondition, fixCondition, pageable);
+
+        List<Long> productIds = fixOrders.stream()
+                .map(OrderQueryDto::getProductId)
+                .distinct()
+                .toList();
+
+        Map<Long, ProductImageDto> productImages = productClient.getProductImages(tenantId, productIds);
+
+        List<OrderDto.Response> finalResponse = fixOrders.stream()
+                .map(queryDto -> {
+                    ProductImageDto imageDto = productImages.get(queryDto.getProductId());
+                    String imagePath = (imageDto != null) ? imageDto.getImagePath() : null;
+
+                    return OrderDto.Response.from(queryDto, imagePath);
+                })
+                .toList();
+
+        return new CustomPage<>(finalResponse, pageable, fixOrders.getTotalElements());
+    }
+
     // 출고 예정 목록 출력
     @Transactional(readOnly = true)
     public CustomPage<OrderDto.Response> getExpectProducts(String accessToken, OrderDto.InputCondition inputCondition, OrderDto.ExpectCondition expectCondition, Pageable pageable) {
@@ -505,7 +541,7 @@ public class OrdersService {
         return new CustomPage<>(finalResponse, pageable, expectOrderPages.getTotalElements());
     }
 
-    // 주문 상태에서 취소된 목록 출력
+    // 주문 상태에서 삭제된 목록 출력
     @Transactional(readOnly = true)
     public CustomPage<OrderDto.Response> getDeletedProducts(String accessToken, OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable) {
         String tenantId = jwtUtil.getTenantId(accessToken);
@@ -532,20 +568,23 @@ public class OrdersService {
 
 
     @Transactional(readOnly = true)
-    public List<String> getFilterFactories(String startAt, String endAt, String factoryName, String storeName, String setTypeName) {
-        OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, factoryName, storeName, setTypeName);
+    public List<String> getFilterFactories(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String orderStatus) {
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName);
+        OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
         return customOrderRepository.findByFilterFactories(condition);
     }
 
     @Transactional(readOnly = true)
-    public List<String> getFilterStores(String startAt, String endAt, String factoryName, String storeName, String setTypeName) {
-        OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, factoryName, storeName, setTypeName);
+    public List<String> getFilterStores(String startAt, String endAt, String factoryName, String storeName,String setTypeName, String orderStatus) {
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName);
+        OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
         return customOrderRepository.findByFilterStores(condition);
     }
 
     @Transactional(readOnly = true)
-    public List<String> getFilterSetType(String startAt, String endAt, String factoryName, String storeName, String setTypeName) {
-        OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, factoryName, storeName, setTypeName);
+    public List<String> getFilterSetType(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String orderStatus) {
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName);
+        OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
         return customOrderRepository.findByFilterSetType(condition);
     }
 

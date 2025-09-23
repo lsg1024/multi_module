@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 
 @Getter
 @NoArgsConstructor
@@ -22,12 +21,29 @@ public class OrderUpdateRequest {
     private boolean assistantStone;
     private Long assistantStoneId;
     private OffsetDateTime assistantStoneCreateAt;
-    private List<Long> stoneIds;
 
     private String nickname;
 
+    @Override
+    public String toString() {
+        return "OrderUpdateRequest{" +
+                "eventId='" + eventId + '\'' +
+                ", flowCode=" + flowCode +
+                ", tenantId='" + tenantId + '\'' +
+                ", storeId=" + storeId +
+                ", factoryId=" + factoryId +
+                ", productId=" + productId +
+                ", materialId=" + materialId +
+                ", colorId=" + colorId +
+                ", assistantStone=" + assistantStone +
+                ", assistantStoneId=" + assistantStoneId +
+                ", assistantStoneCreateAt=" + assistantStoneCreateAt +
+                ", nickname='" + nickname + '\'' +
+                '}';
+    }
+
     @Builder
-    public OrderUpdateRequest(String eventId, Long flowCode, String tenantId, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, boolean assistantStone, Long assistantStoneId, OffsetDateTime assistantStoneCreateAt, List<Long> stoneIds, String nickname) {
+    public OrderUpdateRequest(String eventId, Long flowCode, String tenantId, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, boolean assistantStone, Long assistantStoneId, OffsetDateTime assistantStoneCreateAt, String nickname) {
         this.eventId = eventId;
         this.flowCode = flowCode;
         this.tenantId = tenantId;
@@ -39,7 +55,6 @@ public class OrderUpdateRequest {
         this.assistantStone = assistantStone;
         this.assistantStoneId = assistantStoneId;
         this.assistantStoneCreateAt = assistantStoneCreateAt;
-        this.stoneIds = stoneIds;
         this.nickname = nickname;
     }
 }

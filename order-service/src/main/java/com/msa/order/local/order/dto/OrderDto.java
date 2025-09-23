@@ -26,7 +26,6 @@ public class OrderDto {
         @NotBlank(message = "상점 ID는 필수입니다.")
         @Pattern(regexp = "\\d+", message = "상점 ID는 숫자여야 합니다.")
         private String storeId;
-
         private String orderNote;
 
         @NotBlank(message = "공장 ID는 필수입니다.")
@@ -58,11 +57,39 @@ public class OrderDto {
         private String assistantStoneCreateAt;
 
         private String createAt;
+        private String shippingAt;
         private String productStatus; // 주문 상태 설정 값 기본은 RECEIPT
 
         @Valid
         private List<StoneDto.StoneInfo> stoneInfos;
 
+        @Override
+        public String toString() {
+            return "Request{" +
+                    "storeId='" + storeId + '\'' +
+                    ", orderNote='" + orderNote + '\'' +
+                    ", factoryId='" + factoryId + '\'' +
+                    ", productId='" + productId + '\'' +
+                    ", productSize='" + productSize + '\'' +
+                    ", isProductWeightSale=" + isProductWeightSale +
+                    ", productAddLaborCost=" + productAddLaborCost +
+                    ", materialId='" + materialId + '\'' +
+                    ", colorId='" + colorId + '\'' +
+                    ", classificationName='" + classificationName + '\'' +
+                    ", setTypeName='" + setTypeName + '\'' +
+                    ", priorityName='" + priorityName + '\'' +
+                    ", stoneWeight=" + stoneWeight +
+                    ", mainStoneNote='" + mainStoneNote + '\'' +
+                    ", assistanceStoneNote='" + assistanceStoneNote + '\'' +
+                    ", assistantStone=" + assistantStone +
+                    ", assistantStoneId='" + assistantStoneId + '\'' +
+                    ", assistantStoneCreateAt='" + assistantStoneCreateAt + '\'' +
+                    ", createAt='" + createAt + '\'' +
+                    ", shippingAt='" + shippingAt + '\'' +
+                    ", productStatus='" + productStatus + '\'' +
+                    ", stoneInfos=" + stoneInfos +
+                    '}';
+        }
     }
 
     @Getter
@@ -78,8 +105,8 @@ public class OrderDto {
         private String setType;
         private String productSize;
         private Integer stockQuantity;
-        private String orderMainStoneNote;
-        private String orderAssistanceStoneNote;
+        private String mainStoneNote;
+        private String assistanceStoneNote;
         private List<String> stockFlowCodes;
         private String orderNote;
         private String factoryName;
@@ -100,8 +127,8 @@ public class OrderDto {
             response.setType = queryDto.getSetType();
             response.productSize = queryDto.getProductSize();
             response.stockQuantity = queryDto.getStockQuantity();
-            response.orderMainStoneNote = queryDto.getOrderMainStoneNote();
-            response.orderAssistanceStoneNote = queryDto.getOrderAssistanceStoneNote();
+            response.mainStoneNote = queryDto.getMainStoneNote();
+            response.assistanceStoneNote = queryDto.getAssistanceStoneNote();
             response.orderNote = queryDto.getOrderNote();
             response.factoryName = queryDto.getFactoryName();
             response.priority = queryDto.getPriority();
@@ -122,14 +149,20 @@ public class OrderDto {
         private String createAt;
         private String shippingAt;
         private String flowCode;
+        private String storeId;
         private String storeName;
+        private String factoryId;
+        private String factoryName;
+        private String productId;
         private String productName;
         private String classification;
         private String materialName;
         private String colorName;
+        private String setType;
         private String productSize;
         private String orderNote;
-        private String factoryName;
+        private String mainStoneNote;
+        private String assistanceStoneNote;
         private String priority;
         private String productStatus;
         private String orderStatus;
@@ -139,18 +172,24 @@ public class OrderDto {
         private List<StoneDto.StoneResponse> stoneInfos;
 
         @Builder
-        public ResponseDetail(String createAt, String shippingAt, String flowCode, String storeName, String productName, String classification, String materialName, String colorName, String productSize, String orderNote, String factoryName, String priority, String productStatus, String orderStatus, boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, List<StoneDto.StoneResponse> stoneInfos) {
+        public ResponseDetail(String createAt, String shippingAt, String flowCode, String storeId, String storeName, String factoryId, String productId, String productName, String classification, String materialName, String colorName, String setType, String productSize, String orderNote, String factoryName, String mainStoneNote, String assistanceStoneNote, String priority, String productStatus, String orderStatus, boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, List<StoneDto.StoneResponse> stoneInfos) {
             this.createAt = createAt;
             this.shippingAt = shippingAt;
             this.flowCode = flowCode;
+            this.storeId = storeId;
             this.storeName = storeName;
+            this.factoryId = factoryId;
+            this.productId = productId;
             this.productName = productName;
             this.classification = classification;
             this.materialName = materialName;
             this.colorName = colorName;
+            this.setType = setType;
             this.productSize = productSize;
             this.orderNote = orderNote;
             this.factoryName = factoryName;
+            this.mainStoneNote = mainStoneNote;
+            this.assistanceStoneNote = assistanceStoneNote;
             this.priority = priority;
             this.productStatus = productStatus;
             this.orderStatus = orderStatus;
@@ -173,9 +212,8 @@ public class OrderDto {
     public static class OrderCondition {
         private String startAt;
         private String endAt;
-        private String factoryName;
-        private String storeName;
-        private String setTypeName;
+        private OptionCondition optionCondition;
+        private String orderStatus;
     }
 
     @Getter
@@ -183,5 +221,16 @@ public class OrderDto {
     @AllArgsConstructor
     public static class ExpectCondition {
         private String endAt;
+        private OptionCondition optionCondition;
+        private String orderStatus;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class OptionCondition {
+        private String factoryName;
+        private String storeName;
+        private String setTypeName;
     }
 }

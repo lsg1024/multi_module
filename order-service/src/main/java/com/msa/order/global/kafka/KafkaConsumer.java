@@ -36,7 +36,7 @@ public class KafkaConsumer {
 
             TenantContext.setTenant(evt.getTenantId());
 
-            kafkaOrderService.handle(evt);
+            kafkaOrderService.createHandle(evt);
         } catch (Exception e) {
             log.error("Consume failed. payload={}, err={}", message, e.getMessage(), e);
             throw new IllegalStateException("Kafka consume error", e);

@@ -51,7 +51,9 @@ public class KafkaOrderService {
     }
 
     @Transactional
-    public void handle(OrderAsyncRequested evt) {
+    public void createHandle(OrderAsyncRequested evt) {
+
+        log.info("createHandle = {}", evt.toString());
 
         // 멀티테넌시 컨텍스트 전파
         final String tenantId = evt.getTenantId();
@@ -69,12 +71,13 @@ public class KafkaOrderService {
         StatusHistory statusHistory;
 
         try {
-            // 1) 외부 조회 (순차/병렬 선택 가능)
             StoreDto.Response storeInfo = storeClient.getStoreInfo(tenantId, evt.getStoreId());
             String factoryName = factoryClient.getFactoryInfo(tenantId, evt.getFactoryId()).getFactoryName();
             String materialName = materialClient.getMaterialInfo(tenantId, evt.getMaterialId());
             String colorName = colorClient.getColorInfo(tenantId, evt.getColorId());
             ProductDetailDto productInfo = productClient.getProductInfo(tenantId, evt.getProductId(), storeInfo.getGrade());
+
+            log.info("");
 
             AssistantStoneDto.Response assistantStoneInfo;
             OrderProduct orderProduct = order.getOrderProduct();
@@ -84,10 +87,14 @@ public class KafkaOrderService {
                         productInfo.getProductName(),
                         productInfo.getPurchaseCost(),
                         productInfo.getLaborCost(),
+                        evt.getMaterialId(),
                         materialName,
+                        evt.getColorId(),
                         colorName,
+                        productInfo.getClassificationId(),
                         productInfo.getClassificationName(),
-                        productInfo.getSetType(),
+                        productInfo.getSetTypeId(),
+                        productInfo.getSetTypeName(),
                         evt.isAssistantStone(),
                         assistantStoneInfo.getAssistantName(),
                         evt.getAssistantStoneCreateAt()
@@ -97,10 +104,14 @@ public class KafkaOrderService {
                         productInfo.getProductName(),
                         productInfo.getPurchaseCost(),
                         productInfo.getLaborCost(),
+                        evt.getMaterialId(),
                         materialName,
+                        evt.getColorId(),
                         colorName,
+                        productInfo.getClassificationId(),
                         productInfo.getClassificationName(),
-                        productInfo.getSetType()
+                        productInfo.getSetTypeId(),
+                        productInfo.getSetTypeName()
                 );
             }
 
@@ -121,7 +132,7 @@ public class KafkaOrderService {
                     order.getFlowCode(),
                     lastHistory.getSourceType(),
                     lastHistory.getPhase(),
-                    BusinessPhase.ORDER,
+                    BusinessPhase.valueOf(evt.getOrderStatus()),
                     evt.getNickname()
             );
 
@@ -146,6 +157,8 @@ public class KafkaOrderService {
     @Transactional
     public void updateHandle(OrderUpdateRequest updateRequest) {
 
+        log.info("updateHandle = {}", updateRequest.toString());
+
         // 멀티테넌시 컨텍스트 전파
         final String tenantId = updateRequest.getTenantId();
 
@@ -162,51 +175,52 @@ public class KafkaOrderService {
         StatusHistory statusHistory;
 
         try {
-            // 1) 외부 조회 (순차/병렬 선택 가능)
-            StoreDto.Response storeInfo = storeClient.getStoreInfo(tenantId, updateRequest.getStoreId());
-            String factoryName = factoryClient.getFactoryInfo(tenantId, updateRequest.getFactoryId()).getFactoryName();
-            String materialName = materialClient.getMaterialInfo(tenantId, updateRequest.getMaterialId());
-            String colorName = colorClient.getColorInfo(tenantId, updateRequest.getColorId());
-            ProductDetailDto productInfo = productClient.getProductInfo(tenantId, updateRequest.getProductId(), storeInfo.getGrade());
 
-            AssistantStoneDto.Response assistantStoneInfo;
-            OrderProduct orderProduct = order.getOrderProduct();
-            if (updateRequest.isAssistantStone()) {
+            if (updateRequest.getStoreId() != null) {
+                StoreDto.Response storeInfo = storeClient.getStoreInfo(tenantId, updateRequest.getStoreId());
+                order.updateStore(new StoreDto.Response(updateRequest.getStoreId(), storeInfo.getStoreName()));
+            }
+
+            if (updateRequest.getFactoryId() != null) {
+                String factoryName = factoryClient.getFactoryInfo(tenantId, updateRequest.getFactoryId()).getFactoryName();
+                order.updateFactory(new FactoryDto.Response(updateRequest.getFactoryId(), factoryName));
+            }
+
+            String materialName = null;
+            if (updateRequest.getMaterialId() != null) {
+                materialName = materialClient.getMaterialInfo(tenantId, updateRequest.getMaterialId());
+            }
+
+            String colorName = null;
+            if (updateRequest.getColorId() != null) {
+                colorName = colorClient.getColorInfo(tenantId, updateRequest.getColorId());
+            }
+
+            ProductDetailDto productInfo = null;
+            if (updateRequest.getProductId() != null) {
+                Long storeIdForGrade = updateRequest.getStoreId() != null ? updateRequest.getStoreId() : order.getStoreId();
+                StoreDto.Response storeInfoForGrade = storeClient.getStoreInfo(tenantId, storeIdForGrade);
+                productInfo = productClient.getProductInfo(tenantId, updateRequest.getProductId(), storeInfoForGrade.getGrade());
+            }
+
+            AssistantStoneDto.Response assistantStoneInfo = null;
+            if (updateRequest.isAssistantStone() && updateRequest.getAssistantStoneId() != null) {
                 assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(tenantId, updateRequest.getAssistantStoneId());
-                orderProduct.updateOrderProduct(
-                        productInfo.getProductName(),
-                        productInfo.getPurchaseCost(),
-                        productInfo.getLaborCost(),
-                        materialName,
-                        colorName,
-                        productInfo.getClassificationName(),
-                        productInfo.getSetType(),
-                        updateRequest.isAssistantStone(),
-                        assistantStoneInfo.getAssistantName(),
-                        updateRequest.getAssistantStoneCreateAt()
-                );
-            } else {
-                orderProduct.updateOrderProduct(
-                        productInfo.getProductName(),
-                        productInfo.getPurchaseCost(),
-                        productInfo.getLaborCost(),
-                        materialName,
-                        colorName,
-                        productInfo.getClassificationName(),
-                        productInfo.getSetType()
-                );
             }
 
-            List<Long> stoneIds = updateRequest.getStoneIds();
-            for (Long stoneId : stoneIds) {
-                Boolean existStoneId = stoneClient.getExistStoneId(tenantId, stoneId);
-                if (!existStoneId) {
-                    throw new IllegalArgumentException(NOT_FOUND_STONE);
-                }
-            }
-
-            order.updateStore(new StoreDto.Response(updateRequest.getStoreId(), storeInfo.getStoreName()));
-            order.updateFactory(new FactoryDto.Response(updateRequest.getFactoryId(), factoryName));
+            OrderProduct orderProduct = order.getOrderProduct();
+            orderProduct.updateDetails(
+                    productInfo != null ? productInfo.getProductName() : null,
+                    productInfo != null ? productInfo.getPurchaseCost() : null,
+                    productInfo != null ? productInfo.getLaborCost() : null,
+                    productInfo != null ? productInfo.getClassificationName() : null,
+                    productInfo != null ? productInfo.getSetTypeName() : null,
+                    materialName,
+                    colorName,
+                    updateRequest.isAssistantStone(),
+                    assistantStoneInfo != null ? assistantStoneInfo.getAssistantName() : null,
+                    updateRequest.getAssistantStoneCreateAt()
+            );
 
             ordersRepository.save(order);
 
@@ -214,10 +228,9 @@ public class KafkaOrderService {
                     order.getFlowCode(),
                     lastHistory.getSourceType(),
                     lastHistory.getPhase(),
-                    BusinessPhase.ORDER,
+                    BusinessPhase.UPDATE,
                     updateRequest.getNickname()
             );
-
             statusHistoryRepository.save(statusHistory);
 
         } catch (Exception e) {

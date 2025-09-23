@@ -27,6 +27,26 @@ public class OrderAsyncRequested {
 
     private String nickname;
 
+    @Override
+    public String toString() {
+        return "OrderAsyncRequested{" +
+                "eventId='" + eventId + '\'' +
+                ", flowCode=" + flowCode +
+                ", tenantId='" + tenantId + '\'' +
+                ", storeId=" + storeId +
+                ", factoryId=" + factoryId +
+                ", productId=" + productId +
+                ", materialId=" + materialId +
+                ", colorId=" + colorId +
+                ", assistantStone=" + assistantStone +
+                ", assistantStoneId=" + assistantStoneId +
+                ", assistantStoneCreateAt=" + assistantStoneCreateAt +
+                ", stoneIds=" + stoneIds +
+                ", orderStatus='" + orderStatus + '\'' +
+                ", nickname='" + nickname + '\'' +
+                '}';
+    }
+
     @Builder
     public OrderAsyncRequested(String eventId, Long flowCode, String tenantId, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, boolean assistantStone, Long assistantStoneId, OffsetDateTime assistantStoneCreateAt, List<Long> stoneIds, String orderStatus, String nickname) {
         this.eventId = eventId;
