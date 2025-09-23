@@ -127,7 +127,6 @@ public class StockService {
         OffsetDateTime assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(stockDto.getAssistantStoneCreateAt());
 
         OrderProduct orderProduct = order.getOrderProduct();
-        log.info("orderProduct info = {}", orderProduct.getSetType());
         ProductSnapshot product = ProductSnapshot.builder()
                 .id(orderProduct.getProductId())
                 .name(orderProduct.getProductName())
@@ -138,7 +137,7 @@ public class StockService {
                 .addLaborCost(stockDto.getAddProductLaborCost())
                 .productPurchaseCost(stockDto.getProductPurchaseCost())
                 .materialName(orderProduct.getMaterialName())
-                .setTypeName(orderProduct.getSetType())
+                .setTypeName(orderProduct.getSetTypeName())
                 .classificationName(orderProduct.getClassificationName())
                 .colorName(orderProduct.getColorName())
                 .assistantStone(stockDto.isAssistantStone())
@@ -170,7 +169,7 @@ public class StockService {
         stockRepository.save(stock);
 
         List<OrderStone> orderStones = order.getOrderStones();
-        updateStoneInfo(stockDto.getStoneInfos(), stock, orderStones);
+        updateStockStoneInfo(stockDto.getStoneInfos(), stock, orderStones);
         updateStoneCostAndPurchase(stock);
 
         order.updateOrderStatus(OrderStatus.valueOf(orderType));
@@ -300,7 +299,7 @@ public class StockService {
 
             // 1) stone Update 필요 여부
             List<OrderStone> orderStones = stock.getOrderStones();
-            updateStoneInfo(stockRentalDto.getStoneInfos(), stock, orderStones);
+            updateStockStoneInfo(stockRentalDto.getStoneInfos(), stock, orderStones);
 
             // 2) stone Cost
             int totalStonePurchaseCost = 0;

@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 
 import static com.msa.order.global.exception.ExceptionMessage.*;
 import static com.msa.order.local.order.util.StoneUtil.countStoneCost;
-import static com.msa.order.local.order.util.StoneUtil.updateStoneInfo;
+import static com.msa.order.local.order.util.StoneUtil.updateStockStoneInfo;
 
 @Service
 @Transactional
@@ -113,7 +113,7 @@ public class SaleService {
 
         List<StoneDto.StoneInfo> stoneInfos = stockDto.getStoneInfos();
         List<OrderStone> orderStones = stock.getOrderStones();
-        updateStoneInfo(stoneInfos, stock, orderStones);
+        updateStockStoneInfo(stoneInfos, stock, orderStones);
 
         int totalStonePurchaseCost = 0;
         int mainStoneCost = 0;
