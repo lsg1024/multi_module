@@ -2,6 +2,7 @@ package com.msa.account.local.store.service;
 
 import com.msa.account.global.domain.dto.util.AuthorityUserRoleUtil;
 import com.msa.account.global.domain.entity.GoldHarry;
+import com.msa.account.global.domain.entity.OptionLevel;
 import com.msa.account.global.domain.repository.GoldHarryRepository;
 import com.msa.account.global.exception.ExceptionMessage;
 import com.msa.account.global.exception.NotAuthorityException;
@@ -109,5 +110,10 @@ public class StoreService {
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         return new StoreDto.ApiStoreInfo(store.getStoreId(), store.getStoreName(), store.getCommonOption().getOptionLevel().getLevel());
+    }
+
+    public String getStoreGrade(String storeId) {
+        OptionLevel grade = storeRepository.findByCommonOptionOptionLevel(Long.valueOf(storeId));
+        return grade.getLevel();
     }
 }
