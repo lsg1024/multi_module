@@ -238,11 +238,13 @@ public class ProductRepositoryImpl implements CustomProductRepository {
 
     @Override
     public ProductDetailDto findProductDetail(Long productId, WorkGrade grade) {
-        ProductDetailDto result = query
+        return query
                 .select(new QProductDetailDto(
                         product.productId,
                         product.productName,
+                        classification.classificationId,
                         classification.classificationName,
+                        setType.setTypeId,
                         setType.setTypeName,
                         productWorkGradePolicyGroup.productPurchasePrice,
                         productWorkGradePolicy.laborCost
@@ -260,29 +262,29 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 )
                 .fetchOne();
 
-        List<ProductDetailDto.StoneInfo> stoneCosts = query
-                .select(new QProductDetailDto_StoneInfo(
-                        stone.stoneId.stringValue(),
-                        stone.stoneName,
-                        stone.stoneWeight.stringValue(),
-                        stone.stonePurchasePrice,
-                        stoneWorkGradePolicy.laborCost,
-                        productStone.stoneQuantity,
-                        productStone.mainStone,
-                        productStone.includeStone,
-                        productStone.productStoneNote
-                ))
-                .from(productStone)
-                .join(productStone.stone, stone)
-                .join(stone.gradePolicies, stoneWorkGradePolicy)
-                .where(
-                        productStone.product.productId.eq(productId),
-                        stoneWorkGradePolicy.grade.eq(grade)
-                )
-                .fetch();
+//        List<ProductDetailDto.StoneInfo> stoneCosts = query
+//                .select(new QProductDetailDto_StoneInfo(
+//                        stone.stoneId.stringValue(),
+//                        stone.stoneName,
+//                        stone.stoneWeight.stringValue(),
+//                        stone.stonePurchasePrice,
+//                        stoneWorkGradePolicy.laborCost,
+//                        productStone.stoneQuantity,
+//                        productStone.mainStone,
+//                        productStone.includeStone,
+//                        productStone.productStoneNote
+//                ))
+//                .from(productStone)
+//                .join(productStone.stone, stone)
+//                .join(stone.gradePolicies, stoneWorkGradePolicy)
+//                .where(
+//                        productStone.product.productId.eq(productId),
+//                        stoneWorkGradePolicy.grade.eq(grade)
+//                )
+//                .fetch();
+//
+//        result.setStoneInfos(stoneCosts);
 
-        result.setStoneInfos(stoneCosts);
-
-        return result;
+//        return result;
     }
 }

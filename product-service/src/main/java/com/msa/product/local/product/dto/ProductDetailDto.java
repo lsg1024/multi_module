@@ -4,30 +4,27 @@ import com.querydsl.core.annotations.QueryProjection;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Getter
 @NoArgsConstructor
 public class ProductDetailDto {
 
     private Long productId;
     private String productName;
+    private Long classificationId;
     private String classificationName;
-    private String setType;
+    private Long setTypeId;
+    private String setTypeName;
     private Integer purchaseCost;
     private Integer laborCost;
-    private List<StoneInfo> StoneInfos;
-
-    public void setStoneInfos(List<StoneInfo> storeCosts) {
-        this.StoneInfos = storeCosts;
-    }
 
     @QueryProjection
-    public ProductDetailDto(Long productId, String productName, String classificationName, String setType, Integer purchaseCost, Integer laborCost) {
+    public ProductDetailDto(Long productId, String productName, Long classificationId, String classificationName, Long setTypeId, String setTypeName, Integer purchaseCost, Integer laborCost) {
         this.productId = productId;
         this.productName = productName;
+        this.classificationId = classificationId;
         this.classificationName = classificationName;
-        this.setType = setType;
+        this.setTypeId = setTypeId;
+        this.setTypeName = setTypeName;
         this.purchaseCost = purchaseCost;
         this.laborCost = laborCost;
     }
