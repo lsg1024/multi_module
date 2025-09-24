@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msa.order.global.kafka.dto.KafkaStockRequest;
 import com.msa.order.global.kafka.dto.OrderAsyncRequested;
+import com.msa.order.global.kafka.dto.OrderUpdateRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -23,6 +24,30 @@ public class KafkaProducer {
         try {
             String payload = objectMapper.writeValueAsString(evt);
             kafkaTemplate.send("order.async.requested", key, payload)
+                    .whenComplete((res, ex) -> {
+                        if (ex != null) {
+                            log.error("kafka send failed. topic= {}, key= {}, err= {}",
+                                    "order.enrichment.requested", key, ex.getMessage());
+                        } else {
+                            log.info("Kafka sent. topic={}, key={}, partition={}, offset={}",
+                                    res.getRecordMetadata().topic(),
+                                    res.getProducerRecord().key(),
+                                    res.getRecordMetadata().partition(),
+                                    res.getRecordMetadata().offset());
+                        }
+                    });
+
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("이벤트 직렬화 실패", e);
+        }
+    }
+
+    public void orderDetailUpdateAsync(OrderUpdateRequest orderUpdateRequest) {
+        String key = String.valueOf(orderUpdateRequest.getFlowCode());
+
+        try {
+            String payload = objectMapper.writeValueAsString(orderUpdateRequest);
+            kafkaTemplate.send("order.update.requested", key, payload)
                     .whenComplete((res, ex) -> {
                         if (ex != null) {
                             log.error("kafka send failed. topic= {}, key= {}, err= {}",

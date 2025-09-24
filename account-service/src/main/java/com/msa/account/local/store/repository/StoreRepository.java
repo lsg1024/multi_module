@@ -1,6 +1,7 @@
 package com.msa.account.local.store.repository;
 
 
+import com.msa.account.global.domain.entity.OptionLevel;
 import com.msa.account.local.store.entity.Store;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -24,5 +25,8 @@ public interface StoreRepository extends JpaRepository<Store, Long>, CustomStore
             "join fetch s.address a " +
             "where s.storeId = :storeId")
     Optional<Store> findWithAllOptionsById(@Param("storeId") Long storeId);
-
+    @Query("select s.commonOption.optionLevel " +
+            "from Store s " +
+            "where s.storeId = :storeId")
+    OptionLevel findByCommonOptionOptionLevel(@Param("storeId") Long storeId);
 }

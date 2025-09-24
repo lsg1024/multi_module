@@ -13,7 +13,7 @@ public enum OrderStatus {
     RENTAL("대여"),
     RETURN("반납"),
     SALE("판매"),
-    DELETE("삭제"),
+    DELETED("삭제"),
     NONE("NONE");
 
     private final String displayName;

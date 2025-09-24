@@ -28,6 +28,7 @@ public class StoneDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class StoneResponse {
+        private String stoneId;
         private String stoneName;
         private String stoneWeight;
         private Integer purchaseCost;

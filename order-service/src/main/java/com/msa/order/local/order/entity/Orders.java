@@ -83,6 +83,13 @@ public class Orders {
         this.orderStatus = orderStatus;
     }
 
+    @PrePersist
+    private void onCreate() {
+        if (this.flowCode == null) {
+            this.flowCode = TsidCreator.getTsid().toLong();
+        }
+    }
+
     public void addOrderStone(OrderStone orderStone) {
         this.orderStones.add(orderStone);
         orderStone.setOrder(this);
@@ -111,8 +118,10 @@ public class Orders {
         this.factoryName = factoryDto.getFactoryName();
     }
 
-    public void updateExceptDate(OffsetDateTime orderExpectDate) {
-        this.shippingAt = orderExpectDate;
+    public void updateOrderNote(String orderNote) {this.orderNote = orderNote;}
+    public void updateCreateDate(OffsetDateTime createAt) {this.createAt = createAt;}
+    public void updateShippingDate(OffsetDateTime shippingAt) {
+        this.shippingAt = shippingAt;
     }
 
     public void deletedOrder(OffsetDateTime orderExpectDate) {
@@ -120,15 +129,9 @@ public class Orders {
         this.orderDeleted = true;
     }
 
-    @PrePersist
-    private void onCreate() {
-        if (this.flowCode == null) {
-            this.flowCode = TsidCreator.getTsid().toLong();
-        }
-    }
-
     public void updateOrderStatus(OrderStatus orderStatus) {
         this.orderStatus = orderStatus;
     }
+
 }
 

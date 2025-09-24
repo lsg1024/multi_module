@@ -9,7 +9,6 @@ import com.msa.order.local.order.dto.OrderDto;
 import com.msa.order.local.order.dto.StoreDto;
 import com.msa.order.local.order.service.OrdersService;
 import jakarta.validation.Valid;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Slf4j
 @RestController
 public class OrdersController {
 
@@ -57,12 +55,27 @@ public class OrdersController {
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
-            @PageableDefault(size = 16) Pageable pageable) {
+            @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "sortField", required = false) String sortField,
+            @RequestParam(name = "sortOrder", required = false) String sort,
+            @RequestParam(name = "order_status") String orderStatus,
+            @PageableDefault(size = 20) Pageable pageable) {
 
-        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
-        OrderDto.OrderCondition orderCondition = new OrderDto.OrderCondition(startAt, endAt, factoryName, storeName, setTypeName);
-        CustomPage<OrderDto.Response> orderProducts = ordersService.getOrderProducts(accessToken, inputCondition, orderCondition, pageable);
+        CustomPage<OrderDto.Response> orderProducts = ordersService.getOrderProducts(accessToken, input, startAt, endAt, factoryName,
+                storeName, setTypeName, colorName, sortField, sort, orderStatus, pageable);
         return ResponseEntity.ok(ApiResponse.success(orderProducts));
+    }
+
+    //주문 전체 수정
+    @PatchMapping("/order")
+    public ResponseEntity<ApiResponse<String>> updateOrder(
+            @AccessToken String accessToken,
+            @RequestParam(name = "id") Long flowCode,
+            @RequestParam(name = "order_status") String orderStatus,
+            @Valid @RequestBody OrderDto.Request orderDto) {
+        ordersService.updateOrder(accessToken, flowCode, orderStatus, orderDto);
+
+        return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
 
     // 주문 상태 호출
@@ -120,21 +133,28 @@ public class OrdersController {
     }
 
     // 출고 예정 조회
-    @GetMapping("/orders/expect")
+    @GetMapping("/orders/deliveries")
     public ResponseEntity<ApiResponse<CustomPage<OrderDto.Response>>> getOrderExpect(
             @AccessToken String accessToken,
             @RequestParam(name = "search", required = false) String input,
             @RequestParam(name = "end") String endAt,
-            @PageableDefault(size = 16) Pageable pageable) {
+            @RequestParam(name = "factory", required = false) String factoryName,
+            @RequestParam(name = "store", required = false) String storeName,
+            @RequestParam(name = "setType", required = false) String setTypeName,
+            @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "sortField", required = false) String sortField,
+            @RequestParam(name = "sortOrder", required = false) String sort,
+            @RequestParam(name = "order_status") String orderStatus,
+            @PageableDefault(size = 20) Pageable pageable) {
 
-        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
-        OrderDto.ExpectCondition expectCondition = new OrderDto.ExpectCondition(endAt);
-        CustomPage<OrderDto.Response> expectProducts = ordersService.getExpectProducts(accessToken, inputCondition, expectCondition, pageable);
+        CustomPage<OrderDto.Response> expectProducts = ordersService.getDeliveryProducts(accessToken,
+                input, endAt, factoryName, storeName, setTypeName,
+                colorName, sortField, sort, orderStatus, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(expectProducts));
     }
 
-    @GetMapping("/orders/delete")
+    @GetMapping("/orders/deleted")
     public ResponseEntity<ApiResponse<CustomPage<OrderDto.Response>>> getOrderDeleted(
             @AccessToken String accessToken,
             @RequestParam(name = "search", required = false) String input,
@@ -143,11 +163,14 @@ public class OrdersController {
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
-            @PageableDefault(size = 16) Pageable pageable) {
+            @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "sortField", required = false) String sortField,
+            @RequestParam(name = "sortOrder", required = false) String sort,
+            @RequestParam(name = "order_status") String orderStatus,
+            @PageableDefault(size = 20) Pageable pageable) {
 
-        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
-        OrderDto.OrderCondition orderCondition = new OrderDto.OrderCondition(startAt, endAt, factoryName, storeName, setTypeName);
-        CustomPage<OrderDto.Response> deletedProducts = ordersService.getDeletedProducts(accessToken, inputCondition, orderCondition, pageable);
+        CustomPage<OrderDto.Response> deletedProducts = ordersService.getDeletedProducts(accessToken, input, startAt, endAt, factoryName,
+                storeName, setTypeName, colorName, sortField, sort, orderStatus, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(deletedProducts));
     }
@@ -159,9 +182,12 @@ public class OrdersController {
             @RequestParam(name = "end") String endAt,
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
-            @RequestParam(name = "setType", required = false) String setTypeName) {
+            @RequestParam(name = "setType", required = false) String setTypeName,
+            @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "order_status") String orderStatus) {
 
-        List<String> filterFactories = ordersService.getFilterFactories(startAt, endAt, factoryName, storeName, setTypeName);
+        List<String> filterFactories = ordersService.getFilterFactories(startAt, endAt, factoryName,
+                storeName, setTypeName, colorName, orderStatus);
         return ResponseEntity.ok(ApiResponse.success(filterFactories));
     }
 
@@ -172,9 +198,11 @@ public class OrdersController {
             @RequestParam(name = "end") String endAt,
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
-            @RequestParam(name = "setType", required = false) String setTypeName) {
+            @RequestParam(name = "setType", required = false) String setTypeName,
+            @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "order_status") String orderStatus) {
 
-        List<String> filterStores = ordersService.getFilterStores(startAt, endAt, factoryName, storeName, setTypeName);
+        List<String> filterStores = ordersService.getFilterStores(startAt, endAt, factoryName, storeName, setTypeName, colorName, orderStatus);
         return ResponseEntity.ok(ApiResponse.success(filterStores));
     }
 
@@ -185,9 +213,11 @@ public class OrdersController {
             @RequestParam(name = "end") String endAt,
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
-            @RequestParam(name = "setType", required = false) String setTypeName) {
+            @RequestParam(name = "setType", required = false) String setTypeName,
+            @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "order_status") String orderStatus) {
 
-        List<String> filterSetType = ordersService.getFilterSetType(startAt, endAt, factoryName, storeName, setTypeName);
+        List<String> filterSetType = ordersService.getFilterSetType(startAt, endAt, factoryName, storeName, setTypeName, colorName, orderStatus);
         return ResponseEntity.ok(ApiResponse.success(filterSetType));
     }
 

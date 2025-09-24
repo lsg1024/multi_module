@@ -8,7 +8,9 @@ import java.util.Optional;
 public enum BusinessPhase {
     ORDER("주문"),
     WAITING("대기"),
+    UPDATE("주문 업데이트"),
     ORDER_FAIL("주문 실패"),
+    ORDER_UPDATE_FAIL("주문 업데이트 실패"),
     STOCK("재고"),
     STOCK_FAIL("재고 실패"),
     FIX("수리"),
@@ -16,7 +18,7 @@ public enum BusinessPhase {
     RENTAL("대여"),
     RETURN("반환"),
     SALE("판매"),
-    DELETE("삭제");
+    DELETED("삭제");
 
     private final String displayName;
 

@@ -1,6 +1,7 @@
 package com.msa.order.local.order.service;
 
 import com.msa.order.global.kafka.dto.OrderAsyncRequested;
+import com.msa.order.global.kafka.dto.OrderUpdateRequest;
 import com.msa.order.local.order.dto.FactoryDto;
 import com.msa.order.local.order.dto.StoreDto;
 import com.msa.order.local.order.entity.OrderProduct;
@@ -50,7 +51,9 @@ public class KafkaOrderService {
     }
 
     @Transactional
-    public void handle(OrderAsyncRequested evt) {
+    public void createHandle(OrderAsyncRequested evt) {
+
+        log.info("createHandle = {}", evt.toString());
 
         // 멀티테넌시 컨텍스트 전파
         final String tenantId = evt.getTenantId();
@@ -68,38 +71,47 @@ public class KafkaOrderService {
         StatusHistory statusHistory;
 
         try {
-            // 1) 외부 조회 (순차/병렬 선택 가능)
             StoreDto.Response storeInfo = storeClient.getStoreInfo(tenantId, evt.getStoreId());
             String factoryName = factoryClient.getFactoryInfo(tenantId, evt.getFactoryId()).getFactoryName();
             String materialName = materialClient.getMaterialInfo(tenantId, evt.getMaterialId());
             String colorName = colorClient.getColorInfo(tenantId, evt.getColorId());
             ProductDetailDto productInfo = productClient.getProductInfo(tenantId, evt.getProductId(), storeInfo.getGrade());
 
+            log.info("");
+
             AssistantStoneDto.Response assistantStoneInfo;
             OrderProduct orderProduct = order.getOrderProduct();
             if (evt.isAssistantStone()) {
                 assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(tenantId, evt.getAssistantStoneId());
-                orderProduct.updateOrder(
+                orderProduct.updateOrderProduct(
                         productInfo.getProductName(),
                         productInfo.getPurchaseCost(),
                         productInfo.getLaborCost(),
+                        evt.getMaterialId(),
                         materialName,
+                        evt.getColorId(),
                         colorName,
+                        productInfo.getClassificationId(),
                         productInfo.getClassificationName(),
-                        productInfo.getSetType(),
+                        productInfo.getSetTypeId(),
+                        productInfo.getSetTypeName(),
                         evt.isAssistantStone(),
                         assistantStoneInfo.getAssistantName(),
                         evt.getAssistantStoneCreateAt()
                 );
             } else {
-                orderProduct.updateOrder(
+                orderProduct.updateOrderProduct(
                         productInfo.getProductName(),
                         productInfo.getPurchaseCost(),
                         productInfo.getLaborCost(),
+                        evt.getMaterialId(),
                         materialName,
+                        evt.getColorId(),
                         colorName,
+                        productInfo.getClassificationId(),
                         productInfo.getClassificationName(),
-                        productInfo.getSetType()
+                        productInfo.getSetTypeId(),
+                        productInfo.getSetTypeName()
                 );
             }
 
@@ -120,7 +132,7 @@ public class KafkaOrderService {
                     order.getFlowCode(),
                     lastHistory.getSourceType(),
                     lastHistory.getPhase(),
-                    BusinessPhase.ORDER,
+                    BusinessPhase.valueOf(evt.getOrderStatus()),
                     evt.getNickname()
             );
 
@@ -136,6 +148,101 @@ public class KafkaOrderService {
                     lastHistory.getPhase(),
                     BusinessPhase.ORDER_FAIL,
                     evt.getNickname()
+            );
+
+            statusHistoryRepository.save(statusHistory);
+        }
+    }
+
+    @Transactional
+    public void updateHandle(OrderUpdateRequest updateRequest) {
+
+        log.info("updateHandle = {}", updateRequest.toString());
+
+        // 멀티테넌시 컨텍스트 전파
+        final String tenantId = updateRequest.getTenantId();
+
+        Orders order = ordersRepository.findByFlowCode(updateRequest.getFlowCode())
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        if (order.getOrderStatus() != OrderStatus.ORDER && order.getOrderStatus() != OrderStatus.FIX) {
+            return;
+        }
+
+        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        StatusHistory statusHistory;
+
+        try {
+
+            if (updateRequest.getStoreId() != null) {
+                StoreDto.Response storeInfo = storeClient.getStoreInfo(tenantId, updateRequest.getStoreId());
+                order.updateStore(new StoreDto.Response(updateRequest.getStoreId(), storeInfo.getStoreName()));
+            }
+
+            if (updateRequest.getFactoryId() != null) {
+                String factoryName = factoryClient.getFactoryInfo(tenantId, updateRequest.getFactoryId()).getFactoryName();
+                order.updateFactory(new FactoryDto.Response(updateRequest.getFactoryId(), factoryName));
+            }
+
+            String materialName = null;
+            if (updateRequest.getMaterialId() != null) {
+                materialName = materialClient.getMaterialInfo(tenantId, updateRequest.getMaterialId());
+            }
+
+            String colorName = null;
+            if (updateRequest.getColorId() != null) {
+                colorName = colorClient.getColorInfo(tenantId, updateRequest.getColorId());
+            }
+
+            ProductDetailDto productInfo = null;
+            if (updateRequest.getProductId() != null) {
+                Long storeIdForGrade = updateRequest.getStoreId() != null ? updateRequest.getStoreId() : order.getStoreId();
+                StoreDto.Response storeInfoForGrade = storeClient.getStoreInfo(tenantId, storeIdForGrade);
+                productInfo = productClient.getProductInfo(tenantId, updateRequest.getProductId(), storeInfoForGrade.getGrade());
+            }
+
+            AssistantStoneDto.Response assistantStoneInfo = null;
+            if (updateRequest.isAssistantStone() && updateRequest.getAssistantStoneId() != null) {
+                assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(tenantId, updateRequest.getAssistantStoneId());
+            }
+
+            OrderProduct orderProduct = order.getOrderProduct();
+            orderProduct.updateDetails(
+                    productInfo != null ? productInfo.getProductName() : null,
+                    productInfo != null ? productInfo.getPurchaseCost() : null,
+                    productInfo != null ? productInfo.getLaborCost() : null,
+                    productInfo != null ? productInfo.getClassificationName() : null,
+                    productInfo != null ? productInfo.getSetTypeName() : null,
+                    materialName,
+                    colorName,
+                    updateRequest.isAssistantStone(),
+                    assistantStoneInfo != null ? assistantStoneInfo.getAssistantName() : null,
+                    updateRequest.getAssistantStoneCreateAt()
+            );
+
+            ordersRepository.save(order);
+
+            statusHistory = StatusHistory.phaseChange(
+                    order.getFlowCode(),
+                    lastHistory.getSourceType(),
+                    lastHistory.getPhase(),
+                    BusinessPhase.UPDATE,
+                    updateRequest.getNickname()
+            );
+            statusHistoryRepository.save(statusHistory);
+
+        } catch (Exception e) {
+            log.error("Async failed. orderId={}, err={}", updateRequest.getFlowCode(), e.getMessage(), e);
+            order.updateProductStatus(ProductStatus.CHANG_FAILED);
+
+            statusHistory = StatusHistory.phaseChange(
+                    order.getFlowCode(),
+                    lastHistory.getSourceType(),
+                    lastHistory.getPhase(),
+                    BusinessPhase.ORDER_UPDATE_FAIL,
+                    updateRequest.getNickname()
             );
 
             statusHistoryRepository.save(statusHistory);

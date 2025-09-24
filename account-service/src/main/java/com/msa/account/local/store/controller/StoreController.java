@@ -76,6 +76,14 @@ public class StoreController {
         return ResponseEntity.ok(ApiResponse.success());
     }
 
+    //상점 등급 조회
+    @GetMapping("/stores/grade")
+    public ResponseEntity<ApiResponse<String>> getStoreGrade(
+            @RequestParam(name = "id") String storeId) {
+        String grade = storeService.getStoreGrade(storeId);
+        return ResponseEntity.ok(ApiResponse.success(grade));
+    }
+
     @GetMapping("/api/store/{id}")
     public ResponseEntity<ApiResponse<StoreDto.ApiStoreInfo>> getStoreInfo(@PathVariable Long id) {
         StoreDto.ApiStoreInfo storeInfo = storeService.getStoreInfo(id);

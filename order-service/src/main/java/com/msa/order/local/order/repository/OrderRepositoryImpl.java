@@ -1,11 +1,16 @@
 package com.msa.order.local.order.repository;
 
 import com.msa.common.global.util.CustomPage;
-import com.msa.order.local.order.dto.*;
+import com.msa.order.local.order.dto.OrderDto;
+import com.msa.order.local.order.dto.OrderQueryDto;
+import com.msa.order.local.order.dto.QOrderQueryDto;
+import com.msa.order.local.order.dto.StockCondition;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.order.entity.order_enum.ProductStatus;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Order;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
@@ -21,6 +26,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,24 +51,36 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
         BooleanBuilder conditionBuilder = getSearchBuilder(inputCondition);
         BooleanExpression statusBuilder = getOrdersStatusBuilder(orderCondition);
+        BooleanBuilder optionBuilder = getOptionBuilder(orderCondition.getOptionCondition());
 
-        return getResponses(pageable, conditionBuilder, statusBuilder, false);
+        return getResponses(pageable, orderCondition.getSortCondition(), conditionBuilder, statusBuilder, optionBuilder, false);
     }
 
     @Override
-    public CustomPage<OrderQueryDto> findByExpectOrders(OrderDto.InputCondition inputCondition, OrderDto.ExpectCondition orderCondition, Pageable pageable) {
+    public CustomPage<OrderQueryDto> findByFixOrders(OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable) {
         BooleanBuilder conditionBuilder = getSearchBuilder(inputCondition);
-        BooleanExpression statusBuilder = getExpectStatusBuilder(orderCondition);
+        BooleanExpression statusBuilder = getOrdersStatusBuilder(orderCondition);
+        BooleanBuilder optionBuilder = getOptionBuilder(orderCondition.getOptionCondition());
 
-        return getResponses(pageable, conditionBuilder, statusBuilder, false);
+        return getResponses(pageable, orderCondition.getSortCondition(), conditionBuilder, statusBuilder, optionBuilder, false);
+    }
+
+    @Override
+    public CustomPage<OrderQueryDto> findByDeliveryOrders(OrderDto.InputCondition inputCondition, OrderDto.ExpectCondition expectCondition, Pageable pageable) {
+        BooleanBuilder conditionBuilder = getSearchBuilder(inputCondition);
+        BooleanExpression statusBuilder = getExpectStatusBuilder(expectCondition);
+        BooleanBuilder optionBuilder = getOptionBuilder(expectCondition.getOptionCondition());
+
+        return getResponses(pageable, expectCondition.getSortCondition(), conditionBuilder, statusBuilder, optionBuilder, false);
     }
 
     @Override
     public CustomPage<OrderQueryDto> findByDeletedOrders(OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable) {
         BooleanBuilder conditionBuilder = getSearchBuilder(inputCondition);
-        BooleanExpression statusBuilder = getOrdersDeletedStatusBuilder(orderCondition);
+        BooleanExpression statusBuilder = getOrdersStatusBuilder(orderCondition);
+        BooleanBuilder optionBuilder = getOptionBuilder(orderCondition.getOptionCondition());
 
-        return getResponses(pageable, conditionBuilder, statusBuilder, true);
+        return getResponses(pageable, orderCondition.getSortCondition(), conditionBuilder, statusBuilder, optionBuilder,  true);
     }
 
     @Override
@@ -93,7 +111,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression ordersStatusBuilder = getOrdersStatusBuilder(condition);
 
         return query
-                .selectDistinct(orders.orderProduct.setType)
+                .selectDistinct(orders.orderProduct.setTypeName)
                 .from(orders)
                 .join(orders.orderProduct, orderProduct)
                 .where(ordersStatusBuilder)
@@ -101,7 +119,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
     }
 
     @NotNull
-    private CustomPage<OrderQueryDto> getResponses(Pageable pageable, BooleanBuilder conditionBuilder, BooleanExpression statusBuilder, Boolean orderDeleted) {
+    private CustomPage<OrderQueryDto> getResponses(Pageable pageable, OrderDto.SortCondition sortCondition, BooleanBuilder conditionBuilder, BooleanExpression statusBuilder, BooleanBuilder optionBuilder, Boolean orderDeleted) {
 
         JPQLQuery<Integer> stockQty = JPAExpressions
                 .select(stock.stockCode.count().intValue())
@@ -115,6 +133,8 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                         stock.product.colorName.eq(orderProduct.colorName)
                 );
 
+        OrderSpecifier<?>[] orderSpecifiers = createOrderSpecifiers(sortCondition);
+
         List<OrderQueryDto> content = query
                 .select(new QOrderQueryDto(
                         orders.orderProduct.productId,
@@ -125,7 +145,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                         orders.orderProduct.productName,
                         orders.orderProduct.materialName,
                         orderProduct.colorName,
-                        orderProduct.setType,
+                        orderProduct.setTypeName,
                         orders.orderProduct.productSize,
                         stockQty,
                         orderProduct.orderMainStoneNote,
@@ -142,9 +162,12 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 .where(
                         statusBuilder,
                         conditionBuilder,
+                        optionBuilder,
                         orders.orderDeleted.eq(orderDeleted)
                 )
-                .orderBy(orders.createAt.desc(), orders.flowCode.desc())
+                .orderBy(orderSpecifiers)
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
                 .fetch();
 
         JPAQuery<Long> countQuery = query
@@ -153,6 +176,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 .where(
                         statusBuilder,
                         conditionBuilder,
+                        optionBuilder,
                         orders.orderDeleted.eq(orderDeleted)
                 );
 
@@ -206,7 +230,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
             // DTO에 주입
             content.forEach(r -> {
                 StockCondition k = new StockCondition(r.getProductName(), r.getMaterialName(), r.getColorName());
-                r.setStockFlowCodes(map.getOrDefault(k, java.util.Collections.emptyList()));
+                r.setStockFlowCodes(map.getOrDefault(k, List.of()));
             });
         }
 
@@ -227,6 +251,25 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         return booleanInput;
     }
 
+    @NotNull
+    private static BooleanBuilder getOptionBuilder(OrderDto.OptionCondition optionCondition) {
+        BooleanBuilder booleanOption = new BooleanBuilder();
+
+        if (StringUtils.hasText(optionCondition.getStoreName())) {
+            booleanOption.and(orders.storeName.containsIgnoreCase(optionCondition.getStoreName()));
+        }
+
+        if (StringUtils.hasText(optionCondition.getFactoryName())) {
+            booleanOption.and(orders.factoryName.containsIgnoreCase(optionCondition.getFactoryName()));
+        }
+
+        if (StringUtils.hasText(optionCondition.getSetTypeName())) {
+            booleanOption.and(orderProduct.setTypeName.containsIgnoreCase(optionCondition.getSetTypeName()));
+        }
+
+        return booleanOption;
+    }
+
     private static BooleanExpression getOrdersStatusBuilder(OrderDto.OrderCondition orderCondition) {
         String startAt = orderCondition.getStartAt();
         String endAt = orderCondition.getEndAt();
@@ -244,20 +287,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
 
         BooleanExpression statusIsOrder =
-                orders.orderStatus.in(OrderStatus.ORDER);
-
-        if (StringUtils.hasText(orderCondition.getFactoryName())) {
-            BooleanExpression hasFactory = orders.factoryName.eq(orderCondition.getFactoryName());
-            statusIsReceiptOrWaiting.and(hasFactory);
-        }
-        if (StringUtils.hasText(orderCondition.getStoreName())) {
-            BooleanExpression hasStore = orders.storeName.eq(orderCondition.getStoreName());
-            statusIsReceiptOrWaiting.and(hasStore);
-        }
-        if (StringUtils.hasText(orderCondition.getSetTypeName())) {
-            BooleanExpression hasSetType = orders.storeName.eq(orderCondition.getSetTypeName());
-            statusIsReceiptOrWaiting.and(hasSetType);
-        }
+                orders.orderStatus.in(OrderStatus.valueOf(orderCondition.getOrderStatus()));
 
         return statusIsReceiptOrWaiting.and(statusIsOrder).and(createdBetween);
     }
@@ -269,51 +299,43 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
         OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
 
-        BooleanExpression createdBetween =
+        BooleanExpression shippingAt =
                 orders.shippingAt.loe(endDateTime);
 
         BooleanExpression statusIsReceiptOrWaiting =
                 orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
 
         BooleanExpression statusIsOrder =
-                orders.orderStatus.in(OrderStatus.ORDER);
+                orders.orderStatus.in(OrderStatus.ORDER, OrderStatus.FIX);
 
-        return statusIsReceiptOrWaiting.and(statusIsOrder).and(createdBetween);
+        return statusIsReceiptOrWaiting.and(statusIsOrder).and(shippingAt);
     }
 
-    private static BooleanExpression getOrdersDeletedStatusBuilder(OrderDto.OrderCondition orderCondition) {
-        String startAt = orderCondition.getStartAt();
-        String endAt = orderCondition.getEndAt();
+    private OrderSpecifier<?>[] createOrderSpecifiers(OrderDto.SortCondition sortCondition) {
+        List<OrderSpecifier<?>> orderSpecifiers = new ArrayList<>();
 
-        LocalDateTime start = LocalDate.parse(startAt).atStartOfDay(); // 예: 2025-08-04 00:00:00
-        LocalDateTime end = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
+        if (sortCondition != null && StringUtils.hasText(sortCondition.getSortField())) {
+            Order direction = "ASC".equalsIgnoreCase(sortCondition.getSort()) ? Order.ASC : Order.DESC;
+            String field = sortCondition.getSortField();
 
-        OffsetDateTime startDateTime = start.atOffset(ZoneOffset.of("+09:00"));
-        OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
+            switch (field) {
+                case "factory" -> orderSpecifiers.add(new OrderSpecifier<>(direction, orders.factoryName));
+                case "store" -> orderSpecifiers.add(new OrderSpecifier<>(direction, orders.storeName));
+                case "setType" -> orderSpecifiers.add(new OrderSpecifier<>(direction, orderProduct.setTypeName));
+                case "color" -> orderSpecifiers.add(new OrderSpecifier<>(direction, orderProduct.colorName));
 
-        BooleanExpression deletedDate =
-                orders.shippingAt.between(startDateTime, endDateTime);
-
-        BooleanExpression statusIsReceiptOrWaiting =
-                orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
-
-        BooleanExpression statusIsOrder =
-                orders.orderStatus.in(OrderStatus.ORDER);
-
-        if (StringUtils.hasText(orderCondition.getFactoryName())) {
-            BooleanExpression hasFactory = orders.factoryName.eq(orderCondition.getFactoryName());
-            statusIsReceiptOrWaiting.and(hasFactory);
-        }
-        if (StringUtils.hasText(orderCondition.getStoreName())) {
-            BooleanExpression hasStore = orders.storeName.eq(orderCondition.getStoreName());
-            statusIsReceiptOrWaiting.and(hasStore);
-        }
-        if (StringUtils.hasText(orderCondition.getSetTypeName())) {
-            BooleanExpression hasSetType = orders.storeName.eq(orderCondition.getSetTypeName());
-            statusIsReceiptOrWaiting.and(hasSetType);
+                default -> {
+                    orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, orders.createAt));
+                    orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, orders.flowCode));
+                }
+            }
+        } else {
+            // 정렬 조건이 없을 경우 기본 정렬
+            orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, orders.createAt));
+            orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, orders.flowCode));
         }
 
-        return statusIsReceiptOrWaiting.and(statusIsOrder).and(deletedDate);
+        return orderSpecifiers.toArray(new OrderSpecifier[0]);
     }
 
 }

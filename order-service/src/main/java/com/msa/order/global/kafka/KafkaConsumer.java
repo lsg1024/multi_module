@@ -5,6 +5,7 @@ import com.msa.common.global.tenant.TenantContext;
 import com.msa.order.global.exception.KafkaProcessingException;
 import com.msa.order.global.kafka.dto.KafkaStockRequest;
 import com.msa.order.global.kafka.dto.OrderAsyncRequested;
+import com.msa.order.global.kafka.dto.OrderUpdateRequest;
 import com.msa.order.local.order.service.KafkaOrderService;
 import com.msa.order.local.stock.service.KafkaStockService;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +36,23 @@ public class KafkaConsumer {
 
             TenantContext.setTenant(evt.getTenantId());
 
-            kafkaOrderService.handle(evt);
+            kafkaOrderService.createHandle(evt);
+        } catch (Exception e) {
+            log.error("Consume failed. payload={}, err={}", message, e.getMessage(), e);
+            throw new IllegalStateException("Kafka consume error", e);
+
+        }
+    }
+
+    @KafkaListener(topics = "order.update.requested", groupId = "kafka.order-group", concurrency = "3")
+    @RetryableTopic(attempts = "2", backoff = @Backoff(delay = 1000, maxDelay = 5000, random = true), include = KafkaProcessingException.class)
+    public void orderUpdateRequested(String message) {
+        try {
+            OrderUpdateRequest orderUpdateRequest = objectMapper.readValue(message, OrderUpdateRequest.class);
+
+            TenantContext.setTenant(orderUpdateRequest.getTenantId());
+
+            kafkaOrderService.updateHandle(orderUpdateRequest);
         } catch (Exception e) {
             log.error("Consume failed. payload={}, err={}", message, e.getMessage(), e);
             throw new IllegalStateException("Kafka consume error", e);

@@ -22,8 +22,8 @@ public class OrderQueryDto {
     private String setType;
     private String productSize;
     private Integer stockQuantity;
-    private String orderMainStoneNote;
-    private String orderAssistanceStoneNote;
+    private String mainStoneNote;
+    private String assistanceStoneNote;
     private List<String> stockFlowCodes;
     private String orderNote;
     private String factoryName;
@@ -36,7 +36,7 @@ public class OrderQueryDto {
     }
 
     @QueryProjection
-    public OrderQueryDto(Long productId, String createAt, String shippingAt, String flowCode, String storeName, String productName, String materialName, String colorName, String setType, String productSize, Integer stockQuantity, String orderMainStoneNote, String orderAssistanceStoneNote, String orderNote, String factoryName, String priority, ProductStatus productStatus, OrderStatus orderStatus) {
+    public OrderQueryDto(Long productId, String createAt, String shippingAt, String flowCode, String storeName, String productName, String materialName, String colorName, String setType, String productSize, Integer stockQuantity, String mainStoneNote, String assistanceStoneNote, String orderNote, String factoryName, String priority, ProductStatus productStatus, OrderStatus orderStatus) {
         this.productId = productId;
         this.createAt = createAt;
         this.shippingAt = shippingAt;
@@ -48,8 +48,8 @@ public class OrderQueryDto {
         this.setType = setType;
         this.productSize = productSize;
         this.stockQuantity = stockQuantity;
-        this.orderMainStoneNote = orderMainStoneNote;
-        this.orderAssistanceStoneNote = orderAssistanceStoneNote;
+        this.mainStoneNote = mainStoneNote;
+        this.assistanceStoneNote = assistanceStoneNote;
         this.orderNote = orderNote;
         this.factoryName = factoryName;
         this.priority = priority;

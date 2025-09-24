@@ -94,7 +94,7 @@ public class StoneUtil {
         }
     }
 
-    public static void updateStoneInfo(List<StoneDto.StoneInfo> stoneInfos, Stock stock, List<OrderStone> originOrderStone) {
+    public static void updateStockStoneInfo(List<StoneDto.StoneInfo> stoneInfos, Stock stock, List<OrderStone> originOrderStone) {
         Map<Long, OrderStone> orderByOriginId = originOrderStone.stream()
                 .filter(s -> s.getOrderStoneId() != null)
                 .collect(Collectors.toMap(OrderStone::getOriginStoneId, Function.identity()));
@@ -128,6 +128,44 @@ public class StoneUtil {
                 orderStone.setStock(stock);
                 orderStone.setOrder(order);
                 stock.addStockStone(orderStone);
+            }
+        }
+
+        originOrderStone.removeIf(os ->
+                os.getOriginStoneId() != null && !keepIds.contains(os.getOriginStoneId()));
+    }
+
+    public static void updateOrderStoneInfo(List<StoneDto.StoneInfo> stoneInfos, Orders order, List<OrderStone> originOrderStone) {
+        Map<Long, OrderStone> orderByOriginId = originOrderStone.stream()
+                .filter(s -> s.getOrderStoneId() != null)
+                .collect(Collectors.toMap(OrderStone::getOriginStoneId, Function.identity()));
+
+        Set<Long> keepIds = new HashSet<>();
+        for (StoneDto.StoneInfo stoneInfo : stoneInfos) {
+            Long originId = Long.valueOf(stoneInfo.getStoneId());
+            keepIds.add(originId);
+
+            OrderStone os = orderByOriginId.get(originId);
+            if (os != null) {
+                if (isChanged(os, stoneInfo)) {
+                    os.updateFrom(stoneInfo);
+                }
+                os.setOrder(order);
+                order.getOrderStones().add(os);
+            } else {
+                OrderStone orderStone = OrderStone.builder()
+                        .originStoneId(Long.valueOf(stoneInfo.getStoneId()))
+                        .originStoneName(stoneInfo.getStoneName())
+                        .originStoneWeight(new BigDecimal(stoneInfo.getStoneWeight()))
+                        .stonePurchaseCost(stoneInfo.getPurchaseCost())
+                        .stoneLaborCost(stoneInfo.getLaborCost())
+                        .stoneQuantity(stoneInfo.getQuantity())
+                        .mainStone(stoneInfo.isMainStone())
+                        .includeStone(stoneInfo.isIncludeStone())
+                        .build();
+
+                orderStone.setOrder(order);
+                order.addOrderStone(orderStone);
             }
         }
 
