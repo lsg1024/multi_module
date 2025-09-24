@@ -63,7 +63,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
     }
 
     @Override
-    public CustomPage<OrderQueryDto> findByExpectOrders(OrderDto.InputCondition inputCondition, OrderDto.ExpectCondition expectCondition, Pageable pageable) {
+    public CustomPage<OrderQueryDto> findByDeliveryOrders(OrderDto.InputCondition inputCondition, OrderDto.ExpectCondition expectCondition, Pageable pageable) {
         BooleanBuilder conditionBuilder = getSearchBuilder(inputCondition);
         BooleanExpression statusBuilder = getExpectStatusBuilder(expectCondition);
         BooleanBuilder optionBuilder = getOptionBuilder(expectCondition.getOptionCondition());

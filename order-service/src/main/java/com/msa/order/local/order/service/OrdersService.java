@@ -479,7 +479,7 @@ public class OrdersService {
                     order.getFlowCode(),
                     lastHistory.getSourceType(),
                     BusinessPhase.valueOf(lastHistory.getFromValue()),
-                    BusinessPhase.DELETE,
+                    BusinessPhase.DELETED,
                     nickname
             );
 
@@ -518,9 +518,9 @@ public class OrdersService {
 
     // 출고 예정 목록 출력
     @Transactional(readOnly = true)
-    public CustomPage<OrderDto.Response> getExpectProducts(String accessToken, OrderDto.InputCondition inputCondition, OrderDto.ExpectCondition expectCondition, Pageable pageable) {
+    public CustomPage<OrderDto.Response> getDeliveryProducts(String accessToken, OrderDto.InputCondition inputCondition, OrderDto.ExpectCondition expectCondition, Pageable pageable) {
         String tenantId = jwtUtil.getTenantId(accessToken);
-        CustomPage<OrderQueryDto> expectOrderPages = customOrderRepository.findByExpectOrders(inputCondition, expectCondition, pageable);
+        CustomPage<OrderQueryDto> expectOrderPages = customOrderRepository.findByDeliveryOrders(inputCondition, expectCondition, pageable);
 
         List<Long> productIds = expectOrderPages.stream()
                 .map(OrderQueryDto::getProductId)

@@ -15,7 +15,7 @@ public interface CustomOrderRepository {
     CustomPage<OrderQueryDto> findByFixOrders(OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable);
 
     // 주문 출고 검색 = 제품 이름, 거래처, 공장, 접수일 - 출고 예정
-    CustomPage<OrderQueryDto> findByExpectOrders(OrderDto.InputCondition inputCondition, OrderDto.ExpectCondition orderCondition, Pageable pageable);
+    CustomPage<OrderQueryDto> findByDeliveryOrders(OrderDto.InputCondition inputCondition, OrderDto.ExpectCondition orderCondition, Pageable pageable);
     // 주문 삭제 검색 = 제품 이름, 거래처, 공장, 접수일 - 삭제 예정
     CustomPage<OrderQueryDto> findByDeletedOrders(OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable);
     // 주문 필더 목록

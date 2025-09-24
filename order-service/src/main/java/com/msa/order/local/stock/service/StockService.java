@@ -173,7 +173,7 @@ public class StockService {
         updateStoneCostAndPurchase(stock);
 
         order.updateOrderStatus(OrderStatus.valueOf(orderType));
-        order.updateProductStatus(ProductStatus.EXPECT);
+        order.updateProductStatus(ProductStatus.DELIVERY);
 
         StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
@@ -340,7 +340,7 @@ public class StockService {
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         stock.removeOrder(); // order, orderProduct 연관성 제거
-        stock.updateOrderStatus(OrderStatus.DELETE);
+        stock.updateOrderStatus(OrderStatus.DELETED);
 
         StatusHistory orderStatusHistory = StatusHistory.phaseChange(
                 beforeFlowCode,
@@ -361,7 +361,7 @@ public class StockService {
                 stock.getFlowCode(),
                 lastHistory.getSourceType(),
                 lastHistory.getPhase(),
-                BusinessPhase.DELETE,
+                BusinessPhase.DELETED,
                 nickname
         );
 
@@ -382,7 +382,7 @@ public class StockService {
 
         OrderStatus target = OrderStatus.valueOf(orderType);
 
-        if (target != OrderStatus.RETURN && target != OrderStatus.DELETE) {
+        if (target != OrderStatus.RETURN && target != OrderStatus.DELETED) {
             throw new IllegalArgumentException(WRONG_STATUS);
         }
         stock.updateOrderStatus(OrderStatus.STOCK);

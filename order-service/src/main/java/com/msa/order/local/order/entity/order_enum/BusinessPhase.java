@@ -18,7 +18,7 @@ public enum BusinessPhase {
     RENTAL("대여"),
     RETURN("반환"),
     SALE("판매"),
-    DELETE("삭제");
+    DELETED("삭제");
 
     private final String displayName;
 

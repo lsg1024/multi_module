@@ -136,7 +136,7 @@ public class OrdersController {
     }
 
     // 출고 예정 조회
-    @GetMapping("/orders/expect")
+    @GetMapping("/orders/deliveries")
     public ResponseEntity<ApiResponse<CustomPage<OrderDto.Response>>> getOrderExpect(
             @AccessToken String accessToken,
             @RequestParam(name = "search", required = false) String input,
@@ -150,12 +150,12 @@ public class OrdersController {
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
         OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName);
         OrderDto.ExpectCondition expectCondition = new OrderDto.ExpectCondition(endAt, optionCondition, orderStatus);
-        CustomPage<OrderDto.Response> expectProducts = ordersService.getExpectProducts(accessToken, inputCondition, expectCondition, pageable);
+        CustomPage<OrderDto.Response> expectProducts = ordersService.getDeliveryProducts(accessToken, inputCondition, expectCondition, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(expectProducts));
     }
 
-    @GetMapping("/orders/delete")
+    @GetMapping("/orders/deleted")
     public ResponseEntity<ApiResponse<CustomPage<OrderDto.Response>>> getOrderDeleted(
             @AccessToken String accessToken,
             @RequestParam(name = "search", required = false) String input,
