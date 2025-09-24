@@ -62,34 +62,6 @@ public class OrderDto {
 
         @Valid
         private List<StoneDto.StoneInfo> stoneInfos;
-
-        @Override
-        public String toString() {
-            return "Request{" +
-                    "storeId='" + storeId + '\'' +
-                    ", orderNote='" + orderNote + '\'' +
-                    ", factoryId='" + factoryId + '\'' +
-                    ", productId='" + productId + '\'' +
-                    ", productSize='" + productSize + '\'' +
-                    ", isProductWeightSale=" + isProductWeightSale +
-                    ", productAddLaborCost=" + productAddLaborCost +
-                    ", materialId='" + materialId + '\'' +
-                    ", colorId='" + colorId + '\'' +
-                    ", classificationName='" + classificationName + '\'' +
-                    ", setTypeName='" + setTypeName + '\'' +
-                    ", priorityName='" + priorityName + '\'' +
-                    ", stoneWeight=" + stoneWeight +
-                    ", mainStoneNote='" + mainStoneNote + '\'' +
-                    ", assistanceStoneNote='" + assistanceStoneNote + '\'' +
-                    ", assistantStone=" + assistantStone +
-                    ", assistantStoneId='" + assistantStoneId + '\'' +
-                    ", assistantStoneCreateAt='" + assistantStoneCreateAt + '\'' +
-                    ", createAt='" + createAt + '\'' +
-                    ", shippingAt='" + shippingAt + '\'' +
-                    ", productStatus='" + productStatus + '\'' +
-                    ", stoneInfos=" + stoneInfos +
-                    '}';
-        }
     }
 
     @Getter
@@ -208,12 +180,27 @@ public class OrderDto {
     }
     @Getter
     @NoArgsConstructor
-    @AllArgsConstructor
     public static class OrderCondition {
         private String startAt;
         private String endAt;
         private OptionCondition optionCondition;
+        private SortCondition sortCondition;
         private String orderStatus;
+
+        public OrderCondition(String startAt, String endAt, OptionCondition optionCondition, SortCondition sortCondition, String orderStatus) {
+            this.startAt = startAt;
+            this.endAt = endAt;
+            this.optionCondition = optionCondition;
+            this.sortCondition = sortCondition;
+            this.orderStatus = orderStatus;
+        }
+
+        public OrderCondition(String startAt, String endAt, OptionCondition optionCondition, String orderStatus) {
+            this.startAt = startAt;
+            this.endAt = endAt;
+            this.optionCondition = optionCondition;
+            this.orderStatus = orderStatus;
+        }
     }
 
     @Getter
@@ -222,6 +209,7 @@ public class OrderDto {
     public static class ExpectCondition {
         private String endAt;
         private OptionCondition optionCondition;
+        private SortCondition sortCondition;
         private String orderStatus;
     }
 
@@ -232,5 +220,22 @@ public class OrderDto {
         private String factoryName;
         private String storeName;
         private String setTypeName;
+        private String colorName;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SortCondition {
+        private String sortField;
+        private String sort;
+
+        @Override
+        public String toString() {
+            return "SortCondition{" +
+                    "sortField='" + sortField + '\'' +
+                    ", sort='" + sort + '\'' +
+                    '}';
+        }
     }
 }

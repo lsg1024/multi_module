@@ -122,8 +122,15 @@ public class OrdersService {
 
     // 주문 전체 리스트 조회
     @Transactional(readOnly = true)
-    public CustomPage<OrderDto.Response> getOrderProducts(String accessToken, OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable) {
+    public CustomPage<OrderDto.Response> getOrderProducts(String accessToken, String input, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort, String orderStatus, Pageable pageable) {
         String tenantId = jwtUtil.getTenantId(accessToken);
+
+        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
+        OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
+        OrderDto.OrderCondition orderCondition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, sortCondition, orderStatus);
+
+        log.info("getOrderProducts = {}", sortCondition.toString());
 
         CustomPage<OrderQueryDto> queryDtoPage = customOrderRepository.findByOrders(inputCondition, orderCondition, pageable);
         List<OrderQueryDto> queryDtos = queryDtoPage.getContent();
@@ -276,8 +283,6 @@ public class OrdersService {
     public void updateOrder(String accessToken, Long flowCode, String orderStatus, OrderDto.Request orderDto) {
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = TenantContext.getTenant();
-
-        log.info("updateOrder = {}", orderDto.toString());
 
         // priority 추가
         Priority priority = priorityRepository.findByPriorityName(orderDto.getPriorityName())
@@ -492,8 +497,12 @@ public class OrdersService {
 
     // 수리 예정 목록 출력
     @Transactional(readOnly = true)
-    public CustomPage<OrderDto.Response> getFixProducts(String accessToken, OrderDto.InputCondition inputCondition, OrderDto.OrderCondition fixCondition, Pageable pageable) {
+    public CustomPage<OrderDto.Response> getFixProducts(String accessToken, String input, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort, String orderStatus, Pageable pageable) {
         String tenantId = jwtUtil.getTenantId(accessToken);
+
+        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
+        OrderDto.OrderCondition fixCondition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
 
         CustomPage<OrderQueryDto> fixOrders = customOrderRepository.findByFixOrders(inputCondition, fixCondition, pageable);
 
@@ -518,8 +527,14 @@ public class OrdersService {
 
     // 출고 예정 목록 출력
     @Transactional(readOnly = true)
-    public CustomPage<OrderDto.Response> getDeliveryProducts(String accessToken, OrderDto.InputCondition inputCondition, OrderDto.ExpectCondition expectCondition, Pageable pageable) {
+    public CustomPage<OrderDto.Response> getDeliveryProducts(String accessToken, String input, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort, String orderStatus, Pageable pageable) {
         String tenantId = jwtUtil.getTenantId(accessToken);
+
+        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
+        OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
+        OrderDto.ExpectCondition expectCondition = new OrderDto.ExpectCondition(endAt, optionCondition, sortCondition, orderStatus);
+
         CustomPage<OrderQueryDto> expectOrderPages = customOrderRepository.findByDeliveryOrders(inputCondition, expectCondition, pageable);
 
         List<Long> productIds = expectOrderPages.stream()
@@ -543,8 +558,14 @@ public class OrdersService {
 
     // 주문 상태에서 삭제된 목록 출력
     @Transactional(readOnly = true)
-    public CustomPage<OrderDto.Response> getDeletedProducts(String accessToken, OrderDto.InputCondition inputCondition, OrderDto.OrderCondition orderCondition, Pageable pageable) {
+    public CustomPage<OrderDto.Response> getDeletedProducts(String accessToken, String input, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort, String orderStatus, Pageable pageable) {
         String tenantId = jwtUtil.getTenantId(accessToken);
+
+        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
+        OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
+        OrderDto.OrderCondition orderCondition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, sortCondition, orderStatus);
+
         CustomPage<OrderQueryDto> expectOrderPages = customOrderRepository.findByDeletedOrders(inputCondition, orderCondition, pageable);
 
         List<Long> productIds = expectOrderPages.stream()
@@ -568,24 +589,23 @@ public class OrdersService {
 
 
     @Transactional(readOnly = true)
-    public List<String> getFilterFactories(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String orderStatus) {
-        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName);
+    public List<String> getFilterFactories(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String orderStatus) {
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
         OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
         return customOrderRepository.findByFilterFactories(condition);
     }
 
     @Transactional(readOnly = true)
-    public List<String> getFilterStores(String startAt, String endAt, String factoryName, String storeName,String setTypeName, String orderStatus) {
-        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName);
+    public List<String> getFilterStores(String startAt, String endAt, String factoryName, String storeName,String setTypeName, String colorName, String orderStatus) {
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
         OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
         return customOrderRepository.findByFilterStores(condition);
     }
 
     @Transactional(readOnly = true)
-    public List<String> getFilterSetType(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String orderStatus) {
-        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName);
+    public List<String> getFilterSetType(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String orderStatus) {
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
         OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
         return customOrderRepository.findByFilterSetType(condition);
     }
-
 }

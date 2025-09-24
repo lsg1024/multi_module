@@ -22,21 +22,6 @@ public class StoneDto {
         private Integer quantity;
         private boolean mainStone; // 판매비용 메인인지 보조인지 판단
         private boolean includeStone;
-
-        @Override
-        public String toString() {
-            return "StoneInfo{" +
-                    "stoneId='" + stoneId + '\'' +
-                    ", stoneName='" + stoneName + '\'' +
-                    ", stoneWeight='" + stoneWeight + '\'' +
-                    ", purchaseCost=" + purchaseCost +
-                    ", laborCost=" + laborCost +
-                    ", addLaborCost=" + addLaborCost +
-                    ", quantity=" + quantity +
-                    ", mainStone=" + mainStone +
-                    ", includeStone=" + includeStone +
-                    '}';
-        }
     }
 
     @Getter

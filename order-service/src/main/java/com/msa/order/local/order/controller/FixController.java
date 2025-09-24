@@ -35,13 +35,14 @@ public class FixController {
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
+            @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "sortField", required = false) String sortField,
+            @RequestParam(name = "sortOrder", required = false) String sort,
             @RequestParam(name = "order_status") String orderType,
             @PageableDefault(size = 20) Pageable pageable) {
 
-        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
-        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName);
-        OrderDto.OrderCondition fixCondition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderType);
-        CustomPage<OrderDto.Response> fixProducts = ordersService.getFixProducts(accessToken, inputCondition, fixCondition, pageable);
+        CustomPage<OrderDto.Response> fixProducts = ordersService.getFixProducts(accessToken, input, startAt, endAt,
+                factoryName, storeName, setTypeName, colorName, sortField, sort, orderType, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(fixProducts));
     }
