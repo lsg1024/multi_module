@@ -4,6 +4,7 @@ import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.tenant.TenantContext;
 import com.msa.common.global.util.CustomPage;
 import com.msa.order.global.dto.StoneDto;
+import com.msa.order.global.excel.dto.OrderExcelQueryDto;
 import com.msa.order.global.kafka.KafkaProducer;
 import com.msa.order.global.kafka.dto.OrderAsyncRequested;
 import com.msa.order.global.kafka.dto.OrderUpdateRequest;
@@ -587,6 +588,15 @@ public class OrdersService {
         return new CustomPage<>(finalResponse, pageable, expectOrderPages.getTotalElements());
     }
 
+    // 엑셀 주문장 호출 가변 형태와 당일 값을 호출 가능하게 설정 - 주문, 수리, 출고예정, 삭제 전체에서 사용
+    @Transactional(readOnly = true)
+    public List<OrderExcelQueryDto> getExcel(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String orderStatus) {
+        // 주문장에서 사용할 데이터 호출
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
+        OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
+        return customOrderRepository.findByExcelData(condition);
+
+    }
 
     @Transactional(readOnly = true)
     public List<String> getFilterFactories(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String orderStatus) {
