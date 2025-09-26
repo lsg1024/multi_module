@@ -2,7 +2,6 @@ package com.msa.order;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.Bean;
@@ -13,9 +12,7 @@ import org.springframework.retry.annotation.EnableRetry;
 @EnableRetry
 @EnableCaching
 @EnableDiscoveryClient
-@SpringBootApplication(exclude = FlywayAutoConfiguration.class, scanBasePackages = {
-        "com.msa.order", "com.msa.common.global"
-})
+@SpringBootApplication(scanBasePackages = {"com.msa.order", "com.msa.common.global"})
 @EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
 public class OrderServerApplication {
     public static void main(String[] args) {
