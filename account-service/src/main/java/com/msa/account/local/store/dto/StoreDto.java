@@ -3,7 +3,9 @@ package com.msa.account.local.store.dto;
 import com.msa.account.global.domain.dto.AdditionalOptionDto;
 import com.msa.account.global.domain.dto.AddressDto;
 import com.msa.account.global.domain.dto.CommonOptionDto;
+import com.msa.account.global.domain.entity.Address;
 import com.msa.account.global.domain.entity.GoldHarry;
+import com.msa.account.local.store.entity.AdditionalOption;
 import com.msa.account.local.store.entity.Store;
 import com.querydsl.core.annotations.QueryProjection;
 import jakarta.validation.Valid;
@@ -128,6 +130,10 @@ public class StoreDto {
         private AddressDto.AddressInfo addressInfo;
 
         public Store toEntity(GoldHarry goldHarry) {
+
+            Address addressEntity = (this.addressInfo != null) ? this.addressInfo.toEntity() : null;
+            AdditionalOption additionalOptionEntity = (this.additionalOptionInfo != null) ? this.additionalOptionInfo.toEntity() : null;
+
             return Store.builder()
                     .storeName(storeInfo.getStoreName())
                     .storeOwnerName(storeInfo.getStoreOwnerName())
@@ -136,9 +142,9 @@ public class StoreDto {
                     .storeContactNumber2(storeInfo.getStoreContactNumber2())
                     .storeFaxNumber(storeInfo.getStoreFaxNumber())
                     .storeNote(storeInfo.getStoreNote())
-                    .address(addressInfo.toEntity())
+                    .address(addressEntity)
                     .commonOption(commonOptionInfo.toEntity(goldHarry))
-                    .additionalOption(additionalOptionInfo.toEntity())
+                    .additionalOption(additionalOptionEntity)
                     .build();
         }
     }

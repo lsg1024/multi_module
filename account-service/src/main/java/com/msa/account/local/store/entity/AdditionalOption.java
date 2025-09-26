@@ -15,7 +15,7 @@ public class AdditionalOption {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "OPTION_ID")
-    private String optionId;
+    private Long optionId;
     @Column(name = "OPTION_APPLY_PAST_SALES")
     private boolean optionApplyPastSales;
     @Column(name = "OPTION_MATERIAL_ID" )// product server mapping 필요
