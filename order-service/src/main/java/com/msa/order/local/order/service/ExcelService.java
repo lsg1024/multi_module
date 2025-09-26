@@ -1,4 +1,4 @@
-package com.msa.order.global.excel.service;
+package com.msa.order.local.order.service;
 
 import com.msa.order.global.excel.dto.OrderExcelQueryDto;
 import org.springframework.stereotype.Service;

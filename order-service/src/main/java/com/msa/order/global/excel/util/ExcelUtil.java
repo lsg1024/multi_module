@@ -1,6 +1,7 @@
 package com.msa.order.global.excel.util;
 
 import com.msa.order.global.excel.dto.OrderExcelQueryDto;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -9,11 +10,12 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.*;
 
+@Slf4j
 public class ExcelUtil {
 
-    // CHANGED: "메인/보조" 대신 "메인스톤", "보조스톤"을 찾도록 targetHeaders 수정
     public static byte[] createOrderWorkSheet(List<OrderExcelQueryDto> excelQueryDtos, LocalDate today) throws IOException {
         Map<String, List<OrderExcelQueryDto>> factoryRows = new LinkedHashMap<>();
+
         for (OrderExcelQueryDto dto : excelQueryDtos) {
             factoryRows.computeIfAbsent(dto.getFactory().toUpperCase(), k -> new ArrayList<>()).add(dto);
         }
@@ -31,13 +33,13 @@ public class ExcelUtil {
             factoryCell.setCellValue(factory);
             CellStyle factoryStyle = newWorkbook.createCellStyle();
             headerSheetStyle(newWorkbook, 16, factoryStyle, factoryCell);
-            // 매장명
+            // 매장명 -> 추후 할당 받아 사용
             Cell storeCell = firstRow.createCell(4);
             storeCell.setCellValue("칸"); // 필요시 파라미터로 받아서 처리
             CellStyle storeStyle = newWorkbook.createCellStyle();
             headerSheetStyle(newWorkbook, 24, storeStyle, storeCell);
             // 날짜
-            Cell dateCell = firstRow.createCell(5);
+            Cell dateCell = firstRow.createCell(6);
             dateCell.setCellValue(today.toString());
             CellStyle dateStyle = newWorkbook.createCellStyle();
             headerSheetStyle(newWorkbook, 20, dateStyle, dateCell);
@@ -125,7 +127,7 @@ public class ExcelUtil {
     private static void headerSheetStyle(Workbook newWorkbook, CellStyle headerStyle) {
         Font headerFont = newWorkbook.createFont();
         headerFont.setBold(true);
-        headerFont.setFontHeightInPoints((short) 12);
+        headerFont.setFontHeightInPoints((short) 10);
         headerStyle.setFont(headerFont);
         headerStyle.setWrapText(true);
         headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
@@ -145,7 +147,7 @@ public class ExcelUtil {
     // 기본 데이터 스타일 (12pt)
     private static void dataSheetStyle(Workbook newWorkbook, CellStyle dataStyle) {
         Font dataFont = newWorkbook.createFont();
-        dataFont.setFontHeightInPoints((short) 12); // 12pt
+        dataFont.setFontHeightInPoints((short) 10); // 10pt
         dataStyle.setFont(dataFont);
         dataStyle.setWrapText(true);
         dataStyle.setAlignment(HorizontalAlignment.CENTER);
@@ -163,7 +165,7 @@ public class ExcelUtil {
     // ADDED: "메인/보조" 열 전용 데이터 스타일 (10pt)
     private static void createMultiLineDataStyle(Workbook newWorkbook, CellStyle dataStyle) {
         Font dataFont = newWorkbook.createFont();
-        dataFont.setFontHeightInPoints((short) 10); // 10pt로 폰트 크기 줄임
+        dataFont.setFontHeightInPoints((short) 8); // 8pt로 폰트 크기 줄임
         dataStyle.setFont(dataFont);
         dataStyle.setWrapText(true);
         dataStyle.setAlignment(HorizontalAlignment.CENTER);
