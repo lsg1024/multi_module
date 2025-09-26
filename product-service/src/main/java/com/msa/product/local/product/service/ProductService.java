@@ -354,7 +354,7 @@ public class ProductService {
                 group.setColor(color);
             }
             group.updateProductPurchasePrice(dto.getProductPurchasePrice(), dto.getNote());
-            updatePolicies(group, dto.getGradePolicyDtos());
+            updatePolicies(group, dto.getPolicyDtos());
         }
     }
 

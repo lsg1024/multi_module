@@ -2,7 +2,6 @@ package com.msa.account;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.Bean;
@@ -13,7 +12,7 @@ import static org.springframework.data.web.config.EnableSpringDataWebSupport.Pag
 
 @EnableCaching
 @EnableDiscoveryClient
-@SpringBootApplication(exclude = FlywayAutoConfiguration.class, scanBasePackages = {
+@SpringBootApplication(scanBasePackages = {
         "com.msa.account", "com.msa.common.global"
 })
 @EnableSpringDataWebSupport(pageSerializationMode = VIA_DTO)

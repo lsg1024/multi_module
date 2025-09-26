@@ -37,12 +37,12 @@ public class HibernateConfig {
 
     @Bean
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(
-            @Qualifier("dataSource") DataSource routingDataSource,
+            @Qualifier("defaultDataSource") DataSource defaultDataSource,
             SchemaMultiTenantConnectionProvider connectionProvider,
             CurrentTenantIdentifierResolverImpl resolver) {
 
         LocalContainerEntityManagerFactoryBean emf = new LocalContainerEntityManagerFactoryBean();
-        emf.setDataSource(routingDataSource);
+        emf.setDataSource(defaultDataSource);
         emf.setPackagesToScan(entityScanPackages.toArray(new String[0]));
         emf.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
 
