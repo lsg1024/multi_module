@@ -8,5 +8,5 @@ import java.time.OffsetDateTime;
 @Getter
 @NoArgsConstructor
 public class DateDto {
-    private OffsetDateTime expectDate;
+    private OffsetDateTime deliveryDate;
 }

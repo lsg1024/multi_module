@@ -118,7 +118,7 @@ public class OrderProduct {
         this.assistantStoneCreateAt = assistantStoneCreateAt;
     }
 
-    public void updateOrderProduct(String productName, Integer productPurchaseCost, Integer laborCost, Long materialId, String materialName, Long colorId, String colorName, Long classificationId, String classificationName, Long setTypeId, String setTypeName) {
+    public void updateOrderProduct(String productName, Integer productPurchaseCost, Integer laborCost, Long materialId, String materialName, Long colorId, String colorName, Long classificationId, String classificationName, Long setTypeId, String setTypeName, String assistantStoneName) {
         this.productName = productName;
         this.productPurchaseCost = productPurchaseCost;
         this.productAddLaborCost = laborCost;
@@ -130,6 +130,7 @@ public class OrderProduct {
         this.classificationName = classificationName;
         this.setTypeId = setTypeId;
         this.setTypeName = setTypeName;
+        this.assistantStoneName = assistantStoneName;
     }
 
     public void updateOrderProductInfo(Long productId, BigDecimal stoneWeight, Integer productAddLaborCost, String mainStoneNote, String assistanceStoneNote, String productSize) {

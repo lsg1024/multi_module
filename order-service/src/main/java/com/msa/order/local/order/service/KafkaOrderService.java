@@ -52,9 +52,6 @@ public class KafkaOrderService {
 
     @Transactional
     public void createHandle(OrderAsyncRequested evt) {
-
-        log.info("createHandle = {}", evt.toString());
-
         // 멀티테넌시 컨텍스트 전파
         final String tenantId = evt.getTenantId();
 
@@ -79,10 +76,9 @@ public class KafkaOrderService {
 
             log.info("");
 
-            AssistantStoneDto.Response assistantStoneInfo;
+            AssistantStoneDto.Response assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(tenantId, evt.getAssistantStoneId());
             OrderProduct orderProduct = order.getOrderProduct();
             if (evt.isAssistantStone()) {
-                assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(tenantId, evt.getAssistantStoneId());
                 orderProduct.updateOrderProduct(
                         productInfo.getProductName(),
                         productInfo.getPurchaseCost(),
@@ -95,7 +91,7 @@ public class KafkaOrderService {
                         productInfo.getClassificationName(),
                         productInfo.getSetTypeId(),
                         productInfo.getSetTypeName(),
-                        evt.isAssistantStone(),
+                        true,
                         assistantStoneInfo.getAssistantName(),
                         evt.getAssistantStoneCreateAt()
                 );
@@ -111,7 +107,8 @@ public class KafkaOrderService {
                         productInfo.getClassificationId(),
                         productInfo.getClassificationName(),
                         productInfo.getSetTypeId(),
-                        productInfo.getSetTypeName()
+                        productInfo.getSetTypeName(),
+                        assistantStoneInfo.getAssistantName()
                 );
             }
 

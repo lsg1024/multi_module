@@ -266,6 +266,7 @@ public class OrdersService {
                     .materialId(materialId)
                     .colorId(colorId)
                     .assistantStone(false)
+                    .assistantStoneId(assistantId)
                     .nickname(nickname)
                     .stoneIds(stoneIds)
                     .orderStatus(orderStatus)
@@ -454,13 +455,13 @@ public class OrdersService {
     }
 
     //출고일 변경
-    public void updateOrderExpectDate(String id, DateDto newDate) {
+    public void updateOrderDeliveryDate(String id, DateDto newDate) {
 
         long flowCode = Long.parseLong(id);
         Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        OffsetDateTime received = newDate.getExpectDate();
+        OffsetDateTime received = newDate.getDeliveryDate();
         OffsetDateTime receivedKst  = received.withOffsetSameInstant(ZoneOffset.ofHours(9));
 
         order.updateShippingDate(receivedKst);
