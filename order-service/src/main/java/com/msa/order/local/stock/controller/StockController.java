@@ -20,14 +20,21 @@ public class StockController {
         this.stockService = stockService;
     }
 
+    // 주문 -> 재고 조회
+    @GetMapping("/orders/stock-register")
+    public ResponseEntity<ApiResponse<StockDto.stockResponse>> getOrderStock() {
+//        stockService
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
     // 주문 -> 재고
-    @PatchMapping("/orders/stock")
+    @PatchMapping("/orders/stock-register")
     public ResponseEntity<ApiResponse<String>> updateOrderToStock(
             @AccessToken String accessToken,
             @RequestParam(name = "id") Long flowCode,
-            @RequestParam(name = "order_type") String orderType,
+            @RequestParam(name = "order_status") String orderStatus,
             @Valid @RequestBody StockDto.stockRequest stockDto) {
-        stockService.updateOrderStatus(accessToken, flowCode, orderType, stockDto);
+        stockService.updateOrderStatus(accessToken, flowCode, orderStatus, stockDto);
         return ResponseEntity.ok(ApiResponse.success("재고 등록 완료"));
     }
 

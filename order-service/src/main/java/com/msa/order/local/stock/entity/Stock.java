@@ -58,7 +58,7 @@ public class Stock {
     private Integer mainStoneLaborCost;
     @Column(name = "ASSISTANCE_STONE_LABOR_COST") // 스톤 보조 매출 비용
     private Integer assistanceStoneLaborCost;
-    @Column(name = "ADD_STONE_LABOR_COST") // 추가 스톤 매입 비용
+    @Column(name = "ADD_STONE_LABOR_COST") // 추가 스톤 매출 비용
     private Integer addStoneLaborCost;
     @Column(name = "TOTAL_STONE_PURCHASE_COST") // 총 스톤 매입 비용
     private Integer stonePurchaseCost;
