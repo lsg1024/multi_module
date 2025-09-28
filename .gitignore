@@ -52,3 +52,4 @@ bin/
 /product-service/src/main/resources/application-secret.properties
 /product-service/src/main/java/com/msa/product/global/kafka/KafkaTestController.java
 /product-service/src/main/resources/logs/
+/common/src/main/generated/

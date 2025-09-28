@@ -1,6 +1,5 @@
 package com.msa.common.global.config;
 
-import com.msa.common.global.db.DynamicDataSourceRouter;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
@@ -16,21 +15,14 @@ import javax.sql.DataSource;
 public class DataSourceConfig {
 
     @Bean
+    @Primary
     @Qualifier("defaultDataSource")
     public DataSource defaultDataSource(DataSourceProperties properties) {
-        HikariDataSource ds = properties
+
+        return properties
                 .initializeDataSourceBuilder()
                 .type(HikariDataSource.class)
                 .build();
-
-        ds.setConnectionInitSql("SET SCHEMA PUBLIC");
-        return ds;
     }
 
-    @Primary
-    @Bean
-    public DataSource dataSource(
-            @Qualifier("defaultDataSource") DataSource defaultDs) {
-        return new DynamicDataSourceRouter(defaultDs);
-    }
 }

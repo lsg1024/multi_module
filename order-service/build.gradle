@@ -16,7 +16,12 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-batch'
 
     //flyway
-    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-core:11.12.0'
+
+    //db
+    runtimeOnly("org.flywaydb:flyway-database-postgresql:11.12.0")
+    runtimeOnly 'org.postgresql:postgresql:42.6.0'
+    testRuntimeOnly 'com.h2database:h2'
 
     //jwt
     implementation 'io.jsonwebtoken:jjwt:0.12.3'
@@ -26,6 +31,13 @@ dependencies {
     //validation
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    //Excel
+    implementation("org.apache.poi:poi:5.4.1")
+    implementation("org.apache.poi:poi-ooxml:5.4.1")
+
+    //HTML Parser
+    implementation("org.jsoup:jsoup:1.21.2")
 
     //Querydsl
     implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
@@ -41,10 +53,6 @@ dependencies {
     //kafka
     implementation 'org.springframework.kafka:spring-kafka'
     implementation 'org.springframework.cloud:spring-cloud-starter-bus-kafka'
-
-    //db
-    runtimeOnly 'com.h2database:h2'
-    testRuntimeOnly 'com.h2database:h2'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.batch:spring-batch-test'

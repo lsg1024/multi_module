@@ -4,6 +4,8 @@ spring:
   batch:
     job:
       enabled: false
+    jdbc:
+      initialize-schema: never
   kafka:
     listener:
       missing-topics-fatal: false
@@ -58,8 +60,3 @@ custom:
   jpa:
     entity-scan-packages:
       - com.msa.product
-  datasource-meta:
-    driver-class-name: org.h2.Driver
-    jdbcUrl: jdbc:h2:tcp://localhost/~/metadb
-    username: sa
-    password:

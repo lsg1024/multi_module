@@ -1,6 +1,8 @@
 package com.msa.order.local.order.repository;
 
 import com.msa.common.global.util.CustomPage;
+import com.msa.order.global.excel.dto.OrderExcelQueryDto;
+import com.msa.order.global.excel.dto.QOrderExcelQueryDto;
 import com.msa.order.local.order.dto.OrderDto;
 import com.msa.order.local.order.dto.OrderQueryDto;
 import com.msa.order.local.order.dto.QOrderQueryDto;
@@ -115,6 +117,33 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 .from(orders)
                 .join(orders.orderProduct, orderProduct)
                 .where(ordersStatusBuilder)
+                .fetch();
+    }
+
+    @Override
+    public List<OrderExcelQueryDto> findByExcelData(OrderDto.OrderCondition condition) {
+
+        BooleanBuilder optionBuilder = getOptionBuilder(condition.getOptionCondition());
+        BooleanExpression ordersReceiptStatusBuilder = getOrdersReceiptStatusBuilder(condition);
+
+        return query
+                .select(new QOrderExcelQueryDto(
+                        orders.factoryName,
+                        orderProduct.productName, // productFactoryName으로 업데이트 필요
+                        orderProduct.materialName,
+                        orderProduct.colorName,
+                        orderProduct.orderMainStoneNote,
+                        orderProduct.orderAssistanceStoneNote,
+                        orderProduct.productSize,
+                        orders.orderNote
+                ))
+                .from(orders)
+                .join(orders.orderProduct, orderProduct)
+                .where(
+                        optionBuilder,
+                        ordersReceiptStatusBuilder
+                )
+                .orderBy(orders.factoryName.asc())
                 .fetch();
     }
 
@@ -288,6 +317,28 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
         BooleanExpression statusIsOrder =
                 orders.orderStatus.in(OrderStatus.valueOf(orderCondition.getOrderStatus()));
+
+        return statusIsReceiptOrWaiting.and(statusIsOrder).and(createdBetween);
+    }
+
+    private static BooleanExpression getOrdersReceiptStatusBuilder(OrderDto.OrderCondition orderCondition) {
+        String startAt = orderCondition.getStartAt();
+        String endAt = orderCondition.getEndAt();
+
+        LocalDateTime start = LocalDate.parse(startAt).atStartOfDay(); // 예: 2025-08-04 00:00:00
+        LocalDateTime end = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
+
+        OffsetDateTime startDateTime = start.atOffset(ZoneOffset.of("+09:00"));
+        OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
+
+        BooleanExpression createdBetween =
+                orders.createAt.between(startDateTime, endDateTime);
+
+        BooleanExpression statusIsReceiptOrWaiting =
+                orders.productStatus.eq(ProductStatus.RECEIPT);
+
+        BooleanExpression statusIsOrder =
+                orders.orderStatus.eq(OrderStatus.valueOf(orderCondition.getOrderStatus()));
 
         return statusIsReceiptOrWaiting.and(statusIsOrder).and(createdBetween);
     }

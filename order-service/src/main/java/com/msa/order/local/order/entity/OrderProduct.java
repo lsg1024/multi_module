@@ -22,6 +22,8 @@ public class OrderProduct {
     private Long productId;
     @Column(name = "PRODUCT_NAME")
     private String productName;
+//    @Column(name = "PRODUCT_FACTORY_NAME")
+//    private String productFactoryName;
     @Column(name = "PRODUCT_SIZE")
     private String productSize;
     @Column(name = "IS_GOLD_WEIGHT_SALE")
@@ -71,6 +73,7 @@ public class OrderProduct {
     public OrderProduct(Long productId, String productName, String productSize, boolean isGoldWeightSale, BigDecimal goldWeight, BigDecimal stoneWeight, String orderMainStoneNote, String orderAssistanceStoneNote, Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost, Long materialId, String materialName, Long classificationId, String classificationName, Long colorId, String colorName, Long setTypeId, String setTypeName, boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, Orders order) {
         this.productId = productId;
         this.productName = productName;
+//        this.productFactoryName = productFactoryName;
         this.productSize = productSize;
         this.isGoldWeightSale = isGoldWeightSale;
         this.goldWeight = goldWeight;

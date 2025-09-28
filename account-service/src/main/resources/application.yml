@@ -6,6 +6,8 @@ spring:
   batch:
     job:
       enabled: false
+    jdbc:
+      initialize-schema: never
   kafka:
     listener:
       missing-topics-fatal: false
@@ -40,8 +42,3 @@ custom:
       - com.msa.account.local.store.entity
       - com.msa.account.local.factory.entity
       - com.msa.account.global.domain.entity
-  datasource-meta:
-    driver-class-name: org.h2.Driver
-    jdbcUrl: jdbc:h2:tcp://localhost/~/metadb
-    username: sa
-    password:

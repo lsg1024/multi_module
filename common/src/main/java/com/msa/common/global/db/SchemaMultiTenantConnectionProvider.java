@@ -1,6 +1,5 @@
 package com.msa.common.global.db;
 
-import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.Flyway;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -15,6 +14,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
 @Profile("dev")
 @Component
 @ManagedResource(objectName="com.msa:type=MultiTenant,bean=SchemaProvider")
@@ -22,7 +22,7 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
 
     private final DataSource defaultDataSource;
     private final Set<String> initializedTenants = ConcurrentHashMap.newKeySet();
-    private static final String DEFAULT_SCHEMA = "PUBLIC";
+    private static final String DEFAULT_SCHEMA = "public";
 
     public SchemaMultiTenantConnectionProvider(@Qualifier("defaultDataSource") DataSource defaultDataSource) {
         this.defaultDataSource = defaultDataSource;
@@ -41,31 +41,17 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
     @Override
     public Connection getConnection(Object tenantIdentifier) throws SQLException {
         Connection connection = getAnyConnection();
-        String tenant = tenantIdentifier.toString().toUpperCase();
+        String tenant = tenantIdentifier.toString().toLowerCase();
 
-        if (DEFAULT_SCHEMA.equals(tenant)) {
+        if (!schemaExists(connection, tenant)) {
             try (Statement stmt = connection.createStatement()) {
-                stmt.execute("SET SCHEMA " + DEFAULT_SCHEMA);
+                stmt.execute("CREATE SCHEMA " + tenant);
             }
-            return connection;
-        }
-
-        try (Statement stmt = connection.createStatement()) {
-            stmt.execute("CREATE SCHEMA IF NOT EXISTS " + tenant);
-        }
-
-        if (!initializedTenants.contains(tenant)) {
-            initializedTenants.add(tenant);
             runMigration(tenant);
-        } else {
-            if (isSchemaEmpty(connection, tenant)) {
-                runMigration(tenant);
-            }
         }
 
-        // 스키마 전환
         try (Statement stmt = connection.createStatement()) {
-            stmt.execute("SET SCHEMA " + tenant);
+            stmt.execute("SET search_path TO " + tenant);
         }
 
         return connection;
@@ -75,7 +61,7 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
     public void releaseConnection(Object tenantIdentifier, Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             // 기본 스키마로 복귀
-            statement.execute("SET SCHEMA PUBLIC");
+            statement.execute("SET search_path TO " + DEFAULT_SCHEMA);
         }
         connection.close();
     }
@@ -92,10 +78,18 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
         return false;
     }
 
+    private boolean schemaExists(Connection connection, String schema) throws SQLException {
+        try (Statement stmt = connection.createStatement()) {
+            ResultSet rs = stmt.executeQuery("SELECT 1 FROM pg_namespace WHERE nspname = '" + schema + "'");
+            return rs.next();
+        }
+    }
+
     private void runMigration(String tenant) {
         Flyway.configure()
                 .dataSource(defaultDataSource)
                 .schemas(tenant)
+                .initSql(String.format("SET search_path TO '%s'", tenant))
                 .locations("classpath:db/migration")
                 .baselineOnMigrate(true)
                 .load()

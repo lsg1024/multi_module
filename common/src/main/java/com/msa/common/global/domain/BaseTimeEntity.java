@@ -1,30 +1,25 @@
 package com.msa.common.global.domain;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
-@EntityListeners(AuditingEntityListener.class)
-@MappedSuperclass
 @Getter
-public class BaseTimeEntity {
+@MappedSuperclass
+@EntityListeners(AuditingEntityListener.class)
+public abstract class BaseTimeEntity {
 
-    @Column(name = "CREATE_DATE")
-    private String createDate;
-    @Column(name = "LAST_MODIFIED_DATE")
-    private String lastModifiedDate;
-    @PrePersist
-    void onPrePersist() {
-        this.createDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        this.lastModifiedDate = createDate;
-    }
+    @CreatedDate
+    @Column(name = "create_date", updatable = false)
+    private LocalDateTime createDate;
 
-    @PreUpdate
-    void onPreUpdate() {
-        this.lastModifiedDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-    }
-
+    @LastModifiedDate
+    @Column(name = "last_modified_date")
+    private LocalDateTime lastModifiedDate;
 }

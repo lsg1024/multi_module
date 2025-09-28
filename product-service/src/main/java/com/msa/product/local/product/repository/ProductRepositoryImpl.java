@@ -150,7 +150,9 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                         product.productId,
                         product.productName,
                         product.standardWeight,
+                        material.materialName,
                         product.productNote,
+                        productWorkGradePolicyGroup.productPurchasePrice,
                         productWorkGradePolicy.laborCost
                 )
                 .offset(pageable.getOffset())

@@ -51,8 +51,3 @@ custom:
   jpa:
     entity-scan-packages:
       - com.msa.order
-  datasource-meta:
-    driver-class-name: org.h2.Driver
-    jdbcUrl: jdbc:h2:tcp://localhost/~/metadb
-    username: sa
-    password:

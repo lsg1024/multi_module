@@ -54,7 +54,7 @@ public class ProductWorkGradePolicyGroupDto {
         private String productGroupId;
         private Integer productPurchasePrice;
         private String colorId;
-        private List<ProductWorkGradePolicyDto.Request> gradePolicyDtos;
+        private List<ProductWorkGradePolicyDto.Request> policyDtos;
         private String note;
     }
 

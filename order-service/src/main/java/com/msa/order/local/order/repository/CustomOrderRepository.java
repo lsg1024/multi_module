@@ -1,6 +1,7 @@
 package com.msa.order.local.order.repository;
 
 import com.msa.common.global.util.CustomPage;
+import com.msa.order.global.excel.dto.OrderExcelQueryDto;
 import com.msa.order.local.order.dto.OrderDto;
 import com.msa.order.local.order.dto.OrderQueryDto;
 import org.springframework.data.domain.Pageable;
@@ -22,4 +23,6 @@ public interface CustomOrderRepository {
     List<String> findByFilterFactories(OrderDto.OrderCondition condition);
     List<String> findByFilterStores(OrderDto.OrderCondition condition);
     List<String> findByFilterSetType(OrderDto.OrderCondition condition);
+
+    List<OrderExcelQueryDto> findByExcelData(OrderDto.OrderCondition condition);
 }
