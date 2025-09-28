@@ -108,7 +108,7 @@ public class StockService {
     }
 
     //주문 -> 재고 변경
-    public void updateOrderStatus(String accessToken, Long flowCode, String orderType, StockDto.stockRequest stockDto) {
+    public void updateOrderToStock(String accessToken, Long flowCode, String orderType, StockDto.stockRequest stockDto) {
         String tenantId = jwtUtil.getTenantId(accessToken);
         String nickname = jwtUtil.getNickname(accessToken);
         Orders order = ordersRepository.findByFlowCode(flowCode)

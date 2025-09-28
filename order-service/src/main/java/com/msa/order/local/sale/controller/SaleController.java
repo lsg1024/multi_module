@@ -45,7 +45,7 @@ public class SaleController {
             @AccessToken String accessToken,
             @RequestParam(name = "id") Long flowCode,
             @Valid @RequestBody StockDto.stockRequest stockDto) {
-        stockService.updateOrderStatus(accessToken, flowCode, "STOCK", stockDto);
+        stockService.updateOrderToStock(accessToken, flowCode, "STOCK", stockDto);
         saleService.createSaleFromOrder(accessToken, flowCode);
         return ResponseEntity.ok(ApiResponse.success("등록 완료"));
     }

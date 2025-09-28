@@ -27,7 +27,7 @@ public class StockController {
             @RequestParam(name = "id") Long flowCode,
             @RequestParam(name = "order_type") String orderType,
             @Valid @RequestBody StockDto.stockRequest stockDto) {
-        stockService.updateOrderStatus(accessToken, flowCode, orderType, stockDto);
+        stockService.updateOrderToStock(accessToken, flowCode, orderType, stockDto);
         return ResponseEntity.ok(ApiResponse.success("재고 등록 완료"));
     }
 
