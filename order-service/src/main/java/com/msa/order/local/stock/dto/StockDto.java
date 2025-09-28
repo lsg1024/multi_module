@@ -78,6 +78,29 @@ public class StockDto {
 
     @Getter
     @NoArgsConstructor
+    public static class stockResponse {
+        private String productSize;
+        private Boolean isProductWeightSale;
+        private Integer addProductLaborCost;
+        private Integer addStoneLaborCost;
+        private Integer productPurchaseCost;
+        private Integer stonePurchaseCost;
+        private String mainStoneNote;
+        private String assistanceStoneNote;
+        private String stockNote;
+        // 보조석
+        private boolean assistantStone;
+        private String assistantStoneId;
+        private String assistantStoneCreateAt;
+        private BigDecimal goldWeight;
+        private BigDecimal stoneWeight;
+
+        @Valid
+        private List<StoneDto.StoneInfo> stoneInfos;
+    }
+
+    @Getter
+    @NoArgsConstructor
     public static class StockRentalRequest {
         @NotBlank(message = "상점 ID는 필수입니다.")
         @Pattern(regexp = "\\d+", message = "상점 입력 값 오류.")

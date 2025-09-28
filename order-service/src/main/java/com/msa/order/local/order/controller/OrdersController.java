@@ -96,11 +96,11 @@ public class OrdersController {
     }
 
     // 출고일 변경
-    @PatchMapping("/orders/expect_date")
-    public ResponseEntity<ApiResponse<String>> updateOrderExpectDate (
+    @PatchMapping("/orders/delivery-date")
+    public ResponseEntity<ApiResponse<String>> updateOrderDeliveryDate(
             @RequestParam String id,
             @RequestBody DateDto updateDate) {
-        ordersService.updateOrderExpectDate(id, updateDate);
+        ordersService.updateOrderDeliveryDate(id, updateDate);
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
 
