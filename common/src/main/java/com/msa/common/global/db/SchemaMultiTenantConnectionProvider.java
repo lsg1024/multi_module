@@ -8,10 +8,7 @@ import org.springframework.jmx.export.annotation.ManagedResource;
 import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -43,11 +40,16 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
         Connection connection = getAnyConnection();
         String tenant = tenantIdentifier.toString().toLowerCase();
 
-        if (!schemaExists(connection, tenant)) {
+        if (!isValidTenantIdentifier(tenant)) {
+            throw new SQLException("Invalid tenant identifier: " + tenant);
+        }
+
+        if (!initializedTenants.contains(tenant)) {
             try (Statement stmt = connection.createStatement()) {
-                stmt.execute("CREATE SCHEMA " + tenant);
+                stmt.execute("CREATE SCHEMA IF NOT EXISTS " + tenant);
             }
             runMigration(tenant);
+            initializedTenants.add(tenant);
         }
 
         try (Statement stmt = connection.createStatement()) {
@@ -66,25 +68,6 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
         connection.close();
     }
 
-    private boolean isSchemaEmpty(Connection conn, String tenant) {
-        String sql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '" + tenant + "'";
-        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
-            if (rs.next()) {
-                int count = rs.getInt(1);
-                return count == 0;
-            }
-        } catch (SQLException e) {
-        }
-        return false;
-    }
-
-    private boolean schemaExists(Connection connection, String schema) throws SQLException {
-        try (Statement stmt = connection.createStatement()) {
-            ResultSet rs = stmt.executeQuery("SELECT 1 FROM pg_namespace WHERE nspname = '" + schema + "'");
-            return rs.next();
-        }
-    }
-
     private void runMigration(String tenant) {
         Flyway.configure()
                 .dataSource(defaultDataSource)
@@ -99,4 +82,8 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
     @Override public boolean isUnwrappableAs(Class unwrapType) { return false; }
 
     @Override public <T> T unwrap(Class<T> unwrapType) { return null; }
+
+    private boolean isValidTenantIdentifier(String tenant) {
+        return tenant != null && tenant.matches("^[a-zA-Z0-9_]+$");
+    }
 }
