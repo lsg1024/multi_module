@@ -1,5 +1,6 @@
 package com.msa.order.local.order.dto;
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -18,16 +19,15 @@ public class StoreDto {
         private Long storeId;
         private String storeName;
         private String grade;
+        private String storeHarry;
 
-        public Response(Long storeId, String storeName) {
-            this.storeId = storeId;
-            this.storeName = storeName;
-        }
-
-        public Response(Long storeId, String storeName, String grade) {
+        @Builder
+        public Response(Long storeId, String storeName, String grade, String storeHarry) {
             this.storeId = storeId;
             this.storeName = storeName;
             this.grade = grade;
+            this.storeHarry = storeHarry;
         }
+
     }
 }

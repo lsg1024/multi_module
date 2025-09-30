@@ -14,6 +14,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,10 +37,14 @@ public class Orders {
     private Long storeId;
     @Column(name = "STORE_NAME") //account - store
     private String storeName;
-    @Column(name = "FACTORY_ID")
+    @Column(name = "STORE_HARRY", precision = 10, scale = 2)
+    private BigDecimal storeHarry;
+    @Column(name = "FACTORY_ID") //account - factory
     private Long factoryId;
     @Column(name = "FACTORY_NAME")
     private String factoryName;
+    @Column(name = "FACTORY_HARRY", precision = 10, scale = 2)
+    private BigDecimal factoryHarry;
     @Column(name = "ORDER_NOTE")
     private String orderNote;
     @Column(name = "CREATE_AT")
@@ -69,13 +74,14 @@ public class Orders {
     private OrderStatus orderStatus;
 
     @Builder
-    public Orders(Long orderId, Long flowCode, Long storeId, String storeName, Long factoryId, String factoryName, String orderNote, OffsetDateTime createAt, OffsetDateTime shippingAt, ProductStatus productStatus, OrderStatus orderStatus) {
+    public Orders(Long orderId, Long flowCode, Long storeId, String storeName, Long factoryId, String factoryName, BigDecimal factoryHarry, String orderNote, OffsetDateTime createAt, OffsetDateTime shippingAt, ProductStatus productStatus, OrderStatus orderStatus) {
         this.orderId = orderId;
         this.flowCode = flowCode;
         this.storeId = storeId;
         this.storeName = storeName;
         this.factoryId = factoryId;
         this.factoryName = factoryName;
+        this.factoryHarry = factoryHarry;
         this.orderNote = orderNote;
         this.createAt = createAt;
         this.shippingAt = shippingAt;
@@ -111,11 +117,13 @@ public class Orders {
     public void updateStore(StoreDto.Response storeDto) {
         this.storeId = storeDto.getStoreId();
         this.storeName = storeDto.getStoreName();
+        this.storeHarry = new BigDecimal(storeDto.getStoreHarry());
     }
 
     public void updateFactory(FactoryDto.Response factoryDto) {
         this.factoryId = factoryDto.getFactoryId();
         this.factoryName = factoryDto.getFactoryName();
+        this.factoryHarry = new BigDecimal(factoryDto.getFactoryHarry());
     }
 
     public void updateOrderNote(String orderNote) {this.orderNote = orderNote;}
