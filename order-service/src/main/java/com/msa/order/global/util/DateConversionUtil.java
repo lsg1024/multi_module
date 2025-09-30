@@ -1,13 +1,20 @@
 package com.msa.order.global.util;
 
+import org.springframework.util.StringUtils;
+
 import java.time.*;
 
 public class DateConversionUtil {
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
-    public static OffsetDateTime StringToOffsetDateTime(String createAt) {
-        LocalDate parse = LocalDate.parse(createAt);
+    public static OffsetDateTime StringToOffsetDateTime(String dateAt) {
+
+        if (!StringUtils.hasText(dateAt)) {
+            return null;
+        }
+
+        LocalDate parse = LocalDate.parse(dateAt);
         LocalTime now = LocalTime.now(KST);
         LocalDateTime localDateTime = LocalDateTime.of(parse, now);
         return localDateTime.atZone(KST).toOffsetDateTime();
