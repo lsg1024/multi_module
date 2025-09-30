@@ -106,7 +106,7 @@ public class StockRepositoryImpl implements CustomStockRepository {
         BooleanBuilder booleanInput = new BooleanBuilder();
 
         if (StringUtils.hasText(searchInput)) {
-            booleanInput.and(stock.product.name.containsIgnoreCase(searchInput));
+            booleanInput.and(stock.product.productName.containsIgnoreCase(searchInput));
             booleanInput.or(stock.storeName.containsIgnoreCase(searchInput));
             booleanInput.or(stock.factoryName.containsIgnoreCase(searchInput));
         }

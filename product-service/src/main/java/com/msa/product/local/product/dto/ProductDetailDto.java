@@ -10,6 +10,7 @@ public class ProductDetailDto {
 
     private Long productId;
     private String productName;
+    private String productFactoryName;
     private Long classificationId;
     private String classificationName;
     private Long setTypeId;
@@ -18,9 +19,10 @@ public class ProductDetailDto {
     private Integer laborCost;
 
     @QueryProjection
-    public ProductDetailDto(Long productId, String productName, Long classificationId, String classificationName, Long setTypeId, String setTypeName, Integer purchaseCost, Integer laborCost) {
+    public ProductDetailDto(Long productId, String productName, String productFactoryName, Long classificationId, String classificationName, Long setTypeId, String setTypeName, Integer purchaseCost, Integer laborCost) {
         this.productId = productId;
         this.productName = productName;
+        this.productFactoryName = productFactoryName;
         this.classificationId = classificationId;
         this.classificationName = classificationName;
         this.setTypeId = setTypeId;

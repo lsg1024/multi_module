@@ -43,6 +43,7 @@ import static java.util.stream.Collectors.*;
 public class OrderRepositoryImpl implements CustomOrderRepository {
 
     private final JPAQueryFactory query;
+    private final static Long DEFAULT_STORE_STOCK_ID = 1L; // 매장 재고 고정 아이디
 
     public OrderRepositoryImpl(EntityManager em) {
         this.query = new JPAQueryFactory(em);
@@ -129,7 +130,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         return query
                 .select(new QOrderExcelQueryDto(
                         orders.factoryName,
-                        orderProduct.productName, // productFactoryName으로 업데이트 필요
+                        orderProduct.productFactoryName, // productFactoryName으로 업데이트 필요
                         orderProduct.materialName,
                         orderProduct.colorName,
                         orderProduct.orderMainStoneNote,
@@ -156,8 +157,8 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 .where(
                         stock.stockDeleted.isFalse(),
                         stock.orderStatus.eq(OrderStatus.NORMAL),
-                        stock.storeId.eq(1L),
-                        stock.product.name.eq(orderProduct.productName),
+                        stock.storeId.eq(DEFAULT_STORE_STOCK_ID),
+                        stock.product.productName.eq(orderProduct.productName),
                         stock.product.materialName.eq(orderProduct.materialName),
                         stock.product.colorName.eq(orderProduct.colorName)
                 );
@@ -202,6 +203,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         JPAQuery<Long> countQuery = query
                 .select(orders.count())
                 .from(orders)
+                .join(orders.orderProduct, orderProduct)
                 .where(
                         statusBuilder,
                         conditionBuilder,
@@ -215,19 +217,28 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 .collect(toSet());
 
         if (!stockConditions.isEmpty()) {
-            // 키 OR 조건 구성
             BooleanBuilder keyOr = new BooleanBuilder();
             for (StockCondition k : stockConditions) {
-                keyOr.or(stock.product.name.eq(k.pn())
-                        .and(stock.product.materialName.eq(k.mn()))
-                        .and(stock.product.colorName.eq(k.cn()))
-                );
+
+                BooleanExpression productNameMatch = (k.pn() == null)
+                        ? stock.product.productName.isNull()
+                        : stock.product.productName.eq(k.pn());
+
+                BooleanExpression materialNameMatch = (k.mn() == null)
+                        ? stock.product.materialName.isNull()
+                        : stock.product.materialName.eq(k.mn());
+
+                BooleanExpression colorNameMatch = (k.cn() == null)
+                        ? stock.product.colorName.isNull()
+                        : stock.product.colorName.eq(k.cn());
+
+                keyOr.or(productNameMatch.and(materialNameMatch).and(colorNameMatch));
             }
 
             // 해당 키들의 stock.flowCode 리스트를 한 번에 조회
             List<Tuple> rows = query
                     .select(
-                            stock.product.name,
+                            stock.product.productName,
                             stock.product.materialName,
                             stock.product.colorName,
                             stock.flowCode.stringValue()
@@ -235,7 +246,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                     .from(stock)
                     .where(
                             stock.stockDeleted.isFalse(),
-                            stock.storeId.eq(1L),
+                            stock.storeId.eq(DEFAULT_STORE_STOCK_ID),
                             stock.orderStatus.eq(OrderStatus.NORMAL),
                             keyOr
                     )
@@ -245,7 +256,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
             Map<StockCondition, List<String>> map = rows.stream().collect(
                     groupingBy(
                             t -> new StockCondition(
-                                    t.get(stock.product.name),
+                                    t.get(stock.product.productName),
                                     t.get(stock.product.materialName),
                                     t.get(stock.product.colorName)
                             ),
@@ -268,16 +279,18 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
     @NotNull
     private static BooleanBuilder getSearchBuilder(OrderDto.InputCondition orderCondition) {
-        BooleanBuilder booleanInput = new BooleanBuilder();
+        BooleanBuilder searchBuilder = new BooleanBuilder();
 
         String searchInput = orderCondition.getSearchInput();
         if (StringUtils.hasText(searchInput)) {
-            booleanInput.and(orderProduct.productName.containsIgnoreCase(searchInput));
-            booleanInput.or(orders.storeName.containsIgnoreCase(searchInput));
-            booleanInput.or(orders.factoryName.containsIgnoreCase(searchInput));
+            searchBuilder.and(
+                    orderProduct.productName.containsIgnoreCase(searchInput)
+                            .or(orders.storeName.containsIgnoreCase(searchInput))
+                            .or(orders.factoryName.containsIgnoreCase(searchInput))
+            );
         }
 
-        return booleanInput;
+        return searchBuilder;
     }
 
     @NotNull
@@ -294,6 +307,10 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
         if (StringUtils.hasText(optionCondition.getSetTypeName())) {
             booleanOption.and(orderProduct.setTypeName.containsIgnoreCase(optionCondition.getSetTypeName()));
+        }
+
+        if (StringUtils.hasText(optionCondition.getColorName())) {
+            booleanOption.and(orderProduct.colorName.containsIgnoreCase(optionCondition.getColorName()));
         }
 
         return booleanOption;

@@ -7,6 +7,7 @@ import com.msa.order.global.dto.StoneDto;
 import com.msa.order.global.kafka.KafkaProducer;
 import com.msa.order.global.kafka.dto.KafkaStockRequest;
 import com.msa.order.global.util.DateConversionUtil;
+import com.msa.order.local.order.dto.OrderDto;
 import com.msa.order.local.order.dto.StoreDto;
 import com.msa.order.local.order.entity.OrderProduct;
 import com.msa.order.local.order.entity.OrderStone;
@@ -34,6 +35,7 @@ import java.math.BigDecimal;
 import java.time.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import static com.msa.order.global.exception.ExceptionMessage.*;
@@ -81,7 +83,7 @@ public class StockService {
                 .createAt(stock.getStockCreateAt().toString())
                 .originalProductStatus(statusHistory.getSourceType().getDisplayName())
                 .classificationName(stock.getProduct().getClassificationName())
-                .productName(stock.getProduct().getName())
+                .productName(stock.getProduct().getProductName())
                 .storeName(stock.getStoreName())
                 .materialName(stock.getProduct().getMaterialName())
                 .colorName(stock.getProduct().getColorName())
@@ -108,7 +110,7 @@ public class StockService {
     }
 
     //주문 -> 재고 변경
-    public void updateOrderToStock(String accessToken, Long flowCode, String orderType, StockDto.stockRequest stockDto) {
+    public void updateOrderToStock(String accessToken, Long flowCode, String orderType, OrderDto.stockRequest stockDto) {
         String tenantId = jwtUtil.getTenantId(accessToken);
         String nickname = jwtUtil.getNickname(accessToken);
         Orders order = ordersRepository.findByFlowCode(flowCode)
@@ -122,54 +124,85 @@ public class StockService {
             throw new IllegalArgumentException(READY_TO_EXPECT);
         }
 
-        AssistantStoneDto.Response assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(tenantId, Long.valueOf(stockDto.getAssistantStoneId()));
+        AssistantStoneDto.Response assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(tenantId, Long.valueOf(stockDto.getOrderRequest().getAssistantStoneId()));
 
-        OffsetDateTime assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(stockDto.getAssistantStoneCreateAt());
+        OffsetDateTime assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(stockDto.getOrderRequest().getAssistantStoneCreateAt());
+
+        OrderDto.Request orderRequest = stockDto.getOrderRequest();
+
+        BigDecimal totalStoneWeight = orderRequest.getStoneInfos().stream()
+                .filter(StoneDto.StoneInfo::isIncludeStone)
+                .map(StoneDto.StoneInfo::getStoneWeight)
+                .filter(Objects::nonNull)
+                .map(BigDecimal::new)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalWeight = new BigDecimal(stockDto.getTotalWeight());
+        BigDecimal goldWeight = totalWeight.subtract(totalStoneWeight);
 
         OrderProduct orderProduct = order.getOrderProduct();
         ProductSnapshot product = ProductSnapshot.builder()
-                .id(orderProduct.getProductId())
-                .name(orderProduct.getProductName())
-                .size(stockDto.getProductSize())
+                .id(orderProduct.getProductId()) //변경 불가
+                .productName(orderProduct.getProductName())
+                .productFactoryName(orderProduct.getProductFactoryName())
+                .size(orderRequest.getProductSize())
                 .classificationName(orderProduct.getClassificationName())
-                .isGoldWeightSale(stockDto.getIsProductWeightSale())
+                .isGoldWeightSale(orderRequest.isProductWeightSale())
                 .laborCost(orderProduct.getProductLaborCost())
-                .addLaborCost(stockDto.getAddProductLaborCost())
+                .addLaborCost(orderRequest.getProductAddLaborCost())
                 .productPurchaseCost(stockDto.getProductPurchaseCost())
                 .materialName(orderProduct.getMaterialName())
                 .setTypeName(orderProduct.getSetTypeName())
                 .classificationName(orderProduct.getClassificationName())
                 .colorName(orderProduct.getColorName())
-                .assistantStone(stockDto.isAssistantStone())
-                .assistantStoneName(assistantStoneInfo.getAssistantName())
+                .assistantStone(orderRequest.isAssistantStone())
+                .assistantStoneId(assistantStoneInfo.getAssistantStoneId())
+                .assistantStoneName(assistantStoneInfo.getAssistantStoneName())
                 .assistantStoneCreateAt(assistantStoneCreateAt)
-                .goldWeight(stockDto.getGoldWeight())
-                .stoneWeight(stockDto.getStoneWeight())
+                .goldWeight(goldWeight)
+                .stoneWeight(totalStoneWeight)
                 .build();
 
         // 전체 비용 + 스톤 비용 + 추가 스톤 비용 계산
+        int totalStonePurchaseCost = orderRequest.getStoneInfos().stream()
+                .filter(StoneDto.StoneInfo::isIncludeStone)
+                .map(StoneDto.StoneInfo::getPurchaseCost)
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .sum();
+
+        int totalStoneLaborCost = orderRequest.getStoneInfos().stream()
+                .filter(StoneDto.StoneInfo::isIncludeStone)
+                .map(StoneDto.StoneInfo::getLaborCost)
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .sum();
+
         Stock stock = Stock.builder()
                 .orders(order)
                 .flowCode(order.getFlowCode())
                 .storeId(order.getStoreId())
                 .storeName(order.getStoreName())
+                .storeHarry(order.getStoreHarry())
                 .factoryId(order.getFactoryId())
                 .factoryName(order.getFactoryName())
-                .stockMainStoneNote(stockDto.getMainStoneNote())
-                .stockAssistanceStoneNote(stockDto.getAssistanceStoneNote())
-                .stockNote(stockDto.getStockNote())
-                .stonePurchaseCost(stockDto.getStonePurchaseCost())
-                .addStoneLaborCost(stockDto.getAddStoneLaborCost())
+                .factoryHarry(order.getFactoryHarry()) // 수정 가능
+                .stockMainStoneNote(orderRequest.getMainStoneNote()) // 수정 가능
+                .stockAssistanceStoneNote(orderRequest.getAssistanceStoneNote()) // 수정 가능
+                .stockNote(orderRequest.getOrderNote()) // 수정 가능
+                .stonePurchaseCost(totalStonePurchaseCost) // 수정 가능
+                .addStoneLaborCost(totalStoneLaborCost) // 수정 가능
                 .orderStones(new ArrayList<>())
                 .orderStatus(OrderStatus.valueOf(orderType))
                 .product(product)
                 .build();
 
+//        stock.addStockStone(orderStone);
         stock.setOrder(order);
         stockRepository.save(stock);
 
         List<OrderStone> orderStones = order.getOrderStones();
-        updateStockStoneInfo(stockDto.getStoneInfos(), stock, orderStones);
+        updateStockStoneInfo(orderRequest.getStoneInfos(), stock, orderStones);
         updateStoneCostAndPurchase(stock);
 
         order.updateOrderStatus(OrderStatus.valueOf(orderType));

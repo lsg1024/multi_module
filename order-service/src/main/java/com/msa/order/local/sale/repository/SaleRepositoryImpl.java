@@ -58,7 +58,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
         return query.select(Projections.constructor(SaleDto.SaleDetailDto.class,
                         stock.flowCode,
                         sale.createAt,
-                        stock.product.name,
+                        stock.product.productName,
                         stock.product.materialName,
                         stock.product.colorName,
                         stock.stockMainStoneNote,
@@ -129,7 +129,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                     saleItem.createdBy, // name
                     sale.saleCode,                        // saleCode
                     saleItem.flowCode,                          // flowCode
-                    stock.product.name,                      // productName
+                    stock.product.productName,                      // productName
                     stock.product.materialName,              // materialName
                     stock.product.colorName,                 // colorName
                     stock.stockNote,                         // note
@@ -150,7 +150,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                 .where(base)
                 .groupBy(
                         saleItem.createAt, sale.saleCode, saleItem.flowCode,
-                        stock.product.name, stock.product.materialName, stock.product.colorName,
+                        stock.product.productName, stock.product.materialName, stock.product.colorName,
                         stock.stockNote, stock.product.laborCost, stock.product.addLaborCost, stock.product.productPurchaseCost
                 )
                 .fetch();

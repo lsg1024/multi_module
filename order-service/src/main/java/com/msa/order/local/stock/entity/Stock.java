@@ -16,6 +16,7 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.SQLDelete;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -44,10 +45,14 @@ public class Stock {
     private Long storeId;
     @Column(name = "STORE_NAME") //account - store
     private String storeName;
-    @Column(name = "FACTORY_ID")
+    @Column(name = "STORE_HARRY", precision = 10, scale = 2)
+    private BigDecimal storeHarry;
+    @Column(name = "FACTORY_ID") //account - factory
     private Long factoryId;
     @Column(name = "FACTORY_NAME")
     private String factoryName;
+    @Column(name = "FACTORY_HARRY", precision = 10, scale = 2)
+    private BigDecimal factoryHarry;
     @Column(name = "STOCK_NOTE")
     private String stockNote;
     @Column(name = "STOCK_MAIN_STONE_NOTE")
@@ -82,13 +87,15 @@ public class Stock {
     private OrderStatus orderStatus;
 
     @Builder
-    public Stock(Long stockCode, Long flowCode, Long storeId, String storeName, Long factoryId, String factoryName, String stockNote, String stockMainStoneNote, String stockAssistanceStoneNote, Integer mainStoneLaborCost, Integer assistanceStoneLaborCost, Integer addStoneLaborCost, Integer stonePurchaseCost, boolean stockDeleted, ProductSnapshot product, Orders orders, List<OrderStone> orderStones, OrderStatus orderStatus) {
+    public Stock(Long stockCode, Long flowCode, Long storeId, String storeName, BigDecimal storeHarry, Long factoryId, String factoryName, BigDecimal factoryHarry, String stockNote, String stockMainStoneNote, String stockAssistanceStoneNote, Integer mainStoneLaborCost, Integer assistanceStoneLaborCost, Integer addStoneLaborCost, Integer stonePurchaseCost, boolean stockDeleted, ProductSnapshot product, Orders orders, List<OrderStone> orderStones, OrderStatus orderStatus) {
         this.stockCode = stockCode;
         this.flowCode = flowCode;
         this.storeId = storeId;
         this.storeName = storeName;
+        this.storeHarry = storeHarry;
         this.factoryId = factoryId;
         this.factoryName = factoryName;
+        this.factoryHarry = factoryHarry;
         this.stockNote = stockNote;
         this.stockMainStoneNote = stockMainStoneNote;
         this.stockAssistanceStoneNote = stockAssistanceStoneNote;

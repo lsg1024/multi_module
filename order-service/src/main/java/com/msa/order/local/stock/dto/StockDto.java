@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public class StockDto {
@@ -78,29 +79,6 @@ public class StockDto {
 
     @Getter
     @NoArgsConstructor
-    public static class stockResponse {
-        private String productSize;
-        private Boolean isProductWeightSale;
-        private Integer addProductLaborCost;
-        private Integer addStoneLaborCost;
-        private Integer productPurchaseCost;
-        private Integer stonePurchaseCost;
-        private String mainStoneNote;
-        private String assistanceStoneNote;
-        private String stockNote;
-        // 보조석
-        private boolean assistantStone;
-        private String assistantStoneId;
-        private String assistantStoneCreateAt;
-        private BigDecimal goldWeight;
-        private BigDecimal stoneWeight;
-
-        @Valid
-        private List<StoneDto.StoneInfo> stoneInfos;
-    }
-
-    @Getter
-    @NoArgsConstructor
     public static class StockRentalRequest {
         @NotBlank(message = "상점 ID는 필수입니다.")
         @Pattern(regexp = "\\d+", message = "상점 입력 값 오류.")
@@ -116,6 +94,66 @@ public class StockDto {
         private Integer addStoneLaborCost;
         @Valid
         private List<StoneDto.StoneInfo> stoneInfos; // 개당 알수는 직접 수정 불가
+    }
+
+
+    @Getter
+    @NoArgsConstructor
+    public static class StockRegisterResponse {
+        private String createAt;
+        private String flowCode;
+        private String storeId;
+        private String storeName;
+        private String factoryId;
+        private String factoryName;
+        private String productId;
+        private String productName;
+        private String productSize;
+        private String storeHarry;
+        private Integer productPurchaseCost;
+        private Integer productLaborCost;
+        private Integer productAddLaborCost;
+        private String goldWeight;
+        private String stoneWeight;
+        private String materialName;
+        private String colorName;
+        private String orderNote;
+        private String mainStoneNote;
+        private String assistanceStoneNote;
+        private boolean assistantStone;
+        private String assistantStoneId;
+        private String assistantStoneName;
+        private OffsetDateTime assistantStoneCreateAt;
+        private List<StoneDto.StoneResponse> stoneInfos;
+
+        @Builder
+        public StockRegisterResponse(String createAt, String flowCode, String storeId, String storeName, String factoryId, String factoryName, String productId, String productName, String productSize, String storeHarry, Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost, String goldWeight, String stoneWeight, String materialName, String colorName, String orderNote, String mainStoneNote, String assistanceStoneNote, boolean assistantStone, String assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, List<StoneDto.StoneResponse> stoneInfos) {
+            this.createAt = createAt;
+            this.flowCode = flowCode;
+            this.storeId = storeId;
+            this.storeName = storeName;
+            this.factoryId = factoryId;
+            this.factoryName = factoryName;
+            this.productId = productId;
+            this.productName = productName;
+            this.productSize = productSize;
+            this.storeHarry = storeHarry;
+            this.productPurchaseCost = productPurchaseCost;
+            this.productLaborCost = productLaborCost;
+            this.productAddLaborCost = productAddLaborCost;
+            this.goldWeight = goldWeight;
+            this.stoneWeight = stoneWeight;
+            this.materialName = materialName;
+            this.colorName = colorName;
+            this.orderNote = orderNote;
+            this.mainStoneNote = mainStoneNote;
+            this.assistanceStoneNote = assistanceStoneNote;
+            this.assistantStone = assistantStone;
+            this.assistantStoneId = assistantStoneId;
+            this.assistantStoneName = assistantStoneName;
+            this.assistantStoneCreateAt = assistantStoneCreateAt;
+            this.stoneInfos = stoneInfos;
+        }
     }
 
     // 재고값 상세 조회 데이터

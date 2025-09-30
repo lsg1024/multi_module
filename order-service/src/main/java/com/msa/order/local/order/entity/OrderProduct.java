@@ -22,8 +22,8 @@ public class OrderProduct {
     private Long productId;
     @Column(name = "PRODUCT_NAME")
     private String productName;
-//    @Column(name = "PRODUCT_FACTORY_NAME")
-//    private String productFactoryName;
+    @Column(name = "PRODUCT_FACTORY_NAME")
+    private String productFactoryName;
     @Column(name = "PRODUCT_SIZE")
     private String productSize;
     @Column(name = "IS_GOLD_WEIGHT_SALE")
@@ -59,9 +59,11 @@ public class OrderProduct {
     @Column(name = "SET_TYPE_NAME") // 세트
     private String setTypeName;
     @Column(name = "ASSISTANT_STONE")
-    private boolean assistantStone = false;
+    private boolean assistantStone = false; //보조석
+    @Column(name = "ASSISTANT_STONE_ID")
+    private Long assistantStoneId;
     @Column(name = "ASSISTANT_STONE_NAME")
-    private String assistantStoneName; //보조석
+    private String assistantStoneName;
     @Column(name = "ASSISTANT_STONE_CREATE_AT")
     private OffsetDateTime assistantStoneCreateAt;
 
@@ -70,10 +72,10 @@ public class OrderProduct {
     private Orders order;
 
     @Builder
-    public OrderProduct(Long productId, String productName, String productSize, boolean isGoldWeightSale, BigDecimal goldWeight, BigDecimal stoneWeight, String orderMainStoneNote, String orderAssistanceStoneNote, Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost, Long materialId, String materialName, Long classificationId, String classificationName, Long colorId, String colorName, Long setTypeId, String setTypeName, boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, Orders order) {
+    public OrderProduct(Long productId, String productName, String productFactoryName, String productSize, boolean isGoldWeightSale, BigDecimal goldWeight, BigDecimal stoneWeight, String orderMainStoneNote, String orderAssistanceStoneNote, Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost, Long materialId, String materialName, Long classificationId, String classificationName, Long colorId, String colorName, Long setTypeId, String setTypeName, boolean assistantStone, Long assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, Orders order) {
         this.productId = productId;
         this.productName = productName;
-//        this.productFactoryName = productFactoryName;
+        this.productFactoryName = productFactoryName;
         this.productSize = productSize;
         this.isGoldWeightSale = isGoldWeightSale;
         this.goldWeight = goldWeight;
@@ -92,6 +94,7 @@ public class OrderProduct {
         this.setTypeId = setTypeId;
         this.setTypeName = setTypeName;
         this.assistantStone = assistantStone;
+        this.assistantStoneId = assistantStoneId;
         this.assistantStoneName = assistantStoneName;
         this.assistantStoneCreateAt = assistantStoneCreateAt;
         this.order = order;
@@ -101,10 +104,11 @@ public class OrderProduct {
         this.order = order;
     }
 
-    public void updateOrderProduct(String productName, Integer productPurchaseCost, Integer laborCost, Long materialId, String materialName, Long colorId, String colorName, Long classificationId, String classificationName, Long setTypeId, String setTypeName, boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt) {
+    public void updateOrderProduct(String productName, String productFactoryName, Integer productPurchaseCost, Integer laborCost, Long materialId, String materialName, Long colorId, String colorName, Long classificationId, String classificationName, Long setTypeId, String setTypeName) {
         this.productName = productName;
+        this.productFactoryName = productFactoryName;
         this.productPurchaseCost = productPurchaseCost;
-        this.productAddLaborCost = laborCost;
+        this.productLaborCost = laborCost;
         this.materialId = materialId;
         this.materialName = materialName;
         this.colorId = colorId;
@@ -113,25 +117,21 @@ public class OrderProduct {
         this.classificationName = classificationName;
         this.setTypeId = setTypeId;
         this.setTypeName = setTypeName;
+    }
+
+    public void updateOrderProductAssistantStone(boolean assistantStone, Long assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt) {
         this.assistantStone = assistantStone;
+        this.assistantStoneId = assistantStoneId;
         this.assistantStoneName = assistantStoneName;
         this.assistantStoneCreateAt = assistantStoneCreateAt;
     }
 
-    public void updateOrderProduct(String productName, Integer productPurchaseCost, Integer laborCost, Long materialId, String materialName, Long colorId, String colorName, Long classificationId, String classificationName, Long setTypeId, String setTypeName, String assistantStoneName) {
-        this.productName = productName;
-        this.productPurchaseCost = productPurchaseCost;
-        this.productAddLaborCost = laborCost;
-        this.materialId = materialId;
-        this.materialName = materialName;
-        this.colorId = colorId;
-        this.colorName = colorName;
-        this.classificationId = classificationId;
-        this.classificationName = classificationName;
-        this.setTypeId = setTypeId;
-        this.setTypeName = setTypeName;
+    public void updateOrderProductAssistantStoneFail(boolean assistantStone, Long assistantStoneId, String assistantStoneName) {
+        this.assistantStone = assistantStone;
+        this.assistantStoneId = assistantStoneId;
         this.assistantStoneName = assistantStoneName;
     }
+
 
     public void updateOrderProductInfo(Long productId, BigDecimal stoneWeight, Integer productAddLaborCost, String mainStoneNote, String assistanceStoneNote, String productSize) {
         this.productId = productId;

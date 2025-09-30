@@ -24,24 +24,6 @@ public class OrderUpdateRequest {
 
     private String nickname;
 
-    @Override
-    public String toString() {
-        return "OrderUpdateRequest{" +
-                "eventId='" + eventId + '\'' +
-                ", flowCode=" + flowCode +
-                ", tenantId='" + tenantId + '\'' +
-                ", storeId=" + storeId +
-                ", factoryId=" + factoryId +
-                ", productId=" + productId +
-                ", materialId=" + materialId +
-                ", colorId=" + colorId +
-                ", assistantStone=" + assistantStone +
-                ", assistantStoneId=" + assistantStoneId +
-                ", assistantStoneCreateAt=" + assistantStoneCreateAt +
-                ", nickname='" + nickname + '\'' +
-                '}';
-    }
-
     @Builder
     public OrderUpdateRequest(String eventId, Long flowCode, String tenantId, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, boolean assistantStone, Long assistantStoneId, OffsetDateTime assistantStoneCreateAt, String nickname) {
         this.eventId = eventId;

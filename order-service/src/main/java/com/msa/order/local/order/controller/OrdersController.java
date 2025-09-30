@@ -8,6 +8,7 @@ import com.msa.order.local.order.dto.FactoryDto;
 import com.msa.order.local.order.dto.OrderDto;
 import com.msa.order.local.order.dto.StoreDto;
 import com.msa.order.local.order.service.OrdersService;
+import com.msa.order.local.stock.dto.StockDto;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -31,9 +32,9 @@ public class OrdersController {
             @RequestParam(name = "order_type") String orderType,
             @Valid @RequestBody OrderDto.Request orderDto) {
 
-        ordersService.saveOrder(accessToken, orderType, orderDto);
+        Long flowCode = ordersService.saveOrder(accessToken, orderType, orderDto);
 
-        return ResponseEntity.ok(ApiResponse.success("생성 완료"));
+        return ResponseEntity.ok(ApiResponse.success("생성 완료", String.valueOf(flowCode)));
     }
 
     //단일 값 -> 상세 조회
@@ -219,6 +220,15 @@ public class OrdersController {
 
         List<String> filterSetType = ordersService.getFilterSetType(startAt, endAt, factoryName, storeName, setTypeName, colorName, orderStatus);
         return ResponseEntity.ok(ApiResponse.success(filterSetType));
+    }
+
+    // 주문 -> 재고 등록 조회
+    @GetMapping("/orders/stock-register")
+    public ResponseEntity<ApiResponse<List<StockDto.StockRegisterResponse>>> getOrderRegisterStock(
+            @RequestParam(name = "ids") List<Long> flowCodes) {
+        List<StockDto.StockRegisterResponse> orderRegisterStock = ordersService.getOrderRegisterStock(flowCodes);
+
+        return ResponseEntity.ok(ApiResponse.success(orderRegisterStock));
     }
 
 }

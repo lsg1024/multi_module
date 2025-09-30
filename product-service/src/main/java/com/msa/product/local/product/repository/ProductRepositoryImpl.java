@@ -244,6 +244,7 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 .select(new QProductDetailDto(
                         product.productId,
                         product.productName,
+                        product.productFactoryName,
                         classification.classificationId,
                         classification.classificationName,
                         setType.setTypeId,

@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 public class ProductDetailDto {
     private Long productId;
     private String productName;
+    private String productFactoryName;
     private Long classificationId;
     private String classificationName;
     private Long setTypeId;

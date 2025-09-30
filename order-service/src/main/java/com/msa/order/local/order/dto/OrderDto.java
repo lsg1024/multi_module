@@ -58,7 +58,6 @@ public class OrderDto {
 
         private String createAt;
         private String shippingAt;
-        private String productStatus; // 주문 상태 설정 값 기본은 RECEIPT
 
         @Valid
         private List<StoneDto.StoneInfo> stoneInfos;
@@ -127,11 +126,15 @@ public class OrderDto {
         private String factoryName;
         private String productId;
         private String productName;
+        private String productSize;
+        private Integer productPurchaseCost;
+        private Integer productLaborCost;
+        private String goldWeight;
+        private String stoneWeight;
         private String classification;
         private String materialName;
         private String colorName;
         private String setType;
-        private String productSize;
         private String orderNote;
         private String mainStoneNote;
         private String assistanceStoneNote;
@@ -139,12 +142,13 @@ public class OrderDto {
         private String productStatus;
         private String orderStatus;
         private boolean assistantStone;
+        private String assistantStoneId;
         private String assistantStoneName;
         private OffsetDateTime assistantStoneCreateAt;
         private List<StoneDto.StoneResponse> stoneInfos;
 
         @Builder
-        public ResponseDetail(String createAt, String shippingAt, String flowCode, String storeId, String storeName, String factoryId, String productId, String productName, String classification, String materialName, String colorName, String setType, String productSize, String orderNote, String factoryName, String mainStoneNote, String assistanceStoneNote, String priority, String productStatus, String orderStatus, boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, List<StoneDto.StoneResponse> stoneInfos) {
+        public ResponseDetail(String createAt, String shippingAt, String flowCode, String storeId, String storeName, String factoryId, String productId, String productName, Integer productLaborCost, String stoneWeight, String classification, String materialName, String colorName, String setType, String productSize, String orderNote, String factoryName, Integer productPurchaseCost, String goldWeight, String mainStoneNote, String assistanceStoneNote, String priority, String productStatus, String orderStatus, boolean assistantStone, String assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, List<StoneDto.StoneResponse> stoneInfos) {
             this.createAt = createAt;
             this.shippingAt = shippingAt;
             this.flowCode = flowCode;
@@ -153,6 +157,8 @@ public class OrderDto {
             this.factoryId = factoryId;
             this.productId = productId;
             this.productName = productName;
+            this.productLaborCost = productLaborCost;
+            this.stoneWeight = stoneWeight;
             this.classification = classification;
             this.materialName = materialName;
             this.colorName = colorName;
@@ -160,16 +166,42 @@ public class OrderDto {
             this.productSize = productSize;
             this.orderNote = orderNote;
             this.factoryName = factoryName;
+            this.productPurchaseCost = productPurchaseCost;
+            this.goldWeight = goldWeight;
             this.mainStoneNote = mainStoneNote;
             this.assistanceStoneNote = assistanceStoneNote;
             this.priority = priority;
             this.productStatus = productStatus;
             this.orderStatus = orderStatus;
             this.assistantStone = assistantStone;
+            this.assistantStoneId = assistantStoneId;
             this.assistantStoneName = assistantStoneName;
             this.assistantStoneCreateAt = assistantStoneCreateAt;
             this.stoneInfos = stoneInfos;
         }
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class StockResponse {
+        private ResponseDetail orderResponse;
+        private String storeHarry;
+
+        @Builder
+        public StockResponse(ResponseDetail orderResponse, String storeHarry) {
+            this.orderResponse = orderResponse;
+            this.storeHarry = storeHarry;
+        }
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class stockRequest {
+        @Valid
+        private OrderDto.Request orderRequest;
+        private Integer productPurchaseCost;
+        private String totalWeight;
+        private String storeHarry;
     }
 
     @Getter
@@ -229,13 +261,6 @@ public class OrderDto {
     public static class SortCondition {
         private String sortField;
         private String sort;
-
-        @Override
-        public String toString() {
-            return "SortCondition{" +
-                    "sortField='" + sortField + '\'' +
-                    ", sort='" + sort + '\'' +
-                    '}';
-        }
     }
+
 }

@@ -21,7 +21,7 @@ public class GoldHarry {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "GOLD_HARRY_ID")
     private Long goldHarryId;
-    @Column(name = "GOLD_HARRY_LOSS", nullable = false)
+    @Column(name = "GOLD_HARRY_LOSS", nullable = false, precision = 10, scale = 2)
     private BigDecimal goldHarryLoss;
     @Column(name = "DEFAULT_OPTION", nullable = false)
     private boolean DefaultOption = false;

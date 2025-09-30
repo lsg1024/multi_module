@@ -3,6 +3,7 @@ package com.msa.order.local.stock.controller;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.AccessToken;
 import com.msa.common.global.util.CustomPage;
+import com.msa.order.local.order.dto.OrderDto;
 import com.msa.order.local.stock.dto.StockDto;
 import com.msa.order.local.stock.service.StockService;
 import jakarta.validation.Valid;
@@ -20,22 +21,15 @@ public class StockController {
         this.stockService = stockService;
     }
 
-    // 주문 -> 재고 조회
-    @GetMapping("/orders/stock-register")
-    public ResponseEntity<ApiResponse<StockDto.stockResponse>> getOrderStock() {
-//        stockService
-        return ResponseEntity.ok(ApiResponse.success());
-    }
-
     // 주문 -> 재고
     @PatchMapping("/orders/stock-register")
     public ResponseEntity<ApiResponse<String>> updateOrderToStock(
             @AccessToken String accessToken,
             @RequestParam(name = "id") Long flowCode,
             @RequestParam(name = "order_status") String orderStatus,
-            @Valid @RequestBody StockDto.stockRequest stockDto) {
+            @Valid @RequestBody OrderDto.stockRequest stockDto) {
 
-        stockService.updateOrderToStock(accessToken, flowCode, orderType, stockDto);
+        stockService.updateOrderToStock(accessToken, flowCode, orderStatus, stockDto);
 
         return ResponseEntity.ok(ApiResponse.success("재고 등록 완료"));
     }
