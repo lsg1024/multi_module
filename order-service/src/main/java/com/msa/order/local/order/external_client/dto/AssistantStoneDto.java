@@ -10,8 +10,9 @@ public class AssistantStoneDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class Response {
-        private Long assistantId;
-        private String assistantName;
+        private Long assistantStoneId;
+        private String assistantStoneName;
+        private String assistantStoneNote;
     }
 
     @Getter

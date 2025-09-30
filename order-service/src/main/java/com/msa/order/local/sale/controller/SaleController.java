@@ -3,6 +3,7 @@ package com.msa.order.local.sale.controller;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.AccessToken;
 import com.msa.common.global.util.CustomPage;
+import com.msa.order.local.order.dto.OrderDto;
 import com.msa.order.local.sale.entity.dto.SaleDto;
 import com.msa.order.local.sale.service.SaleService;
 import com.msa.order.local.stock.dto.StockDto;
@@ -44,7 +45,7 @@ public class SaleController {
     public ResponseEntity<ApiResponse<String>> updateOrderToSale(
             @AccessToken String accessToken,
             @RequestParam(name = "id") Long flowCode,
-            @Valid @RequestBody StockDto.stockRequest stockDto) {
+            @Valid @RequestBody OrderDto.stockRequest stockDto) {
         stockService.updateOrderToStock(accessToken, flowCode, "STOCK", stockDto);
         saleService.createSaleFromOrder(accessToken, flowCode);
         return ResponseEntity.ok(ApiResponse.success("등록 완료"));
