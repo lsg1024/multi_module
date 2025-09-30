@@ -69,46 +69,39 @@ public class KafkaOrderService {
 
         try {
             StoreDto.Response storeInfo = storeClient.getStoreInfo(tenantId, evt.getStoreId());
-            String factoryName = factoryClient.getFactoryInfo(tenantId, evt.getFactoryId()).getFactoryName();
+            FactoryDto.Response factoryInfo = factoryClient.getFactoryInfo(tenantId, evt.getFactoryId());
             String materialName = materialClient.getMaterialInfo(tenantId, evt.getMaterialId());
             String colorName = colorClient.getColorInfo(tenantId, evt.getColorId());
             ProductDetailDto productInfo = productClient.getProductInfo(tenantId, evt.getProductId(), storeInfo.getGrade());
-
-            log.info("");
-
             AssistantStoneDto.Response assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(tenantId, evt.getAssistantStoneId());
+
             OrderProduct orderProduct = order.getOrderProduct();
+            orderProduct.updateOrderProduct(
+                    productInfo.getProductName(),
+                    productInfo.getProductFactoryName(),
+                    productInfo.getPurchaseCost(),
+                    productInfo.getLaborCost(),
+                    evt.getMaterialId(),
+                    materialName,
+                    evt.getColorId(),
+                    colorName,
+                    productInfo.getClassificationId(),
+                    productInfo.getClassificationName(),
+                    productInfo.getSetTypeId(),
+                    productInfo.getSetTypeName());
+
             if (evt.isAssistantStone()) {
-                orderProduct.updateOrderProduct(
-                        productInfo.getProductName(),
-                        productInfo.getPurchaseCost(),
-                        productInfo.getLaborCost(),
-                        evt.getMaterialId(),
-                        materialName,
-                        evt.getColorId(),
-                        colorName,
-                        productInfo.getClassificationId(),
-                        productInfo.getClassificationName(),
-                        productInfo.getSetTypeId(),
-                        productInfo.getSetTypeName(),
+                orderProduct.updateOrderProductAssistantStone(
                         true,
-                        assistantStoneInfo.getAssistantName(),
+                        assistantStoneInfo.getAssistantStoneId(),
+                        assistantStoneInfo.getAssistantStoneName(),
                         evt.getAssistantStoneCreateAt()
                 );
             } else {
-                orderProduct.updateOrderProduct(
-                        productInfo.getProductName(),
-                        productInfo.getPurchaseCost(),
-                        productInfo.getLaborCost(),
-                        evt.getMaterialId(),
-                        materialName,
-                        evt.getColorId(),
-                        colorName,
-                        productInfo.getClassificationId(),
-                        productInfo.getClassificationName(),
-                        productInfo.getSetTypeId(),
-                        productInfo.getSetTypeName(),
-                        assistantStoneInfo.getAssistantName()
+                orderProduct.updateOrderProductAssistantStoneFail(
+                        false,
+                        assistantStoneInfo.getAssistantStoneId(),
+                        assistantStoneInfo.getAssistantStoneName()
                 );
             }
 
@@ -120,8 +113,8 @@ public class KafkaOrderService {
                 }
             }
 
-            order.updateStore(new StoreDto.Response(evt.getStoreId(), storeInfo.getStoreName()));
-            order.updateFactory(new FactoryDto.Response(evt.getFactoryId(), factoryName));
+            order.updateStore(StoreDto.Response.builder().storeId(storeInfo.getStoreId()).storeName(storeInfo.getStoreName()).storeHarry(storeInfo.getStoreHarry()).build());
+            order.updateFactory(new FactoryDto.Response(factoryInfo.getFactoryId(), factoryInfo.getFactoryName(), factoryInfo.getFactoryHarry()));
 
             ordersRepository.save(order);
 
@@ -154,8 +147,6 @@ public class KafkaOrderService {
     @Transactional
     public void updateHandle(OrderUpdateRequest updateRequest) {
 
-        log.info("updateHandle = {}", updateRequest.toString());
-
         // 멀티테넌시 컨텍스트 전파
         final String tenantId = updateRequest.getTenantId();
 
@@ -175,12 +166,12 @@ public class KafkaOrderService {
 
             if (updateRequest.getStoreId() != null) {
                 StoreDto.Response storeInfo = storeClient.getStoreInfo(tenantId, updateRequest.getStoreId());
-                order.updateStore(new StoreDto.Response(updateRequest.getStoreId(), storeInfo.getStoreName()));
+                order.updateStore(StoreDto.Response.builder().storeId(storeInfo.getStoreId()).storeName(storeInfo.getStoreName()).build());
             }
 
             if (updateRequest.getFactoryId() != null) {
-                String factoryName = factoryClient.getFactoryInfo(tenantId, updateRequest.getFactoryId()).getFactoryName();
-                order.updateFactory(new FactoryDto.Response(updateRequest.getFactoryId(), factoryName));
+                FactoryDto.Response factoryInfo = factoryClient.getFactoryInfo(tenantId, updateRequest.getFactoryId());
+                order.updateFactory(new FactoryDto.Response(updateRequest.getFactoryId(), factoryInfo.getFactoryName(), factoryInfo.getFactoryHarry()));
             }
 
             String materialName = null;
@@ -215,7 +206,7 @@ public class KafkaOrderService {
                     materialName,
                     colorName,
                     updateRequest.isAssistantStone(),
-                    assistantStoneInfo != null ? assistantStoneInfo.getAssistantName() : null,
+                    assistantStoneInfo != null ? assistantStoneInfo.getAssistantStoneName() : null,
                     updateRequest.getAssistantStoneCreateAt()
             );
 

@@ -19,4 +19,13 @@ public interface OrdersRepository extends JpaRepository<Orders, Long> {
      where o.flowCode= :id
     """)
     Optional<Orders> findByFlowCode(@Param("id") Long flowCode);
+
+    @Query("""
+    select distinct o from Orders o
+     left join fetch o.orderProduct op
+     left join fetch o.orderStones os
+     left join fetch o.priority p
+     where o.flowCode in :ids
+    """)
+    List<Orders> findWithDetailsByFlowCodeIn(@Param("ids") List<Long> flowCodes);
 }

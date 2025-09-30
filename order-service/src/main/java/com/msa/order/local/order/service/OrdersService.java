@@ -23,6 +23,7 @@ import com.msa.order.local.order.repository.OrdersRepository;
 import com.msa.order.local.order.repository.StatusHistoryRepository;
 import com.msa.order.local.priority.entitiy.Priority;
 import com.msa.order.local.priority.repository.PriorityRepository;
+import com.msa.order.local.stock.dto.StockDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -115,6 +116,7 @@ public class OrdersService {
                 .orderStatus(order.getOrderStatus().getDisplayName())
                 .stoneInfos(stonesDtos)
                 .assistantStone(orderProduct.isAssistantStone())
+                .assistantStoneId(String.valueOf(orderProduct.getAssistantStoneId()))
                 .assistantStoneName(orderProduct.getAssistantStoneName())
                 .assistantStoneCreateAt(orderProduct.getAssistantStoneCreateAt())
                 .build();
@@ -130,8 +132,6 @@ public class OrdersService {
         OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
         OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
         OrderDto.OrderCondition orderCondition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, sortCondition, orderStatus);
-
-        log.info("getOrderProducts = {}", sortCondition.toString());
 
         CustomPage<OrderQueryDto> queryDtoPage = customOrderRepository.findByOrders(inputCondition, orderCondition, pageable);
         List<OrderQueryDto> queryDtos = queryDtoPage.getContent();
@@ -156,7 +156,9 @@ public class OrdersService {
     }
 
     //주문
-    public void saveOrder(String accessToken, String orderStatus, OrderDto.Request orderDto) {
+    public Long saveOrder(String accessToken, String orderStatus, OrderDto.Request orderDto) {
+
+        log.info("saveOrder = {}", orderDto.toString());
 
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = TenantContext.getTenant();
@@ -175,12 +177,9 @@ public class OrdersService {
         OffsetDateTime createAt = StringToOffsetDateTime(orderDto.getCreateAt());
         OffsetDateTime shippingAt = StringToOffsetDateTime(orderDto.getShippingAt());
 
-        ProductStatus productStatus = ProductStatus.fromDisplayName(orderDto.getProductStatus())
-                .orElseThrow(() -> new IllegalArgumentException(WRONG_STATUS));
-
         Orders order = Orders.builder()
                 .orderNote(orderDto.getOrderNote())
-                .productStatus(productStatus)
+                .productStatus(ProductStatus.RECEIPT)
                 .orderStatus(OrderStatus.valueOf(orderStatus))
                 .createAt(createAt)
                 .shippingAt(shippingAt)
@@ -217,6 +216,7 @@ public class OrdersService {
                 .orderAssistanceStoneNote(orderDto.getAssistanceStoneNote())
                 .productSize(orderDto.getProductSize())
                 .classificationName(orderDto.getClassificationName())
+                .assistantStoneId(assistantId)
                 .setTypeName(orderDto.getSetTypeName())
                 .build();
 
@@ -236,49 +236,37 @@ public class OrdersService {
 
         statusHistoryRepository.save(statusHistory);
 
-        OrderAsyncRequested evt;
+        OrderAsyncRequested.OrderAsyncRequestedBuilder orderAsyncRequestedBuilder = OrderAsyncRequested.builder()
+                .eventId(UUID.randomUUID().toString())
+                .flowCode(order.getFlowCode())
+                .tenantId(tenantId)
+                .storeId(storeId)
+                .factoryId(factoryId)
+                .productId(productId)
+                .materialId(materialId)
+                .colorId(colorId)
+                .nickname(nickname)
+                .stoneIds(stoneIds)
+                .assistantStone(false)
+                .assistantStoneId(assistantId)
+                .orderStatus(orderStatus);
+
         if (orderDto.isAssistantStone()) {
             OffsetDateTime assistantStoneCreateAt = StringToOffsetDateTime(orderDto.getAssistantStoneCreateAt());
-            evt = OrderAsyncRequested.builder()
-                    .eventId(UUID.randomUUID().toString())
-                    .flowCode(order.getFlowCode())
-                    .tenantId(tenantId)
-                    .storeId(storeId)
-                    .factoryId(factoryId)
-                    .productId(productId)
-                    .materialId(materialId)
-                    .colorId(colorId)
+            orderAsyncRequestedBuilder
                     .assistantStone(orderDto.isAssistantStone())
                     .assistantStoneId(assistantId)
-                    .assistantStoneCreateAt(assistantStoneCreateAt)
-                    .nickname(nickname)
-                    .stoneIds(stoneIds)
-                    .orderStatus(orderStatus)
-                    .build();
-        } else {
-            evt = OrderAsyncRequested.builder()
-                    .eventId(UUID.randomUUID().toString())
-                    .flowCode(order.getFlowCode())
-                    .tenantId(tenantId)
-                    .storeId(storeId)
-                    .factoryId(factoryId)
-                    .productId(productId)
-                    .materialId(materialId)
-                    .colorId(colorId)
-                    .assistantStone(false)
-                    .assistantStoneId(assistantId)
-                    .nickname(nickname)
-                    .stoneIds(stoneIds)
-                    .orderStatus(orderStatus)
-                    .build();
+                    .assistantStoneCreateAt(assistantStoneCreateAt);
         }
 
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                kafkaProducer.orderDetailAsync(evt);
+                kafkaProducer.orderDetailAsync(orderAsyncRequestedBuilder.build());
             }
         });
+
+        return order.getFlowCode();
     }
 
     //주문 수정
@@ -618,5 +606,64 @@ public class OrdersService {
         OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
         OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
         return customOrderRepository.findByFilterSetType(condition);
+    }
+
+    @Transactional(readOnly = true)
+    public List<StockDto.StockRegisterResponse> getOrderRegisterStock(List<Long> flowCodes) {
+        List<Orders> withDetailsByFlowCodeIn = ordersRepository.findWithDetailsByFlowCodeIn(flowCodes);
+
+        List<StockDto.StockRegisterResponse> responseDetails = new ArrayList<>();
+        for (Orders order : withDetailsByFlowCodeIn) {
+            OrderProduct orderProduct = order.getOrderProduct();
+            List<OrderStone> orderStones = order.getOrderStones();
+
+            List<StoneDto.StoneResponse> stonesDtos = new ArrayList<>();
+            for (OrderStone orderStone : orderStones) {
+                StoneDto.StoneResponse stoneDto = new StoneDto.StoneResponse(
+                        orderStone.getOriginStoneId().toString(),
+                        orderStone.getOriginStoneName(),
+                        orderStone.getOriginStoneWeight().toPlainString(),
+                        orderStone.getStonePurchaseCost(),
+                        orderStone.getStoneLaborCost(),
+                        orderStone.getStoneAddLaborCost(),
+                        orderStone.getStoneQuantity(),
+                        orderStone.getMainStone(),
+                        orderStone.getIncludeStone()
+                );
+                stonesDtos.add(stoneDto);
+            }
+
+            StockDto.StockRegisterResponse orderDetail = StockDto.StockRegisterResponse.builder()
+                    .createAt(order.getCreateAt().toString())
+                    .flowCode(order.getFlowCode().toString())
+                    .storeId(order.getStoreId().toString())
+                    .storeName(order.getStoreName())
+                    .factoryId(order.getFactoryId().toString())
+                    .factoryName(order.getFactoryName())
+                    .productId(orderProduct.getProductId().toString())
+                    .productName(orderProduct.getProductName())
+                    .productSize(orderProduct.getProductSize())
+                    .storeHarry(order.getStoreHarry().toPlainString())
+                    .productPurchaseCost(orderProduct.getProductPurchaseCost())
+                    .productLaborCost(orderProduct.getProductLaborCost())
+                    .productAddLaborCost(orderProduct.getProductAddLaborCost())
+                    .goldWeight(String.valueOf(orderProduct.getGoldWeight()))
+                    .stoneWeight(String.valueOf(orderProduct.getStoneWeight()))
+                    .materialName(orderProduct.getMaterialName())
+                    .colorName(orderProduct.getColorName())
+                    .orderNote(order.getOrderNote())
+                    .mainStoneNote(orderProduct.getOrderMainStoneNote())
+                    .assistanceStoneNote(orderProduct.getOrderAssistanceStoneNote())
+                    .assistantStone(orderProduct.isAssistantStone())
+                    .assistantStoneId(String.valueOf(orderProduct.getAssistantStoneId()))
+                    .assistantStoneName(orderProduct.getAssistantStoneName())
+                    .assistantStoneCreateAt(orderProduct.getAssistantStoneCreateAt())
+                    .stoneInfos(stonesDtos)
+                    .build();
+
+            responseDetails.add(orderDetail);
+        }
+
+        return responseDetails;
     }
 }
