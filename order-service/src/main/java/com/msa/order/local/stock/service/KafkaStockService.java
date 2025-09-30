@@ -8,6 +8,7 @@ import com.msa.order.local.order.entity.StatusHistory;
 import com.msa.order.local.order.entity.order_enum.BusinessPhase;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.order.external_client.*;
+import com.msa.order.local.order.external_client.dto.AssistantStoneDto;
 import com.msa.order.local.order.external_client.dto.ProductDetailDto;
 import com.msa.order.local.order.repository.StatusHistoryRepository;
 import com.msa.order.local.order.util.StoneUtil;
@@ -61,7 +62,6 @@ public class KafkaStockService {
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         if (stock.getOrderStatus() != OrderStatus.NORMAL) {
-            log.info("WARING STATUS");
             return;
         }
 
@@ -72,12 +72,12 @@ public class KafkaStockService {
 
         try {
             StoreDto.Response storeInfo;
-            String factoryName;
+            FactoryDto.Response factoryInfo;
             String materialName;
             String classificationName;
             String colorName;
             String setTypeName;
-            String assistantStoneName;
+            AssistantStoneDto.Response assistantStoneInfo;
 
             if (stockDto.getStoreId() != null) {
                 storeInfo = storeClient.getStoreInfo(tenantId, stockDto.getStoreId());
@@ -86,9 +86,9 @@ public class KafkaStockService {
             }
 
             if (stockDto.getFactoryId() != null) {
-                factoryName = factoryClient.getFactoryInfo(tenantId, stockDto.getFactoryId()).getFactoryName();
+                factoryInfo = factoryClient.getFactoryInfo(tenantId, stockDto.getFactoryId());
             } else {
-                factoryName = factoryClient.getFactoryInfo(tenantId, 1L).getFactoryName();
+                factoryInfo = factoryClient.getFactoryInfo(tenantId, 1L);
             }
 
             if (stockDto.getMaterialId() != null) {
@@ -116,9 +116,9 @@ public class KafkaStockService {
             }
 
             if (stockDto.getAssistantStoneId() != null) {
-                assistantStoneName =assistantStoneClient.getAssistantStoneInfo(tenantId, stockDto.getAssistantStoneId()).getAssistantName();
+                assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(tenantId, stockDto.getAssistantStoneId());
             } else {
-                assistantStoneName = "";
+                assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(tenantId, 1L);
             }
 
             ProductDetailDto productInfo = productClient.getProductInfo(tenantId, stockDto.getProductId(), storeInfo.getGrade());
@@ -132,7 +132,8 @@ public class KafkaStockService {
                     colorName,
                     setTypeName,
                     stockDto.isAssistantStone(),
-                    assistantStoneName,
+                    assistantStoneInfo.getAssistantStoneId(),
+                    assistantStoneInfo.getAssistantStoneName(),
                     stockDto.getAssistantStoneCreateAt()
             );
 
@@ -164,8 +165,8 @@ public class KafkaStockService {
             }
 
             stock.updateStoneCost(totalStonePurchaseCost, mainStoneCost, assistanceStoneCost);
-            stock.updateStore(new StoreDto.Response(stockDto.getStoreId(), storeInfo.getStoreName()));
-            stock.updateFactory(new FactoryDto.Response(stockDto.getFactoryId(), factoryName));
+            stock.updateStore(StoreDto.Response.builder().storeId(storeInfo.getStoreId()).storeName(storeInfo.getStoreName()).build());
+            stock.updateFactory(new FactoryDto.Response(factoryInfo.getFactoryId(), factoryInfo.getFactoryName(), factoryInfo.getFactoryHarry()));
             stock.updateAddStoneLaborCost(stockDto.getAddStoneLaborCost());
 
             statusHistory = StatusHistory.phaseChange(
