@@ -215,6 +215,7 @@ public class StoreDto {
         private Long storeId;
         private String storeName;
         private String grade;
+        private String storeHarry;
     }
 
 }

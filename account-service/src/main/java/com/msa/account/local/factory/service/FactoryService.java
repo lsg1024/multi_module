@@ -92,9 +92,9 @@ public class FactoryService {
     }
 
     public FactoryDto.ApiFactoryInfo getFactoryIdAndName(Long id) {
-        Factory factory = factoryRepository.findById(id)
+        Factory factory = factoryRepository.findWithAllOptionById(id)
                 .orElseThrow(() -> new NotFoundException(NOT_FOUND_FACTORY));
 
-        return new FactoryDto.ApiFactoryInfo(factory.getFactoryId(), factory.getFactoryName());
+        return new FactoryDto.ApiFactoryInfo(factory.getFactoryId(), factory.getFactoryName(), factory.getCommonOption().getGoldHarryLoss());
     }
 }

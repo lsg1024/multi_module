@@ -109,7 +109,7 @@ public class StoreService {
         Store store = storeRepository.findByStoreInfo(id)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        return new StoreDto.ApiStoreInfo(store.getStoreId(), store.getStoreName(), store.getCommonOption().getOptionLevel().getLevel());
+        return new StoreDto.ApiStoreInfo(store.getStoreId(), store.getStoreName(), store.getCommonOption().getOptionLevel().getLevel(), store.getCommonOption().getGoldHarryLoss());
     }
 
     public String getStoreGrade(String storeId) {

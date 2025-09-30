@@ -183,5 +183,6 @@ public class FactoryDto {
     public static class ApiFactoryInfo {
         private Long factoryId;
         private String factoryName;
+        private String factoryHarry;
     }
 }
