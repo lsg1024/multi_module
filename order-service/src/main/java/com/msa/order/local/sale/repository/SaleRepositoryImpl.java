@@ -73,7 +73,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                         stock.product.addLaborCost,
                         stock.mainStoneLaborCost,
                         stock.assistanceStoneLaborCost,
-                        stock.addStoneLaborCost,
+                        stock.stoneAddLaborCost,
                         stock.product.assistantStone,
                         stock.product.assistantStoneName,
                         stock.product.assistantStoneCreateAt,
