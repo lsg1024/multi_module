@@ -10,7 +10,6 @@ public enum ProductStatus {
     WAITING("대기"), // 대기
     RECEIPT_FAILED("접수 실패"), // 접수 실패
     CHANG_FAILED("수정 실패"),
-    DELIVERY("출고"),
     DELETED("삭제"),
     NONE("NONE");
 

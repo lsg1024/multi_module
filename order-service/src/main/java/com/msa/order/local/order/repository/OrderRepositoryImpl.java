@@ -333,7 +333,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
 
         BooleanExpression statusIsOrder =
-                orders.orderStatus.in(OrderStatus.valueOf(orderCondition.getOrderStatus()));
+                orders.orderStatus.in(OrderStatus.valueOf(orderCondition.getOrderStatus()), OrderStatus.STOCK);
 
         return statusIsReceiptOrWaiting.and(statusIsOrder).and(createdBetween);
     }

@@ -206,7 +206,7 @@ public class OrdersService {
         // orderProduct 추가
         OrderProduct orderProduct = OrderProduct.builder()
                 .productId(productId)
-                .isGoldWeightSale(orderDto.isProductWeightSale())
+                .isProductWeightSale(orderDto.isProductWeightSale())
                 .goldWeight(new BigDecimal(BigInteger.ZERO))
                 .stoneWeight(orderDto.getStoneWeight())
                 .productAddLaborCost(orderDto.getProductAddLaborCost())
@@ -409,9 +409,20 @@ public class OrdersService {
         Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        ProductStatus newStatus = ProductStatus.valueOf(status.toUpperCase());
+        OrderStatus currentOrderStatus = order.getOrderStatus();
+        List<OrderStatus> allowedCurrentStatuses = Arrays.asList(
+                OrderStatus.ORDER,
+                OrderStatus.FIX,
+                OrderStatus.NORMAL
+        );
 
+        if (!allowedCurrentStatuses.contains(currentOrderStatus)) {
+            throw new IllegalArgumentException("주문, 수리, 일반 주문만 변경할 수 있습니다.");
+        }
+
+        ProductStatus newStatus = ProductStatus.valueOf(status.toUpperCase());
         order.updateProductStatus(newStatus);
+
         ordersRepository.save(order);
     }
 

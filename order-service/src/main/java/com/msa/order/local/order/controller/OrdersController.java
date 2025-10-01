@@ -89,10 +89,10 @@ public class OrdersController {
 
     // 주문 상태 변경
     @PatchMapping("/orders/status")
-    public ResponseEntity<ApiResponse<String>> updateOrderStatus (
+    public ResponseEntity<ApiResponse<String>> updateProductStatus(
             @RequestParam String id,
-            @RequestParam(name = "status") String orderStatus) {
-        ordersService.updateOrderStatus(id, orderStatus);
+            @RequestParam(name = "status") String productStatus) {
+        ordersService.updateOrderStatus(id, productStatus);
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
 

@@ -26,8 +26,8 @@ public class OrderProduct {
     private String productFactoryName;
     @Column(name = "PRODUCT_SIZE")
     private String productSize;
-    @Column(name = "IS_GOLD_WEIGHT_SALE")
-    private boolean isGoldWeightSale;
+    @Column(name = "IS_PRODUCT_WEIGHT_SALE")
+    private boolean isProductWeightSale;
     @Column(name = "GOLD_WEIGHT", precision = 10, scale = 3)
     private BigDecimal goldWeight;
     @Column(name = "STONE_WEIGHT", precision = 10, scale = 3)
@@ -72,12 +72,12 @@ public class OrderProduct {
     private Orders order;
 
     @Builder
-    public OrderProduct(Long productId, String productName, String productFactoryName, String productSize, boolean isGoldWeightSale, BigDecimal goldWeight, BigDecimal stoneWeight, String orderMainStoneNote, String orderAssistanceStoneNote, Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost, Long materialId, String materialName, Long classificationId, String classificationName, Long colorId, String colorName, Long setTypeId, String setTypeName, boolean assistantStone, Long assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, Orders order) {
+    public OrderProduct(Long productId, String productName, String productFactoryName, String productSize, boolean isProductWeightSale, BigDecimal goldWeight, BigDecimal stoneWeight, String orderMainStoneNote, String orderAssistanceStoneNote, Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost, Long materialId, String materialName, Long classificationId, String classificationName, Long colorId, String colorName, Long setTypeId, String setTypeName, boolean assistantStone, Long assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, Orders order) {
         this.productId = productId;
         this.productName = productName;
         this.productFactoryName = productFactoryName;
         this.productSize = productSize;
-        this.isGoldWeightSale = isGoldWeightSale;
+        this.isProductWeightSale = isProductWeightSale;
         this.goldWeight = goldWeight;
         this.stoneWeight = stoneWeight;
         this.orderMainStoneNote = orderMainStoneNote;
