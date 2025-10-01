@@ -202,7 +202,6 @@ public class StockService {
         updateStoneCostAndPurchase(stock);
 
         order.updateOrderStatus(OrderStatus.valueOf(orderType));
-        order.updateProductStatus(ProductStatus.DELIVERY);
 
         StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));

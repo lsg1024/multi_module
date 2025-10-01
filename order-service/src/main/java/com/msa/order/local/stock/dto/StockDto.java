@@ -109,7 +109,7 @@ public class StockDto {
         private String productId;
         private String productName;
         private String productSize;
-        private boolean isGoldWeightSale;
+        private boolean isProductWeightSale;
         private String storeHarry;
         private Integer productPurchaseCost;
         private Integer productLaborCost;
@@ -126,9 +126,10 @@ public class StockDto {
         private String assistantStoneName;
         private OffsetDateTime assistantStoneCreateAt;
         private List<StoneDto.StoneInfo> stoneInfos;
+        private Integer stoneAddLaborCost;
 
         @Builder
-        public StockRegisterResponse(String createAt, String flowCode, String storeId, String storeName, String factoryId, String factoryName, String productId, String productName, String productSize, boolean isGoldWeightSale, String storeHarry, Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost, String goldWeight, String stoneWeight, String materialName, String colorName, String orderNote, String mainStoneNote, String assistanceStoneNote, boolean assistantStone, String assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, List<StoneDto.StoneInfo> stoneInfos) {
+        public StockRegisterResponse(String createAt, String flowCode, String storeId, String storeName, String factoryId, String factoryName, String productId, String productName, String productSize, boolean isProductWeightSale, String storeHarry, Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost, String goldWeight, String stoneWeight, String materialName, String colorName, String orderNote, String mainStoneNote, String assistanceStoneNote, boolean assistantStone, String assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, List<StoneDto.StoneInfo> stoneInfos, Integer stoneAddLaborCost) {
             this.createAt = createAt;
             this.flowCode = flowCode;
             this.storeId = storeId;
@@ -138,7 +139,8 @@ public class StockDto {
             this.productId = productId;
             this.productName = productName;
             this.productSize = productSize;
-            this.isGoldWeightSale = isGoldWeightSale;
+            this.isProductWeightSale = isProductWeightSale;
+            this.stoneAddLaborCost = stoneAddLaborCost;
             this.storeHarry = storeHarry;
             this.productPurchaseCost = productPurchaseCost;
             this.productLaborCost = productLaborCost;

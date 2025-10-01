@@ -77,7 +77,7 @@ public class StockRepositoryImpl implements CustomStockRepository {
                         stock.product.stoneWeight.stringValue(),
                         stock.product.goldWeight.stringValue(),
                         stock.product.productPurchaseCost,
-                        stock.stonePurchaseCost
+                        stock.totalStonePurchaseCost
                 ))
                 .from(stock)
                 .leftJoin(QOrderStone.orderStone).on(QOrderStone.orderStone.stock.eq(stock))
