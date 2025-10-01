@@ -61,7 +61,7 @@ class StoneServiceTest {
                 new StoneWorkGradePolicyDto("GRADE_1", 10000),
                 new StoneWorkGradePolicyDto("GRADE_2", 5000)
         );
-        stoneDto = new StoneDto("아쿠아마린", "파란색 보석", "2.50", "15000", stoneWorkGradePolicyDtos);
+        stoneDto = new StoneDto("아쿠아마린", "파란색 보석", "2.50", 15000, stoneWorkGradePolicyDtos);
     }
 
     @Test
@@ -88,7 +88,7 @@ class StoneServiceTest {
                 .stoneName("아쿠아마린")
                 .stoneNote("파란색 보석")
                 .stoneWeight(new BigDecimal("2.5"))
-                .stonePurchasePrice("15000")
+                .stonePurchasePrice(15000)
                 .gradePolicies(gradePolicies)
                 .build();
         given(stoneRepository.findFetchJoinById(1L)).willReturn(Optional.of(stone));
@@ -126,7 +126,7 @@ class StoneServiceTest {
                 .stoneName("토파즈")
                 .stoneNote("노란 보석")
                 .stoneWeight(new BigDecimal("1.0"))
-                .stonePurchasePrice("12000")
+                .stonePurchasePrice(12000)
                 .gradePolicies(new java.util.ArrayList<>())
                 .build();
 
@@ -146,7 +146,7 @@ class StoneServiceTest {
                 .stoneName("토파즈")
                 .stoneNote("노란 보석")
                 .stoneWeight(new BigDecimal("1.0"))
-                .stonePurchasePrice("12000")
+                .stonePurchasePrice(12000)
                 .gradePolicies(new java.util.ArrayList<>())
                 .build();
 
@@ -173,7 +173,7 @@ class StoneServiceTest {
                 .stoneName("토파즈")
                 .stoneNote("노란 보석")
                 .stoneWeight(new BigDecimal("1.0"))
-                .stonePurchasePrice("12000")
+                .stonePurchasePrice(12000)
                 .gradePolicies(new java.util.ArrayList<>())
                 .build();
 
