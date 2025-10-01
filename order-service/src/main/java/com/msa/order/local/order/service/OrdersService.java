@@ -75,9 +75,9 @@ public class OrdersService {
 
         List<OrderStone> orderStones = order.getOrderStones();
 
-        List<StoneDto.StoneResponse> stonesDtos = new ArrayList<>();
+        List<StoneDto.StoneInfo> stonesDtos = new ArrayList<>();
         for (OrderStone orderStone : orderStones) {
-            StoneDto.StoneResponse stoneDto = new StoneDto.StoneResponse(
+            StoneDto.StoneInfo stoneDto = new StoneDto.StoneInfo(
                 orderStone.getOriginStoneId().toString(),
                 orderStone.getOriginStoneName(),
                 orderStone.getOriginStoneWeight().toPlainString(),
@@ -157,8 +157,6 @@ public class OrdersService {
 
     //주문
     public Long saveOrder(String accessToken, String orderStatus, OrderDto.Request orderDto) {
-
-        log.info("saveOrder = {}", orderDto.toString());
 
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = TenantContext.getTenant();
@@ -617,9 +615,9 @@ public class OrdersService {
             OrderProduct orderProduct = order.getOrderProduct();
             List<OrderStone> orderStones = order.getOrderStones();
 
-            List<StoneDto.StoneResponse> stonesDtos = new ArrayList<>();
+            List<StoneDto.StoneInfo> stonesDtos = new ArrayList<>();
             for (OrderStone orderStone : orderStones) {
-                StoneDto.StoneResponse stoneDto = new StoneDto.StoneResponse(
+                StoneDto.StoneInfo stoneDto = new StoneDto.StoneInfo(
                         orderStone.getOriginStoneId().toString(),
                         orderStone.getOriginStoneName(),
                         orderStone.getOriginStoneWeight().toPlainString(),

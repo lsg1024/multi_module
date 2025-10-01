@@ -63,10 +63,12 @@ public class Stock {
     private Integer mainStoneLaborCost;
     @Column(name = "ASSISTANCE_STONE_LABOR_COST") // 스톤 보조 매출 비용
     private Integer assistanceStoneLaborCost;
-    @Column(name = "ADD_STONE_LABOR_COST") // 추가 스톤 매출 비용
-    private Integer addStoneLaborCost;
+    @Column(name = "STONE_ADD_LABOR_COST") // 추가 스톤 매출 비용
+    private Integer stoneAddLaborCost;
     @Column(name = "TOTAL_STONE_PURCHASE_COST") // 총 스톤 매입 비용
-    private Integer stonePurchaseCost;
+    private Integer totalStonePurchaseCost;
+    @Column(name = "TOTAL_STONE_LABOR_COST")
+    private Integer totalStoneLaborCost;
     @Column(name = "STOCK_CREATE_AT", nullable = false, updatable = false)
     private OffsetDateTime stockCreateAt;
     @Column(name = "STOCK_DELETED", nullable = false)
@@ -87,7 +89,7 @@ public class Stock {
     private OrderStatus orderStatus;
 
     @Builder
-    public Stock(Long stockCode, Long flowCode, Long storeId, String storeName, BigDecimal storeHarry, Long factoryId, String factoryName, BigDecimal factoryHarry, String stockNote, String stockMainStoneNote, String stockAssistanceStoneNote, Integer mainStoneLaborCost, Integer assistanceStoneLaborCost, Integer addStoneLaborCost, Integer stonePurchaseCost, boolean stockDeleted, ProductSnapshot product, Orders orders, List<OrderStone> orderStones, OrderStatus orderStatus) {
+    public Stock(Long stockCode, Long flowCode, Long storeId, String storeName, BigDecimal storeHarry, Long factoryId, String factoryName, BigDecimal factoryHarry, String stockNote, String stockMainStoneNote, String stockAssistanceStoneNote, Integer mainStoneLaborCost, Integer assistanceStoneLaborCost, Integer stoneAddLaborCost, Integer totalStonePurchaseCost, Integer totalStoneLaborCost, boolean stockDeleted, ProductSnapshot product, Orders orders, List<OrderStone> orderStones, OrderStatus orderStatus) {
         this.stockCode = stockCode;
         this.flowCode = flowCode;
         this.storeId = storeId;
@@ -101,8 +103,9 @@ public class Stock {
         this.stockAssistanceStoneNote = stockAssistanceStoneNote;
         this.mainStoneLaborCost = mainStoneLaborCost;
         this.assistanceStoneLaborCost = assistanceStoneLaborCost;
-        this.addStoneLaborCost = addStoneLaborCost;
-        this.stonePurchaseCost = stonePurchaseCost;
+        this.stoneAddLaborCost = stoneAddLaborCost;
+        this.totalStonePurchaseCost = totalStonePurchaseCost;
+        this.totalStoneLaborCost = totalStoneLaborCost;
         this.stockDeleted = stockDeleted;
         this.product = product;
         this.order = orders;
@@ -137,7 +140,7 @@ public class Stock {
     }
 
     public void moveToRental(StockDto.StockRentalRequest rentalRequest) {
-        this.addStoneLaborCost = rentalRequest.getAddStoneLaborCost();
+        this.stoneAddLaborCost = rentalRequest.getStoneAddLaborCost();
         this.stockNote = rentalRequest.getStockNote();
         this.stockMainStoneNote = rentalRequest.getMainStoneNote();
         this.stockAssistanceStoneNote = rentalRequest.getAssistanceStoneNote();
@@ -145,13 +148,13 @@ public class Stock {
     }
 
     public void updateStoneCost(int totalStonePurchaseCost, int mainLaborCost, int assistanceLaborCost) {
-        this.stonePurchaseCost = totalStonePurchaseCost;
+        this.totalStonePurchaseCost = totalStonePurchaseCost;
         this.mainStoneLaborCost = mainLaborCost;
         this.assistanceStoneLaborCost = assistanceLaborCost;
     }
 
-    public void updateAddStoneLaborCost(Integer addStoneLaborCost) {
-        this.addStoneLaborCost = addStoneLaborCost;
+    public void updateAddStoneLaborCost(Integer stoneAddLaborCost) {
+        this.stoneAddLaborCost = stoneAddLaborCost;
     }
 
     public void updateOrderStatus(OrderStatus orderStatus) {
