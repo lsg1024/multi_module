@@ -3,7 +3,6 @@ package com.msa.order.local.stock.controller;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.AccessToken;
 import com.msa.common.global.util.CustomPage;
-import com.msa.order.local.order.dto.OrderDto;
 import com.msa.order.local.stock.dto.StockDto;
 import com.msa.order.local.stock.service.StockService;
 import jakarta.validation.Valid;
@@ -27,7 +26,7 @@ public class StockController {
             @AccessToken String accessToken,
             @RequestParam(name = "id") Long flowCode,
             @RequestParam(name = "order_status") String orderStatus,
-            @Valid @RequestBody OrderDto.stockRequest stockDto) {
+            @Valid @RequestBody StockDto.StockRegisterRequest stockDto) {
 
         stockService.updateOrderToStock(accessToken, flowCode, orderStatus, stockDto);
 

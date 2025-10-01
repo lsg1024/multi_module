@@ -22,8 +22,8 @@ public class ProductSnapshot {
     private String productFactoryName;
     @Column(name = "PRODUCT_SIZE")
     private String size;
-    @Column(name = "IS_GOLD_WEIGHT_SALE")
-    private boolean isGoldWeightSale;
+    @Column(name = "IS_PRODUCT_WEIGHT_SALE")
+    private boolean isProductWeightSale;
     @Column(name = "PRODUCT_LABOR_COST") // 상품 매출 비용
     private Integer laborCost;
     @Column(name = "PRODUCT_ADD_LABOR_COST") // 상품 추가 매출 비용
@@ -52,14 +52,14 @@ public class ProductSnapshot {
     private BigDecimal stoneWeight;
 
     @Builder
-    private ProductSnapshot(Long id, String productName, String productFactoryName, String size, boolean isGoldWeightSale, Integer laborCost,
+    private ProductSnapshot(Long id, String productName, String productFactoryName, String size, boolean isProductWeightSale, Integer laborCost,
                             Integer addLaborCost, Integer productPurchaseCost, String materialName, String colorName,
                             String classificationName, String setTypeName, boolean assistantStone, Long assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, BigDecimal goldWeight, BigDecimal stoneWeight) {
         this.id = id;
         this.productName = productName;
         this.productFactoryName = productFactoryName;
         this.size = size;
-        this.isGoldWeightSale = isGoldWeightSale;
+        this.isProductWeightSale = isProductWeightSale;
         this.laborCost = laborCost;
         this.addLaborCost = addLaborCost;
         this.productPurchaseCost = productPurchaseCost;

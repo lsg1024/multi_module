@@ -145,10 +145,10 @@ public class OrderDto {
         private String assistantStoneId;
         private String assistantStoneName;
         private OffsetDateTime assistantStoneCreateAt;
-        private List<StoneDto.StoneResponse> stoneInfos;
+        private List<StoneDto.StoneInfo> stoneInfos;
 
         @Builder
-        public ResponseDetail(String createAt, String shippingAt, String flowCode, String storeId, String storeName, String factoryId, String productId, String productName, Integer productLaborCost, String stoneWeight, String classification, String materialName, String colorName, String setType, String productSize, String orderNote, String factoryName, Integer productPurchaseCost, String goldWeight, String mainStoneNote, String assistanceStoneNote, String priority, String productStatus, String orderStatus, boolean assistantStone, String assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, List<StoneDto.StoneResponse> stoneInfos) {
+        public ResponseDetail(String createAt, String shippingAt, String flowCode, String storeId, String storeName, String factoryId, String productId, String productName, Integer productLaborCost, String stoneWeight, String classification, String materialName, String colorName, String setType, String productSize, String orderNote, String factoryName, Integer productPurchaseCost, String goldWeight, String mainStoneNote, String assistanceStoneNote, String priority, String productStatus, String orderStatus, boolean assistantStone, String assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, List<StoneDto.StoneInfo> stoneInfos) {
             this.createAt = createAt;
             this.shippingAt = shippingAt;
             this.flowCode = flowCode;
@@ -192,16 +192,6 @@ public class OrderDto {
             this.orderResponse = orderResponse;
             this.storeHarry = storeHarry;
         }
-    }
-
-    @Getter
-    @NoArgsConstructor
-    public static class stockRequest {
-        @Valid
-        private OrderDto.Request orderRequest;
-        private Integer productPurchaseCost;
-        private String totalWeight;
-        private String storeHarry;
     }
 
     @Getter

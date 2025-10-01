@@ -26,7 +26,7 @@ public class StockDto {
         private String productSize;
         private Integer productPurchaseCost;
         private Integer addProductLaborCost;
-        private Integer addStoneLaborCost;
+        private Integer stoneAddLaborCost;
         private Boolean isProductWeightSale;
         private String materialId;
         private String classificationId;
@@ -60,7 +60,7 @@ public class StockDto {
         private String productSize;
         private Boolean isProductWeightSale;
         private Integer addProductLaborCost;
-        private Integer addStoneLaborCost;
+        private Integer stoneAddLaborCost;
         private Integer productPurchaseCost;
         private Integer stonePurchaseCost;
         private String mainStoneNote;
@@ -91,7 +91,7 @@ public class StockDto {
         private String goldWeight;
         private String stoneWeight;
         private Integer addProductLaborCost;
-        private Integer addStoneLaborCost;
+        private Integer stoneAddLaborCost;
         @Valid
         private List<StoneDto.StoneInfo> stoneInfos; // 개당 알수는 직접 수정 불가
     }
@@ -109,6 +109,7 @@ public class StockDto {
         private String productId;
         private String productName;
         private String productSize;
+        private boolean isGoldWeightSale;
         private String storeHarry;
         private Integer productPurchaseCost;
         private Integer productLaborCost;
@@ -124,10 +125,10 @@ public class StockDto {
         private String assistantStoneId;
         private String assistantStoneName;
         private OffsetDateTime assistantStoneCreateAt;
-        private List<StoneDto.StoneResponse> stoneInfos;
+        private List<StoneDto.StoneInfo> stoneInfos;
 
         @Builder
-        public StockRegisterResponse(String createAt, String flowCode, String storeId, String storeName, String factoryId, String factoryName, String productId, String productName, String productSize, String storeHarry, Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost, String goldWeight, String stoneWeight, String materialName, String colorName, String orderNote, String mainStoneNote, String assistanceStoneNote, boolean assistantStone, String assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, List<StoneDto.StoneResponse> stoneInfos) {
+        public StockRegisterResponse(String createAt, String flowCode, String storeId, String storeName, String factoryId, String factoryName, String productId, String productName, String productSize, boolean isGoldWeightSale, String storeHarry, Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost, String goldWeight, String stoneWeight, String materialName, String colorName, String orderNote, String mainStoneNote, String assistanceStoneNote, boolean assistantStone, String assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, List<StoneDto.StoneInfo> stoneInfos) {
             this.createAt = createAt;
             this.flowCode = flowCode;
             this.storeId = storeId;
@@ -137,6 +138,7 @@ public class StockDto {
             this.productId = productId;
             this.productName = productName;
             this.productSize = productSize;
+            this.isGoldWeightSale = isGoldWeightSale;
             this.storeHarry = storeHarry;
             this.productPurchaseCost = productPurchaseCost;
             this.productLaborCost = productLaborCost;
@@ -154,6 +156,34 @@ public class StockDto {
             this.assistantStoneCreateAt = assistantStoneCreateAt;
             this.stoneInfos = stoneInfos;
         }
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class StockRegisterRequest {
+        private String createAt;
+        private String flowCode;
+        private String materialId;
+        private String materialName;
+        private String colorId;
+        private String colorName;
+        private String productSize;
+        private boolean isProductWeightSale;
+        private Integer productPurchaseCost;
+        private Integer productLaborCost;
+        private Integer productAddLaborCost;
+        private String storeHarry;
+        private String goldWeight;
+        private String stoneWeight;
+        private String orderNote;
+        private String mainStoneNote;
+        private String assistanceStoneNote;
+        private String assistantStoneId;
+        private boolean assistantStone;
+        private String assistantStoneName;
+        private String assistantStoneCreateAt;
+        private List<StoneDto.StoneInfo> stoneInfos;
+        private Integer stoneAddLaborCost;
     }
 
     // 재고값 상세 조회 데이터
