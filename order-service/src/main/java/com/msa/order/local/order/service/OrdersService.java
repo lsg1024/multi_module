@@ -467,14 +467,16 @@ public class OrdersService {
     //기성 대체 -> 재고에 있는 제품 (이름, 색상, 재질 동일)
 
     //주문 -> 삭제
-    public void deletedOrder(String accessToken, String id) {
+    public void deletedOrders(String accessToken, String id) {
         String nickname = jwtUtil.getNickname(accessToken);
         String role = jwtUtil.getRole(accessToken);
 
         if (role.equals("ADMIN") || role.equals("USER")) {
-            long flowCode = Long.parseLong(id);
+            Long flowCode = Long.valueOf(id);
             Orders order = ordersRepository.findByFlowCode(flowCode)
-                    .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+                    .orElseThrow(() -> new IllegalArgumentException("flowCode: " + NOT_FOUND));
+
+            order.updateOrderStatus(OrderStatus.DELETED);
 
             StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
                     .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
@@ -489,6 +491,7 @@ public class OrdersService {
 
             order.deletedOrder(OffsetDateTime.now());
             statusHistoryRepository.save(statusHistory);
+
             return;
         }
         throw new IllegalArgumentException(NOT_ACCESS);

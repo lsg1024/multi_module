@@ -125,11 +125,11 @@ public class OrdersController {
     }
 
     // 주문 삭제
-    @DeleteMapping("/orders")
+    @DeleteMapping("/orders/delete")
     public ResponseEntity<ApiResponse<String>> deletedOrder(
             @AccessToken String accessToken,
-            @RequestParam String id) {
-        ordersService.deletedOrder(accessToken, id);
+            @RequestParam(name = "id") String flowCode) {
+        ordersService.deletedOrders(accessToken, flowCode);
         return ResponseEntity.ok(ApiResponse.success("삭제 완료"));
     }
 
