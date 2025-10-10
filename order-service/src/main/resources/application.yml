@@ -51,3 +51,5 @@ custom:
   jpa:
     entity-scan-packages:
       - com.msa.order
+qz:
+  private-key: ${qz.private-key}
