@@ -529,13 +529,13 @@ public class OrdersService {
 
     // 출고 예정 목록 출력
     @Transactional(readOnly = true)
-    public CustomPage<OrderDto.Response> getDeliveryProducts(String accessToken, String input, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort, String orderStatus, Pageable pageable) {
+    public CustomPage<OrderDto.Response> getDeliveryProducts(String accessToken, String input, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort, Pageable pageable) {
         String tenantId = jwtUtil.getTenantId(accessToken);
 
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
         OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
         OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
-        OrderDto.ExpectCondition expectCondition = new OrderDto.ExpectCondition(endAt, optionCondition, sortCondition, orderStatus);
+        OrderDto.ExpectCondition expectCondition = new OrderDto.ExpectCondition(endAt, optionCondition, sortCondition);
 
         CustomPage<OrderQueryDto> expectOrderPages = customOrderRepository.findByDeliveryOrders(inputCondition, expectCondition, pageable);
 
@@ -618,6 +618,13 @@ public class OrdersService {
         OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
         OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
         return customOrderRepository.findByFilterSetType(condition);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getFilterColors(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String orderStatus) {
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
+        OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
+        return customOrderRepository.findByFilterColor(condition);
     }
 
     @Transactional(readOnly = true)

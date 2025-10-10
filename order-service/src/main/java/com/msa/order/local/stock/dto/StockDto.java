@@ -1,11 +1,11 @@
 package com.msa.order.local.stock.dto;
 
 import com.msa.order.global.dto.StoneDto;
+import com.msa.order.local.order.dto.OrderDto;
 import com.querydsl.core.annotations.QueryProjection;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -250,6 +250,8 @@ public class StockDto {
     public static class Response {
         private String flowCode;
         private String createAt;
+        private String originStatus;
+        private String currentStatus;
         private String storeName;
         private String productSize;
         private String stockNote;
@@ -258,8 +260,11 @@ public class StockDto {
         private String colorName;
         private Integer productLaborCost;
         private Integer productAddLaborCost;
+        private String assistantStoneName;
+        private boolean assistantStone;
         private Integer mainStoneLaborCost;
-        private Integer assistanceLaborCost;
+        private Integer assistanceStoneLaborCost;
+        private Integer stoneAddLaborCost;
         private String mainStoneNote;
         private String assistanceStoneNote;
         private Integer mainStoneQuantity;
@@ -269,10 +274,17 @@ public class StockDto {
         private Integer productPurchaseCost;
         private Integer stonePurchaseCost;
 
+        public void updateStatus(String originStatus, String currentStatus) {
+            this.originStatus = originStatus;
+            this.currentStatus = currentStatus;
+        }
+
         @QueryProjection
-        public Response(String flowCode, String createAt, String storeName, String productSize, String stockNote, String materialName, String classificationName, String colorName, Integer productLaborCost, Integer productAddLaborCost, Integer mainStoneLaborCost, Integer assistanceLaborCost, String mainStoneNote, String assistanceStoneNote, Integer mainStoneQuantity, Integer assistanceStoneQuantity, String stoneWeight, String goldWeight, Integer productPurchaseCost, Integer stonePurchaseCost) {
+        public Response(String flowCode, String createAt, String originStatus, String currentStatus, String storeName, String productSize, String stockNote, String materialName, String classificationName, String colorName, Integer productLaborCost, Integer productAddLaborCost, String assistantStoneName, boolean assistantStone, Integer mainStoneLaborCost, Integer assistanceStoneLaborCost, Integer stoneAddLaborCost, String mainStoneNote, String assistanceStoneNote, Integer mainStoneQuantity, Integer assistanceStoneQuantity, String stoneWeight, String goldWeight, Integer productPurchaseCost, Integer stonePurchaseCost) {
             this.flowCode = flowCode;
             this.createAt = createAt;
+            this.originStatus = originStatus;
+            this.currentStatus = currentStatus;
             this.storeName = storeName;
             this.productSize = productSize;
             this.stockNote = stockNote;
@@ -281,8 +293,11 @@ public class StockDto {
             this.colorName = colorName;
             this.productLaborCost = productLaborCost;
             this.productAddLaborCost = productAddLaborCost;
+            this.assistantStoneName = assistantStoneName;
+            this.assistantStone = assistantStone;
             this.mainStoneLaborCost = mainStoneLaborCost;
-            this.assistanceLaborCost = assistanceLaborCost;
+            this.assistanceStoneLaborCost = assistanceStoneLaborCost;
+            this.stoneAddLaborCost = stoneAddLaborCost;
             this.mainStoneNote = mainStoneNote;
             this.assistanceStoneNote = assistanceStoneNote;
             this.mainStoneQuantity = mainStoneQuantity;
@@ -296,10 +311,26 @@ public class StockDto {
 
     @Getter
     @NoArgsConstructor
-    @AllArgsConstructor
     public static class StockCondition {
         private String startAt;
         private String endAt;
+        private OrderDto.OptionCondition optionCondition;
+        private OrderDto.SortCondition sortCondition;
+        private String orderStatus;
+
+        public StockCondition(String startAt, String endAt, OrderDto.OptionCondition optionCondition, OrderDto.SortCondition sortCondition, String orderStatus) {
+            this.startAt = startAt;
+            this.endAt = endAt;
+            this.optionCondition = optionCondition;
+            this.sortCondition = sortCondition;
+            this.orderStatus = orderStatus;
+        }
+
+        public StockCondition(String startAt, String endAt, String orderStatus) {
+            this.startAt = startAt;
+            this.endAt = endAt;
+            this.orderStatus = orderStatus;
+        }
     }
 
     public static class StockStone {

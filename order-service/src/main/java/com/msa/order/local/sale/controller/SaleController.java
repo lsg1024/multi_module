@@ -40,7 +40,7 @@ public class SaleController {
     }
 
     //주문 -> 판매 type = SALE
-    @PatchMapping("/sale_order")
+    @PatchMapping("/orders/sale-register")
     public ResponseEntity<ApiResponse<String>> updateOrderToSale(
             @AccessToken String accessToken,
             @RequestParam(name = "id") Long flowCode,

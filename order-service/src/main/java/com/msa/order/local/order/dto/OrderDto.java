@@ -232,7 +232,6 @@ public class OrderDto {
         private String endAt;
         private OptionCondition optionCondition;
         private SortCondition sortCondition;
-        private String orderStatus;
     }
 
     @Getter

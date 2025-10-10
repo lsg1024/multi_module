@@ -1,17 +1,25 @@
 package com.msa.order.local.stock.repository;
 
 import com.msa.common.global.util.CustomPage;
+import com.msa.order.local.order.dto.OrderDto;
+import com.msa.order.local.order.entity.QOrderStone;
+import com.msa.order.local.order.entity.QStatusHistory;
+import com.msa.order.local.order.entity.order_enum.BusinessPhase;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
+import com.msa.order.local.order.entity.order_enum.SourceType;
 import com.msa.order.local.stock.dto.QStockDto_Response;
 import com.msa.order.local.stock.dto.StockDto;
-import com.msa.order.local.order.entity.QOrderStone;
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.Order;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import jakarta.validation.constraints.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
@@ -20,8 +28,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 
+import static com.msa.order.local.order.entity.QStatusHistory.statusHistory;
 import static com.msa.order.local.stock.entity.QStock.stock;
 
 @Repository
@@ -34,20 +44,22 @@ public class StockRepositoryImpl implements CustomStockRepository {
     }
 
     @Override
-    public CustomPage<StockDto.Response> findByStockProducts(String input, String orderType, StockDto.StockCondition condition, Pageable pageable) {
+    public CustomPage<StockDto.Response> findByStockProducts(OrderDto.InputCondition inputCondition, StockDto.StockCondition condition, Pageable pageable) {
 
-        BooleanBuilder searchBuilder = getSearchBuilder(input);
-        BooleanExpression stockStatusBuilder = getStockStatusBuilder(condition);
+        BooleanBuilder searchBuilder = getSearchBuilder(inputCondition.getSearchInput());
+        BooleanExpression stockStatusBuilder = getStockCreateAtAndEndAt(condition);
+        BooleanExpression orderTypeCondition = getOrderTypeBuilder(condition);
 
-        BooleanExpression orderTypeCondition = null;
-        if (orderType != null && !orderType.isBlank()) {
-            orderTypeCondition = stock.orderStatus.eq(OrderStatus.valueOf(orderType));
-        }
+        OrderSpecifier<?>[] stockSpecifiers = createStockSpecifiers(condition.getSortCondition());
+
+        QStatusHistory subHistory = new QStatusHistory("subHistory");
 
         List<StockDto.Response> content = query
                 .select(new QStockDto_Response(
                         stock.flowCode.stringValue(),
                         stock.stockCreateAt.stringValue(),
+                        statusHistory.sourceType.stringValue(),
+                        statusHistory.phase.stringValue(),
                         stock.storeName,
                         stock.product.size,
                         stock.stockNote,
@@ -56,8 +68,11 @@ public class StockRepositoryImpl implements CustomStockRepository {
                         stock.product.colorName,
                         stock.product.laborCost,    // 11 기본
                         stock.product.addLaborCost,  // 12 추가
+                        stock.product.assistantStoneName,
+                        stock.product.assistantStone,
                         stock.mainStoneLaborCost,
                         stock.assistanceStoneLaborCost,
+                        stock.stoneAddLaborCost,
                         stock.stockMainStoneNote,
                         stock.stockAssistanceStoneNote,
                         Expressions.cases()
@@ -80,14 +95,28 @@ public class StockRepositoryImpl implements CustomStockRepository {
                         stock.totalStonePurchaseCost
                 ))
                 .from(stock)
-                .leftJoin(QOrderStone.orderStone).on(QOrderStone.orderStone.stock.eq(stock))
+                .leftJoin(QOrderStone.orderStone)
+                    .on(QOrderStone.orderStone.stock.eq(stock))
+                .leftJoin(statusHistory)
+                    .on(statusHistory.flowCode.eq(stock.flowCode),
+                            statusHistory.createAt.eq(
+                                    JPAExpressions
+                                            .select(subHistory.createAt.max())
+                                            .from(subHistory)
+                                            .where(subHistory.flowCode.eq(stock.flowCode))
+                            ))
                 .where(searchBuilder, stockStatusBuilder, orderTypeCondition)
-                .orderBy(stock.stockCreateAt.asc())
-                .groupBy(stock.stockId)
+                .orderBy(stockSpecifiers)
+                .groupBy(stock.stockId, statusHistory.id)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
 
+        for (StockDto.Response response : content) {
+            String originStatus = SourceType.valueOf(response.getOriginStatus()).getDisplayName();
+            String currentStatus = BusinessPhase.valueOf(response.getCurrentStatus()).getDisplayName();
+            response.updateStatus(originStatus, currentStatus);
+        }
 
         JPAQuery<Long> countQuery = query
                 .select(stock.stockId.count())
@@ -101,20 +130,63 @@ public class StockRepositoryImpl implements CustomStockRepository {
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
     }
 
-    @NotNull
-    private static BooleanBuilder getSearchBuilder(String searchInput) {
-        BooleanBuilder booleanInput = new BooleanBuilder();
+    @Override
+    public List<String> findByFilterFactories(StockDto.StockCondition condition) {
 
-        if (StringUtils.hasText(searchInput)) {
-            booleanInput.and(stock.product.productName.containsIgnoreCase(searchInput));
-            booleanInput.or(stock.storeName.containsIgnoreCase(searchInput));
-            booleanInput.or(stock.factoryName.containsIgnoreCase(searchInput));
-        }
+        BooleanExpression stockCreateAtAndEndAt = getStockCreateAtAndEndAt(condition);
+        BooleanExpression orderTypeBuilder = getOrderTypeBuilder(condition);
 
-        return booleanInput;
+        return query
+                .selectDistinct(stock.factoryName)
+                .from(stock)
+                .where(
+                        stockCreateAtAndEndAt,
+                        orderTypeBuilder)
+                .fetch();
     }
 
-    private static BooleanExpression getStockStatusBuilder(StockDto.StockCondition condition) {
+    @Override
+    public List<String> findByFilterStores(StockDto.StockCondition condition) {
+        BooleanExpression stockCreateAtAndEndAt = getStockCreateAtAndEndAt(condition);
+        BooleanExpression orderTypeBuilder = getOrderTypeBuilder(condition);
+
+        return query
+                .selectDistinct(stock.storeName)
+                .from(stock)
+                .where(
+                        stockCreateAtAndEndAt,
+                        orderTypeBuilder)
+                .fetch();
+    }
+
+    @Override
+    public List<String> findByFilterSetType(StockDto.StockCondition condition) {
+        BooleanExpression stockCreateAtAndEndAt = getStockCreateAtAndEndAt(condition);
+        BooleanExpression orderTypeBuilder = getOrderTypeBuilder(condition);
+
+        return query
+                .selectDistinct(stock.product.setTypeName)
+                .from(stock)
+                .where(
+                        stockCreateAtAndEndAt,
+                        orderTypeBuilder)
+                .fetch();
+    }
+
+    @Override
+    public List<String> findByFilterColor(StockDto.StockCondition condition) {
+        BooleanExpression stockCreateAtAndEndAt = getStockCreateAtAndEndAt(condition);
+        BooleanExpression orderTypeBuilder = getOrderTypeBuilder(condition);
+        return query
+                .selectDistinct(stock.product.colorName)
+                .from(stock)
+                .where(
+                        stockCreateAtAndEndAt,
+                        orderTypeBuilder)
+                .fetch();
+    }
+
+    private static BooleanExpression getStockCreateAtAndEndAt(StockDto.StockCondition condition) {
         String startAt = condition.getStartAt();
         String endAt = condition.getEndAt();
 
@@ -125,5 +197,55 @@ public class StockRepositoryImpl implements CustomStockRepository {
         OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
 
         return stock.stockCreateAt.between(startDateTime, endDateTime);
+    }
+
+    @Nullable
+    private BooleanExpression getOrderTypeBuilder(StockDto.StockCondition condition) {
+        BooleanExpression orderTypeCondition = null;
+        if (StringUtils.hasText(condition.getOrderStatus())) {
+            orderTypeCondition = stock.orderStatus.eq(OrderStatus.valueOf(condition.getOrderStatus()));
+        }
+        return orderTypeCondition;
+    }
+
+    @NotNull
+    private static BooleanBuilder getSearchBuilder(String searchInput) {
+        BooleanBuilder searchBuilder = new BooleanBuilder();
+
+        if (StringUtils.hasText(searchInput)) {
+            searchBuilder.and(
+                    stock.product.productName.containsIgnoreCase(searchInput)
+                            .or(stock.storeName.containsIgnoreCase(searchInput))
+                            .or(stock.factoryName.containsIgnoreCase(searchInput))
+            );
+        }
+        return searchBuilder;
+    }
+
+    private OrderSpecifier<?>[] createStockSpecifiers(OrderDto.SortCondition sortCondition) {
+        List<OrderSpecifier<?>> orderSpecifiers = new ArrayList<>();
+
+        if (sortCondition != null && StringUtils.hasText(sortCondition.getSortField())) {
+            Order direction = "ASC".equalsIgnoreCase(sortCondition.getSort()) ? Order.ASC : Order.DESC;
+            String field = sortCondition.getSortField();
+
+            switch (field) {
+                case "factory" -> orderSpecifiers.add(new OrderSpecifier<>(direction, stock.factoryName));
+                case "store" -> orderSpecifiers.add(new OrderSpecifier<>(direction, stock.storeName));
+                case "setType" -> orderSpecifiers.add(new OrderSpecifier<>(direction, stock.product.setTypeName));
+                case "color" -> orderSpecifiers.add(new OrderSpecifier<>(direction, stock.product.colorName));
+
+                default -> {
+                    orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, stock.stockCreateAt));
+                    orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, stock.flowCode));
+                }
+            }
+        } else {
+            // 정렬 조건이 없을 경우 기본 정렬
+            orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, stock.stockCreateAt));
+            orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, stock.flowCode));
+        }
+
+        return orderSpecifiers.toArray(new OrderSpecifier[0]);
     }
 }

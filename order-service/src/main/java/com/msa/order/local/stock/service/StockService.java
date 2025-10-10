@@ -7,6 +7,7 @@ import com.msa.order.global.dto.StoneDto;
 import com.msa.order.global.kafka.KafkaProducer;
 import com.msa.order.global.kafka.dto.KafkaStockRequest;
 import com.msa.order.global.util.DateConversionUtil;
+import com.msa.order.local.order.dto.OrderDto;
 import com.msa.order.local.order.dto.StoreDto;
 import com.msa.order.local.order.entity.OrderProduct;
 import com.msa.order.local.order.entity.OrderStone;
@@ -104,8 +105,13 @@ public class StockService {
 
     // 재고 관리  주문, 수리, 대여 관련
     @Transactional(readOnly = true)
-    public CustomPage<StockDto.Response> getStocks(String inputSearch, String orderType, StockDto.StockCondition condition, Pageable pageable) {
-        return customStockRepository.findByStockProducts(inputSearch, orderType, condition, pageable);
+    public CustomPage<StockDto.Response> getStocks(String input, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort, String orderStatus, Pageable pageable) {
+        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
+        OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
+        StockDto.StockCondition condition = new StockDto.StockCondition(startAt, endAt, optionCondition, sortCondition, orderStatus);
+
+        return customStockRepository.findByStockProducts(inputCondition, condition, pageable);
     }
 
     //주문 -> 재고 변경
@@ -424,5 +430,30 @@ public class StockService {
         );
         statusHistoryRepository.save(orderStatusHistory);
     }
+
+    @Transactional(readOnly = true)
+    public List<String> getFilterFactories(String startAt, String endAt, String orderStatus) {
+        StockDto.StockCondition condition = new StockDto.StockCondition(startAt, endAt, orderStatus);
+        return customStockRepository.findByFilterFactories(condition);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getFilterStores(String startAt, String endAt, String orderStatus) {
+        StockDto.StockCondition condition = new StockDto.StockCondition(startAt, endAt, orderStatus);
+        return customStockRepository.findByFilterStores(condition);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getFilterSetType(String startAt, String endAt, String orderStatus) {
+        StockDto.StockCondition condition = new StockDto.StockCondition(startAt, endAt, orderStatus);
+        return customStockRepository.findByFilterSetType(condition);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getFilterColors(String startAt, String endAt, String orderStatus) {
+        StockDto.StockCondition condition = new StockDto.StockCondition(startAt, endAt, orderStatus);
+        return customStockRepository.findByFilterColor(condition);
+    }
+
 
 }

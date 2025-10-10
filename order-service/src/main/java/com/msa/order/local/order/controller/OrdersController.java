@@ -145,12 +145,11 @@ public class OrdersController {
             @RequestParam(name = "color", required = false) String colorName,
             @RequestParam(name = "sortField", required = false) String sortField,
             @RequestParam(name = "sortOrder", required = false) String sort,
-            @RequestParam(name = "order_status") String orderStatus,
             @PageableDefault(size = 20) Pageable pageable) {
 
         CustomPage<OrderDto.Response> expectProducts = ordersService.getDeliveryProducts(accessToken,
                 input, endAt, factoryName, storeName, setTypeName,
-                colorName, sortField, sort, orderStatus, pageable);
+                colorName, sortField, sort, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(expectProducts));
     }
@@ -220,6 +219,19 @@ public class OrdersController {
 
         List<String> filterSetType = ordersService.getFilterSetType(startAt, endAt, factoryName, storeName, setTypeName, colorName, orderStatus);
         return ResponseEntity.ok(ApiResponse.success(filterSetType));
+    }
+
+    @GetMapping("/filters/color")
+    public ResponseEntity<ApiResponse<List<String>>> getColorNames(
+            @RequestParam(name = "start") String startAt,
+            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "factory", required = false) String factoryName,
+            @RequestParam(name = "store", required = false) String storeName,
+            @RequestParam(name = "setType", required = false) String setTypeName,
+            @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "order_status") String orderStatus) {
+        List<String> filterColors = ordersService.getFilterColors(startAt, endAt, factoryName, storeName, setTypeName, colorName, orderStatus);
+        return ResponseEntity.ok(ApiResponse.success(filterColors));
     }
 
     // 주문 -> 재고 등록 조회
