@@ -23,6 +23,8 @@ public interface CustomOrderRepository {
     List<String> findByFilterFactories(OrderDto.OrderCondition condition);
     List<String> findByFilterStores(OrderDto.OrderCondition condition);
     List<String> findByFilterSetType(OrderDto.OrderCondition condition);
+    List<String> findByFilterColor(OrderDto.OrderCondition condition);
 
     List<OrderExcelQueryDto> findByExcelData(OrderDto.OrderCondition condition);
+
 }

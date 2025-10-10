@@ -8,7 +8,9 @@ import java.util.Optional;
 public enum SourceType {
     ORDER("주문"),
     FIX("수리"),
-    NORMAL("일반");
+    NORMAL("일반"),
+    SALE("판매"),
+    RENTAL("대여");
 
     private final String displayName;
 
