@@ -7,6 +7,7 @@ import java.util.Optional;
 
 public enum OrderStatus {
     ORDER("주문"),
+    WAIT("대기"),
     FIX("수리"),
     STOCK("재고"),
     NORMAL("일반"),

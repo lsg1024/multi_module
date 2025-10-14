@@ -1,7 +1,6 @@
 package com.msa.order.local.order.entity;
 
 import com.github.f4b6a3.tsid.TsidCreator;
-import com.msa.order.local.order.dto.FactoryDto;
 import com.msa.order.local.order.dto.StoreDto;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.order.entity.order_enum.ProductStatus;
@@ -37,14 +36,14 @@ public class Orders {
     private Long storeId;
     @Column(name = "STORE_NAME") //account - store
     private String storeName;
+    @Column(name = "STORE_GRADE")
+    private String storeGrade;
     @Column(name = "STORE_HARRY", precision = 10, scale = 2)
     private BigDecimal storeHarry;
     @Column(name = "FACTORY_ID") //account - factory
     private Long factoryId;
     @Column(name = "FACTORY_NAME")
     private String factoryName;
-    @Column(name = "FACTORY_HARRY", precision = 10, scale = 2)
-    private BigDecimal factoryHarry;
     @Column(name = "ORDER_NOTE")
     private String orderNote;
     @Column(name = "CREATE_AT")
@@ -74,14 +73,15 @@ public class Orders {
     private OrderStatus orderStatus;
 
     @Builder
-    public Orders(Long orderId, Long flowCode, Long storeId, String storeName, Long factoryId, String factoryName, BigDecimal factoryHarry, String orderNote, OffsetDateTime createAt, OffsetDateTime shippingAt, ProductStatus productStatus, OrderStatus orderStatus) {
+    public Orders(Long orderId, Long flowCode, Long storeId, String storeName, String storeGrade, BigDecimal storeHarry, Long factoryId, String factoryName, String orderNote, OffsetDateTime createAt, OffsetDateTime shippingAt, ProductStatus productStatus, OrderStatus orderStatus) {
         this.orderId = orderId;
         this.flowCode = flowCode;
         this.storeId = storeId;
         this.storeName = storeName;
+        this.storeGrade = storeGrade;
+        this.storeHarry = storeHarry;
         this.factoryId = factoryId;
         this.factoryName = factoryName;
-        this.factoryHarry = factoryHarry;
         this.orderNote = orderNote;
         this.createAt = createAt;
         this.shippingAt = shippingAt;
@@ -117,13 +117,13 @@ public class Orders {
     public void updateStore(StoreDto.Response storeDto) {
         this.storeId = storeDto.getStoreId();
         this.storeName = storeDto.getStoreName();
+        this.storeGrade = storeDto.getGrade();
         this.storeHarry = new BigDecimal(storeDto.getStoreHarry());
     }
 
-    public void updateFactory(FactoryDto.Response factoryDto) {
-        this.factoryId = factoryDto.getFactoryId();
-        this.factoryName = factoryDto.getFactoryName();
-        this.factoryHarry = new BigDecimal(factoryDto.getFactoryHarry());
+    public void updateFactory(Long factoryId, String factoryName) {
+        this.factoryId = factoryId;
+        this.factoryName = factoryName;
     }
 
     public void updateOrderNote(String orderNote) {this.orderNote = orderNote;}
