@@ -69,10 +69,10 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                         stock.product.stoneWeight,
                         Expressions.nullExpression(Integer.class), // mainStoneQuantity
                         Expressions.nullExpression(Integer.class), // assistanceStoneQuantity
-                        stock.product.laborCost,
-                        stock.product.addLaborCost,
-                        stock.mainStoneLaborCost,
-                        stock.assistanceStoneLaborCost,
+                        stock.product.productLaborCost,
+                        stock.product.productAddLaborCost,
+                        stock.stoneMainLaborCost,
+                        stock.stoneAssistanceLaborCost,
                         stock.stoneAddLaborCost,
                         stock.product.assistantStone,
                         stock.product.assistantStoneName,
@@ -137,8 +137,8 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                     sumAsstQty,                           // assistanceQuantity
                     stock.product.goldWeight, // totalGoldWeight
                     stock.product.stoneWeight,
-                    stock.product.laborCost,                 // mainProductCost
-                    stock.product.addLaborCost,              // addProductCost
+                    stock.product.productLaborCost,                 // mainProductCost
+                    stock.product.productAddLaborCost,              // addProductCost
                     sumMainLabor,                         // mainStoneCost
                     sumAsstLabor,                         // assistanceStoneCost
                     totalPurchase                          // totalPurchaseCost
@@ -151,7 +151,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                 .groupBy(
                         saleItem.createAt, sale.saleCode, saleItem.flowCode,
                         stock.product.productName, stock.product.materialName, stock.product.colorName,
-                        stock.stockNote, stock.product.laborCost, stock.product.addLaborCost, stock.product.productPurchaseCost
+                        stock.stockNote, stock.product.productLaborCost, stock.product.productAddLaborCost, stock.product.productPurchaseCost
                 )
                 .fetch();
     }

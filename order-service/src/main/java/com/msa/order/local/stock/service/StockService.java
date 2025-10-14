@@ -13,7 +13,10 @@ import com.msa.order.local.order.entity.OrderProduct;
 import com.msa.order.local.order.entity.OrderStone;
 import com.msa.order.local.order.entity.Orders;
 import com.msa.order.local.order.entity.StatusHistory;
-import com.msa.order.local.order.entity.order_enum.*;
+import com.msa.order.local.order.entity.order_enum.BusinessPhase;
+import com.msa.order.local.order.entity.order_enum.Kind;
+import com.msa.order.local.order.entity.order_enum.OrderStatus;
+import com.msa.order.local.order.entity.order_enum.SourceType;
 import com.msa.order.local.order.external_client.AssistantStoneClient;
 import com.msa.order.local.order.external_client.StoreClient;
 import com.msa.order.local.order.external_client.dto.AssistantStoneDto;
@@ -80,7 +83,7 @@ public class StockService {
 
         return StockDto.ResponseDetail.builder()
                 .flowCode(stock.getFlowCode().toString())
-                .createAt(stock.getStockCreateAt().toString())
+                .createAt(stock.getCreateDate().toString())
                 .originalProductStatus(statusHistory.getSourceType().getDisplayName())
                 .classificationName(stock.getProduct().getClassificationName())
                 .productName(stock.getProduct().getProductName())
@@ -91,10 +94,10 @@ public class StockService {
                 .assistanceStoneNote(stock.getStockAssistanceStoneNote())
                 .productSize(stock.getProduct().getSize())
                 .stockNote(stock.getStockNote())
-                .productLaborCost(stock.getProduct().getLaborCost())
-                .productAddLaborCost(stock.getProduct().getAddLaborCost())
-                .mainStoneLaborCost(stock.getMainStoneLaborCost())
-                .assistanceStoneLaborCost(stock.getAssistanceStoneLaborCost())
+                .productLaborCost(stock.getProduct().getProductLaborCost())
+                .productAddLaborCost(stock.getProduct().getProductAddLaborCost())
+                .mainStoneLaborCost(stock.getStoneMainLaborCost())
+                .assistanceStoneLaborCost(stock.getStoneAssistanceLaborCost())
                 .mainStoneQuantity(mainStoneQuantity)
                 .assistanceStoneQuantity(assistanceStoneQuantity)
                 .goldWeight(stock.getProduct().getGoldWeight().toPlainString())
@@ -150,8 +153,8 @@ public class StockService {
                 .size(stockDto.getProductSize())
                 .classificationName(orderProduct.getClassificationName())
                 .isProductWeightSale(stockDto.isProductWeightSale())
-                .laborCost(orderProduct.getProductLaborCost())
-                .addLaborCost(stockDto.getProductAddLaborCost())
+                .productLaborCost(orderProduct.getProductLaborCost())
+                .productAddLaborCost(stockDto.getProductAddLaborCost())
                 .productPurchaseCost(stockDto.getProductPurchaseCost())
                 .materialName(orderProduct.getMaterialName())
                 .setTypeName(orderProduct.getSetTypeName())
@@ -188,7 +191,6 @@ public class StockService {
                 .storeHarry(order.getStoreHarry())
                 .factoryId(order.getFactoryId())
                 .factoryName(order.getFactoryName())
-                .factoryHarry(order.getFactoryHarry()) // 수정 가능
                 .stockMainStoneNote(stockDto.getMainStoneNote()) // 수정 가능
                 .stockAssistanceStoneNote(stockDto.getAssistanceStoneNote()) // 수정 가능
                 .stockNote(stockDto.getOrderNote()) // 수정 가능
@@ -238,24 +240,53 @@ public class StockService {
 
         ProductSnapshot product = ProductSnapshot.builder()
                 .id(productId)
+                .productName(stockDto.getProductName())
+                .productFactoryName(stockDto.getProductFactoryName())
                 .size(stockDto.getProductSize())
-                .productPurchaseCost(stockDto.getProductPurchaseCost())
-                .addLaborCost(stockDto.getAddProductLaborCost())
+                .classificationId(classificationId)
+                .classificationName(stockDto.getClassificationName())
+                .setTypeId(setTypeId)
+                .setTypeName(stockDto.getSetTypeName())
+                .colorId(colorId)
+                .colorName(stockDto.getColorName())
+                .materialId(materialId)
+                .materialName(stockDto.getMaterialName())
+                .isProductWeightSale(stockDto.getIsProductWeightSale())
                 .goldWeight(stockDto.getGoldWeight())
                 .stoneWeight(stockDto.getStoneWeight())
+                .productPurchaseCost(stockDto.getProductPurchaseCost())
+                .productAddLaborCost(stockDto.getProductAddLaborCost())
+                .assistantStoneId(Long.valueOf(stockDto.getAssistantStoneId()))
                 .build();
+
+        int totalStonePurchaseCost = 0;
+        int totalStoneLaborCost = 0;
+        int mainStoneCost = 0;
+        int assistanceStoneCost = 0;
+        updateStoneInfo(stockDto.getStoneInfos(), totalStonePurchaseCost, totalStoneLaborCost, mainStoneCost, assistanceStoneCost);
+        totalStoneLaborCost += stockDto.getStoneAddLaborCost();
 
         // 자체 재고는 store에서 자신을 선택해야함
         Stock stock = Stock.builder()
+                .storeId(storeId)
+                .storeName(stockDto.getStoreName())
+                .storeGrade(stockDto.getStoreGrade())
+                .storeHarry(new BigDecimal(stockDto.getStoreHarry()))
+                .factoryId(factoryId)
+                .factoryName(stockDto.getFactoryName())
                 .stockNote(stockDto.getStockNote())
-                .orderStatus(OrderStatus.NORMAL)
+                .orderStatus(OrderStatus.WAIT)
                 .stockMainStoneNote(stockDto.getMainStoneNote())
                 .stockAssistanceStoneNote(stockDto.getAssistanceStoneNote())
+                .totalStoneLaborCost(totalStoneLaborCost)
+                .totalStonePurchaseCost(totalStonePurchaseCost)
+                .stoneMainLaborCost(mainStoneCost)
+                .stoneAssistanceLaborCost(assistanceStoneCost)
+                .stoneAddLaborCost(stockDto.getStoneAddLaborCost())
                 .product(product)
                 .orderStones(new ArrayList<>())
                 .build();
 
-        List<Long> stoneIds = new ArrayList<>();
         List<StoneDto.StoneInfo> stoneInfos = stockDto.getStoneInfos();
         for (StoneDto.StoneInfo stoneInfo : stoneInfos) {
             OrderStone orderStone = OrderStone.builder()
@@ -269,7 +300,6 @@ public class StockService {
                     .includeStone(stoneInfo.isIncludeStone())
                     .build();
 
-            stoneIds.add(Long.valueOf(stoneInfo.getStoneId()));
             stock.addStockStone(orderStone);
         }
 
@@ -278,7 +308,7 @@ public class StockService {
         StatusHistory statusHistory = StatusHistory.create(
                 stock.getStockCode(),
                 SourceType.valueOf(orderType),
-                BusinessPhase.valueOf(orderType),
+                BusinessPhase.WAITING,
                 Kind.CREATE,
                 nickname
         );
@@ -287,7 +317,6 @@ public class StockService {
 
         OffsetDateTime assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(stockDto.getAssistantStoneCreateAt());
 
-        //
         KafkaStockRequest stockRequest = KafkaStockRequest.builder()
                 .eventId(UUID.randomUUID().toString())
                 .flowCode(stock.getStockCode())
@@ -300,19 +329,15 @@ public class StockService {
                 .colorId(colorId)
                 .setTypeId(setTypeId)
                 .nickname(nickname)
-                .addProductLaborCost(stockDto.getAddProductLaborCost())
-                .addStoneLaborCost(stockDto.getStoneAddLaborCost())
                 .assistantStone(stockDto.isAssistantStone())
                 .assistantStoneId(Long.valueOf(stockDto.getAssistantStoneId()))
                 .assistantStoneCreateAt(assistantStoneCreateAt)
-                .stoneIds(stoneIds)
-                .stoneInfos(stockDto.getStoneInfos())
                 .build();
 
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                kafkaProducer.stockDetailAsync(stockRequest);
+                kafkaProducer.stockSave(stockRequest);
             }
         });
     }
