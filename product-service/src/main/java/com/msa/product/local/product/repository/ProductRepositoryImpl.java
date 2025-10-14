@@ -111,6 +111,7 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 .select(new QProductDto_Page(
                         product.productId.stringValue(),
                         product.productName,
+                        product.productFactoryName,
                         product.standardWeight.stringValue(),
                         material.materialName,
                         product.productNote,
