@@ -351,7 +351,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         if (StringUtils.hasText(orderCondition.getOrderStatus())) {
             SourceType statusEnum = SourceType.valueOf(orderCondition.getOrderStatus().toUpperCase());
             BooleanExpression status = hasStatusHistory(statusEnum);
-            statusIsReceiptOrWaiting.and(status);
+            statusIsReceiptOrWaiting = statusIsReceiptOrWaiting.and(status);
         }
 
         return statusIsReceiptOrWaiting.and(createdBetween);
