@@ -1,6 +1,7 @@
 package com.msa.order.local.stock.entity;
 
 import com.github.f4b6a3.tsid.TsidCreator;
+import com.msa.common.global.domain.BaseTimeEntity;
 import com.msa.order.local.order.dto.FactoryDto;
 import com.msa.order.local.order.dto.StoreDto;
 import com.msa.order.local.order.entity.OrderStone;
@@ -17,8 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.SQLDelete;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,9 +29,7 @@ import static jakarta.persistence.CascadeType.*;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SQLDelete(sql = "UPDATE STOCK SET STOCK_DELETED = TRUE WHERE STOCK_ID = ?")
-public class Stock {
-
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+public class Stock extends BaseTimeEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "STOCK_ID")
@@ -47,6 +44,8 @@ public class Stock {
     private String storeName;
     @Column(name = "STORE_HARRY", precision = 10, scale = 2)
     private BigDecimal storeHarry;
+    @Column(name = "STORE_GRADE") //account - store
+    private String storeGrade;
     @Column(name = "FACTORY_ID") //account - factory
     private Long factoryId;
     @Column(name = "FACTORY_NAME")
@@ -59,18 +58,16 @@ public class Stock {
     private String stockMainStoneNote;
     @Column(name = "STOCK_ASSISTANCE_STONE_NOTE")
     private String stockAssistanceStoneNote;
-    @Column(name = "MAIN_STONE_LABOR_COST") // 스톤 메인 매출 비용
-    private Integer mainStoneLaborCost;
-    @Column(name = "ASSISTANCE_STONE_LABOR_COST") // 스톤 보조 매출 비용
-    private Integer assistanceStoneLaborCost;
+    @Column(name = "STONE_MAIN_LABOR_COST") // 스톤 메인 매출 비용
+    private Integer stoneMainLaborCost;
+    @Column(name = "STONE_ASSISTANCE_LABOR_COST") // 스톤 보조 매출 비용
+    private Integer stoneAssistanceLaborCost;
     @Column(name = "STONE_ADD_LABOR_COST") // 추가 스톤 매출 비용
     private Integer stoneAddLaborCost;
     @Column(name = "TOTAL_STONE_PURCHASE_COST") // 총 스톤 매입 비용
     private Integer totalStonePurchaseCost;
     @Column(name = "TOTAL_STONE_LABOR_COST")
     private Integer totalStoneLaborCost;
-    @Column(name = "STOCK_CREATE_AT", nullable = false, updatable = false)
-    private OffsetDateTime stockCreateAt;
     @Column(name = "STOCK_DELETED", nullable = false)
     private boolean stockDeleted = false;
 
@@ -89,20 +86,21 @@ public class Stock {
     private OrderStatus orderStatus;
 
     @Builder
-    public Stock(Long stockCode, Long flowCode, Long storeId, String storeName, BigDecimal storeHarry, Long factoryId, String factoryName, BigDecimal factoryHarry, String stockNote, String stockMainStoneNote, String stockAssistanceStoneNote, Integer mainStoneLaborCost, Integer assistanceStoneLaborCost, Integer stoneAddLaborCost, Integer totalStonePurchaseCost, Integer totalStoneLaborCost, boolean stockDeleted, ProductSnapshot product, Orders orders, List<OrderStone> orderStones, OrderStatus orderStatus) {
+    public Stock(Long stockCode, Long flowCode, Long storeId, String storeName, BigDecimal storeHarry, String storeGrade, Long factoryId, String factoryName, BigDecimal factoryHarry, String stockNote, String stockMainStoneNote, String stockAssistanceStoneNote, Integer stoneMainLaborCost, Integer stoneAssistanceLaborCost, Integer stoneAddLaborCost, Integer totalStonePurchaseCost, Integer totalStoneLaborCost, boolean stockDeleted, ProductSnapshot product, Orders orders, List<OrderStone> orderStones, OrderStatus orderStatus) {
         this.stockCode = stockCode;
         this.flowCode = flowCode;
         this.storeId = storeId;
         this.storeName = storeName;
         this.storeHarry = storeHarry;
+        this.storeGrade = storeGrade;
         this.factoryId = factoryId;
         this.factoryName = factoryName;
         this.factoryHarry = factoryHarry;
         this.stockNote = stockNote;
         this.stockMainStoneNote = stockMainStoneNote;
         this.stockAssistanceStoneNote = stockAssistanceStoneNote;
-        this.mainStoneLaborCost = mainStoneLaborCost;
-        this.assistanceStoneLaborCost = assistanceStoneLaborCost;
+        this.stoneMainLaborCost = stoneMainLaborCost;
+        this.stoneAssistanceLaborCost = stoneAssistanceLaborCost;
         this.stoneAddLaborCost = stoneAddLaborCost;
         this.totalStonePurchaseCost = totalStonePurchaseCost;
         this.totalStoneLaborCost = totalStoneLaborCost;
@@ -149,8 +147,8 @@ public class Stock {
 
     public void updateStoneCost(int totalStonePurchaseCost, int mainLaborCost, int assistanceLaborCost) {
         this.totalStonePurchaseCost = totalStonePurchaseCost;
-        this.mainStoneLaborCost = mainLaborCost;
-        this.assistanceStoneLaborCost = assistanceLaborCost;
+        this.stoneMainLaborCost = mainLaborCost;
+        this.stoneAssistanceLaborCost = assistanceLaborCost;
     }
 
     public void updateAddStoneLaborCost(Integer stoneAddLaborCost) {
@@ -170,10 +168,9 @@ public class Stock {
 
     @PrePersist
     private void onCreate() {
-        if (this.stockCreateAt == null) this.stockCreateAt = OffsetDateTime.now(KST);
         if (this.flowCode == null) {
             this.stockCode = TsidCreator.getTsid().toLong();
-            this.flowCode = this.stockCode;   // 독립 재고 기본값}
+            this.flowCode = this.stockCode;   // 독립 재고 기본값
         }
         if (this.stockCode == null) {
             this.stockCode = this.flowCode;

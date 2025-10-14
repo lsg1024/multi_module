@@ -20,38 +20,55 @@ public class StockDto {
     @Getter
     @NoArgsConstructor
     public static class createStockRequest {
+        @NotBlank(message = "판매처 ID는 필수입니다.")
+        @Pattern(regexp = "\\d+", message = "판매처를 선택해주세요.")
+        private String storeId;
+        private String storeName;
+        private String storeGrade;
+        private String storeHarry;
+
+        @NotBlank(message = "공장 ID는 필수입니다.")
+        @Pattern(regexp = "\\d+", message = "공장을 선택해주세요.")
+        private String factoryId;
+        private String factoryName;
+
         @NotBlank(message = "상품 ID는 필수입니다.")
-        @Pattern(regexp = "\\d+", message = "상품 입력 값 오류.")
+        @Pattern(regexp = "\\d+", message = "상품을 선택해주세요.")
         private String productId;
+        private String productName;
+        private String productFactoryName;
         private String productSize;
-        private Integer productPurchaseCost;
-        private Integer addProductLaborCost;
-        private Integer stoneAddLaborCost;
-        private Boolean isProductWeightSale;
-        private String materialId;
-        private String classificationId;
-        private String colorId;
-        private String setTypeId;
-        private String mainStoneNote;
-        private String assistanceStoneNote;
         private String stockNote;
+        private Boolean isProductWeightSale;
+        private Integer productPurchaseCost;
+        private Integer productAddLaborCost;
+
+        @NotBlank(message = "재질 값은 필수입니다.")
+        @Pattern(regexp = "\\d+", message = "재질을 선택해주세요")
+        private String materialId;
+        private String materialName;
+        @NotBlank(message = "색상 값은 필수입니다.")
+        @Pattern(regexp = "\\d+", message = "색상을 선택해주세요.")
+        private String colorId;
+        private String colorName;
+        private String classificationId;
+        private String classificationName;
+        private String setTypeId;
+        private String setTypeName;
+
         private BigDecimal goldWeight;
         private BigDecimal stoneWeight;
+        private String mainStoneNote;
+        private String assistanceStoneNote;
+
         // 보조석
         private boolean assistantStone;
         private String assistantStoneId;
         private String assistantStoneCreateAt;
 
-        @NotBlank(message = "상점 ID는 필수입니다.")
-        @Pattern(regexp = "\\d+", message = "상점 입력 값 오류.")
-        private String storeId;
-
-        @NotBlank(message = "공장 ID는 필수입니다.")
-        @Pattern(regexp = "\\d+", message = "공장 입력 값 오류.")
-        private String factoryId;
-
         @Valid
         private List<StoneDto.StoneInfo> stoneInfos;
+        private Integer stoneAddLaborCost;
     }
 
     @Getter
@@ -104,13 +121,13 @@ public class StockDto {
         private String flowCode;
         private String storeId;
         private String storeName;
+        private String storeHarry;
         private String factoryId;
         private String factoryName;
         private String productId;
         private String productName;
         private String productSize;
         private boolean isProductWeightSale;
-        private String storeHarry;
         private Integer productPurchaseCost;
         private Integer productLaborCost;
         private Integer productAddLaborCost;

@@ -26,8 +26,6 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,7 +55,7 @@ public class StockRepositoryImpl implements CustomStockRepository {
         List<StockDto.Response> content = query
                 .select(new QStockDto_Response(
                         stock.flowCode.stringValue(),
-                        stock.stockCreateAt.stringValue(),
+                        stock.createDate.stringValue(),
                         statusHistory.sourceType.stringValue(),
                         statusHistory.phase.stringValue(),
                         stock.storeName,
@@ -66,12 +64,12 @@ public class StockRepositoryImpl implements CustomStockRepository {
                         stock.product.materialName,
                         stock.product.classificationName,
                         stock.product.colorName,
-                        stock.product.laborCost,    // 11 기본
-                        stock.product.addLaborCost,  // 12 추가
+                        stock.product.productLaborCost,
+                        stock.product.productAddLaborCost,
                         stock.product.assistantStoneName,
                         stock.product.assistantStone,
-                        stock.mainStoneLaborCost,
-                        stock.assistanceStoneLaborCost,
+                        stock.stoneMainLaborCost,
+                        stock.stoneAssistanceLaborCost,
                         stock.stoneAddLaborCost,
                         stock.stockMainStoneNote,
                         stock.stockAssistanceStoneNote,
@@ -193,10 +191,7 @@ public class StockRepositoryImpl implements CustomStockRepository {
         LocalDateTime start = LocalDate.parse(startAt).atStartOfDay(); // 예: 2025-08-04 00:00:00
         LocalDateTime end = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
 
-        OffsetDateTime startDateTime = start.atOffset(ZoneOffset.of("+09:00"));
-        OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
-
-        return stock.stockCreateAt.between(startDateTime, endDateTime);
+        return stock.createDate.between(start, end);
     }
 
     @Nullable
@@ -236,13 +231,13 @@ public class StockRepositoryImpl implements CustomStockRepository {
                 case "color" -> orderSpecifiers.add(new OrderSpecifier<>(direction, stock.product.colorName));
 
                 default -> {
-                    orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, stock.stockCreateAt));
+                    orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, stock.createDate));
                     orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, stock.flowCode));
                 }
             }
         } else {
             // 정렬 조건이 없을 경우 기본 정렬
-            orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, stock.stockCreateAt));
+            orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, stock.createDate));
             orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, stock.flowCode));
         }
 
