@@ -173,4 +173,23 @@ public class StoneUtil {
                 os.getOriginStoneId() != null && !keepIds.contains(os.getOriginStoneId()));
     }
 
+    public static void updateStoneInfo(List<StoneDto.StoneInfo> stoneInfos, int totalStonePurchaseCost,
+                                       int totalStoneLaborCost, int mainStoneCost, int assistanceStoneCost) {
+
+        for (StoneDto.StoneInfo stoneInfo : stoneInfos) {
+            Integer laborCost = stoneInfo.getLaborCost();
+            Integer quantity = stoneInfo.getQuantity();
+            Integer purchaseCost = stoneInfo.getPurchaseCost();
+            if (Boolean.TRUE.equals(stoneInfo.isIncludeStone())) {
+                if (Boolean.TRUE.equals(stoneInfo.isMainStone())) {
+                    mainStoneCost += laborCost * quantity;
+                } else {
+                    assistanceStoneCost += laborCost * quantity;
+                }
+                totalStonePurchaseCost += purchaseCost * quantity;
+                totalStoneLaborCost += laborCost * quantity;
+            }
+        }
+    }
+
 }

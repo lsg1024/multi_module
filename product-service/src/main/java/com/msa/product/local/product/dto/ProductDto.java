@@ -93,6 +93,7 @@ public class ProductDto {
     public static class Page {
         private String productId;
         private String productName;
+        private String productFactoryName;
         private String factoryId;
         private String factoryName;
         private String productWeight;
@@ -105,9 +106,10 @@ public class ProductDto {
 
         @Builder
         @QueryProjection
-        public Page(String productId, String productName, String productWeight, String productMaterial, String productNote, String productPurchaseCost, String productLaborCost, String productImagePath, List<ProductStoneDto.Response> productStones, String factoryId, String factoryName) {
+        public Page(String productId, String productName, String productFactoryName, String productWeight, String productMaterial, String productNote, String productPurchaseCost, String productLaborCost, String productImagePath, List<ProductStoneDto.Response> productStones, String factoryId, String factoryName) {
             this.productId = productId;
             this.productName = productName;
+            this.productFactoryName = productFactoryName;
             this.productWeight = productWeight;
             this.productMaterial = productMaterial;
             this.productNote = productNote;

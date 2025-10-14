@@ -37,7 +37,8 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 
-import static com.msa.order.global.exception.ExceptionMessage.*;
+import static com.msa.order.global.exception.ExceptionMessage.NOT_ACCESS;
+import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND;
 import static com.msa.order.global.util.DateConversionUtil.StringToOffsetDateTime;
 import static com.msa.order.local.order.util.StoneUtil.updateOrderStoneInfo;
 
@@ -75,6 +76,7 @@ public class OrdersService {
 
         List<OrderStone> orderStones = order.getOrderStones();
 
+
         List<StoneDto.StoneInfo> stonesDtos = new ArrayList<>();
         for (OrderStone orderStone : orderStones) {
             StoneDto.StoneInfo stoneDto = new StoneDto.StoneInfo(
@@ -99,15 +101,20 @@ public class OrdersService {
                 .flowCode(order.getFlowCode().toString())
                 .storeId(order.getStoreId().toString())
                 .storeName(order.getStoreName())
+                .storeGrade(order.getStoreGrade())
                 .factoryId(order.getFactoryId().toString())
                 .factoryName(order.getFactoryName())
                 .productId(orderProduct.getProductId().toString())
                 .productName(orderProduct.getProductName())
-                .classification(orderProduct.getClassificationName())
-                .materialName(orderProduct.getMaterialName())
-                .colorName(orderProduct.getColorName())
-                .setType(orderProduct.getSetTypeName())
                 .productSize(orderProduct.getProductSize())
+                .classificationId(String.valueOf(orderProduct.getClassificationId()))
+                .classificationName(orderProduct.getClassificationName())
+                .materialId(String.valueOf(orderProduct.getMaterialId()))
+                .materialName(orderProduct.getMaterialName())
+                .colorId(String.valueOf(orderProduct.getColorId()))
+                .colorName(orderProduct.getColorName())
+                .setTypeId(String.valueOf(orderProduct.getSetTypeId()))
+                .setTypeName(orderProduct.getSetTypeName())
                 .orderNote(order.getOrderNote())
                 .mainStoneNote(orderProduct.getOrderMainStoneNote())
                 .assistanceStoneNote(orderProduct.getOrderAssistanceStoneNote())
@@ -157,7 +164,6 @@ public class OrdersService {
 
     //주문
     public Long saveOrder(String accessToken, String orderStatus, OrderDto.Request orderDto) {
-
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = TenantContext.getTenant();
 
@@ -176,9 +182,15 @@ public class OrdersService {
         OffsetDateTime shippingAt = StringToOffsetDateTime(orderDto.getShippingAt());
 
         Orders order = Orders.builder()
+                .storeId(Long.parseLong(orderDto.getStoreId()))
+                .storeName(orderDto.getStoreName())
+                .storeGrade(orderDto.getStoreGrade())
+                .storeHarry(new BigDecimal(orderDto.getStoreHarry()))
+                .factoryId(Long.parseLong(orderDto.getFactoryId()))
+                .factoryName(orderDto.getFactoryName())
                 .orderNote(orderDto.getOrderNote())
                 .productStatus(ProductStatus.RECEIPT)
-                .orderStatus(OrderStatus.valueOf(orderStatus))
+                .orderStatus(OrderStatus.WAIT)
                 .createAt(createAt)
                 .shippingAt(shippingAt)
                 .build();
@@ -206,16 +218,24 @@ public class OrdersService {
         // orderProduct 추가
         OrderProduct orderProduct = OrderProduct.builder()
                 .productId(productId)
+                .productName(orderDto.getProductName())
+                .productSize(orderDto.getProductSize())
+                .productFactoryName(orderDto.getProductFactoryName())
+                .classificationId(Long.valueOf(orderDto.getClassificationId()))
+                .classificationName(orderDto.getClassificationName())
+                .setTypeId(Long.valueOf(orderDto.getSetTypeId()))
+                .setTypeName(orderDto.getSetTypeName())
+                .colorId(colorId)
+                .colorName(orderDto.getColorName())
+                .materialId(materialId)
+                .materialName(orderDto.getMaterialName())
                 .isProductWeightSale(orderDto.isProductWeightSale())
                 .goldWeight(new BigDecimal(BigInteger.ZERO))
                 .stoneWeight(orderDto.getStoneWeight())
                 .productAddLaborCost(orderDto.getProductAddLaborCost())
                 .orderMainStoneNote(orderDto.getMainStoneNote())
                 .orderAssistanceStoneNote(orderDto.getAssistanceStoneNote())
-                .productSize(orderDto.getProductSize())
-                .classificationName(orderDto.getClassificationName())
                 .assistantStoneId(assistantId)
-                .setTypeName(orderDto.getSetTypeName())
                 .build();
 
         order.addOrderProduct(orderProduct);
@@ -260,7 +280,7 @@ public class OrdersService {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                kafkaProducer.orderDetailAsync(orderAsyncRequestedBuilder.build());
+                kafkaProducer.orderSave(orderAsyncRequestedBuilder.build());
             }
         });
 
@@ -373,7 +393,7 @@ public class OrdersService {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                kafkaProducer.orderDetailUpdateAsync(orderUpdateRequest);
+                kafkaProducer.orderUpdate(orderUpdateRequest);
             }
         });
     }
@@ -448,7 +468,7 @@ public class OrdersService {
 
         FactoryDto.Response factoryInfo = factoryClient.getFactoryInfo(tenantId, factoryDto.getFactoryId());
 
-        order.updateFactory(factoryInfo);
+        order.updateFactory(factoryInfo.getFactoryId(), factoryInfo.getFactoryName());
     }
 
     //출고일 변경
@@ -657,12 +677,12 @@ public class OrdersService {
                     .flowCode(order.getFlowCode().toString())
                     .storeId(order.getStoreId().toString())
                     .storeName(order.getStoreName())
+                    .storeHarry(order.getStoreHarry().toPlainString())
                     .factoryId(order.getFactoryId().toString())
                     .factoryName(order.getFactoryName())
                     .productId(orderProduct.getProductId().toString())
                     .productName(orderProduct.getProductName())
                     .productSize(orderProduct.getProductSize())
-                    .storeHarry(order.getStoreHarry().toPlainString())
                     .productPurchaseCost(orderProduct.getProductPurchaseCost())
                     .productLaborCost(orderProduct.getProductLaborCost())
                     .productAddLaborCost(orderProduct.getProductAddLaborCost())

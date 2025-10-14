@@ -45,6 +45,8 @@ public class StockController {
         return ResponseEntity.ok(ApiResponse.success("생성 완료"));
     }
 
+    // 재고 수정 기능 필요
+
     @GetMapping("/stock")
     public ResponseEntity<ApiResponse<StockDto.ResponseDetail>> getStockDetail(
             @RequestParam(name = "id") Long flowCode) {

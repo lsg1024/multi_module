@@ -68,7 +68,7 @@ public class KafkaConsumer {
 
             TenantContext.setTenant(ksq.getTenantId());
 
-            kafkaStockService.saveStockDetail(ksq);
+            kafkaStockService.saveStock(ksq);
         } catch (Exception e) {
             log.error("Consume failed. payload={}, err={}", message, e.getMessage(), e);
             throw new IllegalStateException("Kafka consume error", e);

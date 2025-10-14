@@ -66,13 +66,15 @@ public class OrderProduct {
     private String assistantStoneName;
     @Column(name = "ASSISTANT_STONE_CREATE_AT")
     private OffsetDateTime assistantStoneCreateAt;
+    @Column(name = "STONE_ADD_LABOR_COST") // 추가 스톤 매출 비용
+    private Integer stoneAddLaborCost;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ORDER_ID")
     private Orders order;
 
     @Builder
-    public OrderProduct(Long productId, String productName, String productFactoryName, String productSize, boolean isProductWeightSale, BigDecimal goldWeight, BigDecimal stoneWeight, String orderMainStoneNote, String orderAssistanceStoneNote, Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost, Long materialId, String materialName, Long classificationId, String classificationName, Long colorId, String colorName, Long setTypeId, String setTypeName, boolean assistantStone, Long assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, Orders order) {
+    public OrderProduct(Long productId, String productName, String productFactoryName, String productSize, boolean isProductWeightSale, BigDecimal goldWeight, BigDecimal stoneWeight, String orderMainStoneNote, String orderAssistanceStoneNote, Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost, Long materialId, String materialName, Long classificationId, String classificationName, Long colorId, String colorName, Long setTypeId, String setTypeName, boolean assistantStone, Long assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, Integer stoneAddLaborCost, Orders order) {
         this.productId = productId;
         this.productName = productName;
         this.productFactoryName = productFactoryName;
@@ -97,6 +99,7 @@ public class OrderProduct {
         this.assistantStoneId = assistantStoneId;
         this.assistantStoneName = assistantStoneName;
         this.assistantStoneCreateAt = assistantStoneCreateAt;
+        this.stoneAddLaborCost = stoneAddLaborCost;
         this.order = order;
     }
 

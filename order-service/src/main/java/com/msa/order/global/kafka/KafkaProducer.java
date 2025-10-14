@@ -18,7 +18,7 @@ public class KafkaProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
-    public void orderDetailAsync(OrderAsyncRequested evt) {
+    public void orderSave(OrderAsyncRequested evt) {
         String key = String.valueOf(evt.getFlowCode());
 
         try {
@@ -42,7 +42,7 @@ public class KafkaProducer {
         }
     }
 
-    public void orderDetailUpdateAsync(OrderUpdateRequest orderUpdateRequest) {
+    public void orderUpdate(OrderUpdateRequest orderUpdateRequest) {
         String key = String.valueOf(orderUpdateRequest.getFlowCode());
 
         try {
@@ -66,7 +66,7 @@ public class KafkaProducer {
         }
     }
 
-    public void stockDetailAsync(KafkaStockRequest ksq) {
+    public void stockSave(KafkaStockRequest ksq) {
         String key = String.valueOf(ksq.getFlowCode());
 
         try {

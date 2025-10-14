@@ -25,17 +25,25 @@ public class ProductSnapshot {
     @Column(name = "IS_PRODUCT_WEIGHT_SALE")
     private boolean isProductWeightSale;
     @Column(name = "PRODUCT_LABOR_COST") // 상품 매출 비용
-    private Integer laborCost;
+    private Integer productLaborCost;
     @Column(name = "PRODUCT_ADD_LABOR_COST") // 상품 추가 매출 비용
-    private Integer addLaborCost;
+    private Integer productAddLaborCost;
     @Column(name = "PRODUCT_PURCHASE_COST") // 상품 매입 비용
     private Integer productPurchaseCost;
+    @Column(name = "MATERIAL_ID")
+    private Long materialId;
     @Column(name = "MATERIAL_NAME")
     private String materialName;
+    @Column(name = "COLOR_ID")
+    private Long colorId;
     @Column(name = "COLOR_NAME")
     private String colorName;
+    @Column(name = "CLASSIFICATION_ID")
+    private Long classificationId;
     @Column(name = "CLASSIFICATION_NAME")
     private String classificationName;
+    @Column(name = "SET_TYPE_ID") // 세트
+    private Long setTypeId;
     @Column(name = "SET_TYPE_NAME")
     private String setTypeName;
     @Column(name = "ASSISTANT_STONE")
@@ -52,20 +60,24 @@ public class ProductSnapshot {
     private BigDecimal stoneWeight;
 
     @Builder
-    private ProductSnapshot(Long id, String productName, String productFactoryName, String size, boolean isProductWeightSale, Integer laborCost,
-                            Integer addLaborCost, Integer productPurchaseCost, String materialName, String colorName,
-                            String classificationName, String setTypeName, boolean assistantStone, Long assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, BigDecimal goldWeight, BigDecimal stoneWeight) {
+    private ProductSnapshot(Long id, String productName, String productFactoryName, String size, boolean isProductWeightSale, Integer productLaborCost,
+                            Integer productAddLaborCost, Integer productPurchaseCost, Long materialId, String materialName, Long colorId, String colorName,
+                            Long classificationId, String classificationName, Long setTypeId, String setTypeName, boolean assistantStone, Long assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, BigDecimal goldWeight, BigDecimal stoneWeight) {
         this.id = id;
         this.productName = productName;
         this.productFactoryName = productFactoryName;
         this.size = size;
         this.isProductWeightSale = isProductWeightSale;
-        this.laborCost = laborCost;
-        this.addLaborCost = addLaborCost;
+        this.productLaborCost = productLaborCost;
+        this.productAddLaborCost = productAddLaborCost;
         this.productPurchaseCost = productPurchaseCost;
+        this.materialId = materialId;
         this.materialName = materialName;
+        this.colorId = colorId;
         this.colorName = colorName;
+        this.classificationId = classificationId;
         this.classificationName = classificationName;
+        this.setTypeId = setTypeId;
         this.setTypeName = setTypeName;
         this.assistantStone = assistantStone;
         this.assistantStoneId = assistantStoneId;
@@ -77,7 +89,7 @@ public class ProductSnapshot {
 
     public void updateProduct(String productName, Integer productLaborCost, String materialName, String classificationName, String colorName, String setTypeName, boolean assistantStone, Long assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt) {
         this.productName = productName;
-        this.laborCost = productLaborCost;
+        this.productLaborCost = productLaborCost;
         this.materialName = materialName;
         this.classificationName = classificationName;
         this.colorName = colorName;

@@ -23,27 +23,40 @@ public class OrderDto {
     @Getter
     @NoArgsConstructor
     public static class Request {
-        @NotBlank(message = "상점 ID는 필수입니다.")
-        @Pattern(regexp = "\\d+", message = "상점 ID는 숫자여야 합니다.")
+        @NotBlank(message = "판매처 ID는 필수입니다.")
+        @Pattern(regexp = "\\d+", message = "판매처를 선택해주세요.")
         private String storeId;
-        private String orderNote;
+        private String storeName;
+        private String storeGrade;
+        private String storeHarry;
 
         @NotBlank(message = "공장 ID는 필수입니다.")
-        @Pattern(regexp = "\\d+", message = "공장 ID는 숫자여야 합니다.")
+        @Pattern(regexp = "\\d+", message = "공장을 선택해주세요.")
         private String factoryId;
+        private String factoryName;
+        private String factoryHarry;
 
         @NotBlank(message = "상품 ID는 필수입니다.")
-        @Pattern(regexp = "\\d+", message = "상품 ID는 숫자여야 합니다.")
+        @Pattern(regexp = "\\d+", message = "상품을 선택해주세요.")
         private String productId;
+        private String productName;
+        private String productFactoryName;
         private String productSize;
+        private String orderNote;
         private boolean isProductWeightSale;
         private Integer productAddLaborCost;
 
         @NotBlank(message = "재질 값은 필수입니다.")
-        @Pattern(regexp = "\\d+", message = "재질 ID는 숫자여야 합니다.")
+        @Pattern(regexp = "\\d+", message = "재질을 선택해주세요")
         private String materialId;
+        private String materialName;
+        @NotBlank(message = "색상 값은 필수입니다.")
+        @Pattern(regexp = "\\d+", message = "색상을 선택해주세요.")
         private String colorId;
+        private String colorName;
+        private String classificationId;
         private String classificationName;
+        private String setTypeId;
         private String setTypeName;
         private String priorityName;
 
@@ -61,6 +74,7 @@ public class OrderDto {
 
         @Valid
         private List<StoneDto.StoneInfo> stoneInfos;
+        private Integer stoneAddLaborCost;
     }
 
     @Getter
@@ -122,6 +136,7 @@ public class OrderDto {
         private String flowCode;
         private String storeId;
         private String storeName;
+        private String storeGrade;
         private String factoryId;
         private String factoryName;
         private String productId;
@@ -131,10 +146,14 @@ public class OrderDto {
         private Integer productLaborCost;
         private String goldWeight;
         private String stoneWeight;
-        private String classification;
+        private String classificationId;
+        private String classificationName;
+        private String materialId;
         private String materialName;
+        private String colorId;
         private String colorName;
-        private String setType;
+        private String setTypeId;
+        private String setTypeName;
         private String orderNote;
         private String mainStoneNote;
         private String assistanceStoneNote;
@@ -148,26 +167,31 @@ public class OrderDto {
         private List<StoneDto.StoneInfo> stoneInfos;
 
         @Builder
-        public ResponseDetail(String createAt, String shippingAt, String flowCode, String storeId, String storeName, String factoryId, String productId, String productName, Integer productLaborCost, String stoneWeight, String classification, String materialName, String colorName, String setType, String productSize, String orderNote, String factoryName, Integer productPurchaseCost, String goldWeight, String mainStoneNote, String assistanceStoneNote, String priority, String productStatus, String orderStatus, boolean assistantStone, String assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, List<StoneDto.StoneInfo> stoneInfos) {
+        public ResponseDetail(String createAt, String shippingAt, String flowCode, String storeId, String storeName, String storeGrade, String factoryId, String productId, String productName, Integer productLaborCost, String stoneWeight, String classificationId, String classificationName, String materialName, String colorName, String setTypeName, String productSize, String orderNote, String factoryName, Integer productPurchaseCost, String goldWeight, String materialId, String colorId, String setTypeId, String mainStoneNote, String assistanceStoneNote, String priority, String productStatus, String orderStatus, boolean assistantStone, String assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, List<StoneDto.StoneInfo> stoneInfos) {
             this.createAt = createAt;
             this.shippingAt = shippingAt;
             this.flowCode = flowCode;
             this.storeId = storeId;
             this.storeName = storeName;
+            this.storeGrade = storeGrade;
             this.factoryId = factoryId;
             this.productId = productId;
             this.productName = productName;
             this.productLaborCost = productLaborCost;
             this.stoneWeight = stoneWeight;
-            this.classification = classification;
+            this.classificationId = classificationId;
+            this.classificationName = classificationName;
             this.materialName = materialName;
             this.colorName = colorName;
-            this.setType = setType;
+            this.setTypeName = setTypeName;
             this.productSize = productSize;
             this.orderNote = orderNote;
             this.factoryName = factoryName;
             this.productPurchaseCost = productPurchaseCost;
             this.goldWeight = goldWeight;
+            this.materialId = materialId;
+            this.colorId = colorId;
+            this.setTypeId = setTypeId;
             this.mainStoneNote = mainStoneNote;
             this.assistanceStoneNote = assistanceStoneNote;
             this.priority = priority;
