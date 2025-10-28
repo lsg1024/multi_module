@@ -3,7 +3,6 @@ package com.msa.order.local.sale.service;
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.util.CustomPage;
 import com.msa.order.global.dto.StoneDto;
-import com.msa.order.local.order.entity.OrderStone;
 import com.msa.order.local.order.entity.StatusHistory;
 import com.msa.order.local.order.entity.order_enum.BusinessPhase;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
@@ -35,7 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.msa.order.global.exception.ExceptionMessage.*;
+import static com.msa.order.global.exception.ExceptionMessage.NOT_ACCESS;
+import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND;
 import static com.msa.order.local.order.util.StoneUtil.countStoneCost;
 import static com.msa.order.local.order.util.StoneUtil.updateStockStoneInfo;
 
@@ -71,16 +71,14 @@ public class SaleService {
 
     // 주문 판매의 경우 sale_status 공유가 불가능한 stock에서는 사용 불가능 별도로 구현 필요
     // 주문에서 재고 등록을 한 후 바로 출고까지 넘기기 -> 만약 개별 명세서를 만들고 싶은 경우(동일 매입처인 경우)
-    public void createSaleFromOrder(String accessToken, Long flowCode) {
+    public void orderToSale(String accessToken, Long flowCode) {
         String nickname = jwtUtil.getNickname(accessToken);
 
         Stock stock = stockRepository.findByFlowCode(flowCode)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND_STOCK));
-
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
         if (saleItemRepository.existsByStock(stock)) {
             return;
         }
-
         if (!(stock.getOrderStatus() == OrderStatus.STOCK || stock.getOrderStatus() == OrderStatus.NORMAL)) {
             throw new IllegalStateException("판매로 전환 불가 상태: " + stock.getOrderStatus());
         }
@@ -92,17 +90,16 @@ public class SaleService {
         createNewSale(nickname, stock, saleDate, storeId, storeName);
         stock.updateOrderStatus(OrderStatus.SALE);
 
-        updateNewHistory(flowCode, nickname, OrderStatus.SALE.name());
-
+        updateNewHistory(stock.getFlowCode(), nickname, OrderStatus.SALE.name());
         //별도 정산 로직에서 Kafka를 통해 갱신 데이터를 dto에 포함에 전달 정합성도 고려해야함
     }
 
-    public void createSaleFromStock(String accessToken, Long flowCode,  StockDto.stockRequest stockDto) {
+    // 재고 -> 판매
+    public void stockToSale(String accessToken, Long flowCode, StockDto.stockRequest stockDto) {
         String nickname = jwtUtil.getNickname(accessToken);
 
         Stock stock = stockRepository.findByFlowCode(flowCode)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND_STOCK));
-
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));;
         if (saleItemRepository.existsByStock(stock)) {
             return;
         }
@@ -112,13 +109,10 @@ public class SaleService {
         }
 
         List<StoneDto.StoneInfo> stoneInfos = stockDto.getStoneInfos();
-        List<OrderStone> orderStones = stock.getOrderStones();
-        updateStockStoneInfo(stoneInfos, stock, orderStones);
+        updateStockStoneInfo(stoneInfos, stock);
 
-        int totalStonePurchaseCost = 0;
-        int mainStoneCost = 0;
-        int assistanceStoneCost = 0;
-        countStoneCost(stock.getOrderStones(), mainStoneCost, assistanceStoneCost, totalStonePurchaseCost);
+        int[] countStoneCost = countStoneCost(stock.getOrderStones());
+        stock.updateStoneCost(countStoneCost[0], countStoneCost[1], countStoneCost[2], countStoneCost[3], stockDto.getStoneAddLaborCost());
 
         LocalDate saleDate = OffsetDateTime.now(KST).toLocalDate();
         Long storeId = stock.getStoreId();
@@ -127,11 +121,12 @@ public class SaleService {
         createNewSale(nickname, stock, saleDate, storeId, storeName);
 
         stock.updateOrderStatus(OrderStatus.SALE);
-        stock.updateStockInfo(stockDto);
+        stock.updateStockNote(stockDto.getStockNote(), stockDto.getMainStoneNote(), stockDto.getAssistanceStoneNote());
+        stock.getProduct().updateProductWeightAndSize(stockDto.getProductSize(), new BigDecimal(stockDto.getGoldWeight()), new BigDecimal(stockDto.getStoneWeight()));
 
-        updateNewHistory(flowCode, nickname, OrderStatus.SALE.name());
+        updateNewHistory(stock.getFlowCode(), nickname, OrderStatus.STOCK.name());
 
-        //별도 정산 로직에서 Kafka를 통해 갱신 데이터를 dto에 포함에 전달 정합성도 고려해야함
+        // 별도 정산 로직에서 Kafka를 통해 갱신 데이터를 dto에 포함에 전달 정합성도 고려해야함
     }
 
     //판매 제품 수정 로직 (중량, 단가 수정)
@@ -286,7 +281,7 @@ public class SaleService {
         StatusHistory statusHistory = StatusHistory.phaseChange(
                 flowCode,
                 lastHistory.getSourceType(),
-                lastHistory.getPhase(),
+                BusinessPhase.valueOf(lastHistory.getFromValue()),
                 BusinessPhase.valueOf(status),
                 nickname
         );

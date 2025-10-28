@@ -27,42 +27,42 @@ public class SaleController {
     }
 
     //판매 관리 데이터 목록들
-    @GetMapping("/sale")
+    @GetMapping("/sales")
     public ResponseEntity<ApiResponse<CustomPage<SaleDto.Response>>> getSales(
             @RequestParam(name = "date") String date,
             @RequestParam(name = "input", required = false) String input,
             @RequestParam(name = "type", required = false) String type,
-            @PageableDefault(size = 30) Pageable pageable) {
+            @PageableDefault(size = 20) Pageable pageable) {
 
         SaleDto.Condition condition = new SaleDto.Condition(date, input, type);
         CustomPage<SaleDto.Response> sale = saleService.getSale(condition, pageable);
         return ResponseEntity.ok(ApiResponse.success(sale));
     }
 
-    //주문 -> 판매 type = SALE
-    @PatchMapping("/orders/sale-register")
+    //주문 -> 판매
+    @PatchMapping("/orders/order_sale")
     public ResponseEntity<ApiResponse<String>> updateOrderToSale(
             @AccessToken String accessToken,
             @RequestParam(name = "id") Long flowCode,
             @Valid @RequestBody StockDto.StockRegisterRequest stockDto) {
         stockService.updateOrderToStock(accessToken, flowCode, "STOCK", stockDto);
-        saleService.createSaleFromOrder(accessToken, flowCode);
+        saleService.orderToSale(accessToken, flowCode);
         return ResponseEntity.ok(ApiResponse.success("등록 완료"));
     }
 
 
-    //재고 -> 판매 type = SALE
-    @PatchMapping("/sale_stock")
+    //재고 -> 판매
+    @PatchMapping("/sales/stock_sale")
     public ResponseEntity<ApiResponse<String>> updateStockToSale(
             @AccessToken String accessToken,
             @RequestParam(name = "id") Long flowCode,
             @Valid @RequestBody StockDto.stockRequest stockDto) {
-        saleService.createSaleFromStock(accessToken, flowCode, stockDto);
+        saleService.stockToSale(accessToken, flowCode, stockDto);
         return ResponseEntity.ok(ApiResponse.success("등록 완료"));
     }
 
     //결제, DC, 결통, WG...
-    @PostMapping("/sale")
+    @PostMapping("/sales")
     public ResponseEntity<ApiResponse<String>> createPayment(
             @AccessToken String accessToken,
             @RequestHeader(name = "Idempotency-Key", required = false) String idempKey,
@@ -76,7 +76,7 @@ public class SaleController {
         return ResponseEntity.ok(ApiResponse.success("등록 완료"));
     }
 
-    @DeleteMapping("/sale")
+    @DeleteMapping("/sales")
     public ResponseEntity<ApiResponse<String>> deletedSale(
             @AccessToken String accessToken,
             @RequestParam(name = "id") Long flowCode) {
