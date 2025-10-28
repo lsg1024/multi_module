@@ -76,7 +76,6 @@ public class OrdersService {
 
         List<OrderStone> orderStones = order.getOrderStones();
 
-
         List<StoneDto.StoneInfo> stonesDtos = new ArrayList<>();
         for (OrderStone orderStone : orderStones) {
             StoneDto.StoneInfo stoneDto = new StoneDto.StoneInfo(
@@ -107,6 +106,8 @@ public class OrdersService {
                 .productId(orderProduct.getProductId().toString())
                 .productName(orderProduct.getProductName())
                 .productSize(orderProduct.getProductSize())
+                .productLaborCost(orderProduct.getProductLaborCost())
+                .productAddLaborCost(orderProduct.getProductAddLaborCost())
                 .classificationId(String.valueOf(orderProduct.getClassificationId()))
                 .classificationName(orderProduct.getClassificationName())
                 .materialId(String.valueOf(orderProduct.getMaterialId()))
@@ -122,6 +123,7 @@ public class OrdersService {
                 .productStatus(order.getProductStatus().getDisplayName())
                 .orderStatus(order.getOrderStatus().getDisplayName())
                 .stoneInfos(stonesDtos)
+                .stoneAddLaborCost(String.valueOf(orderProduct.getStoneAddLaborCost()))
                 .assistantStone(orderProduct.isAssistantStone())
                 .assistantStoneId(String.valueOf(orderProduct.getAssistantStoneId()))
                 .assistantStoneName(orderProduct.getAssistantStoneName())
@@ -229,13 +231,16 @@ public class OrdersService {
                 .colorName(orderDto.getColorName())
                 .materialId(materialId)
                 .materialName(orderDto.getMaterialName())
-                .isProductWeightSale(orderDto.isProductWeightSale())
+                .isProductWeightSale(orderDto.getIsProductWeightSale())
+                .productPurchaseCost(orderDto.getProductPurchaseCost())
+                .productLaborCost(orderDto.getProductLaborCost())
+                .productAddLaborCost(orderDto.getProductAddLaborCost())
                 .goldWeight(new BigDecimal(BigInteger.ZERO))
                 .stoneWeight(orderDto.getStoneWeight())
-                .productAddLaborCost(orderDto.getProductAddLaborCost())
                 .orderMainStoneNote(orderDto.getMainStoneNote())
                 .orderAssistanceStoneNote(orderDto.getAssistanceStoneNote())
                 .assistantStoneId(assistantId)
+                .stoneAddLaborCost(orderDto.getStoneAddLaborCost())
                 .build();
 
         order.addOrderProduct(orderProduct);
@@ -349,7 +354,7 @@ public class OrdersService {
                 order.getFlowCode(),
                 SourceType.valueOf(orderStatus),
                 BusinessPhase.WAITING,
-                Kind.UPDATE,
+                Kind.CREATE,
                 nickname
         );
 
@@ -686,6 +691,7 @@ public class OrdersService {
                     .productPurchaseCost(orderProduct.getProductPurchaseCost())
                     .productLaborCost(orderProduct.getProductLaborCost())
                     .productAddLaborCost(orderProduct.getProductAddLaborCost())
+                    .stoneAddLaborCost(orderProduct.getStoneAddLaborCost())
                     .goldWeight(String.valueOf(orderProduct.getGoldWeight()))
                     .stoneWeight(String.valueOf(orderProduct.getStoneWeight()))
                     .materialName(orderProduct.getMaterialName())
