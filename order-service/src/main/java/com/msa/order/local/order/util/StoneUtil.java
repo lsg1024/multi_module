@@ -33,73 +33,96 @@ public class StoneUtil {
         return !Objects.equals(os.getIncludeStone(), s.isIncludeStone());
     }
 
-    public static void updateStoneCostAndPurchase(Stock stock) {
+
+    public static int[] countStoneCost(List<OrderStone> orderStoneList) {
         int totalStonePurchaseCost = 0;
+        int totalStoneLaborCost = 0;
         int mainStoneCost = 0;
         int assistanceStoneCost = 0;
-
-        for (OrderStone os : stock.getOrderStones()) {
-            int qty = nvl(os.getStoneQuantity());
-            int labor = nvl(os.getStoneLaborCost());
-            int purchase = nvl(os.getStonePurchaseCost());
-            if (Boolean.TRUE.equals(os.getIncludeStone())) {
-                if (Boolean.TRUE.equals(os.getMainStone())) {
-                    mainStoneCost += labor * qty;
-                } else {
-                    assistanceStoneCost += labor * qty;
-                }
-                totalStonePurchaseCost += purchase * qty;
-            }
-        }
-        stock.updateStoneCost(totalStonePurchaseCost, mainStoneCost, assistanceStoneCost);
-    }
-
-    public static void countStoneQuantity(List<OrderStone> orderStoneList, int mainStoneQuantity, int assistanceStoneQuantity) {
-        for (OrderStone orderStone : orderStoneList) {
-            if (Boolean.TRUE.equals(orderStone.getIncludeStone())) {
-                if (Boolean.TRUE.equals(orderStone.getMainStone())) {
-                    mainStoneQuantity += orderStone.getStoneQuantity();
-                } else {
-                    assistanceStoneQuantity += orderStone.getStoneQuantity();
-                }
-            }
-        }
-    }
-
-    public static void countStoneLabor(List<OrderStone> orderStoneList, int mainStoneLabor, int assistanceStoneLabor) {
-        for (OrderStone orderStone : orderStoneList) {
-            if (Boolean.TRUE.equals(orderStone.getIncludeStone())) {
-                if (Boolean.TRUE.equals(orderStone.getMainStone())) {
-                    mainStoneLabor += orderStone.getStoneLaborCost() * orderStone.getStoneQuantity();
-                } else {
-                    assistanceStoneLabor += orderStone.getStoneLaborCost() * orderStone.getStoneQuantity();
-                }
-            }
-        }
-    }
-
-    public static void countStoneCost(List<OrderStone> orderStoneList, int msq, int asq, int tsq) {
         for (OrderStone orderStone : orderStoneList) {
             Integer stoneLaborCost = orderStone.getStoneLaborCost();
             Integer stoneQuantity = orderStone.getStoneQuantity();
             Integer stonePurchaseCost = orderStone.getStonePurchaseCost();
             if (Boolean.TRUE.equals(orderStone.getIncludeStone())) {
                 if (Boolean.TRUE.equals(orderStone.getMainStone())) {
-                    msq += stoneLaborCost * stoneQuantity;
+                    mainStoneCost += stoneLaborCost * stoneQuantity;
                 } else {
-                    asq += stoneLaborCost * stoneQuantity;
+                    assistanceStoneCost += stoneLaborCost * stoneQuantity;
                 }
-                tsq += stonePurchaseCost * stoneQuantity;
+                totalStonePurchaseCost += stonePurchaseCost * stoneQuantity;
+                totalStoneLaborCost += stoneLaborCost * stoneQuantity;
             }
         }
+        return new int[] {totalStonePurchaseCost, totalStoneLaborCost, mainStoneCost, assistanceStoneCost};
     }
 
-    public static void updateStockStoneInfo(List<StoneDto.StoneInfo> stoneInfos, Stock stock, List<OrderStone> originOrderStone) {
+    public static int[] updateStoneCosts(List<StoneDto.StoneInfo> stoneInfos) {
+        int totalStonePurchaseCost = 0;
+        int totalStoneLaborCost = 0;
+        int mainStoneCost = 0;
+        int assistanceStoneCost = 0;
+        for (StoneDto.StoneInfo stoneInfo : stoneInfos) {
+            Integer laborCost = stoneInfo.getLaborCost();
+            Integer quantity = stoneInfo.getQuantity();
+            Integer purchaseCost = stoneInfo.getPurchaseCost();
+            if (Boolean.TRUE.equals(stoneInfo.isIncludeStone())) {
+                if (Boolean.TRUE.equals(stoneInfo.isMainStone())) {
+                    mainStoneCost += laborCost * quantity;
+                } else {
+                    assistanceStoneCost += laborCost * quantity;
+                }
+                totalStonePurchaseCost += purchaseCost * quantity;
+                totalStoneLaborCost += laborCost * quantity;
+            }
+        }
+        return new int[] {totalStonePurchaseCost, totalStoneLaborCost, mainStoneCost, assistanceStoneCost};
+    }
+
+    public static void updateStockStoneInfo(List<StoneDto.StoneInfo> stoneInfos, Stock stock) {
+        List<OrderStone> originOrderStone = stock.getOrderStones();
         Map<Long, OrderStone> orderByOriginId = originOrderStone.stream()
                 .filter(s -> s.getOrderStoneId() != null)
                 .collect(Collectors.toMap(OrderStone::getOriginStoneId, Function.identity()));
 
+        Set<Long> keepIds = new HashSet<>();
+        for (StoneDto.StoneInfo stoneInfo : stoneInfos) {
+            Long originId = Long.valueOf(stoneInfo.getStoneId());
+            keepIds.add(originId);
+
+            OrderStone os = orderByOriginId.get(originId);
+            if (os != null) {
+                if (isChanged(os, stoneInfo)) {
+                    os.updateFrom(stoneInfo);
+                }
+                os.setStock(stock);
+                stock.getOrderStones().add(os);
+            } else {
+                OrderStone orderStone = OrderStone.builder()
+                        .originStoneId(Long.valueOf(stoneInfo.getStoneId()))
+                        .originStoneName(stoneInfo.getStoneName())
+                        .originStoneWeight(new BigDecimal(stoneInfo.getStoneWeight()))
+                        .stonePurchaseCost(stoneInfo.getPurchaseCost())
+                        .stoneLaborCost(stoneInfo.getLaborCost())
+                        .stoneQuantity(stoneInfo.getQuantity())
+                        .mainStone(stoneInfo.isMainStone())
+                        .includeStone(stoneInfo.isIncludeStone())
+                        .build();
+
+                orderStone.setStock(stock);
+                stock.addStockStone(orderStone);
+            }
+        }
+
+        originOrderStone.removeIf(os ->
+                os.getOriginStoneId() != null && !keepIds.contains(os.getOriginStoneId()));
+    }
+
+    public static void updateToStockStoneInfo(List<StoneDto.StoneInfo> stoneInfos, Stock stock) {
         Orders order = stock.getOrder();
+        List<OrderStone> originOrderStone = order.getOrderStones();
+        Map<Long, OrderStone> orderByOriginId = originOrderStone.stream()
+                .filter(s -> s.getOrderStoneId() != null)
+                .collect(Collectors.toMap(OrderStone::getOriginStoneId, Function.identity()));
 
         Set<Long> keepIds = new HashSet<>();
         for (StoneDto.StoneInfo stoneInfo : stoneInfos) {
@@ -171,25 +194,6 @@ public class StoneUtil {
 
         originOrderStone.removeIf(os ->
                 os.getOriginStoneId() != null && !keepIds.contains(os.getOriginStoneId()));
-    }
-
-    public static void updateStoneInfo(List<StoneDto.StoneInfo> stoneInfos, int totalStonePurchaseCost,
-                                       int totalStoneLaborCost, int mainStoneCost, int assistanceStoneCost) {
-
-        for (StoneDto.StoneInfo stoneInfo : stoneInfos) {
-            Integer laborCost = stoneInfo.getLaborCost();
-            Integer quantity = stoneInfo.getQuantity();
-            Integer purchaseCost = stoneInfo.getPurchaseCost();
-            if (Boolean.TRUE.equals(stoneInfo.isIncludeStone())) {
-                if (Boolean.TRUE.equals(stoneInfo.isMainStone())) {
-                    mainStoneCost += laborCost * quantity;
-                } else {
-                    assistanceStoneCost += laborCost * quantity;
-                }
-                totalStonePurchaseCost += purchaseCost * quantity;
-                totalStoneLaborCost += laborCost * quantity;
-            }
-        }
     }
 
 }

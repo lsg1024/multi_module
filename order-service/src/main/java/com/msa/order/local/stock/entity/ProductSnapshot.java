@@ -87,9 +87,10 @@ public class ProductSnapshot {
         this.stoneWeight = stoneWeight;
     }
 
-    public void updateProduct(String productName, Integer productLaborCost, String materialName, String classificationName, String colorName, String setTypeName, boolean assistantStone, Long assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt) {
+    public void updateProduct(String productName, Integer productLaborCost, Integer productPurchaseCost, String materialName, String classificationName, String colorName, String setTypeName, boolean assistantStone, Long assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt) {
         this.productName = productName;
         this.productLaborCost = productLaborCost;
+        this.productPurchaseCost = productPurchaseCost;
         this.materialName = materialName;
         this.classificationName = classificationName;
         this.colorName = colorName;
@@ -104,6 +105,19 @@ public class ProductSnapshot {
         this.size = size;
         this.goldWeight = productWeight;
         this.stoneWeight = stoneWeight;
+    }
+
+    public void updateAssistantStone(boolean assistantStone, Long assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt) {
+        this.assistantStone = assistantStone;
+        this.assistantStoneId = assistantStoneId;
+        this.assistantStoneName = assistantStoneName;
+        this.assistantStoneCreateAt = assistantStoneCreateAt;
+    }
+
+    public void updateProductCost(Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost) {
+        this.productPurchaseCost = productPurchaseCost;
+        this.productLaborCost = productLaborCost;
+        this.productAddLaborCost = productAddLaborCost;
     }
 }
 

@@ -7,8 +7,12 @@ import com.msa.account.global.exception.NotFoundException;
 import com.msa.account.global.kafka.KafkaProducer;
 import com.msa.account.global.kafka.dto.KafkaEventDto;
 import com.msa.common.global.jwt.JwtUtil;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.msa.account.global.exception.ExceptionMessage.*;
 
@@ -65,6 +69,17 @@ public class GoldHarryService {
             kafkaProducer.sendGoldHarryDeleted(tenantId, goldHarryId);
 
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<GoldHarryDto.Response> getGoldHarries() {
+        List<GoldHarry> goldHarries = goldHarryRepository.findAll(Sort.by(Sort.Direction.ASC, "goldHarryLoss"));
+        List<GoldHarryDto.Response> goldHarryList = new ArrayList<>();
+        for (GoldHarry goldHarry : goldHarries) {
+            GoldHarryDto.Response goldHarryDto = new GoldHarryDto.Response(goldHarry.getGoldHarryId().toString(), goldHarry.getGoldHarryLoss().toPlainString());
+            goldHarryList.add(goldHarryDto);
+        }
+        return goldHarryList;
     }
 
 //    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

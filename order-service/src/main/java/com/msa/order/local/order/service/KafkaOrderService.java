@@ -27,6 +27,7 @@ import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND_STONE;
 
 @Slf4j
 @Service
+@Transactional
 public class KafkaOrderService {
 
     private final StoreClient storeClient;
@@ -51,9 +52,7 @@ public class KafkaOrderService {
         this.statusHistoryRepository = statusHistoryRepository;
     }
 
-    @Transactional
     public void createHandle(OrderAsyncRequested evt) {
-        // 멀티테넌시 컨텍스트 전파
         final String tenantId = evt.getTenantId();
 
         Orders order = ordersRepository.findByFlowCode(evt.getFlowCode())
@@ -94,7 +93,6 @@ public class KafkaOrderService {
             String latestMaterialName = materialClient.getMaterialInfo(tenantId, evt.getMaterialId());
             String latestColorName = colorClient.getColorInfo(tenantId, evt.getColorId());
 
-            // Product 관련 필드들을 하나씩 비교합니다.
             if (!Objects.equals(latestProductInfo.getProductName(), orderProduct.getProductName()) ||
                     !Objects.equals(latestProductInfo.getProductFactoryName(), orderProduct.getProductFactoryName()) ||
                     !Objects.equals(latestProductInfo.getPurchaseCost(), orderProduct.getProductPurchaseCost()) ||
@@ -164,14 +162,13 @@ public class KafkaOrderService {
                     order.getFlowCode(),
                     lastHistory.getSourceType(),
                     lastHistory.getPhase(),
-                    BusinessPhase.ORDER_FAIL,
+                    BusinessPhase.valueOf(evt.getOrderStatus()),
                     evt.getNickname()
             );
             statusHistoryRepository.save(statusHistory);
         }
     }
 
-    @Transactional
     public void updateHandle(OrderUpdateRequest updateRequest) {
 
         // 멀티테넌시 컨텍스트 전파

@@ -145,13 +145,11 @@ public class Stock extends BaseTimeEntity {
         this.orderStatus = OrderStatus.RENTAL;
     }
 
-    public void updateStoneCost(int totalStonePurchaseCost, int mainLaborCost, int assistanceLaborCost) {
+    public void updateStoneCost(int totalStonePurchaseCost, int totalStoneLaborCost, int mainLaborCost, int assistanceLaborCost, int stoneAddLaborCost) {
         this.totalStonePurchaseCost = totalStonePurchaseCost;
+        this.totalStoneLaborCost = totalStoneLaborCost;
         this.stoneMainLaborCost = mainLaborCost;
         this.stoneAssistanceLaborCost = assistanceLaborCost;
-    }
-
-    public void updateAddStoneLaborCost(Integer stoneAddLaborCost) {
         this.stoneAddLaborCost = stoneAddLaborCost;
     }
 
@@ -159,11 +157,10 @@ public class Stock extends BaseTimeEntity {
         this.orderStatus = orderStatus;
     }
 
-    public void updateStockInfo(StockDto.stockRequest stockDto) {
-        this.product.updateProductWeightAndSize(stockDto.getProductSize(), stockDto.getGoldWeight(), stockDto.getStoneWeight());
-        this.stockMainStoneNote = stockDto.getMainStoneNote();
-        this.stockAssistanceStoneNote = stockDto.getAssistanceStoneNote();
-        this.stockNote = stockDto.getStockNote();
+    public void updateStockNote(String stockMainStoneNote, String stockAssistanceStoneNote, String stockNote) {
+        this.stockMainStoneNote = stockMainStoneNote;
+        this.stockAssistanceStoneNote = stockAssistanceStoneNote;
+        this.stockNote = stockNote;
     }
 
     @PrePersist

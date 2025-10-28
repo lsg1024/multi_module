@@ -23,8 +23,6 @@ public class KafkaStockRequest {
     private boolean assistantStone;
     private Long assistantStoneId;
     private OffsetDateTime assistantStoneCreateAt;
-//    private List<Long> stoneIds;
-//    private List<StoneDto.StoneInfo> stoneInfos;
 
     @Builder
     public KafkaStockRequest(String eventId, Long flowCode, String tenantId, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, Long setTypeId, Long classificationId, String nickname, boolean assistantStone, Long assistantStoneId, OffsetDateTime assistantStoneCreateAt) {

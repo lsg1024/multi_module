@@ -7,6 +7,8 @@ import com.msa.common.global.jwt.AccessToken;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 public class GoldHarryController {
 
@@ -14,6 +16,12 @@ public class GoldHarryController {
 
     public GoldHarryController(GoldHarryService goldHarryService) {
         this.goldHarryService = goldHarryService;
+    }
+
+    @GetMapping("/gold-harries")
+    public ResponseEntity<ApiResponse<List<GoldHarryDto.Response>>> getHarries() {
+        List<GoldHarryDto.Response> goldHarries = goldHarryService.getGoldHarries();
+        return ResponseEntity.ok(ApiResponse.success(goldHarries));
     }
 
     @PatchMapping("/gold-harry/{id}")

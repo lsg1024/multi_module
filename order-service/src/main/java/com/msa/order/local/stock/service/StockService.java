@@ -8,7 +8,6 @@ import com.msa.order.global.kafka.KafkaProducer;
 import com.msa.order.global.kafka.dto.KafkaStockRequest;
 import com.msa.order.global.util.DateConversionUtil;
 import com.msa.order.local.order.dto.OrderDto;
-import com.msa.order.local.order.dto.StoreDto;
 import com.msa.order.local.order.entity.OrderProduct;
 import com.msa.order.local.order.entity.OrderStone;
 import com.msa.order.local.order.entity.Orders;
@@ -18,7 +17,6 @@ import com.msa.order.local.order.entity.order_enum.Kind;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.order.entity.order_enum.SourceType;
 import com.msa.order.local.order.external_client.AssistantStoneClient;
-import com.msa.order.local.order.external_client.StoreClient;
 import com.msa.order.local.order.external_client.dto.AssistantStoneDto;
 import com.msa.order.local.order.repository.OrdersRepository;
 import com.msa.order.local.order.repository.StatusHistoryRepository;
@@ -33,12 +31,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 import static com.msa.order.global.exception.ExceptionMessage.*;
@@ -50,17 +48,15 @@ import static com.msa.order.local.order.util.StoneUtil.*;
 public class StockService {
     private final JwtUtil jwtUtil;
     private final KafkaProducer kafkaProducer;
-    private final StoreClient storeClient;
     private final AssistantStoneClient assistantStoneClient;
     private final StockRepository stockRepository;
     private final OrdersRepository ordersRepository;
     private final CustomStockRepository customStockRepository;
     private final StatusHistoryRepository statusHistoryRepository;
 
-    public StockService(JwtUtil jwtUtil, KafkaProducer kafkaProducer, StoreClient storeClient, AssistantStoneClient assistantStoneClient, StockRepository stockRepository, OrdersRepository ordersRepository, CustomStockRepository customStockRepository, StatusHistoryRepository statusHistoryRepository) {
+    public StockService(JwtUtil jwtUtil, KafkaProducer kafkaProducer, AssistantStoneClient assistantStoneClient, StockRepository stockRepository, OrdersRepository ordersRepository, CustomStockRepository customStockRepository, StatusHistoryRepository statusHistoryRepository) {
         this.jwtUtil = jwtUtil;
         this.kafkaProducer = kafkaProducer;
-        this.storeClient = storeClient;
         this.assistantStoneClient = assistantStoneClient;
         this.stockRepository = stockRepository;
         this.ordersRepository = ordersRepository;
@@ -76,10 +72,23 @@ public class StockService {
         StatusHistory statusHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        int mainStoneQuantity = 0;
-        int assistanceStoneQuantity = 0;
         List<OrderStone> orderStones = stock.getOrderStones();
-        countStoneQuantity(orderStones, mainStoneQuantity, assistanceStoneQuantity);
+
+        List<StoneDto.StoneInfo> stonesDtos = new ArrayList<>();
+        for (OrderStone orderStone : orderStones) {
+            StoneDto.StoneInfo stoneDto = new StoneDto.StoneInfo(
+                    orderStone.getOriginStoneId().toString(),
+                    orderStone.getOriginStoneName(),
+                    orderStone.getOriginStoneWeight().toPlainString(),
+                    orderStone.getStonePurchaseCost(),
+                    orderStone.getStoneLaborCost(),
+                    orderStone.getStoneAddLaborCost(),
+                    orderStone.getStoneQuantity(),
+                    orderStone.getMainStone(),
+                    orderStone.getIncludeStone()
+            );
+            stonesDtos.add(stoneDto);
+        }
 
         return StockDto.ResponseDetail.builder()
                 .flowCode(stock.getFlowCode().toString())
@@ -88,6 +97,8 @@ public class StockService {
                 .classificationName(stock.getProduct().getClassificationName())
                 .productName(stock.getProduct().getProductName())
                 .storeName(stock.getStoreName())
+                .storeHarry(String.valueOf(stock.getStoreHarry()))
+                .factoryName(stock.getFactoryName())
                 .materialName(stock.getProduct().getMaterialName())
                 .colorName(stock.getProduct().getColorName())
                 .mainStoneNote(stock.getStockMainStoneNote())
@@ -96,14 +107,16 @@ public class StockService {
                 .stockNote(stock.getStockNote())
                 .productLaborCost(stock.getProduct().getProductLaborCost())
                 .productAddLaborCost(stock.getProduct().getProductAddLaborCost())
-                .mainStoneLaborCost(stock.getStoneMainLaborCost())
-                .assistanceStoneLaborCost(stock.getStoneAssistanceLaborCost())
-                .mainStoneQuantity(mainStoneQuantity)
-                .assistanceStoneQuantity(assistanceStoneQuantity)
+                .stoneAddLaborCost(stock.getStoneAddLaborCost())
                 .goldWeight(stock.getProduct().getGoldWeight().toPlainString())
                 .stoneWeight(stock.getProduct().getStoneWeight().toPlainString())
                 .productPurchaseCost(stock.getProduct().getProductPurchaseCost())
-                .stonePurchaseCost(stock.getTotalStonePurchaseCost()).build();
+                .assistantStone(stock.getProduct().isAssistantStone())
+                .assistantStoneId(String.valueOf(stock.getProduct().getAssistantStoneId()))
+                .assistantStoneName(stock.getProduct().getAssistantStoneName())
+                .assistantStoneCreateAt(String.valueOf(stock.getProduct().getAssistantStoneCreateAt()))
+                .stoneInfos(stonesDtos)
+                .build();
     }
 
     // 재고 관리  주문, 수리, 대여 관련
@@ -115,6 +128,44 @@ public class StockService {
         StockDto.StockCondition condition = new StockDto.StockCondition(startAt, endAt, optionCondition, sortCondition, orderStatus);
 
         return customStockRepository.findByStockProducts(inputCondition, condition, pageable);
+    }
+
+    // 재고 업데이트
+    public void updateStock(String accessToken, Long flowCode, StockDto.updateStockRequest updateStock) {
+        String nickname = jwtUtil.getNickname(accessToken);
+        Stock stock = stockRepository.findByFlowCode(flowCode)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        stock.updateStockNote(updateStock.getStockNote(), updateStock.getMainStoneNote(), updateStock.getAssistanceStoneNote());
+        stock.getProduct().updateProductCost(updateStock.getProductPurchaseCost(), updateStock.getProductLaborCost(), updateStock.getProductAddLaborCost());
+        stock.getProduct().updateProductWeightAndSize(updateStock.getProductSize(), new BigDecimal(updateStock.getGoldWeight()), new BigDecimal(updateStock.getStoneWeight()));
+
+        int[] countStoneCost = countStoneCost(stock.getOrderStones());
+        stock.updateStoneCost(countStoneCost[0], countStoneCost[1], countStoneCost[2], countStoneCost[3], updateStock.getStoneAddLaborCost());
+
+        Long assistantId = Long.valueOf(updateStock.getAssistantStoneId());
+        if (!stock.getProduct().getAssistantStoneId().equals(assistantId)) {
+            OffsetDateTime assistantStoneCreateAt = null;
+            if (!StringUtils.hasText(updateStock.getAssistantStoneCreateAt())) {
+                assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(updateStock.getAssistantStoneCreateAt());
+            }
+            stock.getProduct().updateAssistantStone(updateStock.isAssistantStone(), assistantId, updateStock.getAssistantStoneName(), assistantStoneCreateAt);
+        }
+
+        updateStockStoneInfo(updateStock.getStoneInfos(), stock);
+
+        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(stock.getFlowCode())
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        StatusHistory statusHistory = StatusHistory.phaseChange(
+                stock.getFlowCode(),
+                lastHistory.getSourceType(),
+                lastHistory.getPhase(),
+                BusinessPhase.UPDATE,
+                nickname
+        );
+
+        statusHistoryRepository.save(statusHistory);
     }
 
     //주문 -> 재고 변경
@@ -136,52 +187,34 @@ public class StockService {
 
         OffsetDateTime assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(stockDto.getAssistantStoneCreateAt());
 
-        BigDecimal totalStoneWeight = stockDto.getStoneInfos().stream()
-                .filter(StoneDto.StoneInfo::isIncludeStone)
-                .map(StoneDto.StoneInfo::getStoneWeight)
-                .filter(Objects::nonNull)
-                .map(BigDecimal::new)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
         BigDecimal goldWeight = new BigDecimal(stockDto.getGoldWeight());
+        BigDecimal stoneWeight = new BigDecimal(stockDto.getStoneWeight());
 
         OrderProduct orderProduct = order.getOrderProduct();
         ProductSnapshot product = ProductSnapshot.builder()
-                .id(orderProduct.getProductId()) //변경 불가
+                .id(orderProduct.getProductId())
                 .productName(orderProduct.getProductName())
                 .productFactoryName(orderProduct.getProductFactoryName())
                 .size(stockDto.getProductSize())
-                .classificationName(orderProduct.getClassificationName())
                 .isProductWeightSale(stockDto.isProductWeightSale())
                 .productLaborCost(orderProduct.getProductLaborCost())
                 .productAddLaborCost(stockDto.getProductAddLaborCost())
                 .productPurchaseCost(stockDto.getProductPurchaseCost())
+                .materialId(orderProduct.getMaterialId())
                 .materialName(orderProduct.getMaterialName())
+                .setTypeId(orderProduct.getSetTypeId())
                 .setTypeName(orderProduct.getSetTypeName())
+                .classificationId(orderProduct.getClassificationId())
                 .classificationName(orderProduct.getClassificationName())
+                .colorId(orderProduct.getColorId())
                 .colorName(orderProduct.getColorName())
                 .assistantStone(stockDto.isAssistantStone())
                 .assistantStoneId(assistantStoneInfo.getAssistantStoneId())
                 .assistantStoneName(assistantStoneInfo.getAssistantStoneName())
                 .assistantStoneCreateAt(assistantStoneCreateAt)
                 .goldWeight(goldWeight)
-                .stoneWeight(totalStoneWeight)
+                .stoneWeight(stoneWeight)
                 .build();
-
-        // 전체 비용 + 스톤 비용 + 추가 스톤 비용 계산
-        int totalStonePurchaseCost = stockDto.getStoneInfos().stream()
-                .filter(StoneDto.StoneInfo::isIncludeStone)
-                .map(StoneDto.StoneInfo::getPurchaseCost)
-                .filter(Objects::nonNull)
-                .mapToInt(Integer::intValue)
-                .sum();
-
-        int totalStoneLaborCost = stockDto.getStoneInfos().stream()
-                .filter(StoneDto.StoneInfo::isIncludeStone)
-                .map(StoneDto.StoneInfo::getLaborCost)
-                .filter(Objects::nonNull)
-                .mapToInt(Integer::intValue)
-                .sum();
 
         Stock stock = Stock.builder()
                 .orders(order)
@@ -189,13 +222,12 @@ public class StockService {
                 .storeId(order.getStoreId())
                 .storeName(order.getStoreName())
                 .storeHarry(order.getStoreHarry())
+                .storeGrade(order.getStoreGrade())
                 .factoryId(order.getFactoryId())
                 .factoryName(order.getFactoryName())
                 .stockMainStoneNote(stockDto.getMainStoneNote()) // 수정 가능
                 .stockAssistanceStoneNote(stockDto.getAssistanceStoneNote()) // 수정 가능
                 .stockNote(stockDto.getOrderNote()) // 수정 가능
-                .totalStonePurchaseCost(totalStonePurchaseCost) // 수정 가능
-                .totalStoneLaborCost(totalStoneLaborCost) // 수정 가능
                 .stoneAddLaborCost(stockDto.getStoneAddLaborCost())
                 .orderStones(new ArrayList<>())
                 .orderStatus(OrderStatus.valueOf(orderType))
@@ -205,12 +237,18 @@ public class StockService {
         stock.setOrder(order);
         stockRepository.save(stock);
 
-        List<OrderStone> orderStones = order.getOrderStones();
-        updateStockStoneInfo(stockDto.getStoneInfos(), stock, orderStones);
-        updateStoneCostAndPurchase(stock);
+        List<StoneDto.StoneInfo> stoneInfos = stockDto.getStoneInfos();
+        int[] stoneCosts = updateStoneCosts(stoneInfos);
+        int totalStonePurchaseCost = stoneCosts[0];
+        int totalStoneLaborCost = stoneCosts[1];
+        int mainStoneCost = stoneCosts[2];
+        int assistanceStoneCost = stoneCosts[3];
+
+        stock.updateStoneCost(totalStonePurchaseCost, totalStoneLaborCost, mainStoneCost, assistanceStoneCost, stock.getStoneAddLaborCost());
+
+        updateToStockStoneInfo(stockDto.getStoneInfos(), stock);
 
         order.updateOrderStatus(OrderStatus.valueOf(orderType));
-
         StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
@@ -226,7 +264,7 @@ public class StockService {
     }
 
     //재고 등록 -> 생성 시 발생하는 토큰 저장 후 고유 stock_code 발급 후 저장
-    public void saveStock(String accessToken, String orderType, StockDto.createStockRequest stockDto) {
+    public void saveStock(String accessToken, String orderType, StockDto.Request stockDto) {
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = TenantContext.getTenant();
 
@@ -255,18 +293,15 @@ public class StockService {
                 .goldWeight(stockDto.getGoldWeight())
                 .stoneWeight(stockDto.getStoneWeight())
                 .productPurchaseCost(stockDto.getProductPurchaseCost())
+                .productLaborCost(stockDto.getProductLaborCost())
                 .productAddLaborCost(stockDto.getProductAddLaborCost())
                 .assistantStoneId(Long.valueOf(stockDto.getAssistantStoneId()))
+                .assistantStoneName(stockDto.getAssistantStoneName())
                 .build();
 
-        int totalStonePurchaseCost = 0;
-        int totalStoneLaborCost = 0;
-        int mainStoneCost = 0;
-        int assistanceStoneCost = 0;
-        updateStoneInfo(stockDto.getStoneInfos(), totalStonePurchaseCost, totalStoneLaborCost, mainStoneCost, assistanceStoneCost);
-        totalStoneLaborCost += stockDto.getStoneAddLaborCost();
+        int[] stoneCosts = updateStoneCosts(stockDto.getStoneInfos());
+        stoneCosts[1] += stockDto.getStoneAddLaborCost();
 
-        // 자체 재고는 store에서 자신을 선택해야함
         Stock stock = Stock.builder()
                 .storeId(storeId)
                 .storeName(stockDto.getStoreName())
@@ -278,10 +313,10 @@ public class StockService {
                 .orderStatus(OrderStatus.WAIT)
                 .stockMainStoneNote(stockDto.getMainStoneNote())
                 .stockAssistanceStoneNote(stockDto.getAssistanceStoneNote())
-                .totalStoneLaborCost(totalStoneLaborCost)
-                .totalStonePurchaseCost(totalStonePurchaseCost)
-                .stoneMainLaborCost(mainStoneCost)
-                .stoneAssistanceLaborCost(assistanceStoneCost)
+                .totalStoneLaborCost(stoneCosts[1])
+                .totalStonePurchaseCost(stoneCosts[0])
+                .stoneMainLaborCost(stoneCosts[2])
+                .stoneAssistanceLaborCost(stoneCosts[3])
                 .stoneAddLaborCost(stockDto.getStoneAddLaborCost())
                 .product(product)
                 .orderStones(new ArrayList<>())
@@ -344,47 +379,34 @@ public class StockService {
 
     //재고 -> 대여
     public void stockToRental(String accessToken, Long flowCode, StockDto.StockRentalRequest stockRentalDto) {
-        String tenantId = jwtUtil.getTenantId(accessToken);
         String nickname = jwtUtil.getNickname(accessToken);
+
         Stock stock = stockRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        if (stock.getOrderStatus() == OrderStatus.NORMAL || stock.getOrderStatus() == OrderStatus.STOCK) {
-
-            StatusHistory beforeStatusHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(flowCode)
-                    .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-
-            StoreDto.Response storeInfo = storeClient.getStoreInfo(tenantId, Long.valueOf(stockRentalDto.getStoreId()));
-            stock.updateStore(storeInfo);
-
-            // 1) stone Update 필요 여부
-            List<OrderStone> orderStones = stock.getOrderStones();
-            updateStockStoneInfo(stockRentalDto.getStoneInfos(), stock, orderStones);
-
-            // 2) stone Cost
-            int totalStonePurchaseCost = 0;
-            int mainStoneCost = 0;
-            int assistanceStoneCost = 0;
-            countStoneCost(stock.getOrderStones(), mainStoneCost, assistanceStoneCost, totalStonePurchaseCost);
-
-            stock.updateStoneCost(totalStonePurchaseCost, mainStoneCost, assistanceStoneCost);
-
-            stock.moveToRental(stockRentalDto);
-
-            StatusHistory statusHistory = StatusHistory.phaseChange(
-                    stock.getFlowCode(),
-                    beforeStatusHistory.getSourceType(),
-                    BusinessPhase.valueOf(beforeStatusHistory.getFromValue()),
-                    BusinessPhase.RENTAL,
-                    nickname
-            );
-
-            statusHistoryRepository.save(statusHistory);
-            return;
+        if (stock.getOrderStatus() != OrderStatus.NORMAL && stock.getOrderStatus() != OrderStatus.STOCK) {
+            throw new IllegalArgumentException("일반 또는 재고 상태의 상품만 대여로 전환할 수 있습니다. (시리얼: " + stock.getFlowCode() + ")");
         }
-         throw new IllegalArgumentException("일반, 재고 상품만 대여 전환이 가능합니다.");
-    }
 
+        StatusHistory beforeStatusHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(stock.getFlowCode())
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+
+        updateStockStoneInfo(stockRentalDto.getStoneInfos(), stock);
+
+        int[] countStoneCost = countStoneCost(stock.getOrderStones());
+        stock.updateStoneCost(countStoneCost[0], countStoneCost[1], countStoneCost[2], countStoneCost[3], stockRentalDto.getStoneAddLaborCost());                stock.moveToRental(stockRentalDto);
+
+        StatusHistory statusHistory = StatusHistory.phaseChange(
+                stock.getFlowCode(),
+                beforeStatusHistory.getSourceType(),
+                BusinessPhase.valueOf(beforeStatusHistory.getFromValue()),
+                BusinessPhase.RENTAL,
+                nickname
+        );
+        statusHistoryRepository.save(statusHistory);
+
+    }
 
     // 재고 -> 주문 (삭제)
     public void stockToDelete(String accessToken, Long flowCode) {
@@ -402,15 +424,16 @@ public class StockService {
         stock.removeOrder(); // order, orderProduct 연관성 제거
         stock.updateOrderStatus(OrderStatus.DELETED);
 
-        StatusHistory orderStatusHistory = StatusHistory.phaseChange(
-                beforeFlowCode,
-                lastHistory.getSourceType(),
-                lastHistory.getPhase(),
-                BusinessPhase.WAITING,
-                nickname
-        );
-
-        statusHistoryRepository.save(orderStatusHistory);
+//            StatusHistory orderStatusHistory = StatusHistory.phaseChange(
+//                    beforeFlowCode,
+//                    lastHistory.getSourceType(),
+//                    Kind.DELETED,
+//                    lastHistory.getPhase(),
+//                    BusinessPhase.WAITING,
+//                    nickname
+//            );
+//
+//            statusHistoryRepository.save(orderStatusHistory);
 
         List<StatusHistory> allByFlowCode = statusHistoryRepository.findAllByFlowCode(beforeFlowCode);
         for (StatusHistory statusHistory : allByFlowCode) {
@@ -430,24 +453,48 @@ public class StockService {
         statusHistoryRepository.saveAll(allByFlowCode);
     }
 
-    // 대여 -> 반납 (재고) RETURN -> STOCK
-
-    // 삭제 -> 재고 DELETE -> STOCK
-    public void recoveryStock(String accessToken, Long flowCode, String orderType) {
+    // 대여 -> 반납
+    public void rentalToReturn(String accessToken, Long flowCode, String orderType) {
         String nickname = jwtUtil.getNickname(accessToken);
+
         Stock stock = stockRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(flowCode)
+
+        if (stock.getOrderStatus() != OrderStatus.RENTAL) {
+            throw new IllegalArgumentException(WRONG_STATUS);
+        }
+
+        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(stock.getFlowCode())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        OrderStatus target = OrderStatus.valueOf(orderType);
+        stock.updateOrderStatus(OrderStatus.RETURN);
+        StatusHistory orderStatusHistory = StatusHistory.phaseChange(
+                stock.getFlowCode(),
+                lastHistory.getSourceType(),
+                lastHistory.getPhase(),
+                BusinessPhase.RETURN,
+                nickname
+        );
+        statusHistoryRepository.save(orderStatusHistory);
+    }
 
+    // 반납 && 삭제 -> 재고
+    public void rollBackStock(String accessToken, Long flowCode, String orderType) {
+        String nickname = jwtUtil.getNickname(accessToken);
+
+        OrderStatus target = OrderStatus.valueOf(orderType);
         if (target != OrderStatus.RETURN && target != OrderStatus.DELETED) {
             throw new IllegalArgumentException(WRONG_STATUS);
         }
+
+        Stock stock = stockRepository.findByFlowCode(flowCode)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(stock.getFlowCode())
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
         stock.updateOrderStatus(OrderStatus.STOCK);
         StatusHistory orderStatusHistory = StatusHistory.phaseChange(
-                flowCode,
+                stock.getFlowCode(),
                 lastHistory.getSourceType(),
                 lastHistory.getPhase(),
                 BusinessPhase.STOCK,
@@ -479,6 +526,4 @@ public class StockService {
         StockDto.StockCondition condition = new StockDto.StockCondition(startAt, endAt, orderStatus);
         return customStockRepository.findByFilterColor(condition);
     }
-
-
 }

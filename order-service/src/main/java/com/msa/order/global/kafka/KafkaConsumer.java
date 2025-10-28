@@ -2,6 +2,7 @@ package com.msa.order.global.kafka;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msa.common.global.tenant.TenantContext;
+import com.msa.common.global.util.AuditorHolder;
 import com.msa.order.global.exception.KafkaProcessingException;
 import com.msa.order.global.kafka.dto.KafkaStockRequest;
 import com.msa.order.global.kafka.dto.OrderAsyncRequested;
@@ -67,12 +68,14 @@ public class KafkaConsumer {
             KafkaStockRequest ksq = objectMapper.readValue(message, KafkaStockRequest.class);
 
             TenantContext.setTenant(ksq.getTenantId());
+            AuditorHolder.setAuditor(ksq.getTenantId());
 
             kafkaStockService.saveStock(ksq);
         } catch (Exception e) {
             log.error("Consume failed. payload={}, err={}", message, e.getMessage(), e);
             throw new IllegalStateException("Kafka consume error", e);
-
+        }finally {
+            AuditorHolder.clear();
         }
     }
 

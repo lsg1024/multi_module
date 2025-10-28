@@ -8,9 +8,7 @@ import java.util.Optional;
 public enum Kind {
     CREATE("생성"),
     UPDATE("수정"),
-    DELETED("삭제"),
-    RESTORE("반납"),
-    DELIVERY("출고");
+    DELETED("삭제");
 
     private final String displayName;
 

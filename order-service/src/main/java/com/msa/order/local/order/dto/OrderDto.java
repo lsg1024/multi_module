@@ -43,7 +43,9 @@ public class OrderDto {
         private String productFactoryName;
         private String productSize;
         private String orderNote;
-        private boolean isProductWeightSale;
+        private Boolean isProductWeightSale;
+        private Integer productPurchaseCost;
+        private Integer productLaborCost;
         private Integer productAddLaborCost;
 
         @NotBlank(message = "재질 값은 필수입니다.")
@@ -142,8 +144,8 @@ public class OrderDto {
         private String productId;
         private String productName;
         private String productSize;
-        private Integer productPurchaseCost;
         private Integer productLaborCost;
+        private Integer productAddLaborCost;
         private String goldWeight;
         private String stoneWeight;
         private String classificationId;
@@ -165,9 +167,10 @@ public class OrderDto {
         private String assistantStoneName;
         private OffsetDateTime assistantStoneCreateAt;
         private List<StoneDto.StoneInfo> stoneInfos;
+        private String stoneAddLaborCost;
 
         @Builder
-        public ResponseDetail(String createAt, String shippingAt, String flowCode, String storeId, String storeName, String storeGrade, String factoryId, String productId, String productName, Integer productLaborCost, String stoneWeight, String classificationId, String classificationName, String materialName, String colorName, String setTypeName, String productSize, String orderNote, String factoryName, Integer productPurchaseCost, String goldWeight, String materialId, String colorId, String setTypeId, String mainStoneNote, String assistanceStoneNote, String priority, String productStatus, String orderStatus, boolean assistantStone, String assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, List<StoneDto.StoneInfo> stoneInfos) {
+        public ResponseDetail(String createAt, String shippingAt, String flowCode, String storeId, String storeName, String storeGrade, String factoryId, String productId, String productName, Integer productLaborCost, Integer productAddLaborCost, String stoneWeight, String classificationId, String classificationName, String materialName, String colorName, String setTypeName, String productSize, String orderNote, String factoryName, String goldWeight, String materialId, String colorId, String setTypeId, String mainStoneNote, String assistanceStoneNote, String priority, String productStatus, String orderStatus, boolean assistantStone, String assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, List<StoneDto.StoneInfo> stoneInfos, String stoneAddLaborCost) {
             this.createAt = createAt;
             this.shippingAt = shippingAt;
             this.flowCode = flowCode;
@@ -178,6 +181,7 @@ public class OrderDto {
             this.productId = productId;
             this.productName = productName;
             this.productLaborCost = productLaborCost;
+            this.productAddLaborCost = productAddLaborCost;
             this.stoneWeight = stoneWeight;
             this.classificationId = classificationId;
             this.classificationName = classificationName;
@@ -187,7 +191,6 @@ public class OrderDto {
             this.productSize = productSize;
             this.orderNote = orderNote;
             this.factoryName = factoryName;
-            this.productPurchaseCost = productPurchaseCost;
             this.goldWeight = goldWeight;
             this.materialId = materialId;
             this.colorId = colorId;
@@ -202,6 +205,7 @@ public class OrderDto {
             this.assistantStoneName = assistantStoneName;
             this.assistantStoneCreateAt = assistantStoneCreateAt;
             this.stoneInfos = stoneInfos;
+            this.stoneAddLaborCost = stoneAddLaborCost;
         }
     }
 
