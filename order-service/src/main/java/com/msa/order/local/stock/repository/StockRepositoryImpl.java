@@ -2,7 +2,6 @@ package com.msa.order.local.stock.repository;
 
 import com.msa.common.global.util.CustomPage;
 import com.msa.order.local.order.dto.OrderDto;
-import com.msa.order.local.order.entity.QOrderStone;
 import com.msa.order.local.order.entity.QStatusHistory;
 import com.msa.order.local.order.entity.order_enum.BusinessPhase;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
@@ -29,6 +28,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.msa.order.local.order.entity.QOrderStone.orderStone;
 import static com.msa.order.local.order.entity.QStatusHistory.statusHistory;
 import static com.msa.order.local.stock.entity.QStock.stock;
 
@@ -48,16 +48,17 @@ public class StockRepositoryImpl implements CustomStockRepository {
         BooleanExpression stockStatusBuilder = getStockCreateAtAndEndAt(condition);
         BooleanExpression orderTypeCondition = getOrderTypeBuilder(condition);
 
+        BooleanBuilder optionBuilder = getOptionBuilder(condition.getOptionCondition());
         OrderSpecifier<?>[] stockSpecifiers = createStockSpecifiers(condition.getSortCondition());
-
         QStatusHistory subHistory = new QStatusHistory("subHistory");
 
         List<StockDto.Response> content = query
                 .select(new QStockDto_Response(
                         stock.flowCode.stringValue(),
                         stock.createDate.stringValue(),
+                        stock.lastModifiedDate.stringValue(),
                         statusHistory.sourceType.stringValue(),
-                        statusHistory.phase.stringValue(),
+                        stock.orderStatus.stringValue(),
                         stock.storeName,
                         stock.product.size,
                         stock.stockNote,
@@ -74,15 +75,15 @@ public class StockRepositoryImpl implements CustomStockRepository {
                         stock.stockMainStoneNote,
                         stock.stockAssistanceStoneNote,
                         Expressions.cases()
-                                .when(QOrderStone.orderStone.includeStone.isTrue().and(QOrderStone.orderStone.mainStone.isTrue()))
-                                .then(QOrderStone.orderStone.stoneQuantity)
+                                .when(orderStone.includeStone.isTrue().and(orderStone.mainStone.isTrue()))
+                                .then(orderStone.stoneQuantity)
                                 .otherwise(0)
                                 .sum()
                                 .coalesce(0)
                                 .intValue(),
                         Expressions.cases()
-                                .when(QOrderStone.orderStone.includeStone.isTrue().and(QOrderStone.orderStone.mainStone.isFalse()))
-                                .then(QOrderStone.orderStone.stoneQuantity)
+                                .when(orderStone.includeStone.isTrue().and(orderStone.mainStone.isFalse()))
+                                .then(orderStone.stoneQuantity)
                                 .otherwise(0)
                                 .sum()
                                 .coalesce(0)
@@ -93,8 +94,8 @@ public class StockRepositoryImpl implements CustomStockRepository {
                         stock.totalStonePurchaseCost
                 ))
                 .from(stock)
-                .leftJoin(QOrderStone.orderStone)
-                    .on(QOrderStone.orderStone.stock.eq(stock))
+                .leftJoin(orderStone)
+                    .on(orderStone.stock.eq(stock))
                 .leftJoin(statusHistory)
                     .on(statusHistory.flowCode.eq(stock.flowCode),
                             statusHistory.createAt.eq(
@@ -103,7 +104,7 @@ public class StockRepositoryImpl implements CustomStockRepository {
                                             .from(subHistory)
                                             .where(subHistory.flowCode.eq(stock.flowCode))
                             ))
-                .where(searchBuilder, stockStatusBuilder, orderTypeCondition)
+                .where(searchBuilder, stockStatusBuilder, orderTypeCondition, optionBuilder)
                 .orderBy(stockSpecifiers)
                 .groupBy(stock.stockId, statusHistory.id)
                 .offset(pageable.getOffset())
@@ -122,7 +123,8 @@ public class StockRepositoryImpl implements CustomStockRepository {
                 .where(
                         searchBuilder,
                         stockStatusBuilder,
-                        orderTypeCondition
+                        orderTypeCondition,
+                        optionBuilder
                 );
 
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
@@ -196,11 +198,28 @@ public class StockRepositoryImpl implements CustomStockRepository {
 
     @Nullable
     private BooleanExpression getOrderTypeBuilder(StockDto.StockCondition condition) {
-        BooleanExpression orderTypeCondition = null;
-        if (StringUtils.hasText(condition.getOrderStatus())) {
-            orderTypeCondition = stock.orderStatus.eq(OrderStatus.valueOf(condition.getOrderStatus()));
+        String orderStatus = condition.getOrderStatus();
+
+        if ("ALL".equalsIgnoreCase(orderStatus)) {
+            return stock.orderStatus.in(
+                    OrderStatus.STOCK,
+                    OrderStatus.NORMAL,
+                    OrderStatus.RENTAL,
+                    OrderStatus.FIX,
+                    OrderStatus.RETURN
+            );
         }
-        return orderTypeCondition;
+
+        if (StringUtils.hasText(orderStatus)) {
+            return stock.orderStatus.eq(OrderStatus.valueOf(orderStatus));
+        }
+
+        return stock.orderStatus.in(
+                OrderStatus.STOCK,
+                OrderStatus.NORMAL,
+                OrderStatus.RENTAL,
+                OrderStatus.FIX
+        );
     }
 
     @NotNull
@@ -242,5 +261,25 @@ public class StockRepositoryImpl implements CustomStockRepository {
         }
 
         return orderSpecifiers.toArray(new OrderSpecifier[0]);
+    }
+
+    private BooleanBuilder getOptionBuilder(OrderDto.OptionCondition condition) {
+        BooleanBuilder builder = new BooleanBuilder();
+
+        if (condition != null) {
+            if (StringUtils.hasText(condition.getFactoryName())) {
+                builder.and(stock.factoryName.eq(condition.getFactoryName()));
+            }
+            if (StringUtils.hasText(condition.getStoreName())) {
+                builder.and(stock.storeName.eq(condition.getStoreName()));
+            }
+            if (StringUtils.hasText(condition.getSetTypeName())) {
+                builder.and(stock.product.setTypeName.eq(condition.getSetTypeName()));
+            }
+            if (StringUtils.hasText(condition.getColorName())) {
+                builder.and(stock.product.colorName.eq(condition.getColorName()));
+            }
+        }
+        return builder;
     }
 }

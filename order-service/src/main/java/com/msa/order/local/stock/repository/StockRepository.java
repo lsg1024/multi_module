@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface StockRepository extends JpaRepository<Stock, Long> {
@@ -20,6 +21,10 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
             "left join fetch s.orderStones os " +
             "where s.flowCode= :id")
     Optional<Stock> findByFlowCode(@Param("id") Long flowCode);
+    @Query("select s from Stock s " +
+            "left join fetch s.orderStones os " +
+            "where s.flowCode in :ids")
+    List<Stock> findByFlowCodeIn(@Param("ids") List<Long> flowCodes);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from Stock s where s.flowCode = :flowCode")
