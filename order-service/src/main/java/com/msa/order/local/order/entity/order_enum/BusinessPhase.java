@@ -8,7 +8,7 @@ import java.util.Optional;
 public enum BusinessPhase {
     ORDER("주문"),
     WAITING("대기"),
-    UPDATE("주문 업데이트"),
+    UPDATE("수정"),
     ORDER_FAIL("주문 실패"),
     ORDER_UPDATE_FAIL("주문 업데이트 실패"),
     STOCK("재고"),
