@@ -258,7 +258,7 @@ public class KafkaOrderService {
                     order.getFlowCode(),
                     lastHistory.getSourceType(),
                     lastHistory.getPhase(),
-                    BusinessPhase.ORDER_UPDATE_FAIL,
+                    BusinessPhase.FAIL,
                     updateRequest.getNickname()
             );
 
