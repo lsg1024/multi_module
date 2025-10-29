@@ -394,7 +394,7 @@ public class StockService {
 
         updateStockStoneInfo(stockRentalDto.getStoneInfos(), stock);
 
-        int[] countStoneCost = countStoneCost(stock.getOrderStones());
+        int[] countStoneCost = updateStoneCosts(stockRentalDto.getStoneInfos());
         stock.updateStoneCost(countStoneCost[0], countStoneCost[1], countStoneCost[2], countStoneCost[3], stockRentalDto.getStoneAddLaborCost());                stock.moveToRental(stockRentalDto);
 
         StatusHistory statusHistory = StatusHistory.phaseChange(
