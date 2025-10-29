@@ -14,6 +14,7 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
+import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -28,6 +29,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.msa.order.global.util.DateConversionUtil.LocalDateToOffsetDateTime;
 import static com.msa.order.local.order.entity.QOrderStone.orderStone;
 import static com.msa.order.local.order.entity.QStatusHistory.statusHistory;
 import static com.msa.order.local.stock.entity.QStock.stock;
@@ -124,6 +126,100 @@ public class StockRepositoryImpl implements CustomStockRepository {
                         searchBuilder,
                         stockStatusBuilder,
                         orderTypeCondition,
+                        optionBuilder
+                );
+
+        return new CustomPage<>(content, pageable, countQuery.fetchOne());
+    }
+
+    @Override
+    public CustomPage<StockDto.Response> findStocksByHistoricalPhase(OrderDto.InputCondition inputCondition, StockDto.HistoryCondition condition, Pageable pageable) {
+        QStatusHistory history = QStatusHistory.statusHistory;
+
+        JPQLQuery<Long> subQuery = JPAExpressions
+                .select(history.flowCode)
+                .from(history)
+                .where(
+                        history.phase.eq(condition.getPhase()),
+                        history.createAt.between(
+                                LocalDateToOffsetDateTime(condition.getStartAt() + " 00:00:00"),
+                                LocalDateToOffsetDateTime(condition.getEndAt() + " 23:59:59")
+                        )
+                );
+
+        BooleanBuilder searchBuilder = getSearchBuilder(inputCondition.getSearchInput());
+        BooleanBuilder optionBuilder = getOptionBuilder(condition.getOptionCondition());
+        OrderSpecifier<?>[] stockSpecifiers = createStockSpecifiers(condition.getSortCondition());
+        QStatusHistory subHistory = new QStatusHistory("subHistory");
+
+        List<StockDto.Response> content = query
+                .select(new QStockDto_Response(
+                        stock.flowCode.stringValue(),
+                        stock.createDate.stringValue(),
+                        stock.lastModifiedDate.stringValue(),
+                        statusHistory.sourceType.stringValue(),
+                        stock.orderStatus.stringValue(),
+                        stock.storeName,
+                        stock.product.size,
+                        stock.stockNote,
+                        stock.product.materialName,
+                        stock.product.classificationName,
+                        stock.product.colorName,
+                        stock.product.productLaborCost,
+                        stock.product.productAddLaborCost,
+                        stock.product.assistantStoneName,
+                        stock.product.assistantStone,
+                        stock.stoneMainLaborCost,
+                        stock.stoneAssistanceLaborCost,
+                        stock.stoneAddLaborCost,
+                        stock.stockMainStoneNote,
+                        stock.stockAssistanceStoneNote,
+                        Expressions.cases()
+                                .when(orderStone.includeStone.isTrue().and(orderStone.mainStone.isTrue()))
+                                .then(orderStone.stoneQuantity)
+                                .otherwise(0)
+                                .sum()
+                                .coalesce(0)
+                                .intValue(),
+                        Expressions.cases()
+                                .when(orderStone.includeStone.isTrue().and(orderStone.mainStone.isFalse()))
+                                .then(orderStone.stoneQuantity)
+                                .otherwise(0)
+                                .sum()
+                                .coalesce(0)
+                                .intValue(),
+                        stock.product.stoneWeight.stringValue(),
+                        stock.product.goldWeight.stringValue(),
+                        stock.product.productPurchaseCost,
+                        stock.totalStonePurchaseCost
+                ))
+                .from(stock)
+                .leftJoin(orderStone).on(orderStone.stock.eq(stock))
+                .leftJoin(statusHistory)
+                .on(statusHistory.flowCode.eq(stock.flowCode),
+                        statusHistory.createAt.eq(
+                                JPAExpressions
+                                        .select(subHistory.createAt.max())
+                                        .from(subHistory)
+                                        .where(subHistory.flowCode.eq(stock.flowCode))
+                        ))
+                .where(
+                        stock.flowCode.in(subQuery),
+                        searchBuilder,
+                        optionBuilder
+                )
+                .orderBy(stockSpecifiers)
+                .groupBy(stock.stockId, statusHistory.id)
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        JPAQuery<Long> countQuery = query
+                .select(stock.stockId.count())
+                .from(stock)
+                .where(
+                        stock.flowCode.in(subQuery),
+                        searchBuilder,
                         optionBuilder
                 );
 

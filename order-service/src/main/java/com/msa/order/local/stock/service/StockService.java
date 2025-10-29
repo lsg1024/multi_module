@@ -130,6 +130,17 @@ public class StockService {
         return customStockRepository.findByStockProducts(inputCondition, condition, pageable);
     }
 
+    @Transactional(readOnly = true)
+    public CustomPage<StockDto.Response> getPastRentalHistory(String input, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort,  Pageable pageable) {
+        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
+        OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
+        BusinessPhase historicalPhase = BusinessPhase.RETURN;
+        StockDto.HistoryCondition historyCondition = new StockDto.HistoryCondition(startAt, endAt, historicalPhase, optionCondition, sortCondition);
+
+        return customStockRepository.findStocksByHistoricalPhase(inputCondition, historyCondition, pageable);
+    }
+
     // 재고 업데이트
     public void updateStock(String accessToken, Long flowCode, StockDto.updateStockRequest updateStock) {
         String nickname = jwtUtil.getNickname(accessToken);
@@ -423,17 +434,6 @@ public class StockService {
 
         stock.removeOrder(); // order, orderProduct 연관성 제거
         stock.updateOrderStatus(OrderStatus.DELETED);
-
-//            StatusHistory orderStatusHistory = StatusHistory.phaseChange(
-//                    beforeFlowCode,
-//                    lastHistory.getSourceType(),
-//                    Kind.DELETED,
-//                    lastHistory.getPhase(),
-//                    BusinessPhase.WAITING,
-//                    nickname
-//            );
-//
-//            statusHistoryRepository.save(orderStatusHistory);
 
         List<StatusHistory> allByFlowCode = statusHistoryRepository.findAllByFlowCode(beforeFlowCode);
         for (StatusHistory statusHistory : allByFlowCode) {

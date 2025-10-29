@@ -2,10 +2,12 @@ package com.msa.order.local.stock.dto;
 
 import com.msa.order.global.dto.StoneDto;
 import com.msa.order.local.order.dto.OrderDto;
+import com.msa.order.local.order.entity.order_enum.BusinessPhase;
 import com.querydsl.core.annotations.QueryProjection;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -382,10 +384,14 @@ public class StockDto {
         }
     }
 
-    public static class StockStone {
-        private Integer stonePurchaseCost;
-        private Integer stoneLaborCost;
-        private Integer stoneQuantity;
+    @Getter
+    @AllArgsConstructor
+    public static class HistoryCondition {
+        private String startAt;
+        private String endAt;
+        private BusinessPhase phase;
+        private OrderDto.OptionCondition optionCondition;
+        private OrderDto.SortCondition sortCondition;
     }
 
 }

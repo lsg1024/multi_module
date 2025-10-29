@@ -84,6 +84,25 @@ public class StockController {
         return ResponseEntity.ok(ApiResponse.success(stocks));
     }
 
+    @GetMapping("/stocks/rental/history")
+    public ResponseEntity<ApiResponse<CustomPage<StockDto.Response>>> getRentalHistory(
+            @RequestParam(name = "search", required = false) String input,
+            @RequestParam(name = "start") String startAt,
+            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "factory", required = false) String factoryName,
+            @RequestParam(name = "store", required = false) String storeName,
+            @RequestParam(name = "setType", required = false) String setTypeName,
+            @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "sortField", required = false) String sortField,
+            @RequestParam(name = "sortOrder", required = false) String sort,
+            @PageableDefault(size = 20) Pageable pageable) {
+
+        CustomPage<StockDto.Response> pastRentalHistory = stockService.getPastRentalHistory(input, startAt, endAt, factoryName,
+                storeName, setTypeName, colorName, sortField, sort, pageable);
+
+        return ResponseEntity.ok(ApiResponse.success(pastRentalHistory));
+    }
+
     //재고 -> 대여
     @PatchMapping("/stocks/rental")
     public ResponseEntity<ApiResponse<String>> updateStockToRental(
