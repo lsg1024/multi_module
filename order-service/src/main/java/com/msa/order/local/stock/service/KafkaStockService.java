@@ -162,7 +162,7 @@ public class KafkaStockService {
                     stock.getFlowCode(),
                     lastHistory.getSourceType(),
                     lastHistory.getPhase(),
-                    BusinessPhase.STOCK_FAIL,
+                    BusinessPhase.FAIL,
                     stockDto.getNickname()
             );
 
