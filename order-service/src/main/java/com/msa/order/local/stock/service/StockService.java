@@ -135,10 +135,17 @@ public class StockService {
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
         OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
         OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
-        BusinessPhase historicalPhase = BusinessPhase.RETURN;
+        BusinessPhase historicalPhase = BusinessPhase.RENTAL;
         StockDto.HistoryCondition historyCondition = new StockDto.HistoryCondition(startAt, endAt, historicalPhase, optionCondition, sortCondition);
 
-        return customStockRepository.findStocksByHistoricalPhase(inputCondition, historyCondition, pageable);
+        CustomPage<StockDto.Response> stocksByHistoricalPhase = customStockRepository.findStocksByHistoricalPhase(inputCondition, historyCondition, pageable);
+        for (StockDto.Response response : stocksByHistoricalPhase) {
+            String originStatus = response.getOriginStatus();
+            String currentStatus = response.getCurrentStatus();
+            response.updateStatus(SourceType.valueOf(originStatus).getDisplayName(), OrderStatus.valueOf(currentStatus).getDisplayName());
+        }
+
+        return stocksByHistoricalPhase;
     }
 
     // 재고 업데이트

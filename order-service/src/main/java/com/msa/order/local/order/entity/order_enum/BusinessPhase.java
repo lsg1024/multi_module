@@ -7,7 +7,6 @@ public enum BusinessPhase {
     WAITING("대기"),
     UPDATE("수정"),
     FAIL("실패"),
-
     STOCK("재고"),
     FIX("수리"),
     NORMAL("일반"),

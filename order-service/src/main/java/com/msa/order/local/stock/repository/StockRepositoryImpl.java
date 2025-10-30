@@ -206,7 +206,8 @@ public class StockRepositoryImpl implements CustomStockRepository {
                 .where(
                         stock.flowCode.in(subQuery),
                         searchBuilder,
-                        optionBuilder
+                        optionBuilder,
+                        stock.orderStatus.in(OrderStatus.RENTAL, OrderStatus.RETURN)
                 )
                 .orderBy(stockSpecifiers)
                 .groupBy(stock.stockId, statusHistory.id)
@@ -220,7 +221,8 @@ public class StockRepositoryImpl implements CustomStockRepository {
                 .where(
                         stock.flowCode.in(subQuery),
                         searchBuilder,
-                        optionBuilder
+                        optionBuilder,
+                        stock.orderStatus.in(OrderStatus.RENTAL, OrderStatus.RETURN)
                 );
 
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
