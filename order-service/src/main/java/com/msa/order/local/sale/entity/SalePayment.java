@@ -1,6 +1,7 @@
 package com.msa.order.local.sale.entity;
 
 import com.github.f4b6a3.tsid.TsidCreator;
+import com.msa.common.global.domain.BaseEntity;
 import com.msa.order.local.sale.sale_enum.SaleStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -11,21 +12,18 @@ import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 
 @Getter
 @Entity
 @Table(
         name = "SALE_PAYMENT",
-        indexes = { @Index(name = "IX_PAYMENT_SALE", columnList = "SALE_ID, CREATED_AT") },
+        indexes = { @Index(name = "IX_PAYMENT_SALE", columnList = "SALE_ID, CREATE_DATE") },
         uniqueConstraints = { @UniqueConstraint(name = "UK_PAYMENT_IDEMP", columnNames = {"IDEMP_KEY"})}
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SQLDelete(sql = "UPDATE SALE_PAYMENT SET PAYMENT_DELETED = TRUE, DELETED_AT = CURRENT_TIMESTAMP WHERE SALE_PAYMENT_ID = ?")
 @SQLRestriction("PAYMENT_DELETED = FALSE")
-public class SalePayment {
-
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+public class SalePayment extends BaseEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "SALE_PAYMENT_ID")
@@ -63,12 +61,6 @@ public class SalePayment {
     @Column(name = "PAYMENT_NOTE")
     private String paymentNote;
 
-    @Column(name="CREATED_AT", nullable=false, updatable=false)
-    private OffsetDateTime createdAt;
-
-    @Column(name="CREATED_BY")
-    private String createdBy;
-
     @Column(name="IDEMP_KEY", nullable=false)
     private String idempotencyKey;
 
@@ -83,7 +75,6 @@ public class SalePayment {
 
     @PrePersist
     void onCreate() {
-        if (createdAt == null) createdAt = OffsetDateTime.now(KST);
         if (cashAmount == null)  cashAmount  = 0L;
         if (goldWeight == null)  goldWeight  = BigDecimal.ZERO;
         if (this.sale != null) {
@@ -94,33 +85,32 @@ public class SalePayment {
         }
     }
 
-    public static SalePayment payment(String material, String by, String idemp, String note, Long cash, BigDecimal gold) {
-        SalePayment s = base(material, SaleStatus.PAYMENT, by, idemp, note);
+    public static SalePayment payment(String material, String idemp, String note, Long cash, BigDecimal gold) {
+        SalePayment s = base(material, SaleStatus.PAYMENT, idemp, note);
         s.cashAmount = nz(cash); s.goldWeight = nz(gold); return s;
     }
 
-    public static SalePayment paymentBank(String material, String by, String idemp, String note, Long cash) {
-        SalePayment s = base(material, SaleStatus.PAYMENT_TO_BANK, by, idemp, note);
+    public static SalePayment paymentBank(String material, String idemp, String note, Long cash) {
+        SalePayment s = base(material, SaleStatus.PAYMENT_TO_BANK, idemp, note);
         s.cashAmount = nz(cash); return s;
     }
-    public static SalePayment discount(String material, String by, String idemp, String note, Long cashDisc, BigDecimal goldDisc) {
-        SalePayment s = base(material, SaleStatus.DISCOUNT, by, idemp, note);
+    public static SalePayment discount(String material, String idemp, String note, Long cashDisc, BigDecimal goldDisc) {
+        SalePayment s = base(material, SaleStatus.DISCOUNT, idemp, note);
         s.cashAmount = nz(cashDisc);
         s.goldWeight = nz(goldDisc); return s;
     }
 
-    public static SalePayment wg(String material, String by, String idemp, String note, Long cash, BigDecimal gold) {
-        SalePayment s = base(material, SaleStatus.PAYMENT, by, idemp, note);
+    public static SalePayment wg(String material, String idemp, String note, Long cash, BigDecimal gold) {
+        SalePayment s = base(material, SaleStatus.PAYMENT, idemp, note);
         s.cashAmount = nz(cash);
         s.goldWeight = nz(gold);
         return s;
     }
 
-    private static SalePayment base(String material, SaleStatus type, String by, String idemp, String note) {
+    private static SalePayment base(String material, SaleStatus type, String idemp, String note) {
         SalePayment s = new SalePayment();
         s.material = material;
         s.saleStatus = type;
-        s.createdBy = by;
         s.idempotencyKey = idemp;
         s.paymentNote = note;
         return s;

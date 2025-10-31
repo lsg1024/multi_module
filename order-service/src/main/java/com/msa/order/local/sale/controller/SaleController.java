@@ -4,6 +4,7 @@ import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.AccessToken;
 import com.msa.common.global.util.CustomPage;
 import com.msa.order.local.sale.entity.dto.SaleDto;
+import com.msa.order.local.sale.entity.dto.SaleRow;
 import com.msa.order.local.sale.service.SaleService;
 import com.msa.order.local.stock.dto.StockDto;
 import com.msa.order.local.stock.service.StockService;
@@ -28,14 +29,14 @@ public class SaleController {
 
     //판매 관리 데이터 목록들
     @GetMapping("/sales")
-    public ResponseEntity<ApiResponse<CustomPage<SaleDto.Response>>> getSales(
-            @RequestParam(name = "date") String date,
-            @RequestParam(name = "input", required = false) String input,
-            @RequestParam(name = "type", required = false) String type,
+    public ResponseEntity<ApiResponse<CustomPage<SaleRow>>> getSales(
+            @RequestParam(name = "search", required = false) String input,
+            @RequestParam(name = "start") String startAt,
+            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "type", required = false) String material,
             @PageableDefault(size = 20) Pageable pageable) {
 
-        SaleDto.Condition condition = new SaleDto.Condition(date, input, type);
-        CustomPage<SaleDto.Response> sale = saleService.getSale(condition, pageable);
+        CustomPage<SaleRow> sale = saleService.getSale(input,startAt, endAt, material, pageable);
         return ResponseEntity.ok(ApiResponse.success(sale));
     }
 

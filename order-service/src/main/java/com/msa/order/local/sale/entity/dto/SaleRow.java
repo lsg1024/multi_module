@@ -1,25 +1,27 @@
 package com.msa.order.local.sale.entity.dto;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 
 public record SaleRow(
-    OffsetDateTime createAt,
+    LocalDateTime createAt,
+    String createBy,
     String  saleType,
-    String  name,
+    String storeName,
     Long    saleCode,
     Long    flowCode,
     String  productName,
     String  materialName,
     String  colorName,
-    String  note,
+    String  note, // (비고 + 메인 + 보조 메모)
+    Boolean assistantStone,
+    String assistantName,
+    BigDecimal totalWeight, // (상품 + 스톤 중량 합)
+    BigDecimal goldWeight, // (재질 기반 순금 무게)
+    Integer totalProductLaborCost, // (기본 + 추가)
+    Integer mainStoneLaborCost,
+    Integer assistanceStoneLaborCost,
+    Integer stoneAddLaborCost,
     Integer mainStoneQuantity,
-    Integer assistanceQuantity,
-    BigDecimal productWeight,
-    BigDecimal stoneWeight,
-    Integer mainProductCost,
-    Integer addProductCost,
-    Integer mainStoneCost,
-    Integer assistanceStoneCost,
-    Integer totalPurchaseCost
+    Integer assistanceStoneQuantity
 ) {}

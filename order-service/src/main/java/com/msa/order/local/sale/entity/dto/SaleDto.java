@@ -30,57 +30,12 @@ public class SaleDto {
 
     @Getter
     @NoArgsConstructor
-    public static class Response {
-        private String createAt;
-        private String saleType;
-        private String name;
-        private String saleCode;
-        private String flowCode;
-        private String productName;
-        private String materialName;
-        private String colorName;
-        private String note;
-        private Integer mainStoneQuantity;
-        private Integer assistanceQuantity;
-        private String productWeight; // 금 -> 24k X
-        private String stoneWeight;
-        private Integer mainProductCost;
-        private Integer addProductCost;
-        private Integer mainStoneCost;
-        private Integer assistanceStoneCost;
-        private Integer totalPurchaseCost; // 상품 매입 + 스톤 매입
-
-        public static Response from(SaleRow r) {
-            Response d = new Response();
-            d.createAt = r.createAt()!=null ? r.createAt().toString() : null;
-            d.saleType = r.saleType();
-            d.name = r.name();
-            d.saleCode = r.saleCode()!=null ? String.valueOf(r.saleCode()) : null;
-            d.flowCode = r.flowCode()!=null ? String.valueOf(r.flowCode()) : null;
-            d.productName = r.productName();
-            d.materialName = r.materialName();
-            d.colorName = r.colorName();
-            d.note = r.note();
-            d.mainStoneQuantity = r.mainStoneQuantity();
-            d.assistanceQuantity = r.assistanceQuantity();
-            d.productWeight = r.productWeight()!=null ? r.productWeight().toPlainString() : null;
-            d.stoneWeight = r.stoneWeight()!=null ? r.stoneWeight().toPlainString() : null;
-            d.mainProductCost = r.mainProductCost();
-            d.addProductCost = r.addProductCost();
-            d.mainStoneCost = r.mainStoneCost();
-            d.assistanceStoneCost = r.assistanceStoneCost();
-            d.totalPurchaseCost = r.totalPurchaseCost();
-            return d;
-        }
-    }
-
-    @Getter
-    @NoArgsConstructor
     @AllArgsConstructor
     public static class Condition {
-        private String date;
         private String input;
-        private String type;
+        private String startAt;
+        private String endAt;
+        private String material;
     }
 
     @Setter
@@ -107,11 +62,10 @@ public class SaleDto {
         private Integer addStoneLaborCost;
         private Boolean assistantStone;
         private String assistantStoneName;
-        private OffsetDateTime assistantStoneCreateAt;
         private String storeName;
 
         @QueryProjection
-        public SaleDetailDto(Long flowCode, OffsetDateTime saleCreateAt, String productName, String productMaterial, String productColor, String stockMainStoneNote, String stockAssistanceStoneNote, String productSize, String stockNote, BigDecimal goldWeight, BigDecimal stoneWeight, Integer mainStoneQuantity, Integer assistanceStoneQuantity, Integer productLaborCost, Integer productAddLaborCost, Integer mainStoneLaborCost, Integer assistanceStoneLaborCost, Integer addStoneLaborCost, Boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, String storeName) {
+        public SaleDetailDto(Long flowCode, OffsetDateTime saleCreateAt, String productName, String productMaterial, String productColor, String stockMainStoneNote, String stockAssistanceStoneNote, String productSize, String stockNote, BigDecimal goldWeight, BigDecimal stoneWeight, Integer mainStoneQuantity, Integer assistanceStoneQuantity, Integer productLaborCost, Integer productAddLaborCost, Integer mainStoneLaborCost, Integer assistanceStoneLaborCost, Integer addStoneLaborCost, Boolean assistantStone, String assistantStoneName, String storeName) {
             this.flowCode = flowCode;
             this.saleCreateAt = saleCreateAt;
             this.productName = productName;
@@ -132,7 +86,6 @@ public class SaleDto {
             this.addStoneLaborCost = addStoneLaborCost;
             this.assistantStone = assistantStone;
             this.assistantStoneName = assistantStoneName;
-            this.assistantStoneCreateAt = assistantStoneCreateAt;
             this.storeName = storeName;
         }
     }

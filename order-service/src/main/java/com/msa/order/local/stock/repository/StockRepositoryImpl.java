@@ -304,8 +304,9 @@ public class StockRepositoryImpl implements CustomStockRepository {
                     OrderStatus.NORMAL,
                     OrderStatus.RENTAL,
                     OrderStatus.FIX,
-                    OrderStatus.RETURN
-            );
+                    OrderStatus.RETURN,
+                    OrderStatus.SALE
+                    );
         }
 
         if (StringUtils.hasText(orderStatus)) {

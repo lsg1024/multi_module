@@ -14,7 +14,7 @@ public interface SalePaymentRepository extends JpaRepository<SalePayment, Long> 
             "left join fetch sp.sale s " +
             "where sp.flowCode= :flowCode")
     Optional<SalePayment> findByFlowCode(Long flowCode);
-    Optional<SalePayment> findTopByStoreIdOrderByCreatedAtDesc(Long storeId);
+    Optional<SalePayment> findTopByStoreIdOrderByCreateDateDesc(Long storeId);
 
     boolean existsBySale(Sale sale);
 }

@@ -12,6 +12,7 @@ import com.msa.order.local.sale.entity.Sale;
 import com.msa.order.local.sale.entity.SaleItem;
 import com.msa.order.local.sale.entity.SalePayment;
 import com.msa.order.local.sale.entity.dto.SaleDto;
+import com.msa.order.local.sale.entity.dto.SaleRow;
 import com.msa.order.local.sale.repository.CustomSaleRepository;
 import com.msa.order.local.sale.repository.SaleItemRepository;
 import com.msa.order.local.sale.repository.SalePaymentRepository;
@@ -26,9 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -42,9 +41,6 @@ import static com.msa.order.local.order.util.StoneUtil.updateStockStoneInfo;
 @Service
 @Transactional
 public class SaleService {
-
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-
     private final JwtUtil jwtUtil;
     private final StockRepository stockRepository;
     private final SaleRepository saleRepository;
@@ -65,7 +61,8 @@ public class SaleService {
         this.statusHistoryRepository = statusHistoryRepository;
     }
 
-    public CustomPage<SaleDto.Response> getSale(SaleDto.Condition condition, Pageable pageable) {
+    public CustomPage<SaleRow> getSale(String input, String startAt, String endAt, String material, Pageable pageable) {
+        SaleDto.Condition condition = new SaleDto.Condition(input, startAt, endAt, material);
         return customSaleRepository.findSales(condition, pageable);
     }
 
@@ -83,7 +80,7 @@ public class SaleService {
             throw new IllegalStateException("판매로 전환 불가 상태: " + stock.getOrderStatus());
         }
 
-        LocalDate saleDate = OffsetDateTime.now(KST).toLocalDate();
+        LocalDateTime saleDate = LocalDateTime.now();
         Long storeId = stock.getStoreId();
         String storeName = stock.getStoreName();
 
@@ -114,7 +111,7 @@ public class SaleService {
         int[] countStoneCost = countStoneCost(stock.getOrderStones());
         stock.updateStoneCost(countStoneCost[0], countStoneCost[1], countStoneCost[2], countStoneCost[3], stockDto.getStoneAddLaborCost());
 
-        LocalDate saleDate = OffsetDateTime.now(KST).toLocalDate();
+        LocalDateTime saleDate = LocalDateTime.now();
         Long storeId = stock.getStoreId();
         String storeName = stock.getStoreName();
 
@@ -137,11 +134,11 @@ public class SaleService {
 
         String nickname = jwtUtil.getNickname(accessToken);
 
-        LocalDate saleDate = OffsetDateTime.now(KST).toLocalDate();
+        LocalDateTime saleDate = LocalDateTime.now();
         Long storeId = saleDto.getStoreId();
         String storeName = saleDto.getStoreName();
 
-        Sale sale = saleRepository.findByStoreIdAndSaleDate(storeId, saleDate)
+        Sale sale = saleRepository.findByStoreIdAndCreateDate(storeId, saleDate)
                 .orElseGet(() -> {
                     try {
                         Sale newSale = Sale.builder()
@@ -153,7 +150,7 @@ public class SaleService {
                         return saleRepository.saveAndFlush(newSale);
                     } catch (DataIntegrityViolationException dup) {
                         // 동시 생성 충돌(UK_SALE_STORE_DATE) 시 재조회
-                        return saleRepository.findByStoreIdAndSaleDate(storeId, saleDate)
+                        return saleRepository.findByStoreIdAndCreateDate(storeId, saleDate)
                                 .orElseThrow(() -> dup);
                     }
                 });
@@ -173,21 +170,21 @@ public class SaleService {
 
         SalePayment payment = switch (saleStatus) {
             case PAYMENT -> SalePayment.payment(
-                    material, nickname, idempKey, note,
+                    material, idempKey, note,
                     snapTotalPay,
                     snapTotalWeight
             );
             case WG -> SalePayment.wg(
-                    material, nickname, idempKey, note,
+                    material, idempKey, note,
                     snapTotalPay,
                     snapTotalWeight
             );
             case PAYMENT_TO_BANK -> SalePayment.paymentBank(
-                    material, nickname, idempKey, note,
+                    material, idempKey, note,
                     snapTotalPay
             );
             case DISCOUNT -> SalePayment.discount(
-                    material, nickname, idempKey, note,
+                    material, idempKey, note,
                     snapTotalPay,
                     snapTotalWeight
             );
@@ -245,8 +242,8 @@ public class SaleService {
     //라벨 출력 기능
 
 
-    private void createNewSale(String nickname, Stock stock, LocalDate saleDate, Long storeId, String storeName) {
-        Sale sale = saleRepository.findByStoreIdAndSaleDate(storeId, saleDate)
+    private void createNewSale(String nickname, Stock stock, LocalDateTime saleDate, Long storeId, String storeName) {
+        Sale sale = saleRepository.findByStoreIdAndCreateDate(storeId, saleDate)
                 .orElseGet(() -> {
                     try {
                         Sale newSale = Sale.builder()
@@ -258,13 +255,12 @@ public class SaleService {
                         return saleRepository.saveAndFlush(newSale);
                     } catch (DataIntegrityViolationException dup) {
                         // 동시 생성 충돌(UK_SALE_STORE_DATE) 시 재조회
-                        return saleRepository.findByStoreIdAndSaleDate(storeId, saleDate)
+                        return saleRepository.findByStoreIdAndCreateDate(storeId, saleDate)
                                 .orElseThrow(() -> dup);
                     }
                 });
 
         SaleItem saleItem = SaleItem.builder()
-                .createdBy(nickname)
                 .flowCode(stock.getFlowCode())
                 .saleCode(sale.getSaleCode())
                 .build();

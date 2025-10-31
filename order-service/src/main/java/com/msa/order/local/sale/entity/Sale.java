@@ -1,6 +1,7 @@
 package com.msa.order.local.sale.entity;
 
 import com.github.f4b6a3.tsid.TsidCreator;
+import com.msa.common.global.domain.BaseEntity;
 import com.msa.order.local.sale.sale_enum.SaleStatus;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
@@ -9,9 +10,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,9 +23,7 @@ import java.util.List;
         }
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Sale {
-
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+public class Sale extends BaseEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "SALE_ID")
@@ -39,11 +35,6 @@ public class Sale {
     @Column(name = "SALE_STATUS")
     private SaleStatus saleStatus;
 
-    @Column(name = "CREATE_AT", nullable = false, updatable = false)
-    private OffsetDateTime createAt;
-
-    @Column(name = "SALE_DATE", nullable = false, updatable = false)        // ★ KST 기준 일자
-    private LocalDate saleDate;
     @Column(name = "STORE_ID", nullable = false)
     private Long storeId;
 
@@ -58,12 +49,6 @@ public class Sale {
 
     @PrePersist
     void onCreate() {
-        if (createAt == null) {
-            createAt = OffsetDateTime.now(KST);
-        }
-        if (saleDate == null) {
-            saleDate = createAt.atZoneSameInstant(KST).toLocalDate();
-        }
         if (saleCode == null) {
             this.saleCode = TsidCreator.getTsid().toLong();
         }
