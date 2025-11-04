@@ -50,7 +50,7 @@ public class SalePayment extends BaseEntity {
     private SaleStatus saleStatus;
 
     @Column(name="CASH_AMOUNT")
-    private Long cashAmount = 0L;
+    private Integer cashAmount = 0;
 
     @Column(name = "GOLD_MATERIAL")
     private String material;
@@ -75,7 +75,7 @@ public class SalePayment extends BaseEntity {
 
     @PrePersist
     void onCreate() {
-        if (cashAmount == null)  cashAmount  = 0L;
+        if (cashAmount == null)  cashAmount  = 0;
         if (goldWeight == null)  goldWeight  = BigDecimal.ZERO;
         if (this.sale != null) {
             this.saleCode  = sale.getSaleCode();
@@ -85,22 +85,22 @@ public class SalePayment extends BaseEntity {
         }
     }
 
-    public static SalePayment payment(String material, String idemp, String note, Long cash, BigDecimal gold) {
+    public static SalePayment payment(String material, String idemp, String note, Integer cash, BigDecimal gold) {
         SalePayment s = base(material, SaleStatus.PAYMENT, idemp, note);
         s.cashAmount = nz(cash); s.goldWeight = nz(gold); return s;
     }
 
-    public static SalePayment paymentBank(String material, String idemp, String note, Long cash) {
+    public static SalePayment paymentBank(String material, String idemp, String note, Integer cash) {
         SalePayment s = base(material, SaleStatus.PAYMENT_TO_BANK, idemp, note);
         s.cashAmount = nz(cash); return s;
     }
-    public static SalePayment discount(String material, String idemp, String note, Long cashDisc, BigDecimal goldDisc) {
+    public static SalePayment discount(String material, String idemp, String note, Integer cashDisc, BigDecimal goldDisc) {
         SalePayment s = base(material, SaleStatus.DISCOUNT, idemp, note);
         s.cashAmount = nz(cashDisc);
         s.goldWeight = nz(goldDisc); return s;
     }
 
-    public static SalePayment wg(String material, String idemp, String note, Long cash, BigDecimal gold) {
+    public static SalePayment wg(String material, String idemp, String note, Integer cash, BigDecimal gold) {
         SalePayment s = base(material, SaleStatus.PAYMENT, idemp, note);
         s.cashAmount = nz(cash);
         s.goldWeight = nz(gold);
@@ -115,6 +115,6 @@ public class SalePayment extends BaseEntity {
         s.paymentNote = note;
         return s;
     }
-    private static Long nz(Long v){ return v==null? 0L : v; }
+    private static Integer nz(Integer v){ return v==null? 0 : v; }
     private static BigDecimal nz(BigDecimal v){ return v==null? BigDecimal.ZERO : v; }
 }
