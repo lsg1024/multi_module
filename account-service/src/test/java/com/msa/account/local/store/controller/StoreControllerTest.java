@@ -1,7 +1,7 @@
 package com.msa.account.local.store.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.msa.account.local.store.dto.StoreDto;
+import com.msa.account.local.store.domain.dto.StoreDto;
 import com.msa.account.global.domain.dto.AdditionalOptionDto;
 import com.msa.account.global.domain.dto.AddressDto;
 import com.msa.account.global.domain.dto.CommonOptionDto;

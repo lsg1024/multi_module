@@ -1,7 +1,7 @@
 package com.msa.account.local.store.service;
 
-import com.msa.account.local.store.dto.StoreDto;
-import com.msa.account.local.store.entity.Store;
+import com.msa.account.local.store.domain.dto.StoreDto;
+import com.msa.account.local.store.domain.entity.Store;
 import com.msa.account.local.store.repository.StoreRepository;
 import com.msa.account.global.domain.dto.AdditionalOptionDto;
 import com.msa.account.global.domain.dto.AddressDto;
@@ -68,7 +68,6 @@ class StoreServiceTest {
                 .level("ONE")
                 .tradeType("WEIGHT")
                 .goldHarryId("1")
-                .goldHarryLoss("1.10")
                 .build();
 
         originAdditionalOptionInfo = AdditionalOptionDto.AdditionalOptionInfo.builder()
