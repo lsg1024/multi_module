@@ -1,9 +1,9 @@
-package com.msa.account.local.transaction.service;
+package com.msa.account.local.transaction_history.service;
 
 import com.msa.account.local.factory.repository.FactoryRepository;
 import com.msa.account.local.store.repository.StoreRepository;
-import com.msa.account.local.transaction.domain.dto.TransactionDto;
-import com.msa.account.local.transaction.repository.TransactionHistoryRepository;
+import com.msa.account.local.transaction_history.domain.dto.TransactionDto;
+import com.msa.account.local.transaction_history.repository.TransactionHistoryRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

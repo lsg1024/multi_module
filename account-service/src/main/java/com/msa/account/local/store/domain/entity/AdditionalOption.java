@@ -1,4 +1,4 @@
-package com.msa.account.local.store.entity;
+package com.msa.account.local.store.domain.entity;
 
 import com.msa.account.global.domain.dto.AdditionalOptionDto;
 import jakarta.persistence.*;

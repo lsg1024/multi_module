@@ -1,4 +1,4 @@
-package com.msa.account.local.store.entity;
+package com.msa.account.local.store.domain.entity;
 
 import com.msa.account.global.domain.dto.AdditionalOptionDto;
 import com.msa.account.global.domain.dto.AddressDto;
@@ -6,7 +6,7 @@ import com.msa.account.global.domain.dto.CommonOptionDto;
 import com.msa.account.global.domain.entity.Address;
 import com.msa.account.global.domain.entity.CommonOption;
 import com.msa.account.global.domain.entity.GoldHarry;
-import com.msa.account.local.store.dto.StoreDto;
+import com.msa.account.local.store.domain.dto.StoreDto;
 import com.msa.common.global.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

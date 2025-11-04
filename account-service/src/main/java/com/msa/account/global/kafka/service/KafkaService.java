@@ -1,12 +1,12 @@
 package com.msa.account.global.kafka.service;
 
 import com.msa.account.global.kafka.dto.KafkaEventDto;
-import com.msa.account.local.factory.entity.Factory;
+import com.msa.account.local.factory.domain.entity.Factory;
 import com.msa.account.local.factory.repository.FactoryRepository;
-import com.msa.account.local.store.entity.Store;
+import com.msa.account.local.store.domain.entity.Store;
 import com.msa.account.local.store.repository.StoreRepository;
-import com.msa.account.local.transaction.domain.entity.TransactionHistory;
-import com.msa.account.local.transaction.repository.TransactionHistoryRepository;
+import com.msa.account.local.transaction_history.domain.entity.TransactionHistory;
+import com.msa.account.local.transaction_history.repository.TransactionHistoryRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

@@ -1,7 +1,7 @@
 package com.msa.account.global.domain.dto.util;
 
-import com.msa.account.local.factory.entity.Factory;
-import com.msa.account.local.store.entity.Store;
+import com.msa.account.local.factory.domain.entity.Factory;
+import com.msa.account.local.store.domain.entity.Store;
 import com.msa.common.global.jwt.JwtUtil;
 import org.springframework.stereotype.Component;
 

@@ -1,6 +1,6 @@
 package com.msa.account.local.factory.controller;
 
-import com.msa.account.local.factory.dto.FactoryDto;
+import com.msa.account.local.factory.domain.dto.FactoryDto;
 import com.msa.account.local.factory.service.FactoryService;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.AccessToken;

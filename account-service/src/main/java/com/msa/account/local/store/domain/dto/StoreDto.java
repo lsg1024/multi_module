@@ -1,12 +1,12 @@
-package com.msa.account.local.store.dto;
+package com.msa.account.local.store.domain.dto;
 
 import com.msa.account.global.domain.dto.AdditionalOptionDto;
 import com.msa.account.global.domain.dto.AddressDto;
 import com.msa.account.global.domain.dto.CommonOptionDto;
 import com.msa.account.global.domain.entity.Address;
 import com.msa.account.global.domain.entity.GoldHarry;
-import com.msa.account.local.store.entity.AdditionalOption;
-import com.msa.account.local.store.entity.Store;
+import com.msa.account.local.store.domain.entity.AdditionalOption;
+import com.msa.account.local.store.domain.entity.Store;
 import com.querydsl.core.annotations.QueryProjection;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;

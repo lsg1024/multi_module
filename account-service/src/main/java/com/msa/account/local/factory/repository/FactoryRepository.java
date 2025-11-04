@@ -1,8 +1,8 @@
 package com.msa.account.local.factory.repository;
 
 
-import com.msa.account.local.factory.entity.Factory;
-import com.msa.account.local.transaction.domain.dto.TransactionDto;
+import com.msa.account.local.factory.domain.entity.Factory;
+import com.msa.account.local.transaction_history.domain.dto.TransactionDto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

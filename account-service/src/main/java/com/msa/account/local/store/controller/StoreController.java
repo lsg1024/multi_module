@@ -1,6 +1,6 @@
 package com.msa.account.local.store.controller;
 
-import com.msa.account.local.store.dto.StoreDto;
+import com.msa.account.local.store.domain.dto.StoreDto;
 import com.msa.account.local.store.service.StoreService;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.AccessToken;

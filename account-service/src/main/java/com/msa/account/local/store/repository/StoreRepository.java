@@ -2,8 +2,8 @@ package com.msa.account.local.store.repository;
 
 
 import com.msa.account.global.domain.entity.OptionLevel;
-import com.msa.account.local.store.entity.Store;
-import com.msa.account.local.transaction.domain.dto.TransactionDto;
+import com.msa.account.local.store.domain.entity.Store;
+import com.msa.account.local.transaction_history.domain.dto.TransactionDto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

@@ -1,7 +1,7 @@
 package com.msa.account.local.factory.service;
 
-import com.msa.account.local.factory.dto.FactoryDto;
-import com.msa.account.local.factory.entity.Factory;
+import com.msa.account.local.factory.domain.dto.FactoryDto;
+import com.msa.account.local.factory.domain.entity.Factory;
 import com.msa.account.local.factory.repository.FactoryRepository;
 import com.msa.account.global.domain.dto.util.AuthorityUserRoleUtil;
 import com.msa.account.global.domain.entity.GoldHarry;

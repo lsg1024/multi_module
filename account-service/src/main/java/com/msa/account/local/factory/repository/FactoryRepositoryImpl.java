@@ -1,8 +1,8 @@
 package com.msa.account.local.factory.repository;
 
-import com.msa.account.local.factory.dto.QFactoryDto_FactoryResponse;
-import com.msa.account.local.factory.dto.QFactoryDto_FactorySingleResponse;
-import com.msa.account.local.factory.dto.FactoryDto;
+import com.msa.account.local.factory.domain.dto.FactoryDto;
+import com.msa.account.local.factory.domain.dto.QFactoryDto_FactoryResponse;
+import com.msa.account.local.factory.domain.dto.QFactoryDto_FactorySingleResponse;
 import com.msa.common.global.util.CustomPage;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
@@ -14,7 +14,6 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Optional;
 
-import static com.msa.account.local.factory.entity.QFactory.factory;
 import static com.msa.account.global.domain.entity.QAddress.address;
 import static com.msa.account.global.domain.entity.QCommonOption.commonOption;
 import static com.msa.account.global.domain.entity.QGoldHarry.goldHarry;

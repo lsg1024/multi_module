@@ -1,8 +1,9 @@
 package com.msa.account.local.store.repository;
 
-import com.msa.account.local.store.dto.QStoreDto_StoreResponse;
-import com.msa.account.local.store.dto.QStoreDto_StoreSingleResponse;
-import com.msa.account.local.store.dto.StoreDto;
+
+import com.msa.account.local.store.domain.dto.QStoreDto_StoreResponse;
+import com.msa.account.local.store.domain.dto.QStoreDto_StoreSingleResponse;
+import com.msa.account.local.store.domain.dto.StoreDto;
 import com.msa.common.global.util.CustomPage;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
@@ -14,11 +15,11 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Optional;
 
-import static com.msa.account.local.store.entity.QAdditionalOption.*;
-import static com.msa.account.local.store.entity.QStore.*;
-import static com.msa.account.global.domain.entity.QAddress.*;
-import static com.msa.account.global.domain.entity.QCommonOption.*;
-import static com.msa.account.global.domain.entity.QGoldHarry.*;
+import static com.msa.account.global.domain.entity.QAddress.address;
+import static com.msa.account.global.domain.entity.QCommonOption.commonOption;
+import static com.msa.account.global.domain.entity.QGoldHarry.goldHarry;
+import static com.msa.account.local.store.domain.entity.QAdditionalOption.additionalOption;
+import static com.msa.account.local.store.domain.entity.QStore.store;
 
 public class StoreRepositoryImpl implements CustomStoreRepository {
 

@@ -1,7 +1,7 @@
-package com.msa.account.local.transaction.controller;
+package com.msa.account.local.transaction_history.controller;
 
-import com.msa.account.local.transaction.domain.dto.TransactionDto;
-import com.msa.account.local.transaction.service.TransactionHistoryService;
+import com.msa.account.local.transaction_history.domain.dto.TransactionDto;
+import com.msa.account.local.transaction_history.service.TransactionHistoryService;
 import com.msa.common.global.api.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

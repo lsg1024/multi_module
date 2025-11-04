@@ -39,6 +39,7 @@ logging:
 custom:
   jpa:
     entity-scan-packages:
-      - com.msa.account.local.store.entity
-      - com.msa.account.local.factory.entity
+      - com.msa.account.local.store.domain.entity
+      - com.msa.account.local.factory.domain.entity
+      - com.msa.account.local.transaction_history.domain.entity
       - com.msa.account.global.domain.entity

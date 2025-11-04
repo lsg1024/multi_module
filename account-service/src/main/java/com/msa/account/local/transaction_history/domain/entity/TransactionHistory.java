@@ -1,7 +1,7 @@
-package com.msa.account.local.transaction.domain.entity;
+package com.msa.account.local.transaction_history.domain.entity;
 
-import com.msa.account.local.factory.entity.Factory;
-import com.msa.account.local.store.entity.Store;
+import com.msa.account.local.factory.domain.entity.Factory;
+import com.msa.account.local.store.domain.entity.Store;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
