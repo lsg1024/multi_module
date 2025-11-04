@@ -3,6 +3,9 @@ package com.msa.order.local.sale.service;
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.util.CustomPage;
 import com.msa.order.global.dto.StoneDto;
+import com.msa.order.global.kafka.KafkaProducer;
+import com.msa.order.global.kafka.dto.AccountDto;
+import com.msa.order.global.util.GoldUtils;
 import com.msa.order.local.order.entity.StatusHistory;
 import com.msa.order.local.order.entity.order_enum.BusinessPhase;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
@@ -25,12 +28,15 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.msa.order.global.exception.ExceptionMessage.NOT_ACCESS;
@@ -42,6 +48,7 @@ import static com.msa.order.local.order.util.StoneUtil.updateStockStoneInfo;
 @Transactional
 public class SaleService {
     private final JwtUtil jwtUtil;
+    private final KafkaProducer kafkaProducer;
     private final StockRepository stockRepository;
     private final SaleRepository saleRepository;
     private final CustomOrderStoneRepository customOrderStoneRepository;
@@ -50,8 +57,9 @@ public class SaleService {
     private final CustomSaleRepository customSaleRepository;
     private final StatusHistoryRepository statusHistoryRepository;
 
-    public SaleService(JwtUtil jwtUtil, StockRepository stockRepository, SaleRepository saleRepository, CustomOrderStoneRepository customOrderStoneRepository, SaleItemRepository saleItemRepository, SalePaymentRepository salePaymentRepository, CustomSaleRepository customSaleRepository, StatusHistoryRepository statusHistoryRepository) {
+    public SaleService(JwtUtil jwtUtil, KafkaProducer kafkaProducer, StockRepository stockRepository, SaleRepository saleRepository, CustomOrderStoneRepository customOrderStoneRepository, SaleItemRepository saleItemRepository, SalePaymentRepository salePaymentRepository, CustomSaleRepository customSaleRepository, StatusHistoryRepository statusHistoryRepository) {
         this.jwtUtil = jwtUtil;
+        this.kafkaProducer = kafkaProducer;
         this.stockRepository = stockRepository;
         this.saleRepository = saleRepository;
         this.customOrderStoneRepository = customOrderStoneRepository;
@@ -68,14 +76,16 @@ public class SaleService {
 
     // 주문 판매의 경우 sale_status 공유가 불가능한 stock에서는 사용 불가능 별도로 구현 필요
     // 주문에서 재고 등록을 한 후 바로 출고까지 넘기기 -> 만약 개별 명세서를 만들고 싶은 경우(동일 매입처인 경우)
-    public void orderToSale(String accessToken, Long flowCode) {
+    public void orderToSale(String accessToken, Long flowCode, StockDto.StockRegisterRequest stockDto) {
         String nickname = jwtUtil.getNickname(accessToken);
+        String tenantId = jwtUtil.getTenantId(accessToken);
 
         Stock stock = stockRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
         if (saleItemRepository.existsByStock(stock)) {
             return;
         }
+
         if (!(stock.getOrderStatus() == OrderStatus.STOCK || stock.getOrderStatus() == OrderStatus.NORMAL)) {
             throw new IllegalStateException("판매로 전환 불가 상태: " + stock.getOrderStatus());
         }
@@ -84,11 +94,31 @@ public class SaleService {
         Long storeId = stock.getStoreId();
         String storeName = stock.getStoreName();
 
-        createNewSale(nickname, stock, saleDate, storeId, storeName);
+        createNewSale(stock, saleDate, storeId, storeName);
         stock.updateOrderStatus(OrderStatus.SALE);
 
-        updateNewHistory(stock.getFlowCode(), nickname, OrderStatus.SALE.name());
-        //별도 정산 로직에서 Kafka를 통해 갱신 데이터를 dto에 포함에 전달 정합성도 고려해야함
+
+        updateNewHistory(stock.getFlowCode(), nickname);
+
+        BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeight(stockDto.getGoldWeight(), stockDto.getMaterialName().toUpperCase());
+
+        AccountDto.updateCurrentBalance dto = AccountDto.updateCurrentBalance.builder()
+                .eventId(UUID.randomUUID().toString())
+                .tenantId(tenantId)
+                .saleType("SALE")
+                .type("STORE")
+                .id(storeId)
+                .name(storeName)
+                .goldBalance(pureGoldWeight)
+                .moneyBalance(stock.getTotalStoneLaborCost())
+                .build();
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                kafkaProducer.currentBalanceUpdate(dto);
+            }
+        });
     }
 
     // 재고 -> 판매
@@ -96,7 +126,7 @@ public class SaleService {
         String nickname = jwtUtil.getNickname(accessToken);
 
         Stock stock = stockRepository.findByFlowCode(flowCode)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));;
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
         if (saleItemRepository.existsByStock(stock)) {
             return;
         }
@@ -115,13 +145,13 @@ public class SaleService {
         Long storeId = stock.getStoreId();
         String storeName = stock.getStoreName();
 
-        createNewSale(nickname, stock, saleDate, storeId, storeName);
+        createNewSale(stock, saleDate, storeId, storeName);
 
         stock.updateOrderStatus(OrderStatus.SALE);
         stock.updateStockNote(stockDto.getStockNote(), stockDto.getMainStoneNote(), stockDto.getAssistanceStoneNote());
         stock.getProduct().updateProductWeightAndSize(stockDto.getProductSize(), new BigDecimal(stockDto.getGoldWeight()), new BigDecimal(stockDto.getStoneWeight()));
 
-        updateNewHistory(stock.getFlowCode(), nickname, OrderStatus.STOCK.name());
+        updateNewHistory(stock.getFlowCode(), nickname);
 
         // 별도 정산 로직에서 Kafka를 통해 갱신 데이터를 dto에 포함에 전달 정합성도 고려해야함
     }
@@ -132,11 +162,11 @@ public class SaleService {
             throw new IllegalStateException("이미 등록된 요청입니다.");
         });
 
-        String nickname = jwtUtil.getNickname(accessToken);
+        String tenantId = jwtUtil.getTenantId(accessToken);
 
         LocalDateTime saleDate = LocalDateTime.now();
-        Long storeId = saleDto.getStoreId();
-        String storeName = saleDto.getStoreName();
+        Long storeId = saleDto.getId();
+        String storeName = saleDto.getName();
 
         Sale sale = saleRepository.findByStoreIdAndCreateDate(storeId, saleDate)
                 .orElseGet(() -> {
@@ -155,37 +185,37 @@ public class SaleService {
                     }
                 });
 
-        final Long snapTotalPay = saleDto.getTotalPay();
+        final Integer cashAmount = saleDto.getPayAmount();
         final String material = saleDto.getMaterial();
-        final BigDecimal snapTotalWeight = saleDto.getTotalWeight();
+        final BigDecimal snapTotalWeight = saleDto.getGoldWeight();
         final String note = saleDto.getSaleNote();
 
         SaleStatus saleStatus;
         try {
-            saleStatus = SaleStatus.valueOf(saleDto.getType());
+            saleStatus = SaleStatus.valueOf(saleDto.getOrderStatus());
         } catch (IllegalArgumentException e) {
-            saleStatus = SaleStatus.fromDisplayName(saleDto.getType())
-                    .orElseThrow(() -> new IllegalArgumentException("Unknown payment type: " + saleDto.getType()));
+            saleStatus = SaleStatus.fromDisplayName(saleDto.getOrderStatus())
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown payment type: " + saleDto.getOrderStatus()));
         }
 
         SalePayment payment = switch (saleStatus) {
             case PAYMENT -> SalePayment.payment(
                     material, idempKey, note,
-                    snapTotalPay,
+                    cashAmount,
                     snapTotalWeight
             );
             case WG -> SalePayment.wg(
                     material, idempKey, note,
-                    snapTotalPay,
+                    cashAmount,
                     snapTotalWeight
             );
             case PAYMENT_TO_BANK -> SalePayment.paymentBank(
                     material, idempKey, note,
-                    snapTotalPay
+                    cashAmount
             );
             case DISCOUNT -> SalePayment.discount(
                     material, idempKey, note,
-                    snapTotalPay,
+                    cashAmount,
                     snapTotalWeight
             );
             default -> throw new IllegalArgumentException("Unsupported payment type: " + saleStatus);
@@ -194,7 +224,23 @@ public class SaleService {
         sale.addPayment(payment);
         salePaymentRepository.save(payment);
 
-        // 카프카를 통해 재무 서버에 메시지
+        AccountDto.updateCurrentBalance dto = AccountDto.updateCurrentBalance.builder()
+                .eventId(UUID.randomUUID().toString())
+                .tenantId(tenantId)
+                .saleType(saleDto.getOrderStatus())
+                .type("STORE")
+                .id(storeId)
+                .name(storeName)
+                .goldBalance(snapTotalWeight)
+                .moneyBalance(cashAmount)
+                .build();
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                kafkaProducer.currentBalanceUpdate(dto);
+            }
+        });
     }
 
     //반품 로직 -> 제품은 다시 재고로, 결제는 다시 원복 -> 마지막 결제일의 경우?
@@ -232,7 +278,6 @@ public class SaleService {
                 stockRepository.save(stock);
 
                 //별도 정산 로직에서 Kafka를 통해 갱신 데이터를 dto에 포함에 전달 정합성도 고려해야함
-
                 cleanupEmptySaleIfNeeded(sale);
             }
         }
@@ -242,7 +287,7 @@ public class SaleService {
     //라벨 출력 기능
 
 
-    private void createNewSale(String nickname, Stock stock, LocalDateTime saleDate, Long storeId, String storeName) {
+    private void createNewSale(Stock stock, LocalDateTime saleDate, Long storeId, String storeName) {
         Sale sale = saleRepository.findByStoreIdAndCreateDate(storeId, saleDate)
                 .orElseGet(() -> {
                     try {
@@ -254,7 +299,6 @@ public class SaleService {
                                 .build();
                         return saleRepository.saveAndFlush(newSale);
                     } catch (DataIntegrityViolationException dup) {
-                        // 동시 생성 충돌(UK_SALE_STORE_DATE) 시 재조회
                         return saleRepository.findByStoreIdAndCreateDate(storeId, saleDate)
                                 .orElseThrow(() -> dup);
                     }
@@ -270,15 +314,15 @@ public class SaleService {
         saleItemRepository.save(saleItem);
     }
 
-    private void updateNewHistory(Long flowCode, String nickname, String status) {
+    private void updateNewHistory(Long flowCode, String nickname) {
         StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         StatusHistory statusHistory = StatusHistory.phaseChange(
                 flowCode,
                 lastHistory.getSourceType(),
-                BusinessPhase.valueOf(lastHistory.getFromValue()),
-                BusinessPhase.valueOf(status),
+                BusinessPhase.valueOf(lastHistory.getToValue()),
+                BusinessPhase.SALE,
                 nickname
         );
 
