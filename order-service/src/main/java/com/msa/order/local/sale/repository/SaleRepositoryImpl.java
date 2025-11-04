@@ -1,6 +1,7 @@
 package com.msa.order.local.sale.repository;
 
 import com.msa.common.global.util.CustomPage;
+import com.msa.order.local.sale.entity.dto.QSaleDto_SaleDetailDto;
 import com.msa.order.local.sale.entity.dto.SaleDto;
 import com.msa.order.local.sale.entity.dto.SaleRow;
 import com.querydsl.core.BooleanBuilder;
@@ -57,29 +58,29 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
     }
 
     public List<SaleDto.SaleDetailDto> findSalePast(Long storeId, Long productId, String materialName) {
-        return query.select(Projections.constructor(SaleDto.SaleDetailDto.class,
-                        stock.flowCode,
-                        sale.createDate,
-                        stock.product.productName,
-                        stock.product.materialName,
-                        stock.product.colorName,
-                        stock.stockMainStoneNote,
-                        stock.stockAssistanceStoneNote,
-                        stock.product.size,
-                        stock.stockNote,
-                        stock.product.goldWeight,
-                        stock.product.stoneWeight,
-                        Expressions.nullExpression(Integer.class), // mainStoneQuantity
-                        Expressions.nullExpression(Integer.class), // assistanceStoneQuantity
-                        stock.product.productLaborCost,
-                        stock.product.productAddLaborCost,
-                        stock.stoneMainLaborCost,
-                        stock.stoneAssistanceLaborCost,
-                        stock.stoneAddLaborCost,
-                        stock.product.assistantStone,
-                        stock.product.assistantStoneName,
-                        stock.product.assistantStoneCreateAt,
-                        sale.storeName
+        return query.select(new QSaleDto_SaleDetailDto(
+                    stock.flowCode,
+                    sale.createDate.stringValue(),
+                    stock.product.productName,
+                    stock.product.materialName,
+                    stock.product.colorName,
+                    stock.stockMainStoneNote,
+                    stock.stockAssistanceStoneNote,
+                    stock.product.size,
+                    stock.stockNote,
+                    stock.product.goldWeight,
+                    stock.product.stoneWeight,
+                    Expressions.nullExpression(Integer.class), // mainStoneQuantity
+                    Expressions.nullExpression(Integer.class), // assistanceStoneQuantity
+                    stock.product.productLaborCost,
+                    stock.product.productAddLaborCost,
+                    stock.stoneMainLaborCost,
+                    stock.stoneAssistanceLaborCost,
+                    stock.stoneAddLaborCost,
+                    stock.product.assistantStone,
+                    stock.product.assistantStoneName,
+                    stock.product.assistantStoneCreateAt.stringValue(),
+                    sale.storeName
                 ))
                 .from(sale)
                 .join(sale.items, saleItem)
@@ -98,6 +99,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
 
         BooleanBuilder searchBuilder = getSearchBuilder(condition.getInput());
         BooleanExpression createAtAndEndAt = getCreateAtAndEndAt(condition.getStartAt(), condition.getEndAt());
+
         BooleanBuilder materialBuilder = new BooleanBuilder();
         if (StringUtils.hasText(condition.getMaterial())) {
             materialBuilder.and(stock.product.materialName.containsIgnoreCase(condition.getMaterial()));
@@ -121,6 +123,16 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
         NumberExpression<Integer> sumMainLabor = mainLabor.sum().coalesce(0);
         NumberExpression<Integer> sumAsstLabor = asstLabor.sum().coalesce(0);
 
+        NumberExpression<BigDecimal> baseGoldWeight = stock.product.goldWeight.coalesce(BigDecimal.ZERO);
+        NumberExpression<BigDecimal> pureGoldWeight = new CaseBuilder()
+                .when(stock.product.materialName.equalsIgnoreCase("14K"))
+                .then(baseGoldWeight.multiply(new BigDecimal("0.585"))) // 14K = 58.5%
+                .when(stock.product.materialName.equalsIgnoreCase("18K"))
+                .then(baseGoldWeight.multiply(new BigDecimal("0.750"))) // 18K = 75%
+                .when(stock.product.materialName.equalsIgnoreCase("24K"))
+                .then(baseGoldWeight.multiply(new BigDecimal("0.999"))) // 24K = 99.9%
+                .otherwise(new BigDecimal("0.000"));
+
         return query.select(Projections.constructor(
                     SaleRow.class,
                     sale.createDate,                          // createAt
@@ -132,11 +144,13 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                     stock.product.productName,                      // productName
                     stock.product.materialName,              // materialName
                     stock.product.colorName,                 // colorName
-                    stock.stockNote.concat("\n").concat(stock.stockMainStoneNote).concat(" + ").concat(stock.stockAssistanceStoneNote), // note
+                    stock.stockNote.coalesce("").concat("\n")
+                            .concat(stock.stockMainStoneNote.coalesce("")).concat("\n")
+                            .concat(stock.stockAssistanceStoneNote.coalesce("")),
                     stock.product.assistantStone, // assistantStone
                     stock.product.assistantStoneName, // assistantStoneName
                     stock.product.goldWeight.add(stock.product.stoneWeight).coalesce(BigDecimal.ZERO), // totalWeight
-                    stock.product.goldWeight.coalesce(BigDecimal.ZERO), //goldWeight
+                    pureGoldWeight, //goldWeight
                     stock.product.productLaborCost.add(stock.product.productAddLaborCost), // totalProductLaborCost
                     sumMainLabor,                         // mainStoneCost
                     sumAsstLabor,                         // assistanceStoneCost
