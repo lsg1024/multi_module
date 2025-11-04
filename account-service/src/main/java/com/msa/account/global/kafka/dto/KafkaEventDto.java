@@ -1,7 +1,6 @@
 package com.msa.account.global.kafka.dto;
 
 import com.msa.account.global.domain.dto.GoldHarryDto;
-import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,5 +20,18 @@ public class KafkaEventDto {
             this.goldHarryId = goldHarryId;
             this.goldHarryDto = goldHarryDto;
         }
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class updateCurrentBalance {
+        private String eventId;
+        private String tenantId;
+        private String saleType; // sale or 결제...
+        private String type; // store or factory
+        private Long id;
+        private String name;
+        private String goldBalance;
+        private String moneyBalance;
     }
 }
