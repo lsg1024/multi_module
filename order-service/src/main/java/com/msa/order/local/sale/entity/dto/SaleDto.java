@@ -10,22 +10,22 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
 
 public class SaleDto {
 
     @Getter
     @NoArgsConstructor
     public static class Request {
-        private Long storeId;
-        private String storeName;
+        private Long id;
+        private String name;
         @NotBlank(message = "필수 입력값 입니다.")
-        private String type;
+        private String orderStatus;
         private String material;
         private String saleNote;
-        @Digits(integer=18, fraction=3) @PositiveOrZero
-        private BigDecimal totalWeight;
-        private Long totalPay;
+        @Digits(integer=18, fraction=3)
+        @PositiveOrZero
+        private BigDecimal goldWeight;
+        private Integer payAmount;
     }
 
     @Getter
@@ -43,7 +43,7 @@ public class SaleDto {
     @NoArgsConstructor
     public static class SaleDetailDto {
         private Long flowCode;
-        private OffsetDateTime saleCreateAt;
+        private String saleCreateAt;
         private String productName;
         private String productMaterial;
         private String productColor;
@@ -62,10 +62,11 @@ public class SaleDto {
         private Integer addStoneLaborCost;
         private Boolean assistantStone;
         private String assistantStoneName;
+        private String assistantStoneCreateAt;
         private String storeName;
 
         @QueryProjection
-        public SaleDetailDto(Long flowCode, OffsetDateTime saleCreateAt, String productName, String productMaterial, String productColor, String stockMainStoneNote, String stockAssistanceStoneNote, String productSize, String stockNote, BigDecimal goldWeight, BigDecimal stoneWeight, Integer mainStoneQuantity, Integer assistanceStoneQuantity, Integer productLaborCost, Integer productAddLaborCost, Integer mainStoneLaborCost, Integer assistanceStoneLaborCost, Integer addStoneLaborCost, Boolean assistantStone, String assistantStoneName, String storeName) {
+        public SaleDetailDto(Long flowCode, String saleCreateAt, String productName, String productMaterial, String productColor, String stockMainStoneNote, String stockAssistanceStoneNote, String productSize, String stockNote, BigDecimal goldWeight, BigDecimal stoneWeight, Integer mainStoneQuantity, Integer assistanceStoneQuantity, Integer productLaborCost, Integer productAddLaborCost, Integer mainStoneLaborCost, Integer assistanceStoneLaborCost, Integer addStoneLaborCost, Boolean assistantStone, String assistantStoneName, String assistantStoneCreateAt, String storeName) {
             this.flowCode = flowCode;
             this.saleCreateAt = saleCreateAt;
             this.productName = productName;
@@ -86,6 +87,7 @@ public class SaleDto {
             this.addStoneLaborCost = addStoneLaborCost;
             this.assistantStone = assistantStone;
             this.assistantStoneName = assistantStoneName;
+            this.assistantStoneCreateAt = assistantStoneCreateAt;
             this.storeName = storeName;
         }
     }
