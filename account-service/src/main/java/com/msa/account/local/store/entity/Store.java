@@ -1,12 +1,12 @@
 package com.msa.account.local.store.entity;
 
-import com.msa.account.local.store.dto.StoreDto;
 import com.msa.account.global.domain.dto.AdditionalOptionDto;
 import com.msa.account.global.domain.dto.AddressDto;
 import com.msa.account.global.domain.dto.CommonOptionDto;
 import com.msa.account.global.domain.entity.Address;
 import com.msa.account.global.domain.entity.CommonOption;
 import com.msa.account.global.domain.entity.GoldHarry;
+import com.msa.account.local.store.dto.StoreDto;
 import com.msa.common.global.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -16,6 +16,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.SQLDelete;
+
+import java.math.BigDecimal;
 
 @Getter
 @Entity
@@ -45,6 +47,13 @@ public class Store extends BaseEntity {
     private boolean storeDefault = false;
     @Column(name = "STORE_DELETED", nullable = false)
     private boolean storeDeleted = false;
+
+    @Column(name = "EVENT_ID", nullable = false, unique = true, updatable = false)
+    private String eventId;
+    @Column(name = "CURRENT_GOLD_BALANCE", nullable = false, precision = 10, scale = 3)
+    private BigDecimal currentGoldBalance = BigDecimal.ZERO;
+    @Column(name = "CURRENT_MONEY_BALANCE", nullable = false)
+    private Long currentMoneyBalance = 0L;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "ADDRESS_ID")
@@ -96,6 +105,12 @@ public class Store extends BaseEntity {
 
     public void updateAdditionalOption(AdditionalOptionDto.AdditionalOptionInfo optionInfo) {
         this.additionalOption.update(optionInfo);
+    }
+
+    public void updateBalance(String eventId, BigDecimal goldAmount, Long moneyAmount) {
+        this.eventId = eventId;
+        this.currentGoldBalance = this.currentGoldBalance.add(goldAmount);
+        this.currentMoneyBalance += moneyAmount;
     }
 
     public boolean isNameChanged(String storeName) {

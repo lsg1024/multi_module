@@ -55,7 +55,7 @@ public class KafkaStockService {
         Stock stock = stockRepository.findByFlowCode(stockDto.getFlowCode())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        if (stock.getOrderStatus() != OrderStatus.NORMAL) {
+        if (stock.getOrderStatus() != OrderStatus.WAIT) {
             return;
         }
 
@@ -149,7 +149,7 @@ public class KafkaStockService {
                     stock.getFlowCode(),
                     lastHistory.getSourceType(),
                     lastHistory.getPhase(),
-                    BusinessPhase.UPDATE,
+                    BusinessPhase.STOCK,
                     stockDto.getNickname()
             );
 

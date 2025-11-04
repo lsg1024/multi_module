@@ -245,7 +245,7 @@ public class KafkaOrderService {
                     order.getFlowCode(),
                     lastHistory.getSourceType(),
                     lastHistory.getPhase(),
-                    BusinessPhase.UPDATE,
+                    BusinessPhase.ORDER,
                     updateRequest.getNickname()
             );
             statusHistoryRepository.save(statusHistory);

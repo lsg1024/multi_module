@@ -3,6 +3,7 @@ package com.msa.account.local.store.repository;
 
 import com.msa.account.global.domain.entity.OptionLevel;
 import com.msa.account.local.store.entity.Store;
+import com.msa.account.local.transaction.domain.dto.TransactionDto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -29,4 +30,9 @@ public interface StoreRepository extends JpaRepository<Store, Long>, CustomStore
             "from Store s " +
             "where s.storeId = :storeId")
     OptionLevel findByCommonOptionOptionLevel(@Param("storeId") Long storeId);
+
+    @Query("select s.currentGoldBalance, s.currentMoneyBalance from Store s " +
+            "where s.storeId= :storeId " +
+            "and s.storeName= :storeName")
+    TransactionDto findByStoreIdAndStoreName(@Param("storeId") Long storeId, @Param("storeName") String storeName);
 }

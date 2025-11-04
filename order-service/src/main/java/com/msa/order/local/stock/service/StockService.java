@@ -179,7 +179,7 @@ public class StockService {
                 stock.getFlowCode(),
                 lastHistory.getSourceType(),
                 lastHistory.getPhase(),
-                BusinessPhase.UPDATE,
+                BusinessPhase.STOCK,
                 nickname
         );
 

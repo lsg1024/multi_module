@@ -18,8 +18,6 @@ public class StoneUtil {
         return (s == null || s.isBlank()) ? null : Long.valueOf(s);
     }
 
-    public static int nvl(Integer v) { return v == null ? 0 : v; }
-
     public static boolean isChanged(OrderStone os, StoneDto.StoneInfo s) {
         if (!Objects.equals(os.getOriginStoneId(), parseLongOrNull(s.getStoneId()))) return true;
         if (!Objects.equals(os.getOriginStoneName(), s.getStoneName())) return true;

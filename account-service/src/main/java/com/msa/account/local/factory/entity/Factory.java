@@ -1,11 +1,11 @@
 package com.msa.account.local.factory.entity;
 
-import com.msa.account.local.factory.dto.FactoryDto;
 import com.msa.account.global.domain.dto.AddressDto;
 import com.msa.account.global.domain.dto.CommonOptionDto;
 import com.msa.account.global.domain.entity.Address;
 import com.msa.account.global.domain.entity.CommonOption;
 import com.msa.account.global.domain.entity.GoldHarry;
+import com.msa.account.local.factory.dto.FactoryDto;
 import com.msa.common.global.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -15,6 +15,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.SQLDelete;
+
+import java.math.BigDecimal;
 
 @Getter
 @Entity
@@ -43,6 +45,13 @@ public class Factory extends BaseEntity {
     private String factoryNote;
     @Column(name = "FACTORY_DELETED", nullable = false)
     private boolean factoryDeleted = false;
+
+    @Column(name = "EVENT_ID", nullable = false, unique = true, updatable = false)
+    private String eventId;
+    @Column(name = "CURRENT_GOLD_BALANCE", nullable = false, precision = 10, scale = 3)
+    private BigDecimal currentGoldBalance = BigDecimal.ZERO;
+    @Column(name = "CURRENT_MONEY_BALANCE", nullable = false)
+    private Long currentMoneyBalance = 0L;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "ADDRESS_ID")
@@ -82,6 +91,12 @@ public class Factory extends BaseEntity {
     public void updateCommonOption(CommonOptionDto.CommonOptionInfo optionInfo, GoldHarry goldHarry) {
         this.commonOption.updateTradeTypeAndOptionLevel(optionInfo);
         this.commonOption.updateGoldHarry(goldHarry);
+    }
+
+    public void updateBalance(String eventId, BigDecimal goldAmount, Long moneyAmount) {
+        this.eventId = eventId;
+        this.currentGoldBalance = this.currentGoldBalance.add(goldAmount);
+        this.currentMoneyBalance += moneyAmount;
     }
 
     public boolean isNameChanged(String factoryName) {

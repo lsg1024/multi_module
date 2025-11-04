@@ -1,0 +1,35 @@
+package com.msa.order.global.kafka.dto;
+
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+
+public class AccountDto {
+
+    @Getter
+    @NoArgsConstructor
+    public static class updateCurrentBalance {
+        private String eventId;
+        private String tenantId;
+        private String saleType; // sale or 결제...
+        private String type; // store or factory
+        private Long id;
+        private String name;
+        private BigDecimal goldBalance;
+        private Integer moneyBalance;
+
+        @Builder
+        public updateCurrentBalance(String eventId, String tenantId, String saleType, String type, Long id, String name, BigDecimal goldBalance, Integer moneyBalance) {
+            this.eventId = eventId;
+            this.tenantId = tenantId;
+            this.saleType = saleType;
+            this.type = type;
+            this.id = id;
+            this.name = name;
+            this.goldBalance = goldBalance;
+            this.moneyBalance = moneyBalance;
+        }
+    }
+}

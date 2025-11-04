@@ -3,7 +3,7 @@ package com.msa.order.global.kafka;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msa.common.global.tenant.TenantContext;
 import com.msa.common.global.util.AuditorHolder;
-import com.msa.order.global.exception.KafkaProcessingException;
+import com.msa.common.global.exception.KafkaProcessingException;
 import com.msa.order.global.kafka.dto.KafkaStockRequest;
 import com.msa.order.global.kafka.dto.OrderAsyncRequested;
 import com.msa.order.global.kafka.dto.OrderUpdateRequest;
@@ -74,7 +74,7 @@ public class KafkaConsumer {
         } catch (Exception e) {
             log.error("Consume failed. payload={}, err={}", message, e.getMessage(), e);
             throw new IllegalStateException("Kafka consume error", e);
-        }finally {
+        } finally {
             AuditorHolder.clear();
         }
     }
