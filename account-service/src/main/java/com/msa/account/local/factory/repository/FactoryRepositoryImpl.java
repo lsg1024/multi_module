@@ -17,6 +17,7 @@ import java.util.Optional;
 import static com.msa.account.global.domain.entity.QAddress.address;
 import static com.msa.account.global.domain.entity.QCommonOption.commonOption;
 import static com.msa.account.global.domain.entity.QGoldHarry.goldHarry;
+import static com.msa.account.local.factory.domain.entity.QFactory.factory;
 
 public class FactoryRepositoryImpl implements CustomFactoryRepository {
 
