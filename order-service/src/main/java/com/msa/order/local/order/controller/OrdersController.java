@@ -46,6 +46,14 @@ public class OrdersController {
         return ResponseEntity.ok(ApiResponse.success(orderDetail));
     }
 
+    @GetMapping("/orders/stock-register")
+    public ResponseEntity<ApiResponse<List<StockDto.ResponseDetail>>> getOrderRegisterStock(
+            @RequestParam(name = "ids") List<Long> flowCodes) {
+        List<StockDto.ResponseDetail> orderRegisterStock = ordersService.getOrderRegisterStock(flowCodes);
+
+        return ResponseEntity.ok(ApiResponse.success(orderRegisterStock));
+    }
+
     //복수 값
     @GetMapping("/orders") // URL 경로는 고정 -> 거래처, 상점 파라미터 추가 필요
     public ResponseEntity<ApiResponse<CustomPage<OrderDto.Response>>> getOrders(
@@ -232,15 +240,6 @@ public class OrdersController {
             @RequestParam(name = "order_status") String orderStatus) {
         List<String> filterColors = ordersService.getFilterColors(startAt, endAt, factoryName, storeName, setTypeName, colorName, orderStatus);
         return ResponseEntity.ok(ApiResponse.success(filterColors));
-    }
-
-    // 주문 -> 재고 등록 조회
-    @GetMapping("/orders/stock-register")
-    public ResponseEntity<ApiResponse<List<StockDto.StockRegisterResponse>>> getOrderRegisterStock(
-            @RequestParam(name = "ids") List<Long> flowCodes) {
-        List<StockDto.StockRegisterResponse> orderRegisterStock = ordersService.getOrderRegisterStock(flowCodes);
-
-        return ResponseEntity.ok(ApiResponse.success(orderRegisterStock));
     }
 
 }

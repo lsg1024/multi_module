@@ -13,7 +13,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
 import java.util.List;
 
 public class StockDto {
@@ -115,70 +114,6 @@ public class StockDto {
         private List<StoneDto.StoneInfo> stoneInfos; // 개당 알수는 직접 수정 불가
     }
 
-
-    @Getter
-    @NoArgsConstructor
-    public static class StockRegisterResponse {
-        private String createAt;
-        private String flowCode;
-        private String storeId;
-        private String storeName;
-        private String storeHarry;
-        private String factoryId;
-        private String factoryName;
-        private String productId;
-        private String productName;
-        private String productSize;
-        private boolean isProductWeightSale;
-        private Integer productPurchaseCost;
-        private Integer productLaborCost;
-        private Integer productAddLaborCost;
-        private String goldWeight;
-        private String stoneWeight;
-        private String materialName;
-        private String colorName;
-        private String orderNote;
-        private String mainStoneNote;
-        private String assistanceStoneNote;
-        private boolean assistantStone;
-        private String assistantStoneId;
-        private String assistantStoneName;
-        private OffsetDateTime assistantStoneCreateAt;
-        private List<StoneDto.StoneInfo> stoneInfos;
-        private Integer stoneAddLaborCost;
-
-        @Builder
-        public StockRegisterResponse(String createAt, String flowCode, String storeId, String storeName, String factoryId, String factoryName, String productId, String productName, String productSize, boolean isProductWeightSale, String storeHarry, Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost, String goldWeight, String stoneWeight, String materialName, String colorName, String orderNote, String mainStoneNote, String assistanceStoneNote, boolean assistantStone, String assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, List<StoneDto.StoneInfo> stoneInfos, Integer stoneAddLaborCost) {
-            this.createAt = createAt;
-            this.flowCode = flowCode;
-            this.storeId = storeId;
-            this.storeName = storeName;
-            this.factoryId = factoryId;
-            this.factoryName = factoryName;
-            this.productId = productId;
-            this.productName = productName;
-            this.productSize = productSize;
-            this.isProductWeightSale = isProductWeightSale;
-            this.stoneAddLaborCost = stoneAddLaborCost;
-            this.storeHarry = storeHarry;
-            this.productPurchaseCost = productPurchaseCost;
-            this.productLaborCost = productLaborCost;
-            this.productAddLaborCost = productAddLaborCost;
-            this.goldWeight = goldWeight;
-            this.stoneWeight = stoneWeight;
-            this.materialName = materialName;
-            this.colorName = colorName;
-            this.orderNote = orderNote;
-            this.mainStoneNote = mainStoneNote;
-            this.assistanceStoneNote = assistanceStoneNote;
-            this.assistantStone = assistantStone;
-            this.assistantStoneId = assistantStoneId;
-            this.assistantStoneName = assistantStoneName;
-            this.assistantStoneCreateAt = assistantStoneCreateAt;
-            this.stoneInfos = stoneInfos;
-        }
-    }
-
     @Getter
     @NoArgsConstructor
     public static class StockRegisterRequest {
@@ -211,50 +146,60 @@ public class StockDto {
     @Getter
     @NoArgsConstructor
     public static class ResponseDetail {
-        private String flowCode;
         private String createAt;
+        private String flowCode;
         private String originalProductStatus;
-        private String classificationName;
-        private String productName;
+        private String storeId;
         private String storeName;
+        private String storeGrade;
         private String storeHarry;
+        private String factoryId;
         private String factoryName;
-        private String materialName;
-        private String colorName;
-        private String setTypeName;
-        private String mainStoneNote;
-        private String assistanceStoneNote;
+        private String productId;
+        private String productName;
         private String productSize;
-        private String stockNote;
+        private String colorId;
+        private String colorName;
+        private String materialId;
+        private String materialName;
+        private String note;
+        private boolean isProductWeightSale;
+        private Integer productPurchaseCost;
         private Integer productLaborCost;
         private Integer productAddLaborCost;
-        private Integer productPurchaseCost;
         private String goldWeight;
         private String stoneWeight;
-        private String assistantStoneId;
+        private String mainStoneNote;
+        private String assistanceStoneNote;
         private boolean assistantStone;
+        private String assistantStoneId;
         private String assistantStoneName;
         private String assistantStoneCreateAt;
         private List<StoneDto.StoneInfo> stoneInfos;
         private Integer stoneAddLaborCost;
 
         @Builder
-        public ResponseDetail(String flowCode, String createAt, String originalProductStatus, String classificationName, String productName, String storeName, String storeHarry, String factoryName, String materialName, String colorName, String setTypeName, String mainStoneNote, String assistanceStoneNote, String productSize, String stockNote, Integer productLaborCost, Integer productAddLaborCost, String assistantStoneId, boolean assistantStone, String assistantStoneCreateAt, Integer stoneAddLaborCost, String goldWeight, String stoneWeight, Integer productPurchaseCost, String assistantStoneName, List<StoneDto.StoneInfo> stoneInfos) {
+        public ResponseDetail(String flowCode, String createAt, String originalProductStatus, String storeId, String productName, String storeName, String storeGrade, String storeHarry, String factoryId, String factoryName, String colorId, String materialId, String materialName, String colorName, String productId, String mainStoneNote, String assistanceStoneNote, String productSize, String note, boolean isProductWeightSale, Integer productLaborCost, Integer productAddLaborCost, String assistantStoneId, boolean assistantStone, String assistantStoneCreateAt, Integer stoneAddLaborCost, String goldWeight, String stoneWeight, Integer productPurchaseCost, String assistantStoneName, List<StoneDto.StoneInfo> stoneInfos) {
             this.flowCode = flowCode;
             this.createAt = createAt;
             this.originalProductStatus = originalProductStatus;
-            this.classificationName = classificationName;
+            this.storeId = storeId;
             this.productName = productName;
             this.storeName = storeName;
+            this.storeGrade = storeGrade;
             this.storeHarry = storeHarry;
+            this.factoryId = factoryId;
             this.factoryName = factoryName;
+            this.colorId = colorId;
+            this.materialId = materialId;
             this.materialName = materialName;
             this.colorName = colorName;
-            this.setTypeName = setTypeName;
+            this.productId = productId;
             this.mainStoneNote = mainStoneNote;
             this.assistanceStoneNote = assistanceStoneNote;
             this.productSize = productSize;
-            this.stockNote = stockNote;
+            this.note = note;
+            this.isProductWeightSale = isProductWeightSale;
             this.productLaborCost = productLaborCost;
             this.productAddLaborCost = productAddLaborCost;
             this.assistantStoneId = assistantStoneId;

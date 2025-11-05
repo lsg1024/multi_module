@@ -66,57 +66,70 @@ public class StockService {
 
     // 재고 상세 조회
     @Transactional(readOnly = true)
-    public StockDto.ResponseDetail getDetailStock(Long flowCode) {
-        Stock stock = stockRepository.findByFlowCode(flowCode)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-        StatusHistory statusHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(flowCode)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+    public List<StockDto.ResponseDetail> getDetailStock(List<Long> flowCodes) {
+        List<Stock> stocks = stockRepository.findByFlowCodeIn(flowCodes);
+        List<StatusHistory> statusHistories = statusHistoryRepository.findTopByFlowCodeOrderByIdDescIn(flowCodes);
 
-        List<OrderStone> orderStones = stock.getOrderStones();
+        List<StockDto.ResponseDetail> responseDetails = new ArrayList<>();
+        for (int i = 0; i < stocks.size(); i++) {
+            Stock stock = stocks.get(i);
+            StatusHistory statusHistory = statusHistories.get(i);
 
-        List<StoneDto.StoneInfo> stonesDtos = new ArrayList<>();
-        for (OrderStone orderStone : orderStones) {
-            StoneDto.StoneInfo stoneDto = new StoneDto.StoneInfo(
-                    orderStone.getOriginStoneId().toString(),
-                    orderStone.getOriginStoneName(),
-                    orderStone.getOriginStoneWeight().toPlainString(),
-                    orderStone.getStonePurchaseCost(),
-                    orderStone.getStoneLaborCost(),
-                    orderStone.getStoneAddLaborCost(),
-                    orderStone.getStoneQuantity(),
-                    orderStone.getMainStone(),
-                    orderStone.getIncludeStone()
-            );
-            stonesDtos.add(stoneDto);
+            List<OrderStone> orderStones = stock.getOrderStones();
+
+            List<StoneDto.StoneInfo> stonesDtos = new ArrayList<>();
+            for (OrderStone orderStone : orderStones) {
+                StoneDto.StoneInfo stoneDto = new StoneDto.StoneInfo(
+                        orderStone.getOriginStoneId().toString(),
+                        orderStone.getOriginStoneName(),
+                        orderStone.getOriginStoneWeight().toPlainString(),
+                        orderStone.getStonePurchaseCost(),
+                        orderStone.getStoneLaborCost(),
+                        orderStone.getStoneAddLaborCost(),
+                        orderStone.getStoneQuantity(),
+                        orderStone.getMainStone(),
+                        orderStone.getIncludeStone()
+                );
+                stonesDtos.add(stoneDto);
+            }
+
+            StockDto.ResponseDetail stockDetail = StockDto.ResponseDetail.builder()
+                    .createAt(stock.getCreateDate().toString())
+                    .flowCode(stock.getFlowCode().toString())
+                    .originalProductStatus(statusHistory.getSourceType().getDisplayName())
+                    .storeId(String.valueOf(stock.getStoreId()))
+                    .storeName(stock.getStoreName())
+                    .storeHarry(stock.getStoreHarry().toPlainString())
+                    .storeGrade(stock.getStoreGrade())
+                    .factoryId(String.valueOf(stock.getFactoryId()))
+                    .factoryName(stock.getFactoryName())
+                    .productId(String.valueOf(stock.getProduct().getId()))
+                    .productName(stock.getProduct().getProductName())
+                    .productSize(stock.getProduct().getSize())
+                    .colorId(String.valueOf(stock.getProduct().getColorId()))
+                    .colorName(stock.getProduct().getColorName())
+                    .materialId(String.valueOf(stock.getProduct().getMaterialId()))
+                    .materialName(stock.getProduct().getMaterialName())
+                    .note(stock.getStockNote())
+                    .isProductWeightSale(stock.getProduct().isProductWeightSale())
+                    .productPurchaseCost(stock.getProduct().getProductPurchaseCost())
+                    .productLaborCost(stock.getProduct().getProductLaborCost())
+                    .productAddLaborCost(stock.getProduct().getProductAddLaborCost())
+                    .goldWeight(stock.getProduct().getGoldWeight().toPlainString())
+                    .stoneWeight(stock.getProduct().getStoneWeight().toPlainString())
+                    .mainStoneNote(stock.getStockMainStoneNote())
+                    .assistanceStoneNote(stock.getStockAssistanceStoneNote())
+                    .assistantStone(stock.getProduct().isAssistantStone())
+                    .assistantStoneId(String.valueOf(stock.getProduct().getAssistantStoneId()))
+                    .assistantStoneName(stock.getProduct().getAssistantStoneName())
+                    .assistantStoneCreateAt(String.valueOf(stock.getProduct().getAssistantStoneCreateAt()))
+                    .stoneInfos(stonesDtos)
+                    .stoneAddLaborCost(stock.getStoneAddLaborCost())
+                    .build();
+
+            responseDetails.add(stockDetail);
         }
-
-        return StockDto.ResponseDetail.builder()
-                .flowCode(stock.getFlowCode().toString())
-                .createAt(stock.getCreateDate().toString())
-                .originalProductStatus(statusHistory.getSourceType().getDisplayName())
-                .classificationName(stock.getProduct().getClassificationName())
-                .productName(stock.getProduct().getProductName())
-                .storeName(stock.getStoreName())
-                .storeHarry(String.valueOf(stock.getStoreHarry()))
-                .factoryName(stock.getFactoryName())
-                .materialName(stock.getProduct().getMaterialName())
-                .colorName(stock.getProduct().getColorName())
-                .mainStoneNote(stock.getStockMainStoneNote())
-                .assistanceStoneNote(stock.getStockAssistanceStoneNote())
-                .productSize(stock.getProduct().getSize())
-                .stockNote(stock.getStockNote())
-                .productLaborCost(stock.getProduct().getProductLaborCost())
-                .productAddLaborCost(stock.getProduct().getProductAddLaborCost())
-                .stoneAddLaborCost(stock.getStoneAddLaborCost())
-                .goldWeight(stock.getProduct().getGoldWeight().toPlainString())
-                .stoneWeight(stock.getProduct().getStoneWeight().toPlainString())
-                .productPurchaseCost(stock.getProduct().getProductPurchaseCost())
-                .assistantStone(stock.getProduct().isAssistantStone())
-                .assistantStoneId(String.valueOf(stock.getProduct().getAssistantStoneId()))
-                .assistantStoneName(stock.getProduct().getAssistantStoneName())
-                .assistantStoneCreateAt(String.valueOf(stock.getProduct().getAssistantStoneCreateAt()))
-                .stoneInfos(stonesDtos)
-                .build();
+        return responseDetails;
     }
 
     // 재고 관리  주문, 수리, 대여 관련

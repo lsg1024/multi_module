@@ -22,6 +22,34 @@ public class StockController {
         this.stockService = stockService;
     }
 
+    @GetMapping("/stock")
+    public ResponseEntity<ApiResponse<List<StockDto.ResponseDetail>>> getStockDetail(
+            @RequestParam(name = "ids") List<Long> flowCodes) {
+
+        List<StockDto.ResponseDetail> detailStock = stockService.getDetailStock(flowCodes);
+        return ResponseEntity.ok(ApiResponse.success(detailStock));
+    }
+
+    @GetMapping("/stocks")
+    public ResponseEntity<ApiResponse<CustomPage<StockDto.Response>>> getStocks(
+            @RequestParam(name = "search", required = false) String input,
+            @RequestParam(name = "start") String startAt,
+            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "factory", required = false) String factoryName,
+            @RequestParam(name = "store", required = false) String storeName,
+            @RequestParam(name = "setType", required = false) String setTypeName,
+            @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "sortField", required = false) String sortField,
+            @RequestParam(name = "sortOrder", required = false) String sort,
+            @RequestParam(name = "order_status", required = false) String orderStatus,
+            @PageableDefault(size = 20) Pageable pageable) {
+
+        CustomPage<StockDto.Response> stocks = stockService.getStocks(input, startAt, endAt, factoryName,
+                storeName, setTypeName, colorName, sortField, sort, orderStatus, pageable);
+
+        return ResponseEntity.ok(ApiResponse.success(stocks));
+    }
+
     // 주문 -> 재고
     @PatchMapping("/orders/stock-register")
     public ResponseEntity<ApiResponse<String>> updateOrderToStock(
@@ -54,34 +82,6 @@ public class StockController {
 
         stockService.updateStock(accessToken, flowCode, updateDto);
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
-    }
-
-    @GetMapping("/stock")
-    public ResponseEntity<ApiResponse<StockDto.ResponseDetail>> getStockDetail(
-            @RequestParam(name = "id") Long flowCode) {
-
-        StockDto.ResponseDetail detailStock = stockService.getDetailStock(flowCode);
-        return ResponseEntity.ok(ApiResponse.success(detailStock));
-    }
-
-    @GetMapping("/stocks")
-    public ResponseEntity<ApiResponse<CustomPage<StockDto.Response>>> getStocks(
-            @RequestParam(name = "search", required = false) String input,
-            @RequestParam(name = "start") String startAt,
-            @RequestParam(name = "end") String endAt,
-            @RequestParam(name = "factory", required = false) String factoryName,
-            @RequestParam(name = "store", required = false) String storeName,
-            @RequestParam(name = "setType", required = false) String setTypeName,
-            @RequestParam(name = "color", required = false) String colorName,
-            @RequestParam(name = "sortField", required = false) String sortField,
-            @RequestParam(name = "sortOrder", required = false) String sort,
-            @RequestParam(name = "order_status", required = false) String orderStatus,
-            @PageableDefault(size = 20) Pageable pageable) {
-
-        CustomPage<StockDto.Response> stocks = stockService.getStocks(input, startAt, endAt, factoryName,
-                storeName, setTypeName, colorName, sortField, sort, orderStatus, pageable);
-
-        return ResponseEntity.ok(ApiResponse.success(stocks));
     }
 
     @GetMapping("/stocks/rental/history")

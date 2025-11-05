@@ -653,11 +653,15 @@ public class OrdersService {
     }
 
     @Transactional(readOnly = true)
-    public List<StockDto.StockRegisterResponse> getOrderRegisterStock(List<Long> flowCodes) {
-        List<Orders> withDetailsByFlowCodeIn = ordersRepository.findWithDetailsByFlowCodeIn(flowCodes);
+    public List<StockDto.ResponseDetail> getOrderRegisterStock(List<Long> flowCodes) {
+        List<Orders> orders = ordersRepository.findWithDetailsByFlowCodeIn(flowCodes);
+        List<StatusHistory> statusHistories = statusHistoryRepository.findTopByFlowCodeOrderByIdDescIn(flowCodes);
 
-        List<StockDto.StockRegisterResponse> responseDetails = new ArrayList<>();
-        for (Orders order : withDetailsByFlowCodeIn) {
+        List<StockDto.ResponseDetail> responseDetails = new ArrayList<>();
+        for (int i = 0; i < orders.size(); i++) {
+            Orders order = orders.get(i);
+            StatusHistory statusHistory = statusHistories.get(i);
+
             OrderProduct orderProduct = order.getOrderProduct();
             List<OrderStone> orderStones = order.getOrderStones();
 
@@ -677,33 +681,38 @@ public class OrdersService {
                 stonesDtos.add(stoneDto);
             }
 
-            StockDto.StockRegisterResponse orderDetail = StockDto.StockRegisterResponse.builder()
+            StockDto.ResponseDetail orderDetail = StockDto.ResponseDetail.builder()
                     .createAt(order.getCreateAt().toString())
                     .flowCode(order.getFlowCode().toString())
+                    .originalProductStatus(statusHistory.getSourceType().getDisplayName())
                     .storeId(order.getStoreId().toString())
                     .storeName(order.getStoreName())
                     .storeHarry(order.getStoreHarry().toPlainString())
+                    .storeGrade(order.getStoreGrade())
                     .factoryId(order.getFactoryId().toString())
                     .factoryName(order.getFactoryName())
                     .productId(orderProduct.getProductId().toString())
                     .productName(orderProduct.getProductName())
                     .productSize(orderProduct.getProductSize())
+                    .colorId(String.valueOf(orderProduct.getColorId()))
+                    .colorName(orderProduct.getColorName())
+                    .materialId(String.valueOf(orderProduct.getMaterialId()))
+                    .materialName(orderProduct.getMaterialName())
+                    .note(order.getOrderNote())
+                    .isProductWeightSale(order.getOrderProduct().isProductWeightSale())
                     .productPurchaseCost(orderProduct.getProductPurchaseCost())
                     .productLaborCost(orderProduct.getProductLaborCost())
                     .productAddLaborCost(orderProduct.getProductAddLaborCost())
-                    .stoneAddLaborCost(orderProduct.getStoneAddLaborCost())
                     .goldWeight(String.valueOf(orderProduct.getGoldWeight()))
                     .stoneWeight(String.valueOf(orderProduct.getStoneWeight()))
-                    .materialName(orderProduct.getMaterialName())
-                    .colorName(orderProduct.getColorName())
-                    .orderNote(order.getOrderNote())
                     .mainStoneNote(orderProduct.getOrderMainStoneNote())
                     .assistanceStoneNote(orderProduct.getOrderAssistanceStoneNote())
                     .assistantStone(orderProduct.isAssistantStone())
                     .assistantStoneId(String.valueOf(orderProduct.getAssistantStoneId()))
                     .assistantStoneName(orderProduct.getAssistantStoneName())
-                    .assistantStoneCreateAt(orderProduct.getAssistantStoneCreateAt())
+                    .assistantStoneCreateAt(String.valueOf(orderProduct.getAssistantStoneCreateAt()))
                     .stoneInfos(stonesDtos)
+                    .stoneAddLaborCost(order.getOrderProduct().getStoneAddLaborCost())
                     .build();
 
             responseDetails.add(orderDetail);
