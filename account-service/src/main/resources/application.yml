@@ -26,10 +26,7 @@ spring:
         format_sql: true
 
   flyway:
-    enabled: true
-    baseline-on-migrate: true
-    baseline-version: 1
-    locations: classpath:db/migration
+    enabled: false
 
 logging:
   level:
@@ -37,6 +34,14 @@ logging:
     org.hibernate.orm.jdbc.bind: trace
 
 custom:
+  flyway:
+    business:
+      locations: classpath:db/migration
+      baseline-on-migrate: true
+    batch:
+      locations: classpath:db/migration_batch
+      baseline-on-migrate: true
+
   jpa:
     entity-scan-packages:
       - com.msa.account.local.store.domain.entity
