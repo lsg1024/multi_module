@@ -41,14 +41,14 @@ public class AuthController {
         String[] tokens = refreshTokenService.reissueRefreshToken(refreshToken, ACCESS_TTL, REFRESH_TTL);
 
         response.setHeader("Authorization", "Bearer " + tokens[0]);
-        response.addCookie(createCookie("refreshToken", tokens[1], REFRESH_TTL));
+        response.addCookie(createCookie(tokens[1], REFRESH_TTL));
 
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
-    private Cookie createCookie(String key, String value, Long TTL) {
-        Cookie cookie = new Cookie(key, value);
-        cookie.setMaxAge(TTL.intValue());
+    private Cookie createCookie(String value, Long TTL) {
+        Cookie cookie = new Cookie("refreshToken", value);
+        cookie.setMaxAge((int) (TTL / 1000));
         cookie.setPath("/");
         cookie.setHttpOnly(true);
         return cookie;
