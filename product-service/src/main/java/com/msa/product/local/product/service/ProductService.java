@@ -175,7 +175,7 @@ public class ProductService {
 
         List<ProductStoneDto.Response> productStones = productStoneRepository.findProductStones(productId);
         List<ProductImageDto.Response> images = productImageRepository.findImagesByProductId(productId);
-        List<ProductWorkGradePolicyGroupDto.Response> group = customProductWorkGradePolicyGroupRepository.findByWorkGradePolicyGroupByProductId(productId);
+        List<ProductWorkGradePolicyGroupDto.Response> group = customProductWorkGradePolicyGroupRepository.findByWorkGradePolicyGroupByProductIdOrderById(productId);
 
         productDetail.setProductStoneDtos(productStones);
         productDetail.setProductImageDtos(images);
