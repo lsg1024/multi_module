@@ -148,20 +148,19 @@ public class KafkaOrderService {
             statusHistory = StatusHistory.phaseChange(
                     order.getFlowCode(),
                     lastHistory.getSourceType(),
-                    lastHistory.getPhase(),
+                    BusinessPhase.valueOf(lastHistory.getToValue()),
                     BusinessPhase.valueOf(evt.getOrderStatus()),
                     evt.getNickname()
             );
             statusHistoryRepository.save(statusHistory);
 
         } catch (Exception e) {
-            log.error("Async failed. orderId={}, err={}", evt.getFlowCode(), e.getMessage(), e);
             order.updateProductStatus(ProductStatus.RECEIPT_FAILED);
 
             statusHistory = StatusHistory.phaseChange(
                     order.getFlowCode(),
                     lastHistory.getSourceType(),
-                    lastHistory.getPhase(),
+                    BusinessPhase.valueOf(lastHistory.getToValue()),
                     BusinessPhase.valueOf(evt.getOrderStatus()),
                     evt.getNickname()
             );
@@ -244,7 +243,7 @@ public class KafkaOrderService {
             statusHistory = StatusHistory.phaseChange(
                     order.getFlowCode(),
                     lastHistory.getSourceType(),
-                    lastHistory.getPhase(),
+                    BusinessPhase.valueOf(lastHistory.getToValue()),
                     BusinessPhase.ORDER,
                     updateRequest.getNickname()
             );
