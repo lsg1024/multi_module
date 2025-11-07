@@ -148,7 +148,7 @@ public class KafkaStockService {
             statusHistory = StatusHistory.phaseChange(
                     stock.getFlowCode(),
                     lastHistory.getSourceType(),
-                    lastHistory.getPhase(),
+                    BusinessPhase.valueOf(lastHistory.getToValue()),
                     BusinessPhase.STOCK,
                     stockDto.getNickname()
             );
@@ -156,12 +156,10 @@ public class KafkaStockService {
             statusHistoryRepository.save(statusHistory);
 
         } catch (Exception e) {
-            log.error("Async failed. orderId={}, err={}", stockDto.getFlowCode(), e.getMessage(), e);
-
             statusHistory = StatusHistory.phaseChange(
                     stock.getFlowCode(),
                     lastHistory.getSourceType(),
-                    lastHistory.getPhase(),
+                    BusinessPhase.valueOf(lastHistory.getToValue()),
                     BusinessPhase.FAIL,
                     stockDto.getNickname()
             );

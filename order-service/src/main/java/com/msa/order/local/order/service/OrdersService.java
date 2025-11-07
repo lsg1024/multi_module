@@ -509,7 +509,7 @@ public class OrdersService {
             StatusHistory statusHistory = StatusHistory.phaseChange(
                     order.getFlowCode(),
                     lastHistory.getSourceType(),
-                    BusinessPhase.valueOf(lastHistory.getFromValue()),
+                    BusinessPhase.valueOf(lastHistory.getToValue()),
                     BusinessPhase.DELETED,
                     nickname
             );

@@ -167,7 +167,7 @@ public class StockService {
         Stock stock = stockRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        stock.updateStockNote(updateStock.getStockNote(), updateStock.getMainStoneNote(), updateStock.getAssistanceStoneNote());
+        stock.updateStockNote(updateStock.getMainStoneNote(), updateStock.getAssistanceStoneNote(), updateStock.getStockNote());
         stock.getProduct().updateProductCost(updateStock.getProductPurchaseCost(), updateStock.getProductLaborCost(), updateStock.getProductAddLaborCost());
         stock.getProduct().updateProductWeightAndSize(updateStock.getProductSize(), new BigDecimal(updateStock.getGoldWeight()), new BigDecimal(updateStock.getStoneWeight()));
 
@@ -191,7 +191,7 @@ public class StockService {
         StatusHistory statusHistory = StatusHistory.phaseChange(
                 stock.getFlowCode(),
                 lastHistory.getSourceType(),
-                lastHistory.getPhase(),
+                BusinessPhase.valueOf(lastHistory.getToValue()),
                 BusinessPhase.STOCK,
                 nickname
         );
@@ -286,7 +286,7 @@ public class StockService {
         StatusHistory statusHistory = StatusHistory.phaseChange(
                 order.getFlowCode(),
                 lastHistory.getSourceType(),
-                lastHistory.getPhase(),
+                BusinessPhase.valueOf(lastHistory.getToValue()),
                 BusinessPhase.valueOf(orderType),
                 nickname
         );
@@ -431,7 +431,7 @@ public class StockService {
         StatusHistory statusHistory = StatusHistory.phaseChange(
                 stock.getFlowCode(),
                 beforeStatusHistory.getSourceType(),
-                BusinessPhase.valueOf(beforeStatusHistory.getFromValue()),
+                BusinessPhase.valueOf(beforeStatusHistory.getToValue()),
                 BusinessPhase.RENTAL,
                 nickname
         );
@@ -463,7 +463,7 @@ public class StockService {
         StatusHistory deleteStockHistory = StatusHistory.phaseChange(
                 stock.getFlowCode(),
                 lastHistory.getSourceType(),
-                lastHistory.getPhase(),
+                BusinessPhase.valueOf(lastHistory.getToValue()),
                 BusinessPhase.DELETED,
                 nickname
         );
@@ -491,7 +491,7 @@ public class StockService {
         StatusHistory orderStatusHistory = StatusHistory.phaseChange(
                 stock.getFlowCode(),
                 lastHistory.getSourceType(),
-                lastHistory.getPhase(),
+                BusinessPhase.valueOf(lastHistory.getToValue()),
                 BusinessPhase.RETURN,
                 nickname
         );
@@ -516,7 +516,7 @@ public class StockService {
         StatusHistory orderStatusHistory = StatusHistory.phaseChange(
                 stock.getFlowCode(),
                 lastHistory.getSourceType(),
-                lastHistory.getPhase(),
+                BusinessPhase.valueOf(lastHistory.getToValue()),
                 BusinessPhase.STOCK,
                 nickname
         );
