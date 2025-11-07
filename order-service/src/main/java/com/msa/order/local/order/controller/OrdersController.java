@@ -67,7 +67,7 @@ public class OrdersController {
             @RequestParam(name = "color", required = false) String colorName,
             @RequestParam(name = "sortField", required = false) String sortField,
             @RequestParam(name = "sortOrder", required = false) String sort,
-            @RequestParam(name = "order_status") String orderStatus,
+            @RequestParam(name = "order_status", required = false) String orderStatus,
             @PageableDefault(size = 20) Pageable pageable) {
 
         CustomPage<OrderDto.Response> orderProducts = ordersService.getOrderProducts(accessToken, input, startAt, endAt, factoryName,

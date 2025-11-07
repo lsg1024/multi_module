@@ -60,7 +60,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression statusBuilder = getOrdersStatusBuilder(orderCondition);
         BooleanBuilder optionBuilder = getOptionBuilder(orderCondition.getOptionCondition());
 
-        return getResponses(pageable, orderCondition.getSortCondition(), conditionBuilder, statusBuilder, optionBuilder, false);
+        return getResponse(pageable, orderCondition.getSortCondition(), conditionBuilder, statusBuilder, optionBuilder, false);
     }
 
     @Override
@@ -69,7 +69,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression statusBuilder = getOrdersStatusBuilder(orderCondition);
         BooleanBuilder optionBuilder = getOptionBuilder(orderCondition.getOptionCondition());
 
-        return getResponses(pageable, orderCondition.getSortCondition(), conditionBuilder, statusBuilder, optionBuilder, false);
+        return getResponse(pageable, orderCondition.getSortCondition(), conditionBuilder, statusBuilder, optionBuilder, false);
     }
 
     @Override
@@ -78,7 +78,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression statusBuilder = getExpectStatusBuilder(expectCondition);
         BooleanBuilder optionBuilder = getOptionBuilder(expectCondition.getOptionCondition());
 
-        return getResponses(pageable, expectCondition.getSortCondition(), conditionBuilder, statusBuilder, optionBuilder, false);
+        return getResponse(pageable, expectCondition.getSortCondition(), conditionBuilder, statusBuilder, optionBuilder, false);
     }
 
     @Override
@@ -87,7 +87,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression statusBuilder = getDeleteBuilder(orderCondition);
         BooleanBuilder optionBuilder = getOptionBuilder(orderCondition.getOptionCondition());
 
-        return getResponses(pageable, orderCondition.getSortCondition(), conditionBuilder, statusBuilder, optionBuilder,  true);
+        return getResponse(pageable, orderCondition.getSortCondition(), conditionBuilder, statusBuilder, optionBuilder,  true);
     }
 
     @Override
@@ -164,7 +164,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
     }
 
     @NotNull
-    private CustomPage<OrderQueryDto> getResponses(Pageable pageable, OrderDto.SortCondition sortCondition, BooleanBuilder conditionBuilder, BooleanExpression statusBuilder, BooleanBuilder optionBuilder, Boolean orderDeleted) {
+    private CustomPage<OrderQueryDto> getResponse(Pageable pageable, OrderDto.SortCondition sortCondition, BooleanBuilder conditionBuilder, BooleanExpression statusBuilder, BooleanBuilder optionBuilder, Boolean orderDeleted) {
 
         JPQLQuery<Integer> stockQty = JPAExpressions
                 .select(stock.stockCode.count().intValue())
@@ -344,17 +344,13 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression createdBetween =
                 orders.createAt.between(startDateTime, endDateTime);
 
-        BooleanExpression statusIsReceiptOrWaiting =
-                orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
-
-
         if (StringUtils.hasText(orderCondition.getOrderStatus())) {
             SourceType statusEnum = SourceType.valueOf(orderCondition.getOrderStatus().toUpperCase());
             BooleanExpression status = hasStatusHistory(statusEnum);
-            statusIsReceiptOrWaiting = statusIsReceiptOrWaiting.and(status);
+            createdBetween = createdBetween.and(status);
         }
 
-        return statusIsReceiptOrWaiting.and(createdBetween);
+        return createdBetween;
     }
 
     private static BooleanExpression getDeleteBuilder(OrderDto.OrderCondition orderCondition) {
@@ -370,12 +366,9 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression createdBetween =
                 orders.createAt.between(startDateTime, endDateTime);
 
-        BooleanExpression statusIsReceiptOrWaiting =
-                orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
-
         BooleanExpression status = orders.orderStatus.eq(OrderStatus.valueOf(orderCondition.getOrderStatus()));
 
-        return statusIsReceiptOrWaiting.and(status).and(createdBetween);
+        return status.and(createdBetween);
     }
 
     private static BooleanExpression getOrdersReceiptStatusBuilder(OrderDto.OrderCondition orderCondition) {
@@ -410,12 +403,9 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression shippingAt =
                 orders.shippingAt.loe(endDateTime);
 
-        BooleanExpression statusIsReceiptOrWaiting =
-                orders.productStatus.in(ProductStatus.RECEIPT, ProductStatus.WAITING);
-
         BooleanExpression status = orders.orderStatus.notIn(OrderStatus.STOCK);
 
-        return statusIsReceiptOrWaiting.and(status).and(shippingAt);
+        return status.and(shippingAt);
     }
 
     private OrderSpecifier<?>[] createOrderSpecifiers(OrderDto.SortCondition sortCondition) {
@@ -452,7 +442,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
         return orders.flowCode.in(
                 JPAExpressions
-                        .select(statusHistory.flowCode)
+                        .selectDistinct(statusHistory.flowCode)
                         .from(statusHistory)
                         .where(statusHistory.sourceType.eq(statusEnum))
         );
