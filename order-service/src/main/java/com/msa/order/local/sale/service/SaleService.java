@@ -124,6 +124,7 @@ public class SaleService {
     // 재고 -> 판매
     public void stockToSale(String accessToken, Long flowCode, StockDto.stockRequest stockDto) {
         String nickname = jwtUtil.getNickname(accessToken);
+        String tenantId = jwtUtil.getTenantId(accessToken);
 
         Stock stock = stockRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
@@ -148,12 +149,31 @@ public class SaleService {
         createNewSale(stock, saleDate, storeId, storeName);
 
         stock.updateOrderStatus(OrderStatus.SALE);
-        stock.updateStockNote(stockDto.getStockNote(), stockDto.getMainStoneNote(), stockDto.getAssistanceStoneNote());
+        stock.updateStockNote(stockDto.getMainStoneNote(), stockDto.getAssistanceStoneNote(), stockDto.getStockNote());
         stock.getProduct().updateProductWeightAndSize(stockDto.getProductSize(), new BigDecimal(stockDto.getGoldWeight()), new BigDecimal(stockDto.getStoneWeight()));
 
         updateNewHistory(stock.getFlowCode(), nickname);
 
         // 별도 정산 로직에서 Kafka를 통해 갱신 데이터를 dto에 포함에 전달 정합성도 고려해야함
+        BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeight(stockDto.getGoldWeight(), stock.getProduct().getMaterialName().toUpperCase());
+
+        AccountDto.updateCurrentBalance dto = AccountDto.updateCurrentBalance.builder()
+                .eventId(UUID.randomUUID().toString())
+                .tenantId(tenantId)
+                .saleType("SALE")
+                .type("STORE")
+                .id(storeId)
+                .name(storeName)
+                .goldBalance(pureGoldWeight)
+                .moneyBalance(stock.getTotalStoneLaborCost())
+                .build();
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                kafkaProducer.currentBalanceUpdate(dto);
+            }
+        });
     }
 
     //판매 제품 수정 로직 (중량, 단가 수정)
@@ -179,7 +199,7 @@ public class SaleService {
                                 .build();
                         return saleRepository.saveAndFlush(newSale);
                     } catch (DataIntegrityViolationException dup) {
-                        // 동시 생성 충돌(UK_SALE_STORE_DATE) 시 재조회
+
                         return saleRepository.findByStoreIdAndCreateDate(storeId, saleDate)
                                 .orElseThrow(() -> dup);
                     }
@@ -246,6 +266,7 @@ public class SaleService {
     //반품 로직 -> 제품은 다시 재고로, 결제는 다시 원복 -> 마지막 결제일의 경우?
     public void cancelSale(String accessToken, Long flowCode) {
         String role = jwtUtil.getRole(accessToken);
+
         if (role.equals("WAIT")) {
             throw new IllegalStateException(NOT_ACCESS);
         }
