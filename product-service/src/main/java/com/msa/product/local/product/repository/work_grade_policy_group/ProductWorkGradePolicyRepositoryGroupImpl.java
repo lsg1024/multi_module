@@ -28,7 +28,7 @@ public class ProductWorkGradePolicyRepositoryGroupImpl implements CustomProductW
     }
 
     @Override
-    public List<ProductWorkGradePolicyGroupDto.Response> findByWorkGradePolicyGroupByProductId(Long productId) {
+    public List<ProductWorkGradePolicyGroupDto.Response> findByWorkGradePolicyGroupByProductIdOrderById(Long productId) {
 
         List<ProductWorkGradePolicyGroupDto.Response> groups = query
                 .select(new QProductWorkGradePolicyGroupDto_Response(
@@ -43,6 +43,7 @@ public class ProductWorkGradePolicyRepositoryGroupImpl implements CustomProductW
                 .from(productWorkGradePolicyGroup)
                 .leftJoin(productWorkGradePolicyGroup.color, color)
                 .where(productWorkGradePolicyGroup.product.productId.eq(productId))
+                .orderBy(productWorkGradePolicyGroup.productWorkGradePolicyGroupId.asc())
                 .fetch();
 
         List<Long> groupIds = groups.stream()

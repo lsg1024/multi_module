@@ -5,5 +5,5 @@ import com.msa.product.local.product.dto.ProductWorkGradePolicyGroupDto;
 import java.util.List;
 
 public interface CustomProductWorkGradePolicyGroup {
-    List<ProductWorkGradePolicyGroupDto.Response> findByWorkGradePolicyGroupByProductId(Long productId);
+    List<ProductWorkGradePolicyGroupDto.Response> findByWorkGradePolicyGroupByProductIdOrderById(Long productId);
 }
