@@ -33,6 +33,7 @@ dependencies {
 
     //kafka
     implementation 'org.springframework.kafka:spring-kafka'
+    implementation 'org.springframework.cloud:spring-cloud-starter-bus-kafka'
 
     //flyway
     implementation 'org.flywaydb:flyway-core:11.12.0'
@@ -54,6 +55,7 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     implementation(project(":common"))
+    annotationProcessor project(':common')
 }
 
 tasks.named('test') {
