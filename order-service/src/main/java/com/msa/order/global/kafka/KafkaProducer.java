@@ -91,7 +91,7 @@ public class KafkaProducer {
     }
 
     public void currentBalanceUpdate(AccountDto.updateCurrentBalance dto) {
-        String key = dto.getEventId();
+        String key = String.valueOf(dto.getId());
         try {
             String payload = objectMapper.writeValueAsString(dto);
             kafkaTemplate.send("update.currentBalance", key, payload)

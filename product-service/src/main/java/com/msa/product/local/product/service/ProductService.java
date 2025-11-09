@@ -216,8 +216,6 @@ public class ProductService {
             product.setClassification(classification);
         }
 
-        log.info("ProductDto Update = {}", updateDto.toString());
-
         extractedProductColorWorkGradePolicy(updateDto, product);
         extractedProductStone(updateDto, product);
     }
