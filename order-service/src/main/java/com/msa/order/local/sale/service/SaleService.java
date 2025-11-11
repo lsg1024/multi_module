@@ -1,16 +1,24 @@
 package com.msa.order.local.sale.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msa.common.global.jwt.JwtUtil;
+import com.msa.common.global.redis.service.RedisEventService;
 import com.msa.common.global.util.CustomPage;
+import com.msa.order.global.dto.OutboxCreatedEvent;
 import com.msa.order.global.dto.StoneDto;
 import com.msa.order.global.kafka.KafkaProducer;
 import com.msa.order.global.kafka.dto.AccountDto;
+import com.msa.order.global.util.DateConversionUtil;
 import com.msa.order.global.util.GoldUtils;
+import com.msa.order.local.order.entity.OrderStone;
 import com.msa.order.local.order.entity.StatusHistory;
 import com.msa.order.local.order.entity.order_enum.BusinessPhase;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.order.repository.CustomOrderStoneRepository;
 import com.msa.order.local.order.repository.StatusHistoryRepository;
+import com.msa.order.local.outbox.domain.entity.OutboxEvent;
+import com.msa.order.local.outbox.repository.OutboxEventRepository;
 import com.msa.order.local.sale.entity.Sale;
 import com.msa.order.local.sale.entity.SaleItem;
 import com.msa.order.local.sale.entity.SalePayment;
@@ -22,21 +30,24 @@ import com.msa.order.local.sale.repository.SalePaymentRepository;
 import com.msa.order.local.sale.repository.SaleRepository;
 import com.msa.order.local.sale.sale_enum.SaleStatus;
 import com.msa.order.local.stock.dto.StockDto;
+import com.msa.order.local.stock.entity.ProductSnapshot;
 import com.msa.order.local.stock.entity.Stock;
 import com.msa.order.local.stock.repository.StockRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.time.OffsetDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.msa.order.global.exception.ExceptionMessage.NOT_ACCESS;
@@ -44,11 +55,16 @@ import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND;
 import static com.msa.order.local.order.util.StoneUtil.countStoneCost;
 import static com.msa.order.local.order.util.StoneUtil.updateStockStoneInfo;
 
+@Slf4j
 @Service
 @Transactional
 public class SaleService {
     private final JwtUtil jwtUtil;
+    private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
+    private final OutboxEventRepository outboxEventRepository;
     private final KafkaProducer kafkaProducer;
+    private final RedisEventService redisEventService;
     private final StockRepository stockRepository;
     private final SaleRepository saleRepository;
     private final CustomOrderStoneRepository customOrderStoneRepository;
@@ -57,9 +73,13 @@ public class SaleService {
     private final CustomSaleRepository customSaleRepository;
     private final StatusHistoryRepository statusHistoryRepository;
 
-    public SaleService(JwtUtil jwtUtil, KafkaProducer kafkaProducer, StockRepository stockRepository, SaleRepository saleRepository, CustomOrderStoneRepository customOrderStoneRepository, SaleItemRepository saleItemRepository, SalePaymentRepository salePaymentRepository, CustomSaleRepository customSaleRepository, StatusHistoryRepository statusHistoryRepository) {
+    public SaleService(JwtUtil jwtUtil, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, OutboxEventRepository outboxEventRepository, KafkaProducer kafkaProducer, RedisEventService redisEventService, StockRepository stockRepository, SaleRepository saleRepository, CustomOrderStoneRepository customOrderStoneRepository, SaleItemRepository saleItemRepository, SalePaymentRepository salePaymentRepository, CustomSaleRepository customSaleRepository, StatusHistoryRepository statusHistoryRepository) {
         this.jwtUtil = jwtUtil;
+        this.objectMapper = objectMapper;
+        this.eventPublisher = eventPublisher;
+        this.outboxEventRepository = outboxEventRepository;
         this.kafkaProducer = kafkaProducer;
+        this.redisEventService = redisEventService;
         this.stockRepository = stockRepository;
         this.saleRepository = saleRepository;
         this.customOrderStoneRepository = customOrderStoneRepository;
@@ -69,60 +89,110 @@ public class SaleService {
         this.statusHistoryRepository = statusHistoryRepository;
     }
 
+    @Transactional(readOnly = true)
+    public SaleDto.Response getDetailSale(Long flowCode, String orderStatus) {
+
+        if (orderStatus.equals(SaleStatus.SALE.name())) {
+            SaleItem saleItem = saleItemRepository.findByFlowCode(flowCode)
+                    .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+            Stock stock = saleItem.getStock();
+            ProductSnapshot product = stock.getProduct();
+
+            List<OrderStone> orderStones = stock.getOrderStones();
+            List<StoneDto.StoneInfo> stonesDtos = new ArrayList<>();
+            for (OrderStone orderStone : orderStones) {
+                StoneDto.StoneInfo stoneDto = new StoneDto.StoneInfo(
+                        orderStone.getOriginStoneId().toString(),
+                        orderStone.getOriginStoneName(),
+                        orderStone.getOriginStoneWeight().toPlainString(),
+                        orderStone.getStonePurchaseCost(),
+                        orderStone.getStoneLaborCost(),
+                        orderStone.getStoneAddLaborCost(),
+                        orderStone.getStoneQuantity(),
+                        orderStone.getMainStone(),
+                        orderStone.getIncludeStone()
+                );
+                stonesDtos.add(stoneDto);
+            }
+
+            String assistantStoneCreateAt = null;
+            if (product.getAssistantStoneCreateAt() != null) {
+                assistantStoneCreateAt = String.valueOf(product.getAssistantStoneCreateAt());
+            }
+
+            return SaleDto.Response.builder()
+                    .flowCode(saleItem.getFlowCode())
+                    .createAt(String.valueOf(saleItem.getCreateDate()))
+                    .saleType(saleItem.getItemStatus().name())
+                    .name(stock.getStoreName())
+                    .grade(stock.getStoreGrade())
+                    .harry(stock.getStoreHarry())
+                    .productName(product.getProductName())
+                    .productSize(product.getSize())
+                    .materialName(product.getMaterialName())
+                    .colorName(product.getColorName())
+                    .mainStoneNote(stock.getStockMainStoneNote())
+                    .assistanceStoneNote(stock.getStockAssistanceStoneNote())
+                    .note(stock.getStockNote())
+                    .goldWeight(product.getGoldWeight())
+                    .stoneWeight(product.getStoneWeight())
+                    .productLaborCost(product.getProductLaborCost())
+                    .productAddLaborCost(product.getProductAddLaborCost())
+                    .addStoneLaborCost(stock.getStoneAddLaborCost())
+                    .assistantStone(product.isAssistantStone())
+                    .assistantStoneId(String.valueOf(product.getAssistantStoneId()))
+                    .assistantStoneName(product.getAssistantStoneName())
+                    .assistantStoneCreateAt(assistantStoneCreateAt)
+                    .stoneInfos(stonesDtos)
+                    .build();
+        }
+
+        SalePayment salePayment = salePaymentRepository.findByFlowCode(flowCode)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        Sale sale = salePayment.getSale();
+
+        return SaleDto.Response.builder()
+                .flowCode(salePayment.getFlowCode())
+                .createAt(String.valueOf(salePayment.getCreateDate()))
+                .saleType(salePayment.getSaleStatus().name())
+                .name(sale.getAccountName())
+                .grade(sale.getAccountGrade())
+                .harry(sale.getAccountHarry())
+                .materialName(salePayment.getMaterial())
+                .note(salePayment.getPaymentNote())
+                .goldWeight(salePayment.getGoldWeight())
+                .productLaborCost(salePayment.getCashAmount())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
     public CustomPage<SaleRow> getSale(String input, String startAt, String endAt, String material, Pageable pageable) {
         SaleDto.Condition condition = new SaleDto.Condition(input, startAt, endAt, material);
         return customSaleRepository.findSales(condition, pageable);
     }
 
-    // 주문 판매의 경우 sale_status 공유가 불가능한 stock에서는 사용 불가능 별도로 구현 필요
-    // 주문에서 재고 등록을 한 후 바로 출고까지 넘기기 -> 만약 개별 명세서를 만들고 싶은 경우(동일 매입처인 경우)
-    public void orderToSale(String accessToken, Long flowCode, StockDto.StockRegisterRequest stockDto) {
-        String nickname = jwtUtil.getNickname(accessToken);
+    // 판매 상품 수정
+    public void updateSale(String accessToken, String eventId, Long flowCode, SaleDto.updateRequest updateDto) {
         String tenantId = jwtUtil.getTenantId(accessToken);
+        String nickname = jwtUtil.getNickname(accessToken);
 
-        Stock stock = stockRepository.findByFlowCode(flowCode)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-        if (saleItemRepository.existsByStock(stock)) {
-            return;
+        if (eventId == null || eventId.isEmpty()) {
+            throw new IllegalStateException("잘못된 형식의 요청입니다.");
         }
 
-        if (!(stock.getOrderStatus() == OrderStatus.STOCK || stock.getOrderStatus() == OrderStatus.NORMAL)) {
-            throw new IllegalStateException("판매로 전환 불가 상태: " + stock.getOrderStatus());
+        try {
+            performUpdate(eventId, flowCode, updateDto, tenantId, nickname);
+        } catch (Exception e) {
+            redisEventService.deleteEventId(tenantId, eventId);
+            throw new IllegalStateException(e);
         }
-
-        LocalDateTime saleDate = LocalDateTime.now();
-        Long storeId = stock.getStoreId();
-        String storeName = stock.getStoreName();
-
-        createNewSale(stock, saleDate, storeId, storeName);
-        stock.updateOrderStatus(OrderStatus.SALE);
-
-
-        updateNewHistory(stock.getFlowCode(), nickname);
-
-        BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeight(stockDto.getGoldWeight(), stockDto.getMaterialName().toUpperCase());
-
-        AccountDto.updateCurrentBalance dto = AccountDto.updateCurrentBalance.builder()
-                .eventId(UUID.randomUUID().toString())
-                .tenantId(tenantId)
-                .saleType("SALE")
-                .type("STORE")
-                .id(storeId)
-                .name(storeName)
-                .goldBalance(pureGoldWeight)
-                .moneyBalance(stock.getTotalStoneLaborCost())
-                .build();
-
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                kafkaProducer.currentBalanceUpdate(dto);
-            }
-        });
     }
 
     // 재고 -> 판매
     public void stockToSale(String accessToken, Long flowCode, StockDto.stockRequest stockDto) {
+
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = jwtUtil.getTenantId(accessToken);
 
@@ -145,27 +215,31 @@ public class SaleService {
         LocalDateTime saleDate = LocalDateTime.now();
         Long storeId = stock.getStoreId();
         String storeName = stock.getStoreName();
+        BigDecimal storeHarry = stock.getStoreHarry();
+        String grade = stock.getStoreGrade();
 
-        createNewSale(stock, saleDate, storeId, storeName);
+        createNewSale(stock, saleDate, storeId, storeName, storeHarry, grade);
 
         stock.updateOrderStatus(OrderStatus.SALE);
         stock.updateStockNote(stockDto.getMainStoneNote(), stockDto.getAssistanceStoneNote(), stockDto.getStockNote());
+        stock.getProduct().updateProductAddCost(stockDto.getAddProductLaborCost());
         stock.getProduct().updateProductWeightAndSize(stockDto.getProductSize(), new BigDecimal(stockDto.getGoldWeight()), new BigDecimal(stockDto.getStoneWeight()));
 
         updateNewHistory(stock.getFlowCode(), nickname);
 
-        // 별도 정산 로직에서 Kafka를 통해 갱신 데이터를 dto에 포함에 전달 정합성도 고려해야함
         BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeight(stockDto.getGoldWeight(), stock.getProduct().getMaterialName().toUpperCase());
+        Integer totalBalanceMoney = stock.getTotalStoneLaborCost() + stockDto.getStoneAddLaborCost() +
+                stock.getProduct().getProductLaborCost() + stockDto.getAddProductLaborCost();
 
         AccountDto.updateCurrentBalance dto = AccountDto.updateCurrentBalance.builder()
                 .eventId(UUID.randomUUID().toString())
                 .tenantId(tenantId)
-                .saleType("SALE")
+                .saleType(SaleStatus.SALE.name())
                 .type("STORE")
                 .id(storeId)
                 .name(storeName)
                 .goldBalance(pureGoldWeight)
-                .moneyBalance(stock.getTotalStoneLaborCost())
+                .moneyBalance(totalBalanceMoney)
                 .build();
 
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
@@ -176,9 +250,10 @@ public class SaleService {
         });
     }
 
-    //판매 제품 수정 로직 (중량, 단가 수정)
-    public void createPayment(String accessToken, String idempKey, SaleDto.Request saleDto) {
-        salePaymentRepository.findByIdempotencyKey(idempKey).ifPresent(p -> {
+    public void createPayment(String accessToken, String eventId, SaleDto.Request saleDto) {
+
+        // redis 도입해 추후 검증 과정을 DB가 아닌 Redis로 변경
+        salePaymentRepository.findByEventId(eventId).ifPresent(p -> {
             throw new IllegalStateException("이미 등록된 요청입니다.");
         });
 
@@ -187,26 +262,31 @@ public class SaleService {
         LocalDateTime saleDate = LocalDateTime.now();
         Long storeId = saleDto.getId();
         String storeName = saleDto.getName();
+        BigDecimal harry = new BigDecimal(saleDto.getHarry());
+        String grade = saleDto.getGrade();
 
-        Sale sale = saleRepository.findByStoreIdAndCreateDate(storeId, saleDate)
+        Sale sale = saleRepository.findByAccountIdAndCreateDate(storeId, saleDate)
                 .orElseGet(() -> {
                     try {
                         Sale newSale = Sale.builder()
                                 .saleStatus(SaleStatus.SALE)
-                                .storeId(storeId)
-                                .storeName(storeName)
+                                .accountId(storeId)
+                                .accountName(storeName)
+                                .accountHarry(harry)
+                                .accountGrade(grade)
                                 .items(new ArrayList<>())
                                 .build();
                         return saleRepository.saveAndFlush(newSale);
                     } catch (DataIntegrityViolationException dup) {
 
-                        return saleRepository.findByStoreIdAndCreateDate(storeId, saleDate)
+                        return saleRepository.findByAccountIdAndCreateDate(storeId, saleDate)
                                 .orElseThrow(() -> dup);
                     }
                 });
 
         final Integer cashAmount = saleDto.getPayAmount();
         final String material = saleDto.getMaterial();
+        final BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeight(saleDto.getGoldWeight(), material);
         final BigDecimal snapTotalWeight = saleDto.getGoldWeight();
         final String note = saleDto.getSaleNote();
 
@@ -218,28 +298,7 @@ public class SaleService {
                     .orElseThrow(() -> new IllegalArgumentException("Unknown payment type: " + saleDto.getOrderStatus()));
         }
 
-        SalePayment payment = switch (saleStatus) {
-            case PAYMENT -> SalePayment.payment(
-                    material, idempKey, note,
-                    cashAmount,
-                    snapTotalWeight
-            );
-            case WG -> SalePayment.wg(
-                    material, idempKey, note,
-                    cashAmount,
-                    snapTotalWeight
-            );
-            case PAYMENT_TO_BANK -> SalePayment.paymentBank(
-                    material, idempKey, note,
-                    cashAmount
-            );
-            case DISCOUNT -> SalePayment.discount(
-                    material, idempKey, note,
-                    cashAmount,
-                    snapTotalWeight
-            );
-            default -> throw new IllegalArgumentException("Unsupported payment type: " + saleStatus);
-        };
+        SalePayment payment = getSalePayment(eventId, cashAmount, material, pureGoldWeight, snapTotalWeight, note, saleStatus);
 
         sale.addPayment(payment);
         salePaymentRepository.save(payment);
@@ -264,100 +323,100 @@ public class SaleService {
     }
 
     //반품 로직 -> 제품은 다시 재고로, 결제는 다시 원복 -> 마지막 결제일의 경우?
-    public void cancelSale(String accessToken, Long flowCode) {
+    public void cancelSale(String accessToken, Long saleCode, Long flowCode) {
         String role = jwtUtil.getRole(accessToken);
 
         if (role.equals("WAIT")) {
             throw new IllegalStateException(NOT_ACCESS);
         }
 
-        SalePayment salePayment = salePaymentRepository.findByFlowCode(flowCode)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+        Sale sale = saleRepository.findBySaleCode(saleCode)
+                .orElseThrow(() -> new IllegalArgumentException("SALE CODE = " + NOT_FOUND));
 
-        Sale sale;
-        switch (salePayment.getSaleStatus()) {
-            case PAYMENT, PAYMENT_TO_BANK, DISCOUNT, WG -> {
+        Optional<SaleItem> saleItem = sale.getItems().stream()
+                .filter(item -> item.getFlowCode().equals(flowCode))
+                .findFirst();
 
-                salePaymentRepository.delete(salePayment);
+        if (saleItem.isPresent()) {
+            SaleItem item = saleItem.get();
 
-                sale = salePayment.getSale();
-
-                //별도 정산 로직에서 Kafka를 통해 갱신 데이터를 dto에 포함에 전달 정합성도 고려해야함
-
-                cleanupEmptySaleIfNeeded(sale);
+            if (item.isReturned()) {
+                throw new IllegalStateException("이미 반품된 상품입니다.");
             }
-            case SALE -> {
-                SaleItem saleItem = saleItemRepository.findBySaleCode(salePayment.getSaleCode())
-                        .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-                sale = saleItem.getSale();
-                Stock stock = saleItem.getStock();
-
-                saleItemRepository.delete(saleItem);
-
-                stock.updateOrderStatus(OrderStatus.STOCK);
-                stockRepository.save(stock);
-
-                //별도 정산 로직에서 Kafka를 통해 갱신 데이터를 dto에 포함에 전달 정합성도 고려해야함
-                cleanupEmptySaleIfNeeded(sale);
+            Stock stock = item.getStock();
+            if (stock != null) {
+                stock.returnToStock();
             }
+
+            item.markAsReturn();
+
+            sale.getItems().remove(item);
+            cleanupEmptySaleIfNeeded(sale);
+            return;
         }
 
+        Optional<SalePayment> salePayment = sale.getSalePayments().stream()
+                .filter(payment -> payment.getFlowCode().equals(flowCode))
+                .findFirst();
+
+        if (salePayment.isPresent()) {
+            SalePayment payment = salePayment.get();
+            sale.getSalePayments().remove(payment);
+            return;
+        }
+
+        throw new IllegalArgumentException("주문 내역을 찾을 수 없습니다.");
     }
 
-    //라벨 출력 기능
+    public void orderToSale(String accessToken, Long flowCode, StockDto.StockRegisterRequest stockDto) {
+        String nickname = jwtUtil.getNickname(accessToken);
+        String tenantId = jwtUtil.getTenantId(accessToken);
+
+        Stock stock = stockRepository.findByFlowCode(flowCode)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+        if (saleItemRepository.existsByStock(stock)) {
+            return;
+        }
+
+        if (!(stock.getOrderStatus() == OrderStatus.STOCK || stock.getOrderStatus() == OrderStatus.NORMAL)) {
+            throw new IllegalStateException("판매로 전환 불가 상태: " + stock.getOrderStatus());
+        }
+
+        LocalDateTime saleDate = LocalDateTime.now();
+        Long storeId = stock.getStoreId();
+        String storeName = stock.getStoreName();
+        BigDecimal storeHarry = stock.getStoreHarry();
+        String grade = stock.getStoreGrade();
+
+        createNewSale(stock, saleDate, storeId, storeName, storeHarry, grade);
+        stock.updateOrderStatus(OrderStatus.SALE);
 
 
-    private void createNewSale(Stock stock, LocalDateTime saleDate, Long storeId, String storeName) {
-        Sale sale = saleRepository.findByStoreIdAndCreateDate(storeId, saleDate)
-                .orElseGet(() -> {
-                    try {
-                        Sale newSale = Sale.builder()
-                                .saleStatus(SaleStatus.SALE)
-                                .storeId(storeId)
-                                .storeName(storeName)
-                                .items(new ArrayList<>())
-                                .build();
-                        return saleRepository.saveAndFlush(newSale);
-                    } catch (DataIntegrityViolationException dup) {
-                        return saleRepository.findByStoreIdAndCreateDate(storeId, saleDate)
-                                .orElseThrow(() -> dup);
-                    }
-                });
+        updateNewHistory(stock.getFlowCode(), nickname);
 
-        SaleItem saleItem = SaleItem.builder()
-                .flowCode(stock.getFlowCode())
-                .saleCode(sale.getSaleCode())
+        BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeight(stockDto.getGoldWeight(), stockDto.getMaterialName().toUpperCase());
+
+        AccountDto.updateCurrentBalance dto = AccountDto.updateCurrentBalance.builder()
+                .eventId(UUID.randomUUID().toString())
+                .tenantId(tenantId)
+                .saleType(SaleStatus.SALE.name())
+                .type("STORE")
+                .id(storeId)
+                .name(storeName)
+                .goldBalance(pureGoldWeight)
+                .moneyBalance(stock.getTotalStoneLaborCost())
                 .build();
 
-        sale.addItem(saleItem);
-        saleItem.setStock(stock);
-        saleItemRepository.save(saleItem);
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                kafkaProducer.currentBalanceUpdate(dto);
+            }
+        });
     }
 
-    private void updateNewHistory(Long flowCode, String nickname) {
-        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(flowCode)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-
-        StatusHistory statusHistory = StatusHistory.phaseChange(
-                flowCode,
-                lastHistory.getSourceType(),
-                BusinessPhase.valueOf(lastHistory.getToValue()),
-                BusinessPhase.SALE,
-                nickname
-        );
-
-        statusHistoryRepository.save(statusHistory);
-    }
-
-    private void cleanupEmptySaleIfNeeded(Sale sale) {
-        boolean hasItems    = saleItemRepository.existsBySale(sale);
-        boolean hasPayments = salePaymentRepository.existsBySale(sale);
-        if (!hasItems && !hasPayments) {
-            saleRepository.delete(sale);
-        }
-    }
-
+    // 과거 판매 내역
     public List<SaleDto.SaleDetailDto> findSaleProductNameAndMaterial(Long storeId, Long productId, String materialName) {
         List<SaleDto.SaleDetailDto> saleDetailDtos = customSaleRepository.findSalePast(storeId, productId, materialName);
 
@@ -391,4 +450,161 @@ public class SaleService {
 
         return saleDetailDtos;
     }
+
+    private void performUpdate(String eventId, Long flowCode, SaleDto.updateRequest updateDto, String tenantId, String nickname) {
+
+        SaleItem saleItem = saleItemRepository.findByFlowCode(flowCode)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        Stock stock = saleItem.getStock();
+        ProductSnapshot product = stock.getProduct();
+        List<OrderStone> orderStones = stock.getOrderStones();
+
+        stock.updateStockNote(updateDto.getMainStoneNote(), updateDto.getAssistanceStoneNote() , updateDto.getStockNote());
+        Integer oldProductLaborCost = product.getProductLaborCost();
+        Integer oldProductAddLaborCost = product.getProductAddLaborCost();
+        Integer oldTotalStoneLaborCost = stock.getTotalStoneLaborCost();
+        Integer oldStoneAddLaborCost = stock.getStoneAddLaborCost();
+
+        int oldTotalMoney = oldProductLaborCost + oldProductAddLaborCost + oldTotalStoneLaborCost + oldStoneAddLaborCost;
+
+        updateStockStoneInfo(updateDto.getStoneInfos(), stock);
+
+        int[] countStoneCost = countStoneCost(orderStones);
+        stock.updateStoneCost(countStoneCost[0], countStoneCost[1], countStoneCost[2], countStoneCost[3], updateDto.getStoneAddLaborCost());
+
+        Long assistantId = Long.valueOf(updateDto.getAssistantStoneId());
+        if (!stock.getProduct().getAssistantStoneId().equals(assistantId)) {
+            OffsetDateTime assistantStoneCreateAt = null;
+            if (StringUtils.hasText(updateDto.getAssistantStoneCreateAt())) {
+                assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(updateDto.getAssistantStoneCreateAt());
+            }
+            stock.getProduct().updateAssistantStone(updateDto.isAssistantStone(), assistantId, updateDto.getAssistantStoneName(), assistantStoneCreateAt);
+        }
+
+        product.updateProductAddCost(updateDto.getProductAddLaborCost());
+        product.updateProductWeightAndSize(updateDto.getProductSize(), new BigDecimal(updateDto.getGoldWeight()), new BigDecimal(updateDto.getStoneWeight()));
+
+        updateNewHistory(flowCode, nickname);
+
+        int newTotalMoney = stock.getTotalStoneLaborCost() +
+                stock.getStoneAddLaborCost() +
+                stock.getProduct().getProductLaborCost() +
+                stock.getProduct().getProductAddLaborCost();
+
+        int moneyBalanceDelta = newTotalMoney - oldTotalMoney;
+
+        BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeight(updateDto.getGoldWeight(), stock.getProduct().getMaterialName().toUpperCase());
+
+        AccountDto.updateCurrentBalance dto = AccountDto.updateCurrentBalance.builder()
+                .eventId(eventId)
+                .tenantId(tenantId)
+                .saleType(SaleStatus.SALE.name())
+                .type("STORE")
+                .id(stock.getStoreId())
+                .name(stock.getStoreName())
+                .goldBalance(pureGoldWeight)
+                .moneyBalance(moneyBalanceDelta)
+                .build();
+
+        try {
+            String payload = objectMapper.writeValueAsString(dto);
+
+            OutboxEvent outboxEvent = new OutboxEvent(
+                    "current-balance-update",
+                    eventId,
+                    payload
+            );
+
+            outboxEventRepository.save(outboxEvent);
+            eventPublisher.publishEvent(new OutboxCreatedEvent(tenantId));
+        } catch (JsonProcessingException e) {
+            log.error("DTO 직렬화 실패 eventId: {}", eventId);
+            throw new IllegalStateException("주문 변경 실패");
+        }
+    }
+
+    private void cleanupEmptySaleIfNeeded(Sale sale) {
+        boolean allItemsReturned = sale.getItems().stream()
+                .allMatch(SaleItem::isReturned);
+
+        boolean allPaymentsCanceled = sale.getSalePayments().isEmpty();
+
+        if (allItemsReturned && allPaymentsCanceled) {
+            saleRepository.delete(sale);
+        }
+    }
+
+    private void createNewSale(Stock stock, LocalDateTime saleDate, Long storeId, String storeName, BigDecimal storeHarry, String grade) {
+        Sale sale = saleRepository.findByAccountIdAndCreateDate(storeId, saleDate)
+                .orElseGet(() -> {
+                    try {
+                        Sale newSale = Sale.builder()
+                                .saleStatus(SaleStatus.SALE)
+                                .accountId(storeId)
+                                .accountName(storeName)
+                                .accountHarry(storeHarry)
+                                .accountGrade(grade)
+                                .items(new ArrayList<>())
+                                .build();
+                        return saleRepository.saveAndFlush(newSale);
+                    } catch (DataIntegrityViolationException dup) {
+                        return saleRepository.findByAccountIdAndCreateDate(storeId, saleDate)
+                                .orElseThrow(() -> dup);
+                    }
+                });
+
+        SaleItem saleItem = SaleItem.builder()
+                .flowCode(stock.getFlowCode())
+                .build();
+
+        sale.addItem(saleItem);
+        saleItem.setStock(stock);
+        saleItemRepository.save(saleItem);
+    }
+
+    @NotNull
+    private static SalePayment getSalePayment(String eventId, Integer cashAmount, String material, BigDecimal pureGoldWeight, BigDecimal snapTotalWeight, String note, SaleStatus saleStatus) {
+        return switch (saleStatus) {
+            case PAYMENT -> SalePayment.payment(
+                    material, eventId, note,
+                    cashAmount,
+                    pureGoldWeight,
+                    snapTotalWeight
+            );
+            case WG -> SalePayment.wg(
+                    material, eventId, note,
+                    cashAmount,
+                    pureGoldWeight,
+                    snapTotalWeight
+            );
+            case PAYMENT_TO_BANK -> SalePayment.paymentBank(
+                    material, eventId, note,
+                    cashAmount
+            );
+            case DISCOUNT -> SalePayment.discount(
+                    material, eventId, note,
+                    cashAmount,
+                    pureGoldWeight,
+                    snapTotalWeight
+            );
+            default -> throw new IllegalArgumentException("Unsupported payment type: " + saleStatus);
+        };
+    }
+
+    private void updateNewHistory(Long flowCode, String nickname) {
+        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(flowCode)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        StatusHistory statusHistory = StatusHistory.phaseChange(
+                flowCode,
+                lastHistory.getSourceType(),
+                BusinessPhase.valueOf(lastHistory.getToValue()),
+                BusinessPhase.SALE,
+                nickname
+        );
+
+        statusHistoryRepository.save(statusHistory);
+    }
+
 }

@@ -8,12 +8,12 @@ public record SaleRow(
     String createBy,
     String  saleType,
     String storeName,
-    Long    saleCode,
-    Long    flowCode,
-    String  productName,
-    String  materialName,
-    String  colorName,
-    String  note, // (비고 + 메인 + 보조 메모)
+    String saleCode,
+    String flowCode,
+    String productName,
+    String materialName,
+    String colorName,
+    String note, // (비고 + 메인 + 보조 메모)
     Boolean assistantStone,
     String assistantName,
     BigDecimal totalWeight, // (상품 + 스톤 중량 합)

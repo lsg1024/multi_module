@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +19,7 @@ import java.util.List;
 @Table(
         name = "SALE",
         uniqueConstraints = {
-                @UniqueConstraint(name = "UK_SALE_STORE_DATE", columnNames = {"STORE_ID","SALE_DATE"}),
+                @UniqueConstraint(name = "UK_SALE_STORE_DATE", columnNames = {"STORE_ID", "create_date"}),
                 @UniqueConstraint(name = "UK_SALE_CODE",       columnNames = {"SALE_CODE"})
         }
 )
@@ -28,18 +29,25 @@ public class Sale extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "SALE_ID")
     private Long saleId;
-    @Column(name = "SALE_CODE") @Tsid
+
+    @Tsid
+    @Column(name = "SALE_CODE")
     private Long saleCode;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "SALE_STATUS")
     private SaleStatus saleStatus;
 
-    @Column(name = "STORE_ID", nullable = false)
-    private Long storeId;
+    @Column(name = "ACCOUNT_ID", nullable = false)
+    private Long accountId;
 
-    @Column(name = "STORE_NAME", nullable = false)
-    private String storeName;
+    @Column(name = "ACCOUNT_NAME", nullable = false)
+    private String accountName;
+
+    @Column(name = "ACCOUNT_HARRY", precision = 10, scale = 2)
+    private BigDecimal accountHarry;
+    @Column(name = "ACCOUNT_GRADE")
+    private String accountGrade;
 
     @OneToMany(mappedBy="sale", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SaleItem> items = new ArrayList<>();
@@ -55,10 +63,12 @@ public class Sale extends BaseEntity {
     }
 
     @Builder
-    public Sale(SaleStatus saleStatus, Long storeId, String storeName, List<SaleItem> items) {
+    public Sale(SaleStatus saleStatus, Long accountId, String accountName, BigDecimal accountHarry, String accountGrade, List<SaleItem> items) {
         this.saleStatus = saleStatus;
-        this.storeId = storeId;
-        this.storeName = storeName;
+        this.accountId = accountId;
+        this.accountName = accountName;
+        this.accountHarry = accountHarry;
+        this.accountGrade = accountGrade;
         this.items = items;
     }
 

@@ -32,6 +32,6 @@ public class KafkaEventDto {
         private Long id;
         private String name;
         private String goldBalance;
-        private String moneyBalance;
+        private Integer moneyBalance;
     }
 }

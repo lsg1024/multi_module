@@ -1,31 +1,109 @@
 package com.msa.order.local.sale.entity.dto;
 
+import com.msa.order.global.dto.StoneDto;
 import com.querydsl.core.annotations.QueryProjection;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PositiveOrZero;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public class SaleDto {
+    @Getter
+    @NoArgsConstructor
+    public static class Response {
+        private Long flowCode;
+        private String createAt;
+        private String saleType;
+        private String name;
+        private String grade;
+        private BigDecimal harry;
+        private String productName;
+        private String productSize;
+        private String materialName;
+        private String colorName;
+        private String mainStoneNote;
+        private String assistanceStoneNote;
+        private String note;
+        private BigDecimal goldWeight;
+        private BigDecimal stoneWeight;
+        private Integer productLaborCost;
+        private Integer productAddLaborCost;
+        private Integer addStoneLaborCost;
+        private Boolean assistantStone;
+        private String assistantStoneId;
+        private String assistantStoneName;
+        private String assistantStoneCreateAt;
+        private List<StoneDto.StoneInfo> stoneInfos;
+
+        @Builder
+        public Response(Long flowCode, String createAt, String saleType, String name, String grade, BigDecimal harry, String productName, String productSize, String materialName, String colorName, String mainStoneNote, String assistanceStoneNote, String note, BigDecimal goldWeight, BigDecimal stoneWeight, Integer productLaborCost, Integer productAddLaborCost, Integer addStoneLaborCost, Boolean assistantStone, String assistantStoneId, String assistantStoneName, String assistantStoneCreateAt, List<StoneDto.StoneInfo> stoneInfos) {
+            this.flowCode = flowCode;
+            this.createAt = createAt;
+            this.saleType = saleType;
+            this.name = name;
+            this.grade = grade;
+            this.harry = harry;
+            this.productName = productName;
+            this.productSize = productSize;
+            this.materialName = materialName;
+            this.colorName = colorName;
+            this.mainStoneNote = mainStoneNote;
+            this.assistanceStoneNote = assistanceStoneNote;
+            this.note = note;
+            this.goldWeight = goldWeight;
+            this.stoneWeight = stoneWeight;
+            this.productLaborCost = productLaborCost;
+            this.productAddLaborCost = productAddLaborCost;
+            this.addStoneLaborCost = addStoneLaborCost;
+            this.assistantStone = assistantStone;
+            this.assistantStoneId = assistantStoneId;
+            this.assistantStoneName = assistantStoneName;
+            this.assistantStoneCreateAt = assistantStoneCreateAt;
+            this.stoneInfos = stoneInfos;
+        }
+    }
 
     @Getter
     @NoArgsConstructor
     public static class Request {
         private Long id;
         private String name;
+        private String harry;
+        private String grade;
         @NotBlank(message = "필수 입력값 입니다.")
         private String orderStatus;
         private String material;
         private String saleNote;
         @Digits(integer=18, fraction=3)
         @PositiveOrZero
-        private BigDecimal goldWeight;
+        private BigDecimal goldWeight; // 총중량으로 재질로 순금 값 계산
         private Integer payAmount;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class updateRequest {
+        private String productSize;
+        private boolean isProductWeightSale;
+        private Integer productPurchaseCost;
+        private Integer productLaborCost;
+        private Integer productAddLaborCost;
+        private String stockNote;
+        private String storeHarry;
+        private String goldWeight;
+        private String stoneWeight;
+        private String mainStoneNote;
+        private String assistanceStoneNote;
+        private boolean assistantStone;
+        private String assistantStoneId;
+        private String assistantStoneName;
+        private String assistantStoneCreateAt;
+        private List<StoneDto.StoneInfo> stoneInfos;
+        private Integer stoneAddLaborCost;
+
     }
 
     @Getter

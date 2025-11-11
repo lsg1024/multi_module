@@ -29,7 +29,7 @@ public class KafkaService {
     }
 
 
-    // 상품 or 공장 잔액 업데이트
+    // 상점 or 공장 잔액 업데이트
     public void updateCurrentBalance(KafkaEventDto.updateCurrentBalance dto) {
         String type = dto.getType();
         Long entityId = dto.getId();
@@ -40,17 +40,24 @@ public class KafkaService {
 
         Store store = null;
         Factory factory = null;
+        BigDecimal goldAmountDelta;
         if ("STORE".equals(type)) {
-            store = storeRepository.findById(entityId)
-                    .orElseThrow(() -> new IllegalArgumentException("STORE: " + NOT_FOUND));
 
-            store.updateBalance(eventId, goldAmount, moneyAmount);
+            store = storeRepository.findById(entityId)
+                    .orElseThrow(() -> new IllegalArgumentException("TENANT ID: " + dto.getTenantId() + " STORE: " + NOT_FOUND));
+
+            BigDecimal currentGoldBalance = store.getCurrentGoldBalance();
+            goldAmountDelta = goldAmount.subtract(currentGoldBalance);
+            store.updateBalance(eventId, goldAmountDelta, moneyAmount);
 
         } else if ("FACTORY".equals(type)) {
             factory = factoryRepository.findById(entityId)
-                    .orElseThrow(() -> new IllegalArgumentException("FACTORY: " + NOT_FOUND));
+                    .orElseThrow(() -> new IllegalArgumentException("TENANT ID: " + dto.getTenantId() + " FACTORY: " + NOT_FOUND));
 
-            factory.updateBalance(eventId, goldAmount, moneyAmount);
+            BigDecimal currentGold = factory.getCurrentGoldBalance();
+            goldAmountDelta = goldAmount.subtract(currentGold);
+
+            factory.updateBalance(eventId, goldAmountDelta, moneyAmount);
 
         } else {
             throw new IllegalArgumentException("Unknown balance type: " + type);
