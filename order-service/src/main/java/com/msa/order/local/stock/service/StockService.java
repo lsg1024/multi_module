@@ -177,7 +177,7 @@ public class StockService {
         Long assistantId = Long.valueOf(updateStock.getAssistantStoneId());
         if (!stock.getProduct().getAssistantStoneId().equals(assistantId)) {
             OffsetDateTime assistantStoneCreateAt = null;
-            if (!StringUtils.hasText(updateStock.getAssistantStoneCreateAt())) {
+            if (StringUtils.hasText(updateStock.getAssistantStoneCreateAt())) {
                 assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(updateStock.getAssistantStoneCreateAt());
             }
             stock.getProduct().updateAssistantStone(updateStock.isAssistantStone(), assistantId, updateStock.getAssistantStoneName(), assistantStoneCreateAt);
@@ -216,7 +216,10 @@ public class StockService {
 
         AssistantStoneDto.Response assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(tenantId, Long.valueOf(stockDto.getAssistantStoneId()));
 
-        OffsetDateTime assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(stockDto.getAssistantStoneCreateAt());
+        OffsetDateTime assistantStoneCreateAt = null;
+        if (StringUtils.hasText(stockDto.getAssistantStoneCreateAt())) {
+            assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(stockDto.getAssistantStoneCreateAt());
+        }
 
         BigDecimal goldWeight = new BigDecimal(stockDto.getGoldWeight());
         BigDecimal stoneWeight = new BigDecimal(stockDto.getStoneWeight());
@@ -381,7 +384,10 @@ public class StockService {
 
         statusHistoryRepository.save(statusHistory);
 
-        OffsetDateTime assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(stockDto.getAssistantStoneCreateAt());
+        OffsetDateTime assistantStoneCreateAt = null;
+        if (StringUtils.hasText(stockDto.getAssistantStoneCreateAt())) {
+            assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(stockDto.getAssistantStoneCreateAt());
+        }
 
         KafkaStockRequest stockRequest = KafkaStockRequest.builder()
                 .eventId(UUID.randomUUID().toString())
