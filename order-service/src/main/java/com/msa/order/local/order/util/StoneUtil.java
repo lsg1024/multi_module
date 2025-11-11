@@ -92,8 +92,6 @@ public class StoneUtil {
                 if (isChanged(os, stoneInfo)) {
                     os.updateFrom(stoneInfo);
                 }
-                os.setStock(stock);
-                stock.getOrderStones().add(os);
             } else {
                 OrderStone orderStone = OrderStone.builder()
                         .originStoneId(Long.valueOf(stoneInfo.getStoneId()))
