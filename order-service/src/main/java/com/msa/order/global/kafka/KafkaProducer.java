@@ -6,18 +6,25 @@ import com.msa.order.global.kafka.dto.AccountDto;
 import com.msa.order.global.kafka.dto.KafkaStockRequest;
 import com.msa.order.global.kafka.dto.OrderAsyncRequested;
 import com.msa.order.global.kafka.dto.OrderUpdateRequest;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class KafkaProducer {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final ObjectMapper objectMapper;
+
+    public KafkaProducer(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper) {
+        this.kafkaTemplate = kafkaTemplate;
+        this.objectMapper = objectMapper;
+    }
 
     public void orderSave(OrderAsyncRequested evt) {
         String key = String.valueOf(evt.getFlowCode());
@@ -88,6 +95,23 @@ public class KafkaProducer {
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("이벤트 직렬화 실패", e);
         }
+    }
+
+    public void send(String topic, String key, String payload)
+            throws ExecutionException, InterruptedException {
+
+        log.info("Kafka 동기 전송 시도. topic={}, key={}", topic, key);
+
+        CompletableFuture<SendResult<String, Object>> future =
+                kafkaTemplate.send(topic, key, payload);
+
+        SendResult<String, Object> res = future.get();
+
+        log.info("Kafka 동기 전송 성공. topic={}, key={}, partition={}, offset={}",
+                res.getRecordMetadata().topic(),
+                res.getProducerRecord().key(),
+                res.getRecordMetadata().partition(),
+                res.getRecordMetadata().offset());
     }
 
     public void currentBalanceUpdate(AccountDto.updateCurrentBalance dto) {
