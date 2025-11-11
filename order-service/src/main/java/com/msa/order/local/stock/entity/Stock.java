@@ -173,4 +173,8 @@ public class Stock extends BaseTimeEntity {
             this.stockCode = this.flowCode;
         }
     }
+
+    public void returnToStock() {
+        this.orderStatus = OrderStatus.STOCK;
+    }
 }
