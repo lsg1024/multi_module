@@ -48,7 +48,7 @@ public class KafkaService {
 
             BigDecimal currentGoldBalance = store.getCurrentGoldBalance();
             goldAmountDelta = goldAmount.subtract(currentGoldBalance);
-            store.updateBalance(eventId, goldAmountDelta, moneyAmount);
+            store.updateBalance(goldAmountDelta, moneyAmount);
 
         } else if ("FACTORY".equals(type)) {
             factory = factoryRepository.findById(entityId)
@@ -57,7 +57,7 @@ public class KafkaService {
             BigDecimal currentGold = factory.getCurrentGoldBalance();
             goldAmountDelta = goldAmount.subtract(currentGold);
 
-            factory.updateBalance(eventId, goldAmountDelta, moneyAmount);
+            factory.updateBalance(goldAmountDelta, moneyAmount);
 
         } else {
             throw new IllegalArgumentException("Unknown balance type: " + type);

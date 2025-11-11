@@ -58,10 +58,10 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                         store.additionalOption.optionMaterialId.stringValue(),
                         store.additionalOption.optionMaterialName))
                 .from(store)
-                .join(store.address, address)
-                .join(store.commonOption, commonOption)
-                .join(store.additionalOption, additionalOption)
-                .join(store.commonOption.goldHarry, goldHarry)
+                .leftJoin(store.address, address)
+                .leftJoin(store.commonOption, commonOption)
+                .leftJoin(store.additionalOption, additionalOption)
+                .leftJoin(store.commonOption.goldHarry, goldHarry)
                 .where(store.storeId.eq(storeId).and(store.storeDeleted.isFalse()))
                 .fetchOne());
     }
@@ -91,8 +91,8 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                         store.commonOption.optionLevel.stringValue(),
                         store.commonOption.goldHarryLoss))
                 .from(store)
-                .join(store.address, address)
-                .join(store.commonOption, commonOption)
+                .leftJoin(store.address, address)
+                .leftJoin(store.commonOption, commonOption)
                 .where(store.storeDeleted.isFalse().and(storeName))
                 .orderBy(store.storeName.desc())
                 .offset(pageable.getOffset())
