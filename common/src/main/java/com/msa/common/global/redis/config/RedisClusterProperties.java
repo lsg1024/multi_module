@@ -1,4 +1,4 @@
-package com.msa.auth.redis;
+package com.msa.common.global.redis.config;
 
 import lombok.Getter;
 import lombok.Setter;
