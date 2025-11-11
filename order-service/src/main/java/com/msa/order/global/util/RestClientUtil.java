@@ -1,6 +1,7 @@
 package com.msa.order.global.util;
 
 import com.msa.common.global.api.ApiResponse;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +13,7 @@ public class RestClientUtil {
 
     private final RestTemplate restTemplate;
 
-    public RestClientUtil(RestTemplate restTemplate) {
+    public RestClientUtil(@Qualifier("clientRestTemplate") RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
 

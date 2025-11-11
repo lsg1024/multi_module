@@ -17,8 +17,8 @@ import java.time.OffsetDateTime;
 @Entity
 @Table(
         name = "SALE_PAYMENT",
-        indexes = { @Index(name = "IX_PAYMENT_SALE", columnList = "SALE_ID, CREATE_DATE") },
-        uniqueConstraints = { @UniqueConstraint(name = "UK_PAYMENT_IDEMP", columnNames = {"IDEMP_KEY"})}
+        indexes = { @Index(name = "IX_PAYMENT_SALE", columnList = "SALE_ID, create_date") },
+        uniqueConstraints = { @UniqueConstraint(name = "UK_PAYMENT_IDEVT", columnNames = {"EVENT_ID"})}
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SQLDelete(sql = "UPDATE SALE_PAYMENT SET PAYMENT_DELETED = TRUE, DELETED_AT = CURRENT_TIMESTAMP WHERE SALE_PAYMENT_ID = ?")
@@ -33,17 +33,8 @@ public class SalePayment extends BaseEntity {
     @JoinColumn(name = "SALE_ID", nullable = false)
     private Sale sale;
 
-    @Column(name = "SALE_CODE", nullable = false)
-    private Long saleCode;
-
     @Column(name = "FLOW_CODE", nullable = false)
     private Long flowCode;
-
-    @Column(name = "STORE_ID", nullable = false, updatable = false)
-    private Long storeId;
-
-    @Column(name = "STORE_NAME", nullable = false, updatable = false)
-    private String storeName;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "SALE_STATUS")
@@ -55,14 +46,17 @@ public class SalePayment extends BaseEntity {
     @Column(name = "GOLD_MATERIAL")
     private String material;
 
+    @Column(name="PURE_GOLD_WEIGHT", precision=18, scale=3)
+    private BigDecimal pureGoldWeight = BigDecimal.ZERO;
+
     @Column(name="GOLD_WEIGHT", precision=18, scale=3)
     private BigDecimal goldWeight = BigDecimal.ZERO;
 
     @Column(name = "PAYMENT_NOTE")
     private String paymentNote;
 
-    @Column(name="IDEMP_KEY", nullable=false)
-    private String idempotencyKey;
+    @Column(name="EVENT_ID", nullable=false)
+    private String eventId;
 
     @Column(name = "PAYMENT_DELETED", nullable = false)
     private boolean deleted = false;
@@ -76,42 +70,46 @@ public class SalePayment extends BaseEntity {
     @PrePersist
     void onCreate() {
         if (cashAmount == null)  cashAmount  = 0;
-        if (goldWeight == null)  goldWeight  = BigDecimal.ZERO;
+        if (pureGoldWeight == null) pureGoldWeight = BigDecimal.ZERO;
+        if (goldWeight == null) goldWeight  = BigDecimal.ZERO;
         if (this.sale != null) {
-            this.saleCode  = sale.getSaleCode();
-            this.storeId   = sale.getStoreId();
-            this.storeName = sale.getStoreName();
             this.flowCode = TsidCreator.getTsid().toLong();
         }
     }
 
-    public static SalePayment payment(String material, String idemp, String note, Integer cash, BigDecimal gold) {
-        SalePayment s = base(material, SaleStatus.PAYMENT, idemp, note);
-        s.cashAmount = nz(cash); s.goldWeight = nz(gold); return s;
-    }
-
-    public static SalePayment paymentBank(String material, String idemp, String note, Integer cash) {
-        SalePayment s = base(material, SaleStatus.PAYMENT_TO_BANK, idemp, note);
-        s.cashAmount = nz(cash); return s;
-    }
-    public static SalePayment discount(String material, String idemp, String note, Integer cashDisc, BigDecimal goldDisc) {
-        SalePayment s = base(material, SaleStatus.DISCOUNT, idemp, note);
-        s.cashAmount = nz(cashDisc);
-        s.goldWeight = nz(goldDisc); return s;
-    }
-
-    public static SalePayment wg(String material, String idemp, String note, Integer cash, BigDecimal gold) {
-        SalePayment s = base(material, SaleStatus.PAYMENT, idemp, note);
+    public static SalePayment payment(String material, String eventId, String note, Integer cash, BigDecimal pureGold, BigDecimal gold) {
+        SalePayment s = base(material, SaleStatus.PAYMENT, eventId, note);
         s.cashAmount = nz(cash);
+        s.pureGoldWeight = nz(pureGold);
         s.goldWeight = nz(gold);
         return s;
     }
 
-    private static SalePayment base(String material, SaleStatus type, String idemp, String note) {
+    public static SalePayment paymentBank(String material, String eventId, String note, Integer cash) {
+        SalePayment s = base(material, SaleStatus.PAYMENT_TO_BANK, eventId, note);
+        s.cashAmount = nz(cash); return s;
+    }
+    public static SalePayment discount(String material, String eventId, String note, Integer cashDisc, BigDecimal pureGold, BigDecimal goldDisc) {
+        SalePayment s = base(material, SaleStatus.DISCOUNT, eventId, note);
+        s.cashAmount = nz(cashDisc);
+        s.pureGoldWeight = nz(pureGold);
+        s.goldWeight = nz(goldDisc);
+        return s;
+    }
+
+    public static SalePayment wg(String material, String idemp, String note, Integer cash, BigDecimal pureGold, BigDecimal gold) {
+        SalePayment s = base(material, SaleStatus.PAYMENT, idemp, note);
+        s.cashAmount = nz(cash);
+        s.pureGoldWeight = nz(pureGold);
+        s.goldWeight = nz(gold);
+        return s;
+    }
+
+    private static SalePayment base(String material, SaleStatus type, String eventId, String note) {
         SalePayment s = new SalePayment();
         s.material = material;
         s.saleStatus = type;
-        s.idempotencyKey = idemp;
+        s.eventId = eventId;
         s.paymentNote = note;
         return s;
     }

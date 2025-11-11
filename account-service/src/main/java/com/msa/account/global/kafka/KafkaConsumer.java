@@ -6,6 +6,8 @@ import com.msa.account.global.kafka.dto.GoldHarryLossUpdatedEvent;
 import com.msa.account.global.kafka.dto.KafkaEventDto;
 import com.msa.account.global.kafka.service.KafkaService;
 import com.msa.common.global.exception.KafkaProcessingException;
+import com.msa.common.global.redis.enum_type.RedisEventStatus;
+import com.msa.common.global.redis.service.RedisEventService;
 import com.msa.common.global.tenant.TenantContext;
 import com.msa.common.global.util.AuditorHolder;
 import lombok.extern.slf4j.Slf4j;
@@ -29,13 +31,15 @@ public class KafkaConsumer {
     private final Job updateStoreGoldHarryLossJob;
     private final Job deleteGoldHarryJob;
     private final KafkaService kafkaService;
+    private final RedisEventService redisEventService;
 
-    public KafkaConsumer(ObjectMapper objectMapper, JobLauncher jobLauncher, Job updateStoreGoldHarryLossJob, Job deleteGoldHarryJob, KafkaService kafkaService) {
+    public KafkaConsumer(ObjectMapper objectMapper, JobLauncher jobLauncher, Job updateStoreGoldHarryLossJob, Job deleteGoldHarryJob, KafkaService kafkaService, RedisEventService redisEventService) {
         this.objectMapper = objectMapper;
         this.jobLauncher = jobLauncher;
         this.updateStoreGoldHarryLossJob = updateStoreGoldHarryLossJob;
         this.deleteGoldHarryJob = deleteGoldHarryJob;
         this.kafkaService = kafkaService;
+        this.redisEventService = redisEventService;
     }
     @KafkaListener(topics = "goldHarryLoss.update", groupId = "goldHarry-group", concurrency = "3")
     public void handleGoldHarryLossUpdate(String message) {
@@ -73,24 +77,59 @@ public class KafkaConsumer {
         }
     }
 
-    @KafkaListener(topics = "update.currentBalance", groupId = "currentBalance-group", concurrency = "3")
+    @KafkaListener(topics = "current-balance-update", groupId = "currentBalance-group", concurrency = "3")
     @RetryableTopic(attempts = "2", backoff = @Backoff(delay = 1000, maxDelay = 5000, random = true), include = KafkaProcessingException.class)
     public void handleUpdateCurrentBalance(String message, Acknowledgment ack) {
+        KafkaEventDto.updateCurrentBalance dto;
+
         try {
-            KafkaEventDto.updateCurrentBalance updateCurrentBalance = objectMapper.readValue(message, KafkaEventDto.updateCurrentBalance.class);
-            TenantContext.setTenant(updateCurrentBalance.getTenantId());
-            AuditorHolder.setAuditor(updateCurrentBalance.getTenantId());
-
-            kafkaService.updateCurrentBalance(updateCurrentBalance);
-
-            ack.acknowledge();
-        } catch (DataIntegrityViolationException e) {
-            log.warn("이미 처리된 eventId = {}", e.getMessage());
-            ack.acknowledge();
+            dto = objectMapper.readValue(message, KafkaEventDto.updateCurrentBalance.class);
         } catch (Exception e) {
-            log.error("Consume failed. payload={}, err={}", message, e.getMessage(), e);
-            throw new IllegalStateException("Kafka consume error", e);
+            log.error("JSON parse failed, message skipped. payload={}", message, e);
+            ack.acknowledge();
+            return;
+        }
+
+        try {
+            RedisEventStatus status = redisEventService.checkAndSetProcessing(dto.getTenantId(), dto.getEventId());
+
+            if (status == RedisEventStatus.COMPLETED || status == RedisEventStatus.PROCESSING) {
+                log.warn("eventId check: 이미 실행되었거나 실행되는 중 eventId={}", dto.getEventId());
+                ack.acknowledge();
+                return;
+            }
+        } catch (Exception redisException) {
+            log.error("Redis event check failed. db 내역 확인 필요: ", redisException);
+        }
+
+        try {
+            TenantContext.setTenant(dto.getTenantId());
+            AuditorHolder.setAuditor(dto.getTenantId());
+
+            kafkaService.updateCurrentBalance(dto);
+
+            // DB 처리 성공 -> Redis '완료' 상태로 변경
+            redisEventService.setCompleted(dto.getTenantId(), dto.getEventId(), "COMPLETED");
+
+            ack.acknowledge();
+
+        } catch (DataIntegrityViolationException e) {
+            log.warn("DB 제약 조건 오류, 동일한 값이 입력 eventId={}", dto.getEventId(), e);
+            ack.acknowledge();
+
+        } catch (Exception e) {
+            log.error("알 수 없는 오류로 인해 재실행. eventId={}, err={}", dto.getEventId(), e.getMessage(), e);
+
+            try {
+                redisEventService.deleteEventId(dto.getTenantId(), dto.getEventId());
+            } catch (Exception redisDelException) {
+                log.error("Failed to delete 'PROCESSING' Redis 이벤트 삭제 실패", redisDelException);
+            }
+
+            throw new KafkaProcessingException("Kafka consume error, retrying");
+
         } finally {
+            TenantContext.clear();
             AuditorHolder.clear();
         }
     }

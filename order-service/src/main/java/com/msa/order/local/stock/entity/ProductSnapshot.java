@@ -119,5 +119,9 @@ public class ProductSnapshot {
         this.productLaborCost = productLaborCost;
         this.productAddLaborCost = productAddLaborCost;
     }
+
+    public void updateProductAddCost(Integer addProductLaborCost) {
+        this.productAddLaborCost = addProductLaborCost;
+    }
 }
 

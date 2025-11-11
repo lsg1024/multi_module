@@ -1,4 +1,4 @@
-package com.msa.auth.config;
+package com.msa.common.global.redis.config;
 
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;

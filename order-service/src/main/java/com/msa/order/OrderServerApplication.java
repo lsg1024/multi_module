@@ -8,9 +8,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.data.web.config.PageableHandlerMethodArgumentResolverCustomizer;
 import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableRetry
 @EnableCaching
+@EnableScheduling
 @EnableDiscoveryClient
 @SpringBootApplication(scanBasePackages = {"com.msa.order", "com.msa.common.global"})
 @EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)

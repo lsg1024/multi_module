@@ -82,8 +82,6 @@ public class StockDto {
         private Boolean isProductWeightSale;
         private Integer addProductLaborCost;
         private Integer stoneAddLaborCost;
-        private Integer productPurchaseCost;
-        private Integer stonePurchaseCost;
         private String mainStoneNote;
         private String assistanceStoneNote;
         private String stockNote;

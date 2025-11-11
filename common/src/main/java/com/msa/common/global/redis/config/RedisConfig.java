@@ -1,6 +1,5 @@
-package com.msa.auth.config;
+package com.msa.common.global.redis.config;
 
-import com.msa.auth.redis.RedisClusterProperties;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
@@ -46,6 +45,8 @@ public class RedisConfig {
                 .setScanInterval(2000)  // 클러스터 스캔 주기 설정 (밀리초)
                 .setConnectTimeout(5000)  // 연결 시간 제한 (밀리초)
                 .setIdleConnectionTimeout(10000);  // 유휴 연결 시간 제한 (밀리초)
+
+        config.setLockWatchdogTimeout(30000L);
 
         return Redisson.create(config);
     }

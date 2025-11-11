@@ -8,12 +8,12 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
 
-@Configuration
+@Configuration("orderRestTemplateConfig")
 public class RestTemplateConfig {
 
 
-    @Bean
-    public RestTemplate restTemplate(RestTemplateBuilder builder) {
+    @Bean(name = "clientRestTemplate")
+    public RestTemplate clientRestTemplate(RestTemplateBuilder builder) {
 
         HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
 

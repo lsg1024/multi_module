@@ -27,6 +27,14 @@ public class SaleController {
         this.stockService = stockService;
     }
 
+    @GetMapping("/sale")
+    public ResponseEntity<ApiResponse<SaleDto.Response>> getSaleDetails(
+            @RequestParam(name = "id") Long flowCode,
+            @RequestParam(name = "order_status") String orderStatus) {
+        SaleDto.Response detailSale = saleService.getDetailSale(flowCode, orderStatus);
+        return ResponseEntity.ok(ApiResponse.success(detailSale));
+    }
+
     //판매 관리 데이터 목록들
     @GetMapping("/sales")
     public ResponseEntity<ApiResponse<CustomPage<SaleRow>>> getSales(
@@ -40,10 +48,33 @@ public class SaleController {
         return ResponseEntity.ok(ApiResponse.success(sale));
     }
 
+    // 판매 상품 수정
+    @PatchMapping("/sale/product")
+    public ResponseEntity<ApiResponse<String>> updateSale(
+            @AccessToken String accessToken,
+            @RequestHeader(name = "Idempotency-Key", required = false) String eventId,
+            @RequestParam(name = "id") Long flowCode,
+            @Valid @RequestBody SaleDto.updateRequest updateDto) {
+        saleService.updateSale(accessToken, eventId, flowCode, updateDto);
+        return ResponseEntity.ok(ApiResponse.success("수정완료"));
+    }
+
+    // 결제 수정
+//    @PatchMapping("/sale/payment")
+//    public ResponseEntity<ApiResponse<String>> updatePayment(
+//            @AccessToken String accessToken,
+//            @RequestHeader(name = "Idempotency-Key", required = false) String eventId,
+//            @RequestParam(name = "id") Long flowCode,
+//            @Valid @RequestBody SaleDto.Request updateDto) {
+//        saleService.updatePayment(accessToken, eventId, flowCode, orderStatus, updateDto);
+//    }
+
+
     //주문 -> 판매
     @PatchMapping("/orders/order_sale")
     public ResponseEntity<ApiResponse<String>> updateOrderToSale(
             @AccessToken String accessToken,
+            @RequestHeader(name = "Idempotency-Key", required = false) String eventId,
             @RequestParam(name = "id") Long flowCode,
             @Valid @RequestBody StockDto.StockRegisterRequest stockDto) {
         stockService.updateOrderToStock(accessToken, flowCode, "STOCK", stockDto);
@@ -56,6 +87,7 @@ public class SaleController {
     @PatchMapping("/sales/stock_sale")
     public ResponseEntity<ApiResponse<String>> updateStockToSale(
             @AccessToken String accessToken,
+            @RequestHeader(name = "Idempotency-Key", required = false) String eventId,
             @RequestParam(name = "id") Long flowCode,
             @Valid @RequestBody StockDto.stockRequest stockDto) {
         saleService.stockToSale(accessToken, flowCode, stockDto);
@@ -66,23 +98,24 @@ public class SaleController {
     @PostMapping("/sales")
     public ResponseEntity<ApiResponse<String>> createPayment(
             @AccessToken String accessToken,
-            @RequestHeader(name = "Idempotency-Key", required = false) String idempKey,
+            @RequestHeader(name = "Idempotency-Key", required = false) String eventId,
             @Valid @RequestBody SaleDto.Request saleDto) {
 
-        if (idempKey == null || idempKey.isBlank()) {
+        if (eventId == null || eventId.isBlank()) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Idempotency-Key header required"));
         }
 
-        saleService.createPayment(accessToken, idempKey, saleDto);
+        saleService.createPayment(accessToken, eventId, saleDto);
         return ResponseEntity.ok(ApiResponse.success("등록 완료"));
     }
 
     @DeleteMapping("/sales")
     public ResponseEntity<ApiResponse<String>> deletedSale(
             @AccessToken String accessToken,
+            @RequestParam(name = "sale_id") Long saleCode,
             @RequestParam(name = "id") Long flowCode) {
 
-        saleService.cancelSale(accessToken, flowCode);
+        saleService.cancelSale(accessToken, saleCode, flowCode);
         return ResponseEntity.ok(ApiResponse.success("삭제 완료"));
     }
 

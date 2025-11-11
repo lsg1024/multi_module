@@ -80,13 +80,13 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                     stock.product.assistantStone,
                     stock.product.assistantStoneName,
                     stock.product.assistantStoneCreateAt.stringValue(),
-                    sale.storeName
+                    sale.accountName
                 ))
                 .from(sale)
                 .join(sale.items, saleItem)
                 .join(saleItem.stock, stock)
                 .where(
-                        sale.storeId.eq(storeId),
+                        sale.accountId.eq(storeId),
                         stock.product.id.eq(productId),
                         stock.product.materialName.eq(materialName)
                 )
@@ -139,8 +139,8 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                     saleItem.createdBy,
                     stock.orderStatus.stringValue(),         // saleType
                     stock.storeName, // storeName
-                    sale.saleCode,                        // saleCode
-                    saleItem.flowCode,                          // flowCode
+                    sale.saleCode.stringValue(),                        // saleCode
+                    saleItem.flowCode.stringValue(),                          // flowCode
                     stock.product.productName,                      // productName
                     stock.product.materialName,              // materialName
                     stock.product.colorName,                 // colorName
@@ -206,9 +206,9 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                         sale.createDate,
                         salePayment.createdBy,
                         salePayment.saleStatus.stringValue(),
-                        salePayment.storeName,
-                        salePayment.saleCode,
-                        salePayment.flowCode,
+                        sale.accountName,
+                        sale.saleCode.stringValue(),
+                        salePayment.flowCode.stringValue(),
                         salePayment.saleStatus.stringValue(),
                         salePayment.material,
                         Expressions.nullExpression(String.class), // colorName
@@ -232,7 +232,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                         createAtAndEndAt,
                         materialBuilder
                 )
-                .groupBy(salePayment.salePaymentId, sale.createDate)
+                .groupBy(salePayment.salePaymentId, sale.createDate, sale.accountName, sale.saleCode)
                 .orderBy(sale.createDate.desc())
                 .fetch();
     }

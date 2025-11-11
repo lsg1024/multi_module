@@ -10,7 +10,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @EnableFeignClients
 @EnableDiscoveryClient
-@SpringBootApplication(scanBasePackages = {"com.msa.auth", "com.msa.common.global.jwt", "com.msa.common.global.tenant"},
+@SpringBootApplication(scanBasePackages = {"com.msa.auth", "com.msa.common.global.jwt", "com.msa.common.global.tenant", "com.msa.common.global.redis"},
 exclude = {
 		DataSourceAutoConfiguration.class,
 		HibernateJpaAutoConfiguration.class,

@@ -48,8 +48,6 @@ public class Store extends BaseEntity {
     @Column(name = "STORE_DELETED", nullable = false)
     private boolean storeDeleted = false;
 
-    @Column(name = "EVENT_ID", nullable = false, unique = true, updatable = false)
-    private String eventId;
     @Column(name = "CURRENT_GOLD_BALANCE", nullable = false, precision = 10, scale = 3)
     private BigDecimal currentGoldBalance = BigDecimal.ZERO;
     @Column(name = "CURRENT_MONEY_BALANCE", nullable = false)
@@ -107,8 +105,7 @@ public class Store extends BaseEntity {
         this.additionalOption.update(optionInfo);
     }
 
-    public void updateBalance(String eventId, BigDecimal goldAmount, Long moneyAmount) {
-        this.eventId = eventId;
+    public void updateBalance(BigDecimal goldAmount, Long moneyAmount) {
         this.currentGoldBalance = this.currentGoldBalance.add(goldAmount);
         this.currentMoneyBalance += moneyAmount;
     }
