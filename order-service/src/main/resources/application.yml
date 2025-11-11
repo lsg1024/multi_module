@@ -1,9 +1,17 @@
 spring:
+  application:
+    name: order
+  profiles:
+    active: dev
   config:
     import: optional:application-secret.properties
+
   batch:
     job:
       enabled: false
+    jdbc:
+      initialize-schema: never
+
   kafka:
     listener:
       missing-topics-fatal: false
@@ -14,10 +22,7 @@ spring:
     bus:
       ack:
         enabled: true
-  application:
-    name: order
-  profiles:
-    active: dev
+
   jpa:
     hibernate:
       ddl-auto: none
@@ -30,6 +35,19 @@ spring:
           batch_size: 30
         show_sql: true
         format_sql: true
+
+  data:
+    redis:
+      cluster:
+        nodes:
+          - ${server.url}:${redis_master.port1},
+          - ${server.url}:${redis_master.port2},
+          - ${server.url}:${redis_master.port3},
+        max-redirects: 3
+  cache:
+    type: redis
+    redis:
+      enable-statistics: true
 
   flyway:
     enabled: false

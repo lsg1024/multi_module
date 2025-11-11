@@ -1,25 +1,43 @@
 spring:
+  application:
+    name: product
+  profiles:
+    active: dev
+
   config:
     import: optional:application-secret.properties
+
   batch:
     job:
       enabled: false
     jdbc:
       initialize-schema: never
+
   kafka:
     listener:
       missing-topics-fatal: false
     consumer:
       auto-offset-reset: earliest
     bootstrap-servers: ${kafka.uri}
+
   cloud:
     bus:
       ack:
         enabled: true
-  application:
-    name: product
-  profiles:
-    active: dev
+
+  data:
+    redis:
+      cluster:
+        nodes:
+          - ${server.url}:${redis_master.port1},
+          - ${server.url}:${redis_master.port2},
+          - ${server.url}:${redis_master.port3},
+        max-redirects: 3
+  cache:
+    type: redis
+    redis:
+      enable-statistics: true
+
   jpa:
     hibernate:
       ddl-auto: none
