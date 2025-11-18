@@ -7,9 +7,9 @@ import com.msa.order.local.order.dto.OrderDto;
 import com.msa.order.local.order.dto.OrderQueryDto;
 import com.msa.order.local.order.dto.QOrderQueryDto;
 import com.msa.order.local.order.dto.StockCondition;
+import com.msa.order.local.order.entity.order_enum.BusinessPhase;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.order.entity.order_enum.ProductStatus;
-import com.msa.order.local.order.entity.order_enum.SourceType;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Order;
@@ -345,7 +345,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 orders.createAt.between(startDateTime, endDateTime);
 
         if (StringUtils.hasText(orderCondition.getOrderStatus())) {
-            SourceType statusEnum = SourceType.valueOf(orderCondition.getOrderStatus().toUpperCase());
+            BusinessPhase statusEnum = BusinessPhase.valueOf(orderCondition.getOrderStatus().toUpperCase());
             BooleanExpression status = hasStatusHistory(statusEnum);
             createdBetween = createdBetween.and(status);
         }
@@ -387,7 +387,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression statusIsReceiptOrWaiting =
                 orders.productStatus.eq(ProductStatus.RECEIPT);
 
-        SourceType statusEnum = SourceType.valueOf(orderCondition.getOrderStatus().toUpperCase());
+        BusinessPhase statusEnum = BusinessPhase.valueOf(orderCondition.getOrderStatus().toUpperCase());
         BooleanExpression status = hasStatusHistory(statusEnum);
 
         return statusIsReceiptOrWaiting.and(status).and(createdBetween);
@@ -435,8 +435,8 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         return orderSpecifiers.toArray(new OrderSpecifier[0]);
     }
 
-    private static BooleanExpression hasStatusHistory(SourceType statusEnum) {
-        if (statusEnum == null) {
+    private static BooleanExpression hasStatusHistory(BusinessPhase businessPhase) {
+        if (businessPhase == null) {
             return null;
         }
 
@@ -444,7 +444,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 JPAExpressions
                         .selectDistinct(statusHistory.flowCode)
                         .from(statusHistory)
-                        .where(statusHistory.sourceType.eq(statusEnum))
+                        .where(statusHistory.phase.eq(businessPhase))
         );
     }
 

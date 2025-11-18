@@ -2,9 +2,7 @@ package com.msa.order.local.sale.entity.dto;
 
 import com.msa.order.global.dto.StoneDto;
 import com.querydsl.core.annotations.QueryProjection;
-import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -76,10 +74,8 @@ public class SaleDto {
         @NotBlank(message = "필수 입력값 입니다.")
         private String orderStatus;
         private String material;
-        private String saleNote;
-        @Digits(integer=18, fraction=3)
-        @PositiveOrZero
-        private BigDecimal goldWeight; // 총중량으로 재질로 순금 값 계산
+        private String note;
+        private String goldWeight; // 총중량으로 재질로 순금 값 계산
         private Integer payAmount;
     }
 

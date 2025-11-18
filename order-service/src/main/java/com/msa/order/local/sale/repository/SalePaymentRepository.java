@@ -7,8 +7,6 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.Optional;
 
 public interface SalePaymentRepository extends JpaRepository<SalePayment, Long> {
-    Optional<SalePayment> findByEventId(String eventId);
-
     @Query("select sp from SalePayment sp " +
             "left join fetch sp.sale s " +
             "where sp.flowCode= :flowCode")

@@ -49,10 +49,10 @@ public class SaleController {
     }
 
     // 판매 상품 수정
-    @PatchMapping("/sale/product")
+    @PatchMapping("/sales/product")
     public ResponseEntity<ApiResponse<String>> updateSale(
             @AccessToken String accessToken,
-            @RequestHeader(name = "Idempotency-Key", required = false) String eventId,
+            @RequestHeader(name = "Idempotency-Key") String eventId,
             @RequestParam(name = "id") Long flowCode,
             @Valid @RequestBody SaleDto.updateRequest updateDto) {
         saleService.updateSale(accessToken, eventId, flowCode, updateDto);
@@ -60,10 +60,10 @@ public class SaleController {
     }
 
     // 결제 수정
-//    @PatchMapping("/sale/payment")
+//    @PatchMapping("/sales/payment")
 //    public ResponseEntity<ApiResponse<String>> updatePayment(
 //            @AccessToken String accessToken,
-//            @RequestHeader(name = "Idempotency-Key", required = false) String eventId,
+//            @RequestHeader(name = "Idempotency-Key") String eventId,
 //            @RequestParam(name = "id") Long flowCode,
 //            @Valid @RequestBody SaleDto.Request updateDto) {
 //        saleService.updatePayment(accessToken, eventId, flowCode, orderStatus, updateDto);
@@ -74,11 +74,11 @@ public class SaleController {
     @PatchMapping("/orders/order_sale")
     public ResponseEntity<ApiResponse<String>> updateOrderToSale(
             @AccessToken String accessToken,
-            @RequestHeader(name = "Idempotency-Key", required = false) String eventId,
+            @RequestHeader(name = "Idempotency-Key") String eventId,
             @RequestParam(name = "id") Long flowCode,
             @Valid @RequestBody StockDto.StockRegisterRequest stockDto) {
         stockService.updateOrderToStock(accessToken, flowCode, "STOCK", stockDto);
-        saleService.orderToSale(accessToken, flowCode, stockDto);
+        saleService.orderToSale(accessToken, eventId, flowCode, stockDto);
         return ResponseEntity.ok(ApiResponse.success("등록 완료"));
     }
 
@@ -87,35 +87,33 @@ public class SaleController {
     @PatchMapping("/sales/stock_sale")
     public ResponseEntity<ApiResponse<String>> updateStockToSale(
             @AccessToken String accessToken,
-            @RequestHeader(name = "Idempotency-Key", required = false) String eventId,
+            @RequestHeader(name = "Idempotency-Key") String eventId,
             @RequestParam(name = "id") Long flowCode,
             @Valid @RequestBody StockDto.stockRequest stockDto) {
-        saleService.stockToSale(accessToken, flowCode, stockDto);
+        saleService.stockToSale(accessToken, eventId, flowCode, stockDto);
         return ResponseEntity.ok(ApiResponse.success("등록 완료"));
     }
 
     //결제, DC, 결통, WG...
-    @PostMapping("/sales")
+    @PostMapping("/sales/payment")
     public ResponseEntity<ApiResponse<String>> createPayment(
             @AccessToken String accessToken,
-            @RequestHeader(name = "Idempotency-Key", required = false) String eventId,
+            @RequestHeader(name = "Idempotency-Key") String eventId,
             @Valid @RequestBody SaleDto.Request saleDto) {
-
-        if (eventId == null || eventId.isBlank()) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Idempotency-Key header required"));
-        }
 
         saleService.createPayment(accessToken, eventId, saleDto);
         return ResponseEntity.ok(ApiResponse.success("등록 완료"));
     }
 
-    @DeleteMapping("/sales")
+    @DeleteMapping("/sales/{type}")
     public ResponseEntity<ApiResponse<String>> deletedSale(
             @AccessToken String accessToken,
-            @RequestParam(name = "sale_id") Long saleCode,
+            @RequestHeader(name = "Idempotency-Key") String eventId,
+            @PathVariable(name = "type") String type,
+            @RequestParam(name = "code") Long saleCode,
             @RequestParam(name = "id") Long flowCode) {
 
-        saleService.cancelSale(accessToken, saleCode, flowCode);
+        saleService.cancelSale(accessToken, eventId, type, saleCode, flowCode);
         return ResponseEntity.ok(ApiResponse.success("삭제 완료"));
     }
 

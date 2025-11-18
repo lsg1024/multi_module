@@ -11,7 +11,7 @@ public enum BusinessPhase {
     FIX("수리"),
     NORMAL("일반"),
     RENTAL("대여"),
-    RETURN("반환"),
+    RETURN("반품"),
     SALE("판매"),
     DELETED("삭제");
 

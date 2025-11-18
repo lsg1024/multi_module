@@ -25,7 +25,7 @@ public class OutboxRelayService {
     @Transactional
     public void relayEventsForCurrentTenant() {
 
-        List<OutboxEvent> events = outboxEventRepository.findTop100ByStatus(EventStatus.PENDING);
+        List<OutboxEvent> events = outboxEventRepository.findTop100ByStatus(EventStatus.PENDING); // 정산 필요 값을 순차적 전송
 
         if (!events.isEmpty()) {
             log.info("발견된 Outbox 이벤트: {} 건", events.size());
