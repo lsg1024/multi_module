@@ -35,15 +35,15 @@ public class TransactionHistory {
     @Column(name = "TRANSACTION_DELETED", nullable = false)
     private boolean transactionDeleted = false;
 
-    @Column(name = "EVENT_ID", nullable = false, unique = true, updatable = false)
+    @Column(name = "EVENT_ID", nullable = false, unique = true)
     private String eventId;
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "STORE_ID", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "STORE_ID")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Store store;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "FACTORY_ID", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "FACTORY_ID")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Factory factory;
 
