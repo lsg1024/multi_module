@@ -1,5 +1,6 @@
 package com.msa.account.local.store.service;
 
+import com.msa.account.global.domain.dto.AccountDto;
 import com.msa.account.global.domain.dto.util.AuthorityUserRoleUtil;
 import com.msa.account.global.domain.entity.GoldHarry;
 import com.msa.account.global.domain.entity.OptionLevel;
@@ -43,6 +44,16 @@ public class StoreService {
     @Transactional(readOnly = true)
     public CustomPage<StoreDto.StoreResponse> getStoreList(String name, Pageable pageable) {
         return storeRepository.findAllStore(name, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public CustomPage<AccountDto.accountResponse> getStoreAttempt(String name, Pageable pageable) {
+        return storeRepository.findAllStoreAndAttempt(name, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public AccountDto.accountResponse getStoreAttemptDetail(String storeId) {
+        return storeRepository.findByStoreIdAndAttempt(Long.valueOf(storeId));
     }
 
     //상점 추가
@@ -116,4 +127,5 @@ public class StoreService {
         OptionLevel grade = storeRepository.findByCommonOptionOptionLevel(Long.valueOf(storeId));
         return grade.getLevel();
     }
+
 }
