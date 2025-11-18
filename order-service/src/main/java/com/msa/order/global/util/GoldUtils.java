@@ -14,7 +14,8 @@ public class GoldUtils {
     private static final BigDecimal DON_WEIGHT_GRAMS = new BigDecimal("3.75");
     private static final Map<String, BigDecimal> PURITY_MAP = Map.of(
             "14K", new BigDecimal("0.585"),
-            "18K", new BigDecimal("0.750")
+            "18K", new BigDecimal("0.750"),
+            "24K", new BigDecimal("1")
     );
 
     private static BigDecimal parseBigDecimal(String weightStr) {
@@ -42,28 +43,17 @@ public class GoldUtils {
 
         BigDecimal purity = getGoldPurity(material);
         if (purity.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO; // 14K, 18K가 아니면 0 반환
+            return BigDecimal.ZERO; // 14K, 18K, 24K가 아니면 0 반환
         }
 
         // 계산: 순금무게 = 총무게 * 순도
         BigDecimal pureGoldWeight = totalWeight.multiply(purity);
 
-        // TS의 toFixed(2)와 동일하게 소수점 2자리로 반올림
         return pureGoldWeight.setScale(DEFAULT_SCALE, DEFAULT_ROUNDING);
     }
 
     public static BigDecimal calculatePureGoldWeight(String weightStr, String material) {
         return calculatePureGoldWeight(parseBigDecimal(weightStr), material);
-    }
-
-    public static String calculateGoldContent(String weightStr, String material) {
-        BigDecimal pureGoldWeight = calculatePureGoldWeight(weightStr, material);
-
-        if (pureGoldWeight.compareTo(BigDecimal.ZERO) == 0) {
-            return "";
-        }
-
-        return String.format("(순금: %.2fg)", pureGoldWeight);
     }
 
     public static BigDecimal getGoldTransferWeight(BigDecimal totalWeight) {
@@ -76,6 +66,10 @@ public class GoldUtils {
 
     public static BigDecimal getGoldTransferWeight(String weightStr) {
         return getGoldTransferWeight(parseBigDecimal(weightStr));
+    }
+
+    public static Map<String, BigDecimal> getPurityMap() {
+        return Map.copyOf(PURITY_MAP);
     }
 
 }
