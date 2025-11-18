@@ -5,6 +5,7 @@ import com.msa.common.global.domain.BaseEntity;
 import com.msa.order.local.sale.sale_enum.SaleStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
@@ -77,42 +78,18 @@ public class SalePayment extends BaseEntity {
         }
     }
 
-    public static SalePayment payment(String material, String eventId, String note, Integer cash, BigDecimal pureGold, BigDecimal gold) {
-        SalePayment s = base(material, SaleStatus.PAYMENT, eventId, note);
-        s.cashAmount = nz(cash);
-        s.pureGoldWeight = nz(pureGold);
-        s.goldWeight = nz(gold);
-        return s;
+    @Builder
+    public SalePayment(SaleStatus saleStatus, Integer cashAmount, String material, BigDecimal pureGoldWeight, BigDecimal goldWeight, String paymentNote, String eventId) {
+        this.saleStatus = saleStatus;
+        this.cashAmount = cashAmount;
+        this.material = material;
+        this.pureGoldWeight = pureGoldWeight;
+        this.goldWeight = goldWeight;
+        this.paymentNote = paymentNote;
+        this.eventId = eventId;
     }
 
-    public static SalePayment paymentBank(String material, String eventId, String note, Integer cash) {
-        SalePayment s = base(material, SaleStatus.PAYMENT_TO_BANK, eventId, note);
-        s.cashAmount = nz(cash); return s;
+    public void updateEventId(String eventId) {
+        this.eventId = eventId;
     }
-    public static SalePayment discount(String material, String eventId, String note, Integer cashDisc, BigDecimal pureGold, BigDecimal goldDisc) {
-        SalePayment s = base(material, SaleStatus.DISCOUNT, eventId, note);
-        s.cashAmount = nz(cashDisc);
-        s.pureGoldWeight = nz(pureGold);
-        s.goldWeight = nz(goldDisc);
-        return s;
-    }
-
-    public static SalePayment wg(String material, String idemp, String note, Integer cash, BigDecimal pureGold, BigDecimal gold) {
-        SalePayment s = base(material, SaleStatus.PAYMENT, idemp, note);
-        s.cashAmount = nz(cash);
-        s.pureGoldWeight = nz(pureGold);
-        s.goldWeight = nz(gold);
-        return s;
-    }
-
-    private static SalePayment base(String material, SaleStatus type, String eventId, String note) {
-        SalePayment s = new SalePayment();
-        s.material = material;
-        s.saleStatus = type;
-        s.eventId = eventId;
-        s.paymentNote = note;
-        return s;
-    }
-    private static Integer nz(Integer v){ return v==null? 0 : v; }
-    private static BigDecimal nz(BigDecimal v){ return v==null? BigDecimal.ZERO : v; }
 }

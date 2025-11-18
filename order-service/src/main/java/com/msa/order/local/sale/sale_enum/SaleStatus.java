@@ -27,4 +27,5 @@ public enum SaleStatus {
                 .filter(s -> s.getDisplayName().equals(displayName))
                 .findFirst();
     }
+
 }
