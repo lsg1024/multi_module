@@ -2,7 +2,6 @@ package com.msa.order.global.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.msa.order.global.kafka.dto.AccountDto;
 import com.msa.order.global.kafka.dto.KafkaStockRequest;
 import com.msa.order.global.kafka.dto.OrderAsyncRequested;
 import com.msa.order.global.kafka.dto.OrderUpdateRequest;
@@ -114,26 +113,5 @@ public class KafkaProducer {
                 res.getRecordMetadata().offset());
     }
 
-    public void currentBalanceUpdate(AccountDto.updateCurrentBalance dto) {
-        String key = String.valueOf(dto.getId());
-        try {
-            String payload = objectMapper.writeValueAsString(dto);
-            kafkaTemplate.send("update.currentBalance", key, payload)
-                    .whenComplete((res, ex) -> {
-                        if (ex != null) {
-                            log.error("kafka send failed. topic= {}, key= {}, err= {}",
-                                    "order.enrichment.requested", key, ex.getMessage());
-                        } else {
-                            log.info("Kafka sent. topic={}, key={}, partition={}, offset={}",
-                                    res.getRecordMetadata().topic(),
-                                    res.getProducerRecord().key(),
-                                    res.getRecordMetadata().partition(),
-                                    res.getRecordMetadata().offset());
-                        }
-                    });
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("이벤트 직렬화 실패", e);
-        }
-    }
 
 }
