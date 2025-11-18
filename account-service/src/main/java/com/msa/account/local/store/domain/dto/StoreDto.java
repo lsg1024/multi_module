@@ -29,32 +29,32 @@ public class StoreDto {
     @Getter
     @NoArgsConstructor
     public static class StoreResponse {
-        private Long storeId;
-        private String storeName;
-        private String storeOwnerName;
-        private String storePhoneNumber;
-        private String storeContactNumber1;
-        private String storeContactNumber2;
-        private String storeFaxNumber;
-        private String storeNote;
+        private Long accountId;
+        private String accountName;
+        private String businessOwnerName;
+        private String businessOwnerNumber;
+        private String businessNumber1;
+        private String businessNumber2;
+        private String faxNumber;
+        private String note;
         private String address;
         private String tradeType;
         private String level;
         private String goldHarryLoss;
 
         @QueryProjection
-        public StoreResponse(Long storeId, String storeName, String storeOwnerName, String storePhoneNumber, String storeContactNumber1, String storeContactNumber2, String storeFaxNumber, String storeNote, String address, String tradeType, String level, String goldHarryLoss) {
-            this.storeId = storeId;
-            this.storeName = storeName;
-            this.storeOwnerName = storeOwnerName;
-            this.storePhoneNumber = storePhoneNumber;
-            this.storeContactNumber1 = storeContactNumber1;
-            this.storeContactNumber2 = storeContactNumber2;
-            this.storeFaxNumber = storeFaxNumber;
-            this.storeNote = storeNote;
+        public StoreResponse(Long accountId, String accountName, String businessOwnerName, String businessOwnerNumber, String businessNumber1, String businessNumber2, String faxNumber, String note, String address, String tradeType, String level, String goldHarryLoss) {
+            this.accountId = accountId;
+            this.accountName = accountName;
+            this.businessOwnerName = businessOwnerName;
+            this.businessOwnerNumber = businessOwnerNumber;
+            this.businessNumber1 = businessNumber1;
+            this.businessNumber2 = businessNumber2;
+            this.faxNumber = faxNumber;
+            this.note = note;
             this.address = address;
-            this.tradeType = getTradeTypeTitle(tradeType);;
-            this.level = getLevelTypeTitle(level);;
+            this.tradeType = getTradeTypeTitle(tradeType);
+            this.level = getLevelTypeTitle(level);
             this.goldHarryLoss = goldHarryLoss;
         }
     }
@@ -218,4 +218,26 @@ public class StoreDto {
         private String storeHarry;
     }
 
+    @Getter
+    @NoArgsConstructor
+    public static class StoreAttemptResponse {
+        private Long storeId;
+        private String storeName;
+        private String tradeType;
+        private String level;
+        private String goldHarryLoss;
+        private String goldWeight;
+        private String moneyAmount;
+
+        @QueryProjection
+        public StoreAttemptResponse(Long storeId, String storeName, String tradeType, String level, String goldHarryLoss, String goldWeight, String moneyAmount) {
+            this.storeId = storeId;
+            this.storeName = storeName;
+            this.tradeType = getTradeTypeTitle(tradeType);
+            this.level = getLevelTypeTitle(level);;
+            this.goldHarryLoss = goldHarryLoss;
+            this.goldWeight = goldWeight;
+            this.moneyAmount = moneyAmount;
+        }
+    }
 }

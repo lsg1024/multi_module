@@ -1,5 +1,6 @@
 package com.msa.account.local.store.controller;
 
+import com.msa.account.global.domain.dto.AccountDto;
 import com.msa.account.local.store.domain.dto.StoreDto;
 import com.msa.account.local.store.service.StoreService;
 import com.msa.common.global.api.ApiResponse;
@@ -43,8 +44,27 @@ public class StoreController {
         return ResponseEntity.ok(ApiResponse.success(storeList));
     }
 
+    //상점 미수 금액 조회
+    @GetMapping("/stores/attempt")
+    public ResponseEntity<ApiResponse<CustomPage<AccountDto.accountResponse>>> getStoreAttempt(
+            @RequestParam(name = "search", required = false) String name,
+            @PageableDefault(size = 12) Pageable pageable) {
+        CustomPage<AccountDto.accountResponse> storeAttemptList = storeService.getStoreAttempt(name, pageable);
+        return ResponseEntity.ok(ApiResponse.success(storeAttemptList));
+    }
+
+    //상점 미수 금액 상세조회
+    @GetMapping("/stores/attempt/{id}")
+    public ResponseEntity<ApiResponse<AccountDto.accountResponse>> getStoreAttemptDetail(
+            @PathVariable(name = "id") String storeId) {
+
+        AccountDto.accountResponse storeAttemptDetail = storeService.getStoreAttemptDetail(storeId);
+        return ResponseEntity.ok(ApiResponse.success(storeAttemptDetail));
+    }
+
     //상점 생성
     @PostMapping("/store")
+
     public ResponseEntity<ApiResponse<String>> createStore(
             @Valid @RequestBody StoreDto.StoreRequest storeInfo) {
 

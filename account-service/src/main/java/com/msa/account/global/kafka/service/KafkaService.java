@@ -7,6 +7,7 @@ import com.msa.account.local.store.domain.entity.Store;
 import com.msa.account.local.store.repository.StoreRepository;
 import com.msa.account.local.transaction_history.domain.entity.TransactionHistory;
 import com.msa.account.local.transaction_history.repository.TransactionHistoryRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,7 @@ import java.math.BigDecimal;
 
 import static com.msa.account.global.exception.ExceptionMessage.NOT_FOUND;
 
+@Slf4j
 @Service
 @Transactional
 public class KafkaService {
@@ -47,15 +49,15 @@ public class KafkaService {
                     .orElseThrow(() -> new IllegalArgumentException("TENANT ID: " + dto.getTenantId() + " STORE: " + NOT_FOUND));
 
             BigDecimal currentGoldBalance = store.getCurrentGoldBalance();
-            goldAmountDelta = goldAmount.subtract(currentGoldBalance);
+            goldAmountDelta = currentGoldBalance.add(goldAmount);
             store.updateBalance(goldAmountDelta, moneyAmount);
 
         } else if ("FACTORY".equals(type)) {
             factory = factoryRepository.findById(entityId)
                     .orElseThrow(() -> new IllegalArgumentException("TENANT ID: " + dto.getTenantId() + " FACTORY: " + NOT_FOUND));
 
-            BigDecimal currentGold = factory.getCurrentGoldBalance();
-            goldAmountDelta = goldAmount.subtract(currentGold);
+            BigDecimal currentGoldBalance = factory.getCurrentGoldBalance();
+            goldAmountDelta = currentGoldBalance.add(goldAmount);
 
             factory.updateBalance(goldAmountDelta, moneyAmount);
 
