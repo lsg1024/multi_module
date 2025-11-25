@@ -1,8 +1,6 @@
 package com.msa.account.global.domain.dto;
 
 import com.msa.account.global.domain.entity.Address;
-import com.querydsl.core.annotations.QueryProjection;
-import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.Pattern;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,9 +16,9 @@ public class AddressDto {
     public static class AddressInfo {
         @Pattern(regexp = "^$|^[0-9]+$", message = ERR_NUM_ONLY)
         private String addressZipCode;
-        @Pattern(regexp = "^$|^[A-Za-z0-9가-힣\\s]+$", message = ERR_KO_EN_NUM_ONLY)
+        @Pattern(regexp = "^$|^[A-Za-z0-9가-힣\\s,\\-]+$", message = ERR_KO_EN_NUM_ONLY)
         private String addressBasic;
-        @Pattern(regexp = "^$|^[A-Za-z0-9가-힣\\s]+$", message = ERR_KO_EN_NUM_ONLY)
+        @Pattern(regexp = "^$|^[A-Za-z0-9가-힣\\s,\\-]+$", message = ERR_KO_EN_NUM_ONLY)
         private String addressAdd;
 
         @Builder
