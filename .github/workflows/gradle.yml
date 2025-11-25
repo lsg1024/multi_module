@@ -59,7 +59,7 @@ jobs:
           SSH_PORT: ${{ secrets.NAS_SSH_PORT }}
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-          CONFIG_PORT: ${{ secrets.PORT }}
+          CONFIG_PORT: ${{ secrets.CONFIG_PORT }}
         run: |
           sshpass -p "$NAS_PASSWORD" ssh -t -o StrictHostKeyChecking=no -p $SSH_PORT $NAS_USERNAME@$NAS_HOST << EOF
           
