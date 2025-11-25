@@ -2,9 +2,11 @@ package com.msa.account.local.store.repository;
 
 
 import com.msa.account.global.domain.dto.AccountDto;
+import com.msa.account.global.domain.dto.QAccountDto_AccountSingleResponse;
 import com.msa.account.global.domain.dto.QAccountDto_accountResponse;
+import com.msa.account.global.excel.dto.AccountExcelDto;
+import com.msa.account.global.excel.dto.QAccountExcelDto;
 import com.msa.account.local.store.domain.dto.QStoreDto_StoreResponse;
-import com.msa.account.local.store.domain.dto.QStoreDto_StoreSingleResponse;
 import com.msa.account.local.store.domain.dto.StoreDto;
 import com.msa.common.global.util.CustomPage;
 import com.querydsl.core.types.dsl.BooleanExpression;
@@ -36,9 +38,9 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
     }
 
     @Override
-    public Optional<StoreDto.StoreSingleResponse> findByStoreId(Long storeId) {
+    public Optional<AccountDto.AccountSingleResponse> findByStoreId(Long storeId) {
         return Optional.ofNullable(query
-                .select(new QStoreDto_StoreSingleResponse(
+                .select(new QAccountDto_AccountSingleResponse(
                         store.storeId.stringValue(),
                         store.storeName,
                         store.storeOwnerName,
@@ -210,4 +212,37 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                 .where(store.storeDeleted.isFalse().and(isStore))
                 .fetchOne();
     }
+
+    @Override
+    public List<AccountExcelDto> findAllStoreExcel() {
+        return query
+                .select(new QAccountExcelDto(
+                        Expressions.constant("상점"),
+                        store.createDate.stringValue(),
+                        store.createdBy,
+                        store.storeName,
+                        store.storeOwnerName,
+                        store.storePhoneNumber,
+                        store.storeContactNumber1,
+                        store.storeContactNumber2,
+                        store.storeFaxNumber,
+                        store.storeNote,
+                        Expressions.stringTemplate(
+                                "concat({0}, ' ', {1}, ' ', {2})",
+                                store.address.addressZipCode,
+                                store.address.addressBasic,
+                                store.address.addressAdd
+                        ),
+                        store.commonOption.optionTradeType.stringValue(),
+                        store.commonOption.optionLevel.stringValue(),
+                        store.commonOption.goldHarryLoss
+                ))
+                .from(store)
+                .leftJoin(store.address, address)
+                .leftJoin(store.commonOption, commonOption)
+                .orderBy(store.storeName.desc())
+                .fetch();
+    }
+
+
 }

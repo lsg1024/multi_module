@@ -239,7 +239,7 @@ public class SaleService {
                 .type("STORE")
                 .id(storeId)
                 .name(storeName)
-                .goldBalance(pureGoldWeight)
+                .pureGoldBalance(pureGoldWeight)
                 .moneyBalance(totalBalanceMoney)
                 .build();
 
@@ -277,7 +277,7 @@ public class SaleService {
                     .type("STORE")
                     .id(storeId)
                     .name(storeName)
-                    .goldBalance(pureGoldWeight)
+                    .pureGoldBalance(pureGoldWeight)
                     .moneyBalance(saleDto.getPayAmount())
                     .build();
 
@@ -289,7 +289,7 @@ public class SaleService {
     }
 
     //반품 로직 -> 제품은 다시 재고로, 결제는 다시 원복 -> 마지막 결제일의 경우?
-    public void cancelSale(String accessToken, String eventId, String type, Long saleCode, Long flowCode) {
+    public void cancelSale(String accessToken, String eventId, String type, String flowCode) {
         String role = jwtUtil.getRole(accessToken);
         String tenantId = jwtUtil.getTenantId(accessToken);
         String nickname = jwtUtil.getNickname(accessToken);
@@ -298,14 +298,11 @@ public class SaleService {
             throw new IllegalStateException(NOT_ACCESS);
         }
 
+        Long newFlowCode = Long.valueOf(flowCode);
+
         if (type.equals(SaleStatus.SALE.name())) {
-            SaleItem saleItem = saleItemRepository.findByFlowCode(flowCode)
+            SaleItem saleItem = saleItemRepository.findByFlowCode(newFlowCode)
                     .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-
-
-            if (!saleItem.getSale().getSaleCode().equals(saleCode)) {
-                throw new IllegalStateException("해당 판매(Sale)에 속한 항목(flowCode)이 아닙니다.");
-            }
 
             if (saleItem.isReturned()) {
                 throw new IllegalStateException("이미 반품된 상품입니다.");
@@ -334,7 +331,8 @@ public class SaleService {
 
             int totalLaborCost = productLaborCost + productAddLaborCost + totalStoneLaborCost + stoneAddLaborCost;
 
-            updateNewHistory(flowCode, nickname, BusinessPhase.RETURN);
+            log.info("cancelSale goldWeight = {}, pureGoldWeight = {}", goldWeight, pureGoldWeight);
+            updateNewHistory(newFlowCode, nickname, BusinessPhase.RETURN);
 
             // 미수액 변경
             AccountDto.updateCurrentBalance dto = AccountDto.updateCurrentBalance.builder()
@@ -344,18 +342,14 @@ public class SaleService {
                     .type("STORE")
                     .id(storeId)
                     .name(storeName)
-                    .goldBalance(pureGoldWeight.negate())
+                    .pureGoldBalance(pureGoldWeight.negate())
                     .moneyBalance(totalLaborCost * -1)
                     .build();
 
             publishAccountEvent(eventId, tenantId, storeId, dto);
         } else if (PAYMENT_STATUSES.contains(SaleStatus.valueOf(type))) {
-            SalePayment payment = salePaymentRepository.findByFlowCode(flowCode)
+            SalePayment payment = salePaymentRepository.findByFlowCode(newFlowCode)
                     .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-
-            if (!payment.getSale().getSaleCode().equals(saleCode)) {
-                throw new IllegalStateException("해당 판매에 속한 결제 데이터가 아닙니다.");
-            }
 
             Sale sale = payment.getSale();
             AccountDto.updateCurrentBalance dto = AccountDto.updateCurrentBalance.builder()
@@ -365,7 +359,7 @@ public class SaleService {
                     .type("STORE")
                     .id(sale.getAccountId())
                     .name(sale.getAccountName())
-                    .goldBalance(payment.getPureGoldWeight().negate())
+                    .pureGoldBalance(payment.getPureGoldWeight().negate())
                     .moneyBalance(payment.getCashAmount() * -1)
                     .build();
 
@@ -411,7 +405,7 @@ public class SaleService {
                 .type("STORE")
                 .id(storeId)
                 .name(storeName)
-                .goldBalance(pureGoldWeight)
+                .pureGoldBalance(pureGoldWeight)
                 .moneyBalance(stock.getTotalStoneLaborCost())
                 .build();
 
@@ -505,7 +499,7 @@ public class SaleService {
                 .type("STORE")
                 .id(stock.getStoreId())
                 .name(stock.getStoreName())
-                .goldBalance(pureGoldWeight)
+                .pureGoldBalance(pureGoldWeight)
                 .moneyBalance(moneyBalanceDelta)
                 .build();
 

@@ -1,5 +1,6 @@
 package com.msa.account.local.factory.domain.dto;
 
+import com.msa.account.global.domain.dto.AccountDto;
 import com.msa.account.local.factory.domain.entity.Factory;
 import com.msa.account.global.domain.dto.AddressDto;
 import com.msa.account.global.domain.dto.CommonOptionDto;
@@ -57,56 +58,13 @@ public class FactoryDto {
 
     @Getter
     @NoArgsConstructor
-    public static class FactorySingleResponse {
-        private String factoryId;
-        private String factoryName;
-        private String factoryOwnerName;
-        private String factoryPhoneNumber;
-        private String factoryContactNumber1;
-        private String factoryContactNumber2;
-        private String factoryFaxNumber;
-        private String factoryNote;
-        private String addressId;
-        private String addressZipCode;
-        private String addressBasic;
-        private String addressAdd;
-        private String commonOptionId;
-        private String tradeType;
-        private String level;
-        private String goldHarryId;
-        private String goldHarryLoss;
-
-        @QueryProjection
-        public FactorySingleResponse(String factoryId, String factoryName, String factoryOwnerName, String factoryPhoneNumber, String factoryContactNumber1, String factoryContactNumber2, String factoryFaxNumber, String factoryNote, String addressId, String addressZipCode, String addressBasic, String addressAdd, String commonOptionId, String tradeType, String level, String goldHarryId, String goldHarryLoss) {
-            this.factoryId = factoryId;
-            this.factoryName = factoryName;
-            this.factoryOwnerName = factoryOwnerName;
-            this.factoryPhoneNumber = factoryPhoneNumber;
-            this.factoryContactNumber1 = factoryContactNumber1;
-            this.factoryContactNumber2 = factoryContactNumber2;
-            this.factoryFaxNumber = factoryFaxNumber;
-            this.factoryNote = factoryNote;
-            this.addressId = addressId;
-            this.addressZipCode = addressZipCode;
-            this.addressBasic = addressBasic;
-            this.addressAdd = addressAdd;
-            this.commonOptionId = commonOptionId;
-            this.tradeType = getTradeTypeTitle(tradeType);
-            this.level = getLevelTypeTitle(level);;
-            this.goldHarryId = goldHarryId;
-            this.goldHarryLoss = goldHarryLoss;
-        }
-    }
-
-    @Getter
-    @NoArgsConstructor
     public static class FactoryRequest {
         @Valid
-        @NotNull(message = "공장 정보는 필수입니다.")
-        private FactoryInfo factoryInfo;
+        @NotNull(message = "매입처 필수 입력값을 입력해주세요.")
+        private AccountDto.AccountInfo accountInfo;
 
         @Valid
-        @NotNull(message = "기본 옵션 정보는 필수입니다.")
+        @NotNull(message = "거래 유형, 거래 등급은 필수 선택 사항입니다.")
         private CommonOptionDto.CommonOptionInfo commonOptionInfo;
 
         @Valid
@@ -114,13 +72,13 @@ public class FactoryDto {
 
         public Factory toEntity(GoldHarry goldHarry) {
             return Factory.builder()
-                    .factoryName(factoryInfo.factoryName)
-                    .factoryOwnerName(factoryInfo.factoryOwnerName)
-                    .factoryPhoneNumber(factoryInfo.factoryPhoneNumber)
-                    .factoryContactNumber1(factoryInfo.factoryContactNumber1)
-                    .factoryContactNumber2(factoryInfo.factoryContactNumber2)
-                    .factoryFaxNumber(factoryInfo.factoryFaxNumber)
-                    .factoryNote(factoryInfo.factoryNote)
+                    .factoryName(accountInfo.getAccountName())
+                    .factoryOwnerName(accountInfo.getAccountOwnerName())
+                    .factoryPhoneNumber(accountInfo.getAccountPhoneNumber())
+                    .factoryContactNumber1(accountInfo.getAccountContactNumber1())
+                    .factoryContactNumber2(accountInfo.getAccountContactNumber2())
+                    .factoryFaxNumber(accountInfo.getAccountFaxNumber())
+                    .factoryNote(accountInfo.getAccountNote())
                     .address(addressInfo.toEntity())
                     .commonOption(commonOptionInfo.toEntity(goldHarry))
                     .build();
@@ -132,9 +90,9 @@ public class FactoryDto {
     @NoArgsConstructor
     public static class FactoryUpdate {
         @Valid
-        @NotNull(message = "공장 정보는 필수입니다.")
+        @NotNull(message = "매입처 필수 입력값을 입력해주세요.")
         private FactoryInfo factoryInfo;
-        @NotNull(message = "기본 옵션 정보는 필수입니다.")
+        @NotNull(message = "거래 유형, 거래 등급은 필수 선택 사항입니다.")
         private CommonOptionDto.CommonOptionInfo commonOptionInfo;
         @Valid
         private AddressDto.AddressInfo addressInfo;

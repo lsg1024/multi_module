@@ -11,12 +11,21 @@ import java.util.Objects;
 public class AuthorityUserRoleUtil {
 
     private static final String ADMIN = "ADMIN";
+    private static final String USER = "USER";
     private static final String GUEST = "GUEST";
 
     private final JwtUtil jwtUtil;
 
     public AuthorityUserRoleUtil(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
+    }
+
+    public boolean verification(String token) {
+        String role = jwtUtil.getRole(token);
+
+        boolean isAdmin = Objects.equals(role, ADMIN);
+        boolean isUser = Objects.equals(role, USER);
+        return isAdmin || isUser;
     }
 
     public boolean storeVerification(String token, Store entity) {

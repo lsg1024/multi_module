@@ -1,13 +1,20 @@
 package com.msa.account.global.domain.dto;
 
 import com.querydsl.core.annotations.QueryProjection;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import static com.msa.account.global.domain.dto.util.ExchangeEnumUtil.*;
+import static com.msa.account.global.domain.dto.util.ExchangeEnumUtil.getLevelTypeTitle;
+import static com.msa.account.global.domain.dto.util.ExchangeEnumUtil.getTradeTypeTitle;
 
 public class AccountDto {
+    private static final String ERR_KO_EN_NUM_ONLY = "영어, 한글, 숫자만 허용됩니다.";
+    private static final String ERR_NUM_ONLY = "숫자만 허용됩니다.";
 
     @Getter
     @NoArgsConstructor
@@ -48,4 +55,121 @@ public class AccountDto {
             this.address = address;
         }
     }
+
+    @Getter
+    @NoArgsConstructor
+    public static class AccountSingleResponse {
+        private String accountId;
+        private String accountName;
+        private String accountOwnerName;
+        private String accountPhoneNumber;
+        private String accountContactNumber1;
+        private String accountContactNumber2;
+        private String accountFaxNumber;
+        private String accountNote;
+
+        private String addressId;
+        private String addressZipCode;
+        private String addressBasic;
+        private String addressAdd;
+
+        private String commonOptionId;
+        private String tradeType;
+        private String level;
+        private String goldHarryId;
+        private String goldHarryLoss;
+
+        private String additionalOptionId;
+        private Boolean additionalApplyPastSales;
+        private String additionalMaterialId;
+        private String additionalMaterialName;
+
+        @QueryProjection
+        public AccountSingleResponse(String accountId, String accountName, String accountOwnerName, String accountPhoneNumber, String accountContactNumber1, String accountContactNumber2, String accountFaxNumber, String accountNote, String addressId, String addressZipCode, String addressBasic, String addressAdd, String commonOptionId, String tradeType, String level, String goldHarryId, String goldHarryLoss) {
+            this.accountId = accountId;
+            this.accountName = accountName;
+            this.accountOwnerName = accountOwnerName;
+            this.accountPhoneNumber = accountPhoneNumber;
+            this.accountContactNumber1 = accountContactNumber1;
+            this.accountContactNumber2 = accountContactNumber2;
+            this.accountFaxNumber = accountFaxNumber;
+            this.accountNote = accountNote;
+            this.addressId = addressId;
+            this.addressZipCode = addressZipCode;
+            this.addressBasic = addressBasic;
+            this.addressAdd = addressAdd;
+            this.commonOptionId = commonOptionId;
+            this.tradeType = getTradeTypeTitle(tradeType);
+            this.level = getLevelTypeTitle(level);
+            this.goldHarryId = goldHarryId;
+            this.goldHarryLoss = goldHarryLoss;
+        }
+
+        @QueryProjection
+        public AccountSingleResponse(String accountId, String accountName, String accountOwnerName, String accountPhoneNumber, String accountContactNumber1, String accountContactNumber2, String accountFaxNumber, String accountNote, String addressId, String addressZipCode, String addressBasic, String addressAdd, String commonOptionId, String tradeType, String level, String goldHarryId, String goldHarryLoss, String additionalOptionId, Boolean additionalApplyPastSales, String additionalMaterialId, String additionalMaterialName) {
+            this.accountId = accountId;
+            this.accountName = accountName;
+            this.accountOwnerName = accountOwnerName;
+            this.accountPhoneNumber = accountPhoneNumber;
+            this.accountContactNumber1 = accountContactNumber1;
+            this.accountContactNumber2 = accountContactNumber2;
+            this.accountFaxNumber = accountFaxNumber;
+            this.accountNote = accountNote;
+            this.addressId = addressId;
+            this.addressZipCode = addressZipCode;
+            this.addressBasic = addressBasic;
+            this.addressAdd = addressAdd;
+            this.commonOptionId = commonOptionId;
+            this.tradeType = getTradeTypeTitle(tradeType);
+            this.level = getLevelTypeTitle(level);
+            this.goldHarryId = goldHarryId;
+            this.goldHarryLoss = goldHarryLoss;
+            this.additionalOptionId = additionalOptionId;
+            this.additionalApplyPastSales = additionalApplyPastSales;
+            this.additionalMaterialId = additionalMaterialId;
+            this.additionalMaterialName = additionalMaterialName;
+        }
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class AccountUpdate {
+        @Valid
+        @NotNull(message = "상점 정보는 필수입니다.")
+        private AccountInfo accountInfo;
+        @NotNull(message = "기본 옵션 정보는 필수입니다.")
+        private CommonOptionDto.CommonOptionInfo commonOptionInfo;
+        private AdditionalOptionDto.AdditionalOptionInfo additionalOptionInfo;
+        @Valid
+        private AddressDto.AddressInfo addressInfo;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class AccountInfo {
+
+        @NotBlank(message = "필수 입력입니다.")
+        @Pattern(regexp = "^[A-Za-z0-9가-힣\\s]+$", message = ERR_KO_EN_NUM_ONLY)
+        private String accountName;
+
+        @NotBlank(message = "필수 입력입니다.")
+        @Pattern(regexp = "^[A-Za-z0-9가-힣\\s]+$", message = ERR_KO_EN_NUM_ONLY)
+        private String accountOwnerName;
+
+        @Pattern(regexp = "^[0-9]+$", message = ERR_NUM_ONLY)
+        private String accountPhoneNumber;
+
+        @Pattern(regexp = "^[0-9]+$", message = ERR_NUM_ONLY)
+        private String accountContactNumber1;
+
+        @Pattern(regexp = "^[0-9]+$", message = ERR_NUM_ONLY)
+        private String accountContactNumber2;
+
+        @Pattern(regexp = "^[0-9]+$", message = ERR_NUM_ONLY)
+        private String accountFaxNumber;
+
+        @Pattern(regexp = "^[A-Za-z0-9가-힣\\s]+$", message = ERR_KO_EN_NUM_ONLY)
+        private String accountNote;
+    }
+
 }

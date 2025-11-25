@@ -1,6 +1,9 @@
 package com.msa.account.local.factory.controller;
 
+import com.msa.account.global.domain.dto.AccountDto;
+import com.msa.account.global.excel.dto.AccountExcelDto;
 import com.msa.account.local.factory.domain.dto.FactoryDto;
+import com.msa.account.local.factory.service.ExcelService;
 import com.msa.account.local.factory.service.FactoryService;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.AccessToken;
@@ -8,24 +11,35 @@ import com.msa.common.global.util.CustomPage;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @RestController
 public class FactoryController {
 
     private final FactoryService factoryService;
+    private final ExcelService excelService;
 
-    public FactoryController(FactoryService factoryService) {
+    public FactoryController(FactoryService factoryService, ExcelService excelService) {
         this.factoryService = factoryService;
+        this.excelService = excelService;
     }
 
     //단일 조회
     @GetMapping("/factory/{id}")
-    public ResponseEntity<ApiResponse<FactoryDto.FactorySingleResponse>> getFactoryInfo(
+    public ResponseEntity<ApiResponse<AccountDto.AccountSingleResponse>> getFactoryInfo(
             @PathVariable("id") String factoryId) {
 
-        FactoryDto.FactorySingleResponse factoryInfo = factoryService.getFactoryInfo(factoryId);
+        AccountDto.AccountSingleResponse factoryInfo = factoryService.getFactoryInfo(factoryId);
 
         return ResponseEntity.ok(ApiResponse.success(factoryInfo));
     }
@@ -44,27 +58,66 @@ public class FactoryController {
     //생성
     @PostMapping("/factory")
     public ResponseEntity<ApiResponse<String>> createFactory(
-            @Valid @RequestBody FactoryDto.FactoryRequest factoryInfo) {
+            @Valid @RequestBody FactoryDto.FactoryRequest accountInfo) {
 
-        factoryService.createFactory(factoryInfo);
+        factoryService.createFactory(accountInfo);
 
         return ResponseEntity.ok(ApiResponse.success());
     }
 
     //수정
-    @PatchMapping("/factory/{id}")
+    @PatchMapping("/factories/{id}")
     public ResponseEntity<ApiResponse<String>> updateFactory(
             @AccessToken String accessToken,
             @PathVariable("id") String factoryId,
-            @Valid @RequestBody FactoryDto.FactoryUpdate factoryInfo) {
+            @Valid @RequestBody AccountDto.AccountUpdate factoryInfo) {
 
         factoryService.updateFactory(accessToken, factoryId, factoryInfo);
 
         return ResponseEntity.ok(ApiResponse.success());
     }
 
+    //엑셀 다운로드
+    @GetMapping("/factories/excel")
+    public ResponseEntity<byte[]> getFactoryExcel(
+            @AccessToken String accessToken) throws IOException {
+
+        List<AccountExcelDto> excel = factoryService.getExcel(accessToken);
+
+        byte[] formatDtoToExcel = excelService.getFormatDtoToExcel(excel, "매입처");
+
+        HttpHeaders headers = new HttpHeaders();
+
+        String fileName = "매입처_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodedFileName + "\"; filename*=UTF-8''");
+        headers.add(HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+
+        return new ResponseEntity<>(formatDtoToExcel, headers, HttpStatus.OK);
+    }
+
+    @PatchMapping("/factories/harry/{id}/{harry}")
+    public ResponseEntity<ApiResponse<String>> updateHarry(
+            @AccessToken String accessToken,
+            @PathVariable("id") String storeId,
+            @PathVariable("harry") String harryId) {
+        factoryService.updateFactoryHarry(accessToken, storeId, harryId);
+        return ResponseEntity.ok(ApiResponse.success("수정 완료"));
+    }
+
+    @PatchMapping("/factories/grade/{id}/{grade}")
+    public ResponseEntity<ApiResponse<String>> updateGrade(
+            @AccessToken String accessToken,
+            @PathVariable("id") String storeId,
+            @PathVariable("grade") String grade) {
+        factoryService.updateFactoryGrade(accessToken, storeId, grade);
+        return ResponseEntity.ok(ApiResponse.success("수정 완료"));
+    }
+
     //삭제
-    @DeleteMapping("/factory/{id}")
+    @DeleteMapping("/factories/{id}")
     public ResponseEntity<ApiResponse<String>> deleteFactory(
             @AccessToken String accessToken,
             @PathVariable("id") String factoryId) {
@@ -72,6 +125,13 @@ public class FactoryController {
         factoryService.deleteFactory(accessToken, factoryId);
 
         return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @GetMapping("/factories/grade")
+    public ResponseEntity<ApiResponse<String>> getFactoryGrade(
+            @RequestParam(name = "id") String storeId) {
+        String grade = factoryService.getFactoryGrade(storeId);
+        return ResponseEntity.ok(ApiResponse.success(grade));
     }
 
     //공장 검증

@@ -2,6 +2,9 @@ ext {
     set('springCloudVersion', "2024.0.1")
 }
 
+jar {enabled = false}
+bootJar { enabled = true }
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.cloud:spring-cloud-config-server'

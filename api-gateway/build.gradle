@@ -20,6 +20,8 @@ dependencies {
         exclude group: 'org.springframework.boot', module: 'spring-boot-starter-web'
         exclude group: 'org.springframework.boot', module: 'spring-webmvc'
         exclude group: 'org.springframework.boot', module: 'spring-web'
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starterdata-redis'
+        exclude group: 'org.redisson', module: 'redisson-spring-boot-starter'
     }
 
     compileOnly 'org.projectlombok:lombok'

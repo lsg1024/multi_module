@@ -43,26 +43,19 @@ public class ExcelController {
             @RequestParam(name = "color", required = false) String colorName,
             @RequestParam(name = "order_status") String orderStatus) throws IOException {
 
-        log.info("getOrderExcel start");
         List<OrderExcelQueryDto> excelData = ordersService.getExcel(startAt, endAt, factoryName, storeName, setTypeName, colorName, orderStatus);
-        log.info("getExcel finish = {}", excelData.toString());
 
-        log.info("excelService start");
         byte[] formatDtoToExcel = excelService.getFormatDtoToExcel(excelData);
-        log.info("excelService end");
 
-        // 2. 다운로드용 HTTP 헤더 생성
         HttpHeaders headers = new HttpHeaders();
 
-        // 파일 이름 설정 (한글 등 비 ASCII 문자 처리를 위해 인코딩)
+        // 파일 이름 설정 (한글 인코딩)
         String fileName = "주문장_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
         String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
 
-        // Content-Disposition 헤더 설정: 첨부파일이며, 파일 이름을 지정
         headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodedFileName + "\"; filename*=UTF-8''");
         headers.add(HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
-        // 3. ResponseEntity에 데이터, 헤더, 상태 코드를 담아 반환
         return new ResponseEntity<>(formatDtoToExcel, headers, HttpStatus.OK);
     }
 
