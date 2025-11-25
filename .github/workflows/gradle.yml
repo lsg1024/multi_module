@@ -213,6 +213,8 @@ jobs:
                 fail-fast: true
 
           eureka:
+            instance:
+              prefer-ip-address: true
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -276,6 +278,8 @@ jobs:
                 fail-fast: true
 
           eureka:
+            instance:
+              prefer-ip-address: true
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -343,6 +347,8 @@ jobs:
                 fail-fast: true
 
           eureka:
+            instance:
+              prefer-ip-address: true
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -414,6 +420,8 @@ jobs:
                 location: /app/images 
           
           eureka:
+            instance:
+              prefer-ip-address: true
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -483,6 +491,8 @@ jobs:
                 fail-fast: true
 
           eureka:
+            instance:
+              prefer-ip-address: true
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -546,6 +556,8 @@ jobs:
                 fail-fast: true
 
           eureka:
+            instance:
+              prefer-ip-address: true
             client:
               register-with-eureka: true
               fetch-registry: true
