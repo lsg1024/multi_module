@@ -164,6 +164,18 @@ jobs:
           
             docker run -d \
               --name eureka-server \
-              -p 8761:8761 \
+              -p ${{ secrets.EUREKA_PORT }}:${{ secrets.EUREKA_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/eureka-service:latest
           EOF
+
+  debug-vars:
+    needs: check-changes
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print Output Variables
+        run: |
+          echo "Config: ${{ needs.check-changes.outputs.config }}"
+          echo "Eureka: ${{ needs.check-changes.outputs.eureka }}"
+          echo "User: ${{ needs.check-changes.outputs.user }}"
+          echo "Common: ${{ needs.check-changes.outputs.common }}"
