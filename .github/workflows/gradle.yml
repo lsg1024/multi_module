@@ -455,3 +455,137 @@ jobs:
               -v /volume1/docker/msa/product/images:/app/images \
               ${{ secrets.DOCKER_USERNAME }}/product-service:latest
           EOF
+
+  deploy-account:
+    needs: [ check-changes, verify-config-server ]
+    if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.account, 'true') || contains(needs.check-changes.outputs.common, 'true'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Create Account Properties & Logback
+        run: |
+          mkdir -p account-service/src/main/resources
+
+          cat <<EOF > account-service/src/main/resources/bootstrap.yml
+          spring:
+            application:
+              name: account
+            profiles:
+              active: dev
+            cloud:
+              config:
+                uri: http://${{ secrets.ID }}:${{ secrets.PW }}@${{ secrets.NAS_HOST }}:${{ secrets.CONFIG_PORT }}
+                fail-fast: true
+
+          eureka:
+            client:
+              register-with-eureka: true
+              fetch-registry: true
+              service-url:
+                defaultZone: http://${{ secrets.ID }}:${{ secrets.PW }}@${{ secrets.NAS_HOST }}:${{ secrets.EUREKA_PORT }}/eureka/
+          EOF
+
+      - name: Grant execute permission for Gradle
+        run: chmod +x ./gradlew
+
+      - name: Build Account Server
+        run: ./gradlew clean :account-service:build -x test
+
+      - name: Docker Build & Push
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/account-service:latest ./account-service
+          docker push ${{ secrets.DOCKER_USERNAME }}/account-service:latest
+
+      - name: Deploy Account to NAS
+        run: |
+          sudo apt-get install -y sshpass
+          sshpass -p "${{ secrets.NAS_PASSWORD }}" ssh -t -o StrictHostKeyChecking=no -p ${{ secrets.NAS_SSH_PORT }} ${{ secrets.NAS_USERNAME }}@${{ secrets.NAS_HOST }} << EOF
+            export PATH=/usr/local/bin:\$PATH
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            docker pull ${{ secrets.DOCKER_USERNAME }}/account-service:latest
+            docker stop account-service || true
+            docker rm account-service || true
+
+            docker run -d \
+              --name account-service \
+              -p ${{ secrets.ACCOUNT_PORT }}:${{ secrets.ACCOUNT_PORT }} \
+              -v /volume1/docker/msa/account/logs:/app/logs \
+              -v /volume1/docker/msa/account/images:/app/images \
+              ${{ secrets.DOCKER_USERNAME }}/account-service:latest
+          EOF
+
+  deploy-order:
+    needs: [ check-changes, verify-config-server ]
+    if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.order, 'true') || contains(needs.check-changes.outputs.common, 'true'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Create Order Properties & Logback
+        run: |
+          mkdir -p order-service/src/main/resources
+
+          cat <<EOF > order-service/src/main/resources/bootstrap.yml
+          spring:
+            application:
+              name: order
+            profiles:
+              active: dev
+            cloud:
+              config:
+                uri: http://${{ secrets.ID }}:${{ secrets.PW }}@${{ secrets.NAS_HOST }}:${{ secrets.CONFIG_PORT }}
+                fail-fast: true
+
+          eureka:
+            client:
+              register-with-eureka: true
+              fetch-registry: true
+              service-url:
+                defaultZone: http://${{ secrets.ID }}:${{ secrets.PW }}@${{ secrets.NAS_HOST }}:${{ secrets.EUREKA_PORT }}/eureka/
+          EOF
+          
+          touch order-service/src/main/resources/application-secret.properties
+          echo "FILE_UPLOAD_PATH=/app/images/" >> product-service/src/main/resources/application-secret.properties
+          echo "ACCOUNT_SERVER_URL=kkhan.co.kr/internal/account/api" >> order-service/src/main/resources/application-secret.properties
+          echo "PRODUCT_SERVER_URL=kkhan.co.kr/internal/product/api" >> order-service/src/main/resources/application-secret.properties
+
+      - name: Grant execute permission for Gradle
+        run: chmod +x ./gradlew
+
+      - name: Build Order Server
+        run: ./gradlew clean :order-service:build -x test
+
+      - name: Docker Build & Push
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/order-service:latest ./order-service
+          docker push ${{ secrets.DOCKER_USERNAME }}/order-service:latest
+
+      - name: Deploy Order to NAS
+        run: |
+          sudo apt-get install -y sshpass
+          sshpass -p "${{ secrets.NAS_PASSWORD }}" ssh -t -o StrictHostKeyChecking=no -p ${{ secrets.NAS_SSH_PORT }} ${{ secrets.NAS_USERNAME }}@${{ secrets.NAS_HOST }} << EOF
+            export PATH=/usr/local/bin:\$PATH
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            docker pull ${{ secrets.DOCKER_USERNAME }}/order-service:latest
+            docker stop order-service || true
+            docker rm order-service || true
+
+            docker run -d \
+              --name order-service \
+              -p ${{ secrets.ORDER_PORT }}:${{ secrets.ORDER_PORT }} \
+              ${{ secrets.DOCKER_USERNAME }}/order-service:latest
+          EOF
+          
