@@ -5,6 +5,7 @@ on:
     branches: [ "production" ]
   pull_request:
     types: [closed]
+    branches: [ "production" ]
 
 jobs:
 
@@ -184,3 +185,45 @@ jobs:
               -p ${{ secrets.EUREKA_PORT }}:${{ secrets.EUREKA_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/eureka-service:latest
           EOF
+          
+  deploy-api-gateway:
+    needs: [check-change]
+    if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.api-gateway, 'true') || contains(needs.check-changes.outputs.common, 'true'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Create Api-GateWay Properties
+        run: |
+          mkdir -p api-gateway/src/main/resources
+          
+          cat <<EOF > api-gateway/src/main/resources/bootstrap.yml
+          spring:
+            application:
+              name: scg
+            profiles:
+              active: dev
+            cloud:
+              config:
+                uri: http://${{ secrets.ID }}:${{ secrets.PW }}@${{ secrets.NAS_HOST }}:${{ secrets.CONFIG_PORT }}
+                fail-fast: true
+
+          eureka:
+            client:
+              register-with-eureka: true
+              fetch-registry: true
+              service-url:
+                defaultZone: http://${{ secrets.ID }}:${{ secrets.PW }}@${{ secrets.NAS_HOST }}:${{ secrets.EUREKA_PORT }}/eureka/
+          EOF
+
+
+      - name: Grant execute permission for Gradle
+        run: chmod +x ./gradlew
+
+      - name: Build Eureka Server
+        run: ./gradlew clean :eureka-service:build -x test
