@@ -17,18 +17,18 @@ public class AccountDto {
         private String type; // store or factory
         private Long id;
         private String name;
-        private BigDecimal goldBalance;
+        private BigDecimal pureGoldBalance;
         private Integer moneyBalance;
 
         @Builder
-        public updateCurrentBalance(String eventId, String tenantId, String saleType, String type, Long id, String name, BigDecimal goldBalance, Integer moneyBalance) {
+        public updateCurrentBalance(String eventId, String tenantId, String saleType, String type, Long id, String name, BigDecimal pureGoldBalance, Integer moneyBalance) {
             this.eventId = eventId;
             this.tenantId = tenantId;
             this.saleType = saleType;
             this.type = type;
             this.id = id;
             this.name = name;
-            this.goldBalance = goldBalance;
+            this.pureGoldBalance = pureGoldBalance;
             this.moneyBalance = moneyBalance;
         }
     }
