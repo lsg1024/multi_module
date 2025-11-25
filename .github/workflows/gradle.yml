@@ -7,7 +7,7 @@ on:
     types: [closed]
 
 jobs:
-  build-and-push:
+  check-changes:
     runs-on: ubuntu-latest
     outputs:
       config: ${{ steps.filter.outputs.config }}
@@ -72,7 +72,7 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/config-server:latest
 
   deploy-to-nas:
-    needs: check-changes-Config-Server
+    needs: check-changes
     if: ${{ needs.check-changes.outputs.config == 'true' || needs.check-changes.outputs.common == 'true' }}
     runs-on: ubuntu-latest
     steps:
