@@ -324,7 +324,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Create Auth Properties
+      - name: Create User Properties
         run: |
           mkdir -p user-service/src/main/resources
 
@@ -350,7 +350,7 @@ jobs:
       - name: Grant execute permission for Gradle
         run: chmod +x ./gradlew
 
-      - name: Build Auth Server
+      - name: Build User Server
         run: ./gradlew clean :user-service:build -x test
 
       - name: Docker Build & Push
@@ -359,7 +359,7 @@ jobs:
           docker build -t ${{ secrets.DOCKER_USERNAME }}/user-service:latest ./user-service
           docker push ${{ secrets.DOCKER_USERNAME }}/user-service:latest
 
-      - name: Deploy Auth to NAS
+      - name: Deploy User to NAS
         run: |
           sudo apt-get install -y sshpass
           sshpass -p "${{ secrets.NAS_PASSWORD }}" ssh -t -o StrictHostKeyChecking=no -p ${{ secrets.NAS_SSH_PORT }} ${{ secrets.NAS_USERNAME }}@${{ secrets.NAS_HOST }} << EOF
@@ -371,7 +371,7 @@ jobs:
 
             docker run -d \
               --name user-service \
-              -p ${{ secrets.AUTH_PORT }}:${{ secrets.USER_PORT }} \
+              -p ${{ secrets.USER_PORT }}:${{ secrets.USER_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/user-service:latest
           EOF
 
@@ -426,7 +426,7 @@ jobs:
       - name: Grant execute permission for Gradle
         run: chmod +x ./gradlew
 
-      - name: Build Auth Server
+      - name: Build Product Server
         run: ./gradlew clean :product-service:build -x test
 
       - name: Docker Build & Push
@@ -435,7 +435,7 @@ jobs:
           docker build -t ${{ secrets.DOCKER_USERNAME }}/product-service:latest ./product-service
           docker push ${{ secrets.DOCKER_USERNAME }}/product-service:latest
 
-      - name: Deploy Auth to NAS
+      - name: Deploy Product to NAS
         run: |
           sudo apt-get install -y sshpass
           sshpass -p "${{ secrets.NAS_PASSWORD }}" ssh -t -o StrictHostKeyChecking=no -p ${{ secrets.NAS_SSH_PORT }} ${{ secrets.NAS_USERNAME }}@${{ secrets.NAS_HOST }} << EOF
