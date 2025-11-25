@@ -106,30 +106,28 @@ jobs:
     if: always() && (needs.deploy-config.result == 'success' || needs.deploy-config.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
-      - name: Install sshpass
-        run: sudo apt-get install -y sshpass
-
       - name: Wait for Config Server Health
         run: |
           sshpass -p "${{ secrets.NAS_PASSWORD }}" ssh -t -o StrictHostKeyChecking=no -p ${{ secrets.NAS_SSH_PORT }} ${{ secrets.NAS_USERNAME }}@${{ secrets.NAS_HOST }} << EOF
             export PATH=/usr/local/bin:\$PATH
-            echo "Checking Config Server Health..."
+            echo "Checking Config Server Health at http://${{ secrets.NAS_HOST }}:${{ secrets.CONFIG_PORT }} ..."
           
             RETRIES=12
             COUNT=0
           
             while [ \$COUNT -lt \$RETRIES ]; do
-              # Localhost 호출 (NAS 내부에서)
-              if curl -s -f http://localhost:${{ secrets.CONFIG_PORT }}/actuator/health > /dev/null; then
+              if curl -s -f http://${{ secrets.NAS_HOST }}:${{ secrets.CONFIG_PORT }}/actuator/health > /dev/null; then
                 echo "Config Server is UP and Healthy!"
                 exit 0
               fi
+          
               echo "Waiting... (\$COUNT/\$RETRIES)"
               sleep 10
               COUNT=\$((COUNT+1))
             done
           
-            echo "Config Server failed to start."
+            echo "Config Server failed to start or is not reachable via External IP."
+          
             exit 1
           EOF
 
