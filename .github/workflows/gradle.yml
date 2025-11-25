@@ -285,7 +285,7 @@ jobs:
           EOF
           
           touch product-service/src/main/resources/application-secret.properties
-          echo "USER_SERVER_URL=kkhan.co.kr/internal/users/login" >> product-service/src/main/resources/application-secret.properties
+          echo "USER_SERVER_URL=.kkhan.co.kr/internal/users/login" >> auth-service/src/main/resources/application-secret.properties
 
 
       - name: Grant execute permission for Gradle
@@ -424,7 +424,7 @@ jobs:
           
           touch product-service/src/main/resources/application-secret.properties
           echo "FILE_UPLOAD_PATH=/app/images/" >> product-service/src/main/resources/application-secret.properties
-          echo "ACCOUNT_SERVER_URL=kkhan.co.kr/account/api" >> product-service/src/main/resources/application-secret.properties
+          echo "ACCOUNT_SERVER_URL=.kkhan.co.kr/account/api" >> product-service/src/main/resources/application-secret.properties
 
       - name: Grant execute permission for Gradle
         run: chmod +x ./gradlew
@@ -516,8 +516,6 @@ jobs:
             docker run -d \
               --name account-service \
               -p ${{ secrets.ACCOUNT_PORT }}:${{ secrets.ACCOUNT_PORT }} \
-              -v /volume1/docker/msa/account/logs:/app/logs \
-              -v /volume1/docker/msa/account/images:/app/images \
               ${{ secrets.DOCKER_USERNAME }}/account-service:latest
           EOF
 
@@ -557,9 +555,9 @@ jobs:
           EOF
           
           touch order-service/src/main/resources/application-secret.properties
-          echo "FILE_UPLOAD_PATH=/app/images/" >> product-service/src/main/resources/application-secret.properties
-          echo "ACCOUNT_SERVER_URL=kkhan.co.kr/internal/account/api" >> order-service/src/main/resources/application-secret.properties
-          echo "PRODUCT_SERVER_URL=kkhan.co.kr/internal/product/api" >> order-service/src/main/resources/application-secret.properties
+          echo "FILE_UPLOAD_PATH=/app/images/" >> order-service/src/main/resources/application-secret.properties
+          echo "ACCOUNT_SERVER_URL=.kkhan.co.kr/internal/account/api" >> order-service/src/main/resources/application-secret.properties
+          echo "PRODUCT_SERVER_URL=.kkhan.co.kr/internal/product/api" >> order-service/src/main/resources/application-secret.properties
 
       - name: Grant execute permission for Gradle
         run: chmod +x ./gradlew
