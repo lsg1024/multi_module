@@ -1,7 +1,6 @@
 package com.msa.order.local.stock.service;
 
 import com.msa.common.global.jwt.JwtUtil;
-import com.msa.common.global.tenant.TenantContext;
 import com.msa.common.global.util.CustomPage;
 import com.msa.order.global.dto.StoneDto;
 import com.msa.order.global.kafka.KafkaProducer;
@@ -201,7 +200,6 @@ public class StockService {
 
     //주문 -> 재고 변경
     public void updateOrderToStock(String accessToken, Long flowCode, String orderType, StockDto.StockRegisterRequest stockDto) {
-        String tenantId = jwtUtil.getTenantId(accessToken);
         String nickname = jwtUtil.getNickname(accessToken);
         Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
@@ -214,7 +212,7 @@ public class StockService {
             throw new IllegalArgumentException(READY_TO_EXPECT);
         }
 
-        AssistantStoneDto.Response assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(tenantId, Long.valueOf(stockDto.getAssistantStoneId()));
+        AssistantStoneDto.Response assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(accessToken, Long.valueOf(stockDto.getAssistantStoneId()));
 
         OffsetDateTime assistantStoneCreateAt = null;
         if (StringUtils.hasText(stockDto.getAssistantStoneCreateAt())) {
@@ -300,7 +298,6 @@ public class StockService {
     //재고 등록 -> 생성 시 발생하는 토큰 저장 후 고유 stock_code 발급 후 저장
     public void saveStock(String accessToken, String orderType, StockDto.Request stockDto) {
         String nickname = jwtUtil.getNickname(accessToken);
-        String tenantId = TenantContext.getTenant();
 
         Long productId = Long.valueOf(stockDto.getProductId());
         Long storeId = Long.valueOf(stockDto.getStoreId());
@@ -392,7 +389,7 @@ public class StockService {
         KafkaStockRequest stockRequest = KafkaStockRequest.builder()
                 .eventId(UUID.randomUUID().toString())
                 .flowCode(stock.getStockCode())
-                .tenantId(tenantId)
+                .token(accessToken)
                 .storeId(storeId)
                 .factoryId(factoryId)
                 .productId(productId)

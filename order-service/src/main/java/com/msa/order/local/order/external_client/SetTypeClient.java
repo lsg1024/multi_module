@@ -17,8 +17,10 @@ import static com.msa.order.global.exception.ExceptionMessage.NO_CONNECT_SERVER;
 @Service
 public class SetTypeClient {
 
+    @Value("${BASE_URL}")
+    private String BASE_URL;
     @Value("${PRODUCT_SERVER_URL}")
-    private String baseUrl;
+    private String PRODUCT_URL;
 
     private final RestClientUtil restClientUtil;
 
@@ -27,11 +29,11 @@ public class SetTypeClient {
     }
 
     @Retry(value = 3)
-    public String getSetTypeName(String tenantId, Long setTypeId) {
+    public String getSetTypeName(String token, Long setTypeId) {
         ResponseEntity<ApiResponse<String>> response;
 
-        String url = "http://" + tenantId + baseUrl + "/set-type/" + setTypeId;
-        response = restClientUtil.get(url, new ParameterizedTypeReference<>() {});
+        String url = "https://" + BASE_URL + PRODUCT_URL + "/set-type/" + setTypeId;
+        response = restClientUtil.get(url, token, new ParameterizedTypeReference<>() {});
 
         HttpStatusCode status = response.getStatusCode();
         if (status.is5xxServerError()

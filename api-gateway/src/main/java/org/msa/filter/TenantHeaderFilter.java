@@ -2,7 +2,6 @@ package org.msa.filter;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.http.HttpHeaders;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.OrderedGatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
@@ -27,12 +26,16 @@ public class TenantHeaderFilter extends AbstractGatewayFilterFactory<TenantHeade
     @Override
     public GatewayFilter apply(Config c) {
         return new OrderedGatewayFilter((exchange, chain) -> {
-            String host = exchange.getRequest().getHeaders().getFirst(HttpHeaders.HOST);
-            String hostname = host != null ? host.split(":")[0] : "";
-            String tenant;
-            if (c.isDeriveFromHost() && hostname.contains(".")) {
-                tenant = hostname.split("\\.")[0];
 
+            String tenant;
+            String explicitTenant = exchange.getRequest().getHeaders().getFirst(c.getHeader());
+            if (!explicitTenant.isEmpty()) {
+                tenant = explicitTenant;
+            } else {
+                tenant = null;
+            }
+
+            if (tenant != null) {
                 exchange.getAttributes().put(TENANT_ATTRIBUTE_KEY, tenant);
 
                 ServerHttpRequest req = exchange.getRequest().mutate()

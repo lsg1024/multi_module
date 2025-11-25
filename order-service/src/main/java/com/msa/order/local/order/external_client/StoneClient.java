@@ -17,8 +17,10 @@ import static com.msa.order.global.exception.ExceptionMessage.NO_CONNECT_SERVER;
 @Service
 public class StoneClient {
 
+    @Value("${BASE_URL}")
+    private String BASE_URL;
     @Value("${PRODUCT_SERVER_URL}")
-    private String baseUrl;
+    private String PRODUCT_URL;
 
     private final RestClientUtil restClientUtil;
 
@@ -27,11 +29,11 @@ public class StoneClient {
     }
 
     @Retry(value = 3)
-    public Boolean getExistStoneId(String tenantId, Long stoneId) {
+    public Boolean getExistStoneId(String token, Long stoneId) {
         ResponseEntity<ApiResponse<Boolean>> response;
 
-        String url = "http://" + tenantId + baseUrl + "/stone/" + stoneId;
-        response = restClientUtil.get(url,
+        String url = "https://" + BASE_URL + PRODUCT_URL + "/stone/" + stoneId;
+        response = restClientUtil.get(url, token,
                 new ParameterizedTypeReference<>() {}
         );
 

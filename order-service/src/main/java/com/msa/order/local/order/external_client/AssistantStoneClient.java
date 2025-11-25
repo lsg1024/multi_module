@@ -18,9 +18,10 @@ import static com.msa.order.global.exception.ExceptionMessage.NO_CONNECT_SERVER;
 @Service
 public class AssistantStoneClient {
 
+    @Value("${BASE_URL}")
+    private String BASE_URL;
     @Value("${PRODUCT_SERVER_URL}")
-    private String baseUrl;
-
+    private String PRODUCT_URL;
     private final RestClientUtil restClientUtil;
 
     public AssistantStoneClient(RestClientUtil restClientUtil) {
@@ -28,12 +29,13 @@ public class AssistantStoneClient {
     }
 
     @Retry(value = 3)
-    public AssistantStoneDto.Response getAssistantStoneInfo(String tenantId, Long assistantStoneId) {
+    public AssistantStoneDto.Response getAssistantStoneInfo(String token, Long assistantStoneId) {
         ResponseEntity<ApiResponse<AssistantStoneDto.Response>> response;
 
         try {
-            String url = "http://" + tenantId + baseUrl + "/assistant_stone/" + assistantStoneId;
-            response = restClientUtil.get(url,
+            String url = "https://" + BASE_URL +  PRODUCT_URL + "/assistant_stone/" + assistantStoneId;
+
+            response = restClientUtil.get(url, token,
                     new ParameterizedTypeReference<>() {}
             );
         } catch (Exception e) {

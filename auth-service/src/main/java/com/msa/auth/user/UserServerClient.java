@@ -18,6 +18,8 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class UserServerClient {
 
+    @Value("${BASE_URL}")
+    private String BASE_URL;
     @Value("${USER_SERVER_URL}")
     private String USER_CLIENT_URL;
     private final RestTemplate restTemplate;
@@ -30,7 +32,7 @@ public class UserServerClient {
 
         String tenantId = request.getHeader("X-Tenant-ID");
 
-        String url = "http://" + tenantId + USER_CLIENT_URL;
+        String url = "https://" + BASE_URL + USER_CLIENT_URL;
 
         HttpHeaders headers = new HttpHeaders();
 

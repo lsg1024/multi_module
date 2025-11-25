@@ -15,8 +15,10 @@ import static com.msa.order.global.exception.ExceptionMessage.NO_CONNECT_SERVER;
 @Service
 public class ColorClient {
 
+    @Value("${BASE_URL}")
+    private String BASE_URL;
     @Value("${PRODUCT_SERVER_URL}")
-    private String baseUrl;
+    private String PRODUCT_URL;
 
     private final RestClientUtil restClientUtil;
 
@@ -25,13 +27,13 @@ public class ColorClient {
     }
 
     @Retry(value = 3)
-    public String getColorInfo(String tenantId, Long colorId) {
+    public String getColorInfo(String token, Long colorId) {
 
         ResponseEntity<ApiResponse<String>> response;
 
         try {
-            String url = "http://" + tenantId + baseUrl + "/color/" + colorId;
-            response = restClientUtil.get(url,
+            String url = "https://" + BASE_URL + PRODUCT_URL + "/color/" + colorId;
+            response = restClientUtil.get(url, token,
                     new ParameterizedTypeReference<>() {}
             );
         } catch (Exception e) {

@@ -1,21 +1,21 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<configuration scan="true" scanPeriod="30 seconds">
-    <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter" />
-    <property name="LOG_FILE_PATH" value="/app/logs" />
-    <property name="CONSOLE_LOG_PATTERN" value="%clr([%d{yyyyMMdd HH:mm:ss.SSS}]){magenta} %clr([%-5level]) [%thread] %clr(%logger{36}){cyan} %msg%n"/>
-    <property name="FILE_LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{tenant}] %-5level %logger{36} - %msg%n"/>
+<!--<?xml version="1.0" encoding="UTF-8"?>-->
+<!--<configuration scan="true" scanPeriod="30 seconds">-->
+<!--    <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter" />-->
+<!--    <property name="LOG_FILE_PATH" value="/app/logs" />-->
+<!--    <property name="CONSOLE_LOG_PATTERN" value="%clr([%d{yyyyMMdd HH:mm:ss.SSS}]){magenta} %clr([%-5level]) [%thread] %clr(%logger{36}){cyan} %msg%n"/>-->
+<!--    <property name="FILE_LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{tenant}] %-5level %logger{36} - %msg%n"/>-->
 
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder><pattern>\${CONSOLE_LOG_PATTERN}</pattern></encoder>
-    </appender>
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>\${LOG_FILE_PATH}/product-%d{yyyy-MM-dd}.log</fileNamePattern>
-        </rollingPolicy>
-        <encoder><pattern>\${FILE_LOG_PATTERN}</pattern></encoder>
-    </appender>
-    <root level="INFO">
-        <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="FILE"/>
-    </root>
-</configuration>
+<!--    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">-->
+<!--        <encoder><pattern>\${CONSOLE_LOG_PATTERN}</pattern></encoder>-->
+<!--    </appender>-->
+<!--    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">-->
+<!--        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">-->
+<!--            <fileNamePattern>\${LOG_FILE_PATH}/product-%d{yyyy-MM-dd}.log</fileNamePattern>-->
+<!--        </rollingPolicy>-->
+<!--        <encoder><pattern>\${FILE_LOG_PATTERN}</pattern></encoder>-->
+<!--    </appender>-->
+<!--    <root level="INFO">-->
+<!--        <appender-ref ref="CONSOLE"/>-->
+<!--        <appender-ref ref="FILE"/>-->
+<!--    </root>-->
+<!--</configuration>-->
