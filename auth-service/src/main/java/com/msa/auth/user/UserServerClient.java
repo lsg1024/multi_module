@@ -39,17 +39,14 @@ public class UserServerClient {
         headers.add("X-Tenant-ID", tenantId);
         headers.add("User-Agent", request.getHeader("User-Agent"));
 
-        log.info("UserServerClient {} {}" ,loginDto.getUserId(), loginDto.getPassword());
-
         HttpEntity<UserDto.Login> entity = new HttpEntity<>(loginDto, headers);
         try {
-            ResponseEntity<ApiResponse<UserDto.UserInfo>> response = restTemplate.exchange(
+            return restTemplate.exchange(
                     url,
                     HttpMethod.POST,
                     entity,
                     new ParameterizedTypeReference<ApiResponse<UserDto.UserInfo>>() {}
             );
-            return response;
         } catch (HttpClientErrorException e) {
             log.error("로그인 실패: {}", e.getMessage());
             throw new BadCredentialsException("아이디/비밀번호가 일치하지 않습니다.");
