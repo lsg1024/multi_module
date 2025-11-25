@@ -106,30 +106,26 @@ jobs:
     if: always() && (needs.deploy-config.result == 'success' || needs.deploy-config.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
-      - name: Wait for Config Server Health
+      - name: Wait for Config Server Health (External Check)
         run: |
-          sshpass -p "${{ secrets.NAS_PASSWORD }}" ssh -t -o StrictHostKeyChecking=no -p ${{ secrets.NAS_SSH_PORT }} ${{ secrets.NAS_USERNAME }}@${{ secrets.NAS_HOST }} << EOF
-            export PATH=/usr/local/bin:\$PATH
-            echo "Checking Config Server Health at http://${{ secrets.NAS_HOST }}:${{ secrets.CONFIG_PORT }} ..."
+          echo "Checking Config Server Health from GitHub Runner (External)..."
+          echo "Target: http://${{ secrets.NAS_HOST }}:${{ secrets.CONFIG_PORT }}/actuator/health"
+          RETRIES=12
+          COUNT=0
+          while [ $COUNT -lt $RETRIES ]; do
+            if curl -s -f --connect-timeout 5 http://${{ secrets.NAS_HOST }}:${{ secrets.CONFIG_PORT }}/actuator/health > /dev/null; then
+              echo "Config Server is UP and Healthy (Externally Accessible)!"
+              exit 0
+            fi
           
-            RETRIES=12
-            COUNT=0
+            echo "Waiting for Config Server... ($COUNT/$RETRIES)"
+            sleep 10
+            COUNT=$((COUNT+1))
+          done
           
-            while [ \$COUNT -lt \$RETRIES ]; do
-              if curl -s -f http://${{ secrets.NAS_HOST }}:${{ secrets.CONFIG_PORT }}/actuator/health > /dev/null; then
-                echo "Config Server is UP and Healthy!"
-                exit 0
-              fi
-          
-              echo "Waiting... (\$COUNT/\$RETRIES)"
-              sleep 10
-              COUNT=\$((COUNT+1))
-            done
-          
-            echo "Config Server failed to start or is not reachable via External IP."
-          
-            exit 1
-          EOF
+          echo "Config Server failed to respond to external requests."
+          echo "Check Port Forwarding (Router) and Firewall (NAS)."
+          exit 1
 
 
   deploy-eureka:
