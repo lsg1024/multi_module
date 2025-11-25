@@ -20,7 +20,7 @@ jobs:
 
       - name: Create Config Server Properties
         run: |
-          mkdir -p config-service/src/main/resources
+          mkdir -p config-server/src/main/resources
           echo "spring.application.name=ConfigServer" > config-server/src/main/resources/application.properties
           echo "spring.profiles.active=secret" >> config-server/src/main/resources/application.properties
           echo "server.port=${{ secrets.CONFIG_PORT }}" >> config-server/src/main/resources/application.properties
