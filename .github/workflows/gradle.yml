@@ -127,45 +127,6 @@ jobs:
           echo "Check Port Forwarding (Router) and Firewall (NAS)."
           exit 1
 
-  # ----------------------------------------------------------------
-  # 디버깅 전용 Job (스킵 원인 분석용)
-  # deploy-eureka와 똑같은 데이터를 받아와서 그대로 출력해봅니다.
-  # ----------------------------------------------------------------
-  debug-skip-reason:
-    needs: [check-changes, verify-config-server]
-    if: always() # 조건 상관없이 무조건 실행
-    runs-on: ubuntu-latest
-    steps:
-      - name: Print All Condition Values
-        run: |
-          echo "======================================================"
-          echo " [DEBUG] Why deploy-eureka is skipped? "
-          echo "======================================================"
-          
-          echo "1. needs.verify-config-server.result"
-          echo "   -> 값: [${{ needs.verify-config-server.result }}]"
-          echo "   -> 기대값: [success]"
-          echo "   -> 조건 일치 여부: ${{ needs.verify-config-server.result == 'success' }}"
-          echo "------------------------------------------------------"
-          
-          echo "2. needs.check-changes.outputs.eureka"
-          echo "   -> 값: [${{ needs.check-changes.outputs.eureka }}]"
-          echo "   -> contains('true') 여부: ${{ contains(needs.check-changes.outputs.eureka, 'true') }}"
-          echo "------------------------------------------------------"
-          
-          echo "3. needs.check-changes.outputs.common"
-          echo "   -> 값: [${{ needs.check-changes.outputs.common }}]"
-          echo "   -> contains('true') 여부: ${{ contains(needs.check-changes.outputs.common, 'true') }}"
-          echo "------------------------------------------------------"
-          
-          echo "4. 최종 조건문 논리 연산 결과"
-          echo "   -> Result: ${{ needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.eureka, 'true') || contains(needs.check-changes.outputs.common, 'true')) }}"
-          echo "======================================================"
-
-      # JSON 형식으로 전체 컨텍스트를 덤프 떠서 숨겨진 공백이나 타입 문제 확인
-      - name: Dump Needs Context
-        run: echo '${{ toJSON(needs) }}'
-
   deploy-eureka:
     needs: [check-changes, verify-config-server]
     if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.eureka, 'true') || contains(needs.check-changes.outputs.common, 'true'))
