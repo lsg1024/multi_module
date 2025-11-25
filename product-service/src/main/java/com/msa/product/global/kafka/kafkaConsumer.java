@@ -39,7 +39,6 @@ public class kafkaConsumer {
     private final Job classificationUpdateJob;
     private final Job materialUpdateJob;
     private final Job setTypeUpdateJob;
-    private final Job colorUpdateJob;
 
     public kafkaConsumer(ObjectMapper objectMapper, JobLauncher jobLauncher,
                          SetTypeRepository setTypeRepository, MaterialRepository materialRepository,
@@ -47,8 +46,7 @@ public class kafkaConsumer {
                          ColorRepository colorRepository,
                          @Qualifier("updateClassificationJob") Job classificationUpdateJob,
                          @Qualifier("updateMaterialUpdateJob") Job materialUpdateJob,
-                         @Qualifier("updateSetTypeUpdateJob") Job setTypeUpdateJob,
-                         @Qualifier("updateColorJob") Job colorUpdateJob) {
+                         @Qualifier("updateSetTypeUpdateJob") Job setTypeUpdateJob) {
         this.objectMapper = objectMapper;
         this.jobLauncher = jobLauncher;
         this.setTypeRepository = setTypeRepository;
@@ -58,7 +56,6 @@ public class kafkaConsumer {
         this.classificationUpdateJob = classificationUpdateJob;
         this.materialUpdateJob = materialUpdateJob;
         this.setTypeUpdateJob = setTypeUpdateJob;
-        this.colorUpdateJob = colorUpdateJob;
     }
 
     @KafkaListener(topics = "classification.update", groupId = "classification-group", concurrency = "3")

@@ -298,6 +298,7 @@ public class StockService {
     //재고 등록 -> 생성 시 발생하는 토큰 저장 후 고유 stock_code 발급 후 저장
     public void saveStock(String accessToken, String orderType, StockDto.Request stockDto) {
         String nickname = jwtUtil.getNickname(accessToken);
+        String tenantId = jwtUtil.getTenantId(accessToken);
 
         Long productId = Long.valueOf(stockDto.getProductId());
         Long storeId = Long.valueOf(stockDto.getStoreId());
@@ -389,6 +390,7 @@ public class StockService {
         KafkaStockRequest stockRequest = KafkaStockRequest.builder()
                 .eventId(UUID.randomUUID().toString())
                 .flowCode(stock.getStockCode())
+                .tenantId(tenantId)
                 .token(accessToken)
                 .storeId(storeId)
                 .factoryId(factoryId)

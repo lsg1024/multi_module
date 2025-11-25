@@ -11,6 +11,7 @@ import java.time.OffsetDateTime;
 public class KafkaStockRequest {
     private String eventId;
     private Long flowCode;
+    private String tenantId;
     private String token;
     private Long storeId;
     private Long factoryId;
@@ -25,9 +26,10 @@ public class KafkaStockRequest {
     private OffsetDateTime assistantStoneCreateAt;
 
     @Builder
-    public KafkaStockRequest(String eventId, Long flowCode, String token, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, Long setTypeId, Long classificationId, String nickname, boolean assistantStone, Long assistantStoneId, OffsetDateTime assistantStoneCreateAt) {
+    public KafkaStockRequest(String eventId, Long flowCode, String tenantId, String token, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, Long setTypeId, Long classificationId, String nickname, boolean assistantStone, Long assistantStoneId, OffsetDateTime assistantStoneCreateAt) {
         this.eventId = eventId;
         this.flowCode = flowCode;
+        this.tenantId = tenantId;
         this.token = token;
         this.storeId = storeId;
         this.factoryId = factoryId;

@@ -165,6 +165,7 @@ public class OrdersService {
     //주문
     public Long saveOrder(String accessToken, String orderStatus, OrderDto.Request orderDto) {
         String nickname = jwtUtil.getNickname(accessToken);
+        String tenantId = jwtUtil.getTenantId(accessToken);
 
         Long storeId = Long.valueOf(orderDto.getStoreId());
         Long factoryId = Long.valueOf(orderDto.getFactoryId());
@@ -259,6 +260,7 @@ public class OrdersService {
         OrderAsyncRequested.OrderAsyncRequestedBuilder orderAsyncRequestedBuilder = OrderAsyncRequested.builder()
                 .eventId(UUID.randomUUID().toString())
                 .flowCode(order.getFlowCode())
+                .tenantId(tenantId)
                 .token(accessToken)
                 .storeId(storeId)
                 .factoryId(factoryId)
@@ -318,8 +320,9 @@ public class OrdersService {
 
         OrderUpdateRequest.OrderUpdateRequestBuilder updateRequestBuilder = OrderUpdateRequest.builder()
                 .eventId(UUID.randomUUID().toString())
-                .flowCode(order.getFlowCode())
+                .tenantId(tenantId)
                 .token(accessToken)
+                .flowCode(order.getFlowCode())
                 .nickname(nickname);
 
         // orderProduct 추가
