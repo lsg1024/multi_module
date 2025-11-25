@@ -5,6 +5,7 @@ import com.msa.account.global.domain.dto.util.AuthorityUserRoleUtil;
 import com.msa.account.global.domain.entity.GoldHarry;
 import com.msa.account.global.domain.entity.OptionLevel;
 import com.msa.account.global.domain.repository.GoldHarryRepository;
+import com.msa.account.global.excel.dto.AccountExcelDto;
 import com.msa.account.global.exception.ExceptionMessage;
 import com.msa.account.global.exception.NotAuthorityException;
 import com.msa.account.global.exception.NotFoundException;
@@ -16,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 import static com.msa.account.global.exception.ExceptionMessage.*;
 
@@ -36,7 +39,7 @@ public class StoreService {
 
     //상점 호출(info)
     @Transactional(readOnly = true)
-    public StoreDto.StoreSingleResponse getStoreInfo(String storeId) {
+    public AccountDto.AccountSingleResponse getStoreInfo(String storeId) {
         return storeRepository.findByStoreId(Long.valueOf(storeId))
                 .orElseThrow(() -> new NotFoundException(ExceptionMessage.NOT_FOUND_STORE));
     }
@@ -58,7 +61,7 @@ public class StoreService {
 
     //상점 추가
     public void createStore(StoreDto.StoreRequest storeInfo) {
-        if (storeRepository.existsByStoreName(storeInfo.getStoreInfo().getStoreName())) {
+        if (storeRepository.existsByStoreName(storeInfo.getAccountInfo().getAccountName())) {
             throw new NotFoundException(ALREADY_EXIST_STORE);
         }
 
@@ -71,16 +74,16 @@ public class StoreService {
     }
 
     //상점 수정
-    public void updateStore(String token, String storeId, StoreDto.StoreUpdate updateInfo) {
+    public void updateStore(String token, String storeId, AccountDto.AccountUpdate updateInfo) {
         Store store = storeRepository.findWithAllOptionsById(Long.valueOf(storeId))
                 .orElseThrow(() -> new NotFoundException(NOT_FOUND_STORE));
 
         if (authorityUserRoleUtil.storeVerification(token, store)) {
-            StoreDto.StoreInfo storeInfo = updateInfo.getStoreInfo();
+            AccountDto.AccountInfo storeInfo = updateInfo.getAccountInfo();
 
             //상점 이름 검증
-            if (store.isNameChanged(storeInfo.getStoreName())) {
-                if (storeRepository.existsByStoreName(storeInfo.getStoreName())) {
+            if (store.isNameChanged(storeInfo.getAccountName())) {
+                if (storeRepository.existsByStoreName(storeInfo.getAccountName())) {
                     throw new NotFoundException(ALREADY_EXIST_STORE);
                 }
             }
@@ -88,7 +91,7 @@ public class StoreService {
             GoldHarry goldHarry = goldHarryRepository.findById(Long.valueOf(updateInfo.getCommonOptionInfo().getGoldHarryId()))
                     .orElseThrow(() -> new NotFoundException(WRONG_HARRY));
 
-            store.updateStoreInfo(updateInfo.getStoreInfo());
+            store.updateStoreInfo(updateInfo.getAccountInfo());
             store.updateCommonOption(updateInfo.getCommonOptionInfo(), goldHarry);
             store.updateAdditionalOption(updateInfo.getAdditionalOptionInfo());
             store.updateAddressInfo(updateInfo.getAddressInfo());
@@ -128,4 +131,36 @@ public class StoreService {
         return grade.getLevel();
     }
 
+    public void updateStoreHarry(String accessToken, String storeId, String harryId) {
+        Store store = storeRepository.findById(Long.valueOf(storeId))
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_STORE));
+        if (authorityUserRoleUtil.storeVerification(accessToken, store)) {
+            GoldHarry goldHarry = goldHarryRepository.findById(Long.valueOf(harryId))
+                    .orElseThrow(() -> new NotFoundException(WRONG_HARRY));
+
+            store.getCommonOption().updateGoldHarry(goldHarry);
+            return;
+        }
+
+        throw new NotAuthorityException(NO_ROLE);
+    }
+
+    public void updateStoreGrade(String accessToken, String storeId, String grade) {
+        Store store = storeRepository.findById(Long.valueOf(storeId))
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_STORE));
+        if (authorityUserRoleUtil.storeVerification(accessToken, store)) {
+
+            store.getCommonOption().updateOptionLevel(grade);
+            return;
+        }
+
+        throw new NotAuthorityException(NO_ROLE);
+    }
+
+    public List<AccountExcelDto> getExcel(String accessToken) {
+        if (authorityUserRoleUtil.verification(accessToken)) {
+            return storeRepository.findAllStoreExcel();
+        }
+        throw new NotAuthorityException(NO_ROLE);
+    }
 }

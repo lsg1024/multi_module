@@ -1,12 +1,12 @@
 package com.msa.account.local.store.domain.entity;
 
+import com.msa.account.global.domain.dto.AccountDto;
 import com.msa.account.global.domain.dto.AdditionalOptionDto;
 import com.msa.account.global.domain.dto.AddressDto;
 import com.msa.account.global.domain.dto.CommonOptionDto;
 import com.msa.account.global.domain.entity.Address;
 import com.msa.account.global.domain.entity.CommonOption;
 import com.msa.account.global.domain.entity.GoldHarry;
-import com.msa.account.local.store.domain.dto.StoreDto;
 import com.msa.common.global.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -82,14 +82,14 @@ public class Store extends BaseEntity {
         this.additionalOption = additionalOption;
     }
 
-    public void updateStoreInfo(StoreDto.StoreInfo updateInfo) {
-        this.storeName = updateInfo.getStoreName();
-        this.storeOwnerName = updateInfo.getStoreOwnerName();
-        this.storePhoneNumber = updateInfo.getStorePhoneNumber();
-        this.storeContactNumber1 = updateInfo.getStoreContactNumber1();
-        this.storeContactNumber2 = updateInfo.getStoreContactNumber2();
-        this.storeFaxNumber = updateInfo.getStoreFaxNumber();
-        this.storeNote = updateInfo.getStoreNote();
+    public void updateStoreInfo(AccountDto.AccountInfo updateInfo) {
+        this.storeName = updateInfo.getAccountName();
+        this.storeOwnerName = updateInfo.getAccountOwnerName();
+        this.storePhoneNumber = updateInfo.getAccountPhoneNumber();
+        this.storeContactNumber1 = updateInfo.getAccountContactNumber1();
+        this.storeContactNumber2 = updateInfo.getAccountContactNumber2();
+        this.storeFaxNumber = updateInfo.getAccountFaxNumber();
+        this.storeNote = updateInfo.getAccountNote();
     }
 
     public void updateCommonOption(CommonOptionDto.CommonOptionInfo optionInfo, GoldHarry goldHarry) {

@@ -1,17 +1,22 @@
 package com.msa.account.local.factory.service;
 
+import com.msa.account.global.domain.dto.AccountDto;
+import com.msa.account.global.domain.dto.util.AuthorityUserRoleUtil;
+import com.msa.account.global.domain.entity.GoldHarry;
+import com.msa.account.global.domain.entity.OptionLevel;
+import com.msa.account.global.domain.repository.GoldHarryRepository;
+import com.msa.account.global.excel.dto.AccountExcelDto;
+import com.msa.account.global.exception.NotAuthorityException;
+import com.msa.account.global.exception.NotFoundException;
 import com.msa.account.local.factory.domain.dto.FactoryDto;
 import com.msa.account.local.factory.domain.entity.Factory;
 import com.msa.account.local.factory.repository.FactoryRepository;
-import com.msa.account.global.domain.dto.util.AuthorityUserRoleUtil;
-import com.msa.account.global.domain.entity.GoldHarry;
-import com.msa.account.global.domain.repository.GoldHarryRepository;
-import com.msa.account.global.exception.NotAuthorityException;
-import com.msa.account.global.exception.NotFoundException;
 import com.msa.common.global.util.CustomPage;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 import static com.msa.account.global.exception.ExceptionMessage.*;
 
@@ -30,7 +35,7 @@ public class FactoryService {
 
 
     @Transactional(readOnly = true)
-    public FactoryDto.FactorySingleResponse getFactoryInfo(String factoryId) {
+    public AccountDto.AccountSingleResponse getFactoryInfo(String factoryId) {
         return factoryRepository.findByFactoryId(Long.valueOf(factoryId))
                 .orElseThrow(() -> new NotFoundException(NOT_FOUND_STORE));
     }
@@ -41,7 +46,7 @@ public class FactoryService {
     }
 
     public void createFactory(FactoryDto.FactoryRequest factoryInfo) throws NotFoundException {
-        if (factoryRepository.existsByFactoryName(factoryInfo.getFactoryInfo().getFactoryName())) {
+        if (factoryRepository.existsByFactoryName(factoryInfo.getAccountInfo().getAccountName())) {
             throw new NotFoundException(ALREADY_EXIST_FACTORY);
         }
 
@@ -53,16 +58,16 @@ public class FactoryService {
         factoryRepository.save(newfactory);
     }
 
-    public void updateFactory(String token, String factoryId, FactoryDto.FactoryUpdate updateInfo) {
+    public void updateFactory(String token, String factoryId, AccountDto.AccountUpdate updateInfo) {
 
         Factory factory = factoryRepository.findWithAllOptionById(Long.valueOf(factoryId))
                 .orElseThrow(() -> new NotFoundException(NOT_FOUND_FACTORY));
 
         if (authorityUserRoleUtil.factoryVerification(token, factory)) {
-            FactoryDto.FactoryInfo factoryInfo = updateInfo.getFactoryInfo();
+            AccountDto.AccountInfo factoryInfo = updateInfo.getAccountInfo();
 
-            if (factory.isNameChanged(factoryInfo.getFactoryName())) {
-                if (factoryRepository.existsByFactoryName(factoryInfo.getFactoryName())) {
+            if (factory.isNameChanged(factoryInfo.getAccountName())) {
+                if (factoryRepository.existsByFactoryName(factoryInfo.getAccountName())) {
                     throw new NotFoundException(ALREADY_EXIST_FACTORY);
                 }
             }
@@ -96,5 +101,44 @@ public class FactoryService {
                 .orElseThrow(() -> new NotFoundException(NOT_FOUND_FACTORY));
 
         return new FactoryDto.ApiFactoryInfo(factory.getFactoryId(), factory.getFactoryName(), factory.getCommonOption().getGoldHarryLoss());
+    }
+
+    public String getFactoryGrade(String storeId) {
+        OptionLevel grade = factoryRepository.findByCommonOptionOptionLevel(Long.valueOf(storeId));
+        return grade.getLevel();
+    }
+
+    public void updateFactoryHarry(String accessToken, String factoryId, String harryId) {
+        Factory factory = factoryRepository.findById(Long.valueOf(factoryId))
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_FACTORY));
+        if (authorityUserRoleUtil.factoryVerification(accessToken, factory)) {
+            GoldHarry goldHarry = goldHarryRepository.findById(Long.valueOf(harryId))
+                    .orElseThrow(() -> new NotFoundException(WRONG_HARRY));
+
+            factory.getCommonOption().updateGoldHarry(goldHarry);
+            return;
+        }
+
+        throw new NotAuthorityException(NO_ROLE);
+    }
+
+    public void updateFactoryGrade(String accessToken, String factoryId, String grade) {
+        Factory factory = factoryRepository.findById(Long.valueOf(factoryId))
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_FACTORY));
+        if (authorityUserRoleUtil.factoryVerification(accessToken, factory)) {
+
+            factory.getCommonOption().updateOptionLevel(grade);
+            return;
+        }
+
+        throw new NotAuthorityException(NO_ROLE);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AccountExcelDto> getExcel(String accessToken) {
+        if (authorityUserRoleUtil.verification(accessToken)) {
+            return factoryRepository.findAllFactoryExcel();
+        }
+        throw new NotAuthorityException(NO_ROLE);
     }
 }

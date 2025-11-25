@@ -1,5 +1,6 @@
 package com.msa.account.local.store.domain.dto;
 
+import com.msa.account.global.domain.dto.AccountDto;
 import com.msa.account.global.domain.dto.AdditionalOptionDto;
 import com.msa.account.global.domain.dto.AddressDto;
 import com.msa.account.global.domain.dto.CommonOptionDto;
@@ -21,7 +22,6 @@ import static com.msa.account.global.domain.dto.util.ExchangeEnumUtil.getLevelTy
 import static com.msa.account.global.domain.dto.util.ExchangeEnumUtil.getTradeTypeTitle;
 
 public class StoreDto {
-
     private static final String ERR_KO_EN_NUM_ONLY = "영어, 한글, 숫자만 허용됩니다.";
     private static final String ERR_NUM_ONLY = "숫자만 허용됩니다.";
 
@@ -59,60 +59,6 @@ public class StoreDto {
         }
     }
 
-    //개별 조회
-    @Getter
-    @NoArgsConstructor
-    public static class StoreSingleResponse {
-        private String storeId;
-        private String storeName;
-        private String storeOwnerName;
-        private String storePhoneNumber;
-        private String storeContactNumber1;
-        private String storeContactNumber2;
-        private String storeFaxNumber;
-        private String storeNote;
-
-        private String addressId;
-        private String addressZipCode;
-        private String addressBasic;
-        private String addressAdd;
-
-        private String commonOptionId;
-        private String tradeType;
-        private String level;
-        private String goldHarryId;
-        private String goldHarryLoss;
-
-        private String additionalOptionId;
-        private boolean additionalApplyPastSales;
-        private String additionalMaterialId;
-        private String additionalMaterialName;
-
-        @QueryProjection
-        public StoreSingleResponse(String storeId, String storeName, String storeOwnerName, String storePhoneNumber, String storeContactNumber1, String storeContactNumber2, String storeFaxNumber, String storeNote, String addressId, String addressZipCode, String addressBasic, String addressAdd, String commonOptionId, String tradeType, String level, String goldHarryId, String goldHarryLoss, String additionalOptionId, boolean additionalApplyPastSales, String additionalMaterialId, String additionalMaterialName) {
-            this.storeId = storeId;
-            this.storeName = storeName;
-            this.storeOwnerName = storeOwnerName;
-            this.storePhoneNumber = storePhoneNumber;
-            this.storeContactNumber1 = storeContactNumber1;
-            this.storeContactNumber2 = storeContactNumber2;
-            this.storeFaxNumber = storeFaxNumber;
-            this.storeNote = storeNote;
-            this.addressId = addressId;
-            this.addressZipCode = addressZipCode;
-            this.addressBasic = addressBasic;
-            this.addressAdd = addressAdd;
-            this.commonOptionId = commonOptionId;
-            this.tradeType = getTradeTypeTitle(tradeType);
-            this.level = getLevelTypeTitle(level);;
-            this.goldHarryId = goldHarryId;
-            this.goldHarryLoss = goldHarryLoss;
-            this.additionalOptionId = additionalOptionId;
-            this.additionalApplyPastSales = additionalApplyPastSales;
-            this.additionalMaterialId = additionalMaterialId;
-            this.additionalMaterialName = additionalMaterialName;
-        }
-    }
 
     //상점 생성
     @Getter
@@ -120,10 +66,10 @@ public class StoreDto {
     public static class StoreRequest {
 
         @Valid
-        @NotNull(message = "상점 정보는 필수입니다.")
-        private StoreInfo storeInfo;
+        @NotNull(message = "판매처 필수 입력값을 입력해주세요.")
+        private AccountDto.AccountInfo accountInfo;
 
-        @NotNull(message = "기본 옵션 정보는 필수입니다.")
+        @NotNull(message = "거래 유형, 거래 등급은 필수 선택 사항입니다.")
         private CommonOptionDto.CommonOptionInfo commonOptionInfo;
         private AdditionalOptionDto.AdditionalOptionInfo additionalOptionInfo;
         @Valid
@@ -135,31 +81,18 @@ public class StoreDto {
             AdditionalOption additionalOptionEntity = (this.additionalOptionInfo != null) ? this.additionalOptionInfo.toEntity() : null;
 
             return Store.builder()
-                    .storeName(storeInfo.getStoreName())
-                    .storeOwnerName(storeInfo.getStoreOwnerName())
-                    .storePhoneNumber(storeInfo.getStorePhoneNumber())
-                    .storeContactNumber1(storeInfo.getStoreContactNumber1())
-                    .storeContactNumber2(storeInfo.getStoreContactNumber2())
-                    .storeFaxNumber(storeInfo.getStoreFaxNumber())
-                    .storeNote(storeInfo.getStoreNote())
+                    .storeName(accountInfo.getAccountName())
+                    .storeOwnerName(accountInfo.getAccountOwnerName())
+                    .storePhoneNumber(accountInfo.getAccountPhoneNumber())
+                    .storeContactNumber1(accountInfo.getAccountContactNumber1())
+                    .storeContactNumber2(accountInfo.getAccountContactNumber2())
+                    .storeFaxNumber(accountInfo.getAccountFaxNumber())
+                    .storeNote(accountInfo.getAccountNote())
                     .address(addressEntity)
                     .commonOption(commonOptionInfo.toEntity(goldHarry))
                     .additionalOption(additionalOptionEntity)
                     .build();
         }
-    }
-
-    @Getter
-    @NoArgsConstructor
-    public static class StoreUpdate {
-        @Valid
-        @NotNull(message = "상점 정보는 필수입니다.")
-        private StoreInfo storeInfo;
-        @NotNull(message = "기본 옵션 정보는 필수입니다.")
-        private CommonOptionDto.CommonOptionInfo commonOptionInfo;
-        private AdditionalOptionDto.AdditionalOptionInfo additionalOptionInfo;
-        @Valid
-        private AddressDto.AddressInfo addressInfo;
     }
 
     @Getter

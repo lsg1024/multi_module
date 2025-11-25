@@ -1,11 +1,11 @@
 package com.msa.account.local.factory.domain.entity;
 
+import com.msa.account.global.domain.dto.AccountDto;
 import com.msa.account.global.domain.dto.AddressDto;
 import com.msa.account.global.domain.dto.CommonOptionDto;
 import com.msa.account.global.domain.entity.Address;
 import com.msa.account.global.domain.entity.CommonOption;
 import com.msa.account.global.domain.entity.GoldHarry;
-import com.msa.account.local.factory.domain.dto.FactoryDto;
 import com.msa.common.global.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -74,13 +74,13 @@ public class Factory extends BaseEntity {
         this.address = address;
         this.commonOption = commonOption;
     }
-    public void updateFactoryInfo(FactoryDto.FactoryInfo factoryInfo) {
-        this.factoryName = factoryInfo.getFactoryName();
-        this.factoryOwnerName = factoryInfo.getFactoryOwnerName();
-        this.factoryContactNumber1 = factoryInfo.getFactoryContactNumber1();
-        this.factoryContactNumber2 = factoryInfo.getFactoryContactNumber2();
-        this.factoryFaxNumber = factoryInfo.getFactoryFaxNumber();
-        this.factoryNote = factoryInfo.getFactoryNote();
+    public void updateFactoryInfo(AccountDto.AccountInfo factoryInfo) {
+        this.factoryName = factoryInfo.getAccountName();
+        this.factoryOwnerName = factoryInfo.getAccountOwnerName();
+        this.factoryContactNumber1 = factoryInfo.getAccountContactNumber1();
+        this.factoryContactNumber2 = factoryInfo.getAccountContactNumber2();
+        this.factoryFaxNumber = factoryInfo.getAccountFaxNumber();
+        this.factoryNote = factoryInfo.getAccountNote();
     }
     public void updateAddressInfo(AddressDto.AddressInfo addressInfo) {
         this.address.update(addressInfo);

@@ -1,6 +1,7 @@
 package com.msa.account.local.factory.repository;
 
 
+import com.msa.account.global.domain.entity.OptionLevel;
 import com.msa.account.local.factory.domain.entity.Factory;
 import com.msa.account.local.transaction_history.domain.dto.TransactionDto;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,6 +18,11 @@ public interface FactoryRepository extends JpaRepository<Factory, Long>, CustomF
             "join fetch f.address a " +
             "where f.factoryId = :factoryId")
     Optional<Factory> findWithAllOptionById(@Param("factoryId") Long factoryId);
+
+    @Query("select f.commonOption.optionLevel " +
+            "from Factory f " +
+            "where f.factoryId = :factoryId")
+    OptionLevel findByCommonOptionOptionLevel(@Param("factoryId") Long factoryId);
 
     @Query("select f.currentGoldBalance, f.currentMoneyBalance from Factory f " +
             "where f.factoryId= :factoryId " +

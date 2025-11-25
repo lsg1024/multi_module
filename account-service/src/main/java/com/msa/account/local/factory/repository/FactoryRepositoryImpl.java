@@ -1,8 +1,11 @@
 package com.msa.account.local.factory.repository;
 
+import com.msa.account.global.domain.dto.AccountDto;
+import com.msa.account.global.domain.dto.QAccountDto_AccountSingleResponse;
+import com.msa.account.global.excel.dto.AccountExcelDto;
+import com.msa.account.global.excel.dto.QAccountExcelDto;
 import com.msa.account.local.factory.domain.dto.FactoryDto;
 import com.msa.account.local.factory.domain.dto.QFactoryDto_FactoryResponse;
-import com.msa.account.local.factory.domain.dto.QFactoryDto_FactorySingleResponse;
 import com.msa.common.global.util.CustomPage;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
@@ -28,10 +31,10 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
     }
 
     @Override
-    public Optional<FactoryDto.FactorySingleResponse> findByFactoryId(Long factoryId) {
+    public Optional<AccountDto.AccountSingleResponse> findByFactoryId(Long factoryId) {
 
         return Optional.ofNullable(query
-                .select(new QFactoryDto_FactorySingleResponse(
+                .select(new QAccountDto_AccountSingleResponse(
                         factory.factoryId.stringValue(),
                         factory.factoryName,
                         factory.factoryOwnerName,
@@ -98,5 +101,36 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
                 .where(factory.factoryDeleted.isFalse().and(factoryName));
 
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
+    }
+
+    @Override
+    public List<AccountExcelDto> findAllFactoryExcel() {
+        return query
+                .select(new QAccountExcelDto(
+                        Expressions.constant("매입처"),
+                        factory.createDate.stringValue(),
+                        factory.createdBy,
+                        factory.factoryName,
+                        factory.factoryOwnerName,
+                        factory.factoryPhoneNumber,
+                        factory.factoryContactNumber1,
+                        factory.factoryContactNumber2,
+                        factory.factoryFaxNumber,
+                        factory.factoryNote,
+                        Expressions.stringTemplate(
+                                "concat({0}, ' ', {1}, ' ', {2})",
+                                factory.address.addressZipCode,
+                                factory.address.addressBasic,
+                                factory.address.addressAdd
+                        ),
+                        factory.commonOption.optionTradeType.stringValue(),
+                        factory.commonOption.optionLevel.stringValue(),
+                        factory.commonOption.goldHarryLoss
+                        ))
+                .from(factory)
+                .leftJoin(factory.address, address)
+                .leftJoin(factory.commonOption, commonOption)
+                .orderBy(factory.factoryName.desc())
+                .fetch();
     }
 }
