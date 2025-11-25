@@ -12,4 +12,11 @@ public class ExchangeEnumUtil {
         return OptionLevel.getLevelByKey(levelKey);
     }
 
+    public static String getFormattedDate(String dateString) {
+        if (dateString != null && dateString.length() >= 10) {
+            return dateString.substring(0, 10);
+        }
+        return dateString;
+    }
+
 }
