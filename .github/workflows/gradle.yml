@@ -307,7 +307,7 @@ jobs:
             docker rm auth-service || true
 
             docker run -d \
-              --name api-gateway \
+              --name auth-service \
               -p ${{ secrets.AUTH_PORT }}:${{ secrets.AUTH_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/auth-service:latest
           EOF
