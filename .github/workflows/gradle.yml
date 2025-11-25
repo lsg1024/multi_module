@@ -11,8 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       config: ${{ steps.filter.outputs.config }}
+      eureka: ${{ steps.filter.outputs.eureka }}
       user: ${{ steps.filter.outputs.user }}
       account: ${{ steps.filter.outputs.account }}
+      common: ${{ steps.filter.outputs.common }}
 
     steps:
       - uses: actions/checkout@v4
