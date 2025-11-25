@@ -130,7 +130,7 @@ jobs:
 
   deploy-eureka:
     needs: [check-changes, verify-config-server]
-    if: ${{ needs.verify-config-server.result == 'success' && (needs.check-changes.outputs.eureka == 'true' || needs.check-changes.outputs.common == 'true') }}
+    if: ${{ needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.eureka, 'true') || contains(needs.check-changes.outputs.common, 'true')) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
