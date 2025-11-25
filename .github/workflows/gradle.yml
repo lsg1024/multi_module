@@ -9,8 +9,26 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    outputs:
+      config: ${{ steps.filter.outputs.config }}
+      user: ${{ steps.filter.outputs.user }}
+      account: ${{ steps.filter.outputs.account }}
+
     steps:
       - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            config: 'config-server/**'
+            user: 'user-service/**'
+            account: 'account-service/**'
+            eureka: 'eureka-service/**'
+            api-gateway: 'api-gateway/**'
+            auth: 'auth-service/**'
+            product: 'product-service/**'
+            order: 'order-service/**'
+            common: 'common/**'
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -52,7 +70,8 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/config-server:latest
 
   deploy-to-nas:
-    needs: build-and-push
+    needs: check-changes-Config-Server
+    if: ${{ needs.check-changes.outputs.config == 'true' || needs.check-changes.outputs.common == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Install sshpass
@@ -89,4 +108,81 @@ jobs:
   
             echo "=== Deployment Completed ==="
             exit
+          EOF
+
+  #Config Server 헬스 체크 (Ping Check)
+  verify-config-server:
+    needs: [check-changes, deploy-config]
+    if: always() && (needs.deploy-config.result == 'success' || needs.deploy-config.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install sshpass
+      run: sudo apt-get install -y sshpass
+
+    - name: Wait for Config Server Health
+      run: |
+        sshpass -p "${{ secrets.NAS_PASSWORD }}" ssh -t -o StrictHostKeyChecking=no -p ${{ secrets.NAS_SSH_PORT }} ${{ secrets.NAS_USERNAME }}@${{ secrets.NAS_HOST }} << EOF
+          export PATH=/usr/local/bin:\$PATH
+        
+          echo "checking config-server health..."
+        
+        RETRIES=12
+        COUNT=0
+        
+        while [ \$COUNT -lt \$RETRIES ]; do
+            if curl -s -f http://localhost:${{ secrets.CONFIG_PORT }}/actuator/health > /dev/null; then
+              echo "Config Server is UP and Healthy!"
+              exit 0
+            fi
+
+            echo "Waiting for Config Server to start... (\$COUNT/\$RETRIES)"
+            sleep 10
+            COUNT=\$((COUNT+1))
+          done
+
+          echo "Config Server failed to start within 2 minutes."
+          exit 1
+        EOF
+
+  # 에라카 서버 배포
+  deploy-eureka:
+    needs: [ check-changes, verify-config-server ]
+    if: ${{ needs.verify-config-server.result == 'success' && (needs.check-changes.outputs.eureka == 'true' || needs.check-changes.outputs.common == 'true') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Grant execute permission for Gradle
+        run: chmod +x ./gradlew
+
+      - name: Build Eureka Server
+        run: ./gradlew clean :eureka-service:build -x test
+
+      - name: Docker Build & Push
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/eureka-service:latest ./eureka-service
+          docker push ${{ secrets.DOCKER_USERNAME }}/eureka-service:latest
+
+      - name: Deploy to NAS
+        run: |
+          sudo apt-get install -y sshpass
+          sshpass -p "${{ secrets.NAS_PASSWORD }}" ssh -t -o StrictHostKeyChecking=no -p ${{ secrets.NAS_SSH_PORT }} ${{ secrets.NAS_USERNAME }}@${{ secrets.NAS_HOST }} << EOF
+            export PATH=/usr/local/bin:\$PATH
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          
+            docker pull ${{ secrets.DOCKER_USERNAME }}/eureka-service:latest
+          
+            docker stop eureka-server || true
+            docker rm eureka-server || true
+          
+            docker run -d \
+              --name eureka-server \
+              -p 8761:8761 \
+              ${{ secrets.DOCKER_USERNAME }}/eureka-service:latest
           EOF
