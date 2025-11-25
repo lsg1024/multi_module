@@ -7,6 +7,7 @@ public record SaleRow(
     LocalDateTime createAt,
     String createBy,
     String  saleType,
+    String storeId,
     String storeName,
     String saleCode,
     String flowCode,
