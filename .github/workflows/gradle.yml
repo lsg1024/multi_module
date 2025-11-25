@@ -7,13 +7,18 @@ on:
     types: [closed]
 
 jobs:
+
   check-changes:
     runs-on: ubuntu-latest
     outputs:
       config: ${{ steps.filter.outputs.config }}
       eureka: ${{ steps.filter.outputs.eureka }}
       user: ${{ steps.filter.outputs.user }}
+      api-gateway: ${{ steps.filter.outputs.api-gateway }}
+      auth: ${{ steps.filter.outputs.auth }}
       account: ${{ steps.filter.outputs.account }}
+      product: ${{ steps.filter.outputs.product }}
+      order: ${{ steps.filter.outputs.order }}
       common: ${{ steps.filter.outputs.common }}
 
     steps:
@@ -23,15 +28,21 @@ jobs:
         with:
           filters: |
             config: 'config-server/**'
+            eureka: 'eureka-service/**'
             user: 'user-service/**'
             account: 'account-service/**'
-            eureka: 'eureka-service/**'
             api-gateway: 'api-gateway/**'
             auth: 'auth-service/**'
             product: 'product-service/**'
             order: 'order-service/**'
             common: 'common/**'
 
+  deploy-config:
+    needs: check-changes
+    if: ${{ needs.check-changes.outputs.config == 'true' || needs.check-changes.outputs.common == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -60,95 +71,62 @@ jobs:
       - name: Grant execute permission for Gradle
         run: chmod +x ./gradlew
 
-      - name: Build with Gradle
+      - name: Build Config Server
         run: ./gradlew clean :config-server:build -x test
 
-      - name: Log in to Docker Hub
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
-      - name: Build and Push Config Server Image
+      - name: Docker Build & Push
         run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
           docker build -t ${{ secrets.DOCKER_USERNAME }}/config-server:latest ./config-server
           docker push ${{ secrets.DOCKER_USERNAME }}/config-server:latest
 
-  deploy-to-nas:
-    needs: check-changes
-    if: ${{ needs.check-changes.outputs.config == 'true' || needs.check-changes.outputs.common == 'true' }}
+      - name: Deploy Config to NAS
+        run: |
+          sudo apt-get install -y sshpass
+          sshpass -p "${{ secrets.NAS_PASSWORD }}" ssh -t -o StrictHostKeyChecking=no -p ${{ secrets.NAS_SSH_PORT }} ${{ secrets.NAS_USERNAME }}@${{ secrets.NAS_HOST }} << EOF
+            export PATH=/usr/local/bin:\$PATH
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            docker pull ${{ secrets.DOCKER_USERNAME }}/config-server:latest
+            docker stop config-server || true
+            docker rm config-server || true
+            docker run -d --name config-server -p ${{ secrets.CONFIG_PORT }}:${{ secrets.CONFIG_PORT }} ${{ secrets.DOCKER_USERNAME }}/config-server:latest
+          EOF
+
+  verify-config-server:
+    needs: [deploy-config]
+    if: always() && (needs.deploy-config.result == 'success' || needs.deploy-config.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - name: Install sshpass
         run: sudo apt-get install -y sshpass
 
-      - name: SSH into Synology NAS and Deploy
-        env:
-          NAS_USERNAME: ${{ secrets.NAS_USERNAME }}
-          NAS_PASSWORD: ${{ secrets.NAS_PASSWORD }}
-          NAS_HOST: ${{ secrets.NAS_HOST }}
-          SSH_PORT: ${{ secrets.NAS_SSH_PORT }}
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-          CONFIG_PORT: ${{ secrets.CONFIG_PORT }}
+      - name: Wait for Config Server Health
         run: |
-          sshpass -p "$NAS_PASSWORD" ssh -t -o StrictHostKeyChecking=no -p $SSH_PORT $NAS_USERNAME@$NAS_HOST << EOF
-          
+          sshpass -p "${{ secrets.NAS_PASSWORD }}" ssh -t -o StrictHostKeyChecking=no -p ${{ secrets.NAS_SSH_PORT }} ${{ secrets.NAS_USERNAME }}@${{ secrets.NAS_HOST }} << EOF
             export PATH=/usr/local/bin:\$PATH
-            echo "=== 1. Docker Login ==="
-            docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-  
-            echo "=== 2. Pull Config Server Image ==="
-            docker pull $DOCKER_USERNAME/config-server:latest
-  
-            echo "=== 3. Reset Container ==="
-            docker stop config-server || true
-            docker rm config-server || true
-  
-            echo "=== 4. Run Config Server ==="
-            docker run -d \
-              --name config-server \
-              -p $CONFIG_PORT:$CONFIG_PORT \
-              $DOCKER_USERNAME/config-server:latest
-  
-            echo "=== Deployment Completed ==="
-            exit
+            echo "Checking Config Server Health..."
+          
+            RETRIES=12
+            COUNT=0
+          
+            while [ \$COUNT -lt \$RETRIES ]; do
+              # Localhost 호출 (NAS 내부에서)
+              if curl -s -f http://localhost:${{ secrets.CONFIG_PORT }}/actuator/health > /dev/null; then
+                echo "Config Server is UP and Healthy!"
+                exit 0
+              fi
+              echo "Waiting... (\$COUNT/\$RETRIES)"
+              sleep 10
+              COUNT=\$((COUNT+1))
+            done
+          
+            echo "Config Server failed to start."
+            exit 1
           EOF
 
-  #Config Server 헬스 체크 (Ping Check)
-  verify-config-server:
-    needs: [check-changes, deploy-config]
-    if: always() && (needs.deploy-config.result == 'success' || needs.deploy-config.result == 'skipped')
-    runs-on: ubuntu-latest
-    steps:
-    - name: Install sshpass
-      run: sudo apt-get install -y sshpass
 
-    - name: Wait for Config Server Health
-      run: |
-        sshpass -p "${{ secrets.NAS_PASSWORD }}" ssh -t -o StrictHostKeyChecking=no -p ${{ secrets.NAS_SSH_PORT }} ${{ secrets.NAS_USERNAME }}@${{ secrets.NAS_HOST }} << EOF
-          export PATH=/usr/local/bin:\$PATH
-        
-          echo "checking config-server health..."
-        
-        RETRIES=12
-        COUNT=0
-        
-        while [ \$COUNT -lt \$RETRIES ]; do
-            if curl -s -f http://localhost:${{ secrets.CONFIG_PORT }}/actuator/health > /dev/null; then
-              echo "Config Server is UP and Healthy!"
-              exit 0
-            fi
-
-            echo "Waiting for Config Server to start... (\$COUNT/\$RETRIES)"
-            sleep 10
-            COUNT=\$((COUNT+1))
-          done
-
-          echo "Config Server failed to start within 2 minutes."
-          exit 1
-        EOF
-
-  # 에라카 서버 배포
   deploy-eureka:
-    needs: [ check-changes, verify-config-server ]
+    needs: [check-changes, verify-config-server]
     if: ${{ needs.verify-config-server.result == 'success' && (needs.check-changes.outputs.eureka == 'true' || needs.check-changes.outputs.common == 'true') }}
     runs-on: ubuntu-latest
     steps:
@@ -171,15 +149,13 @@ jobs:
           docker build -t ${{ secrets.DOCKER_USERNAME }}/eureka-service:latest ./eureka-service
           docker push ${{ secrets.DOCKER_USERNAME }}/eureka-service:latest
 
-      - name: Deploy to NAS
+      - name: Deploy Eureka to NAS
         run: |
           sudo apt-get install -y sshpass
           sshpass -p "${{ secrets.NAS_PASSWORD }}" ssh -t -o StrictHostKeyChecking=no -p ${{ secrets.NAS_SSH_PORT }} ${{ secrets.NAS_USERNAME }}@${{ secrets.NAS_HOST }} << EOF
             export PATH=/usr/local/bin:\$PATH
             docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          
             docker pull ${{ secrets.DOCKER_USERNAME }}/eureka-service:latest
-          
             docker stop eureka-server || true
             docker rm eureka-server || true
           
