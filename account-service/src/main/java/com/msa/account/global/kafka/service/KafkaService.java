@@ -37,29 +37,23 @@ public class KafkaService {
         Long entityId = dto.getId();
         String eventId = dto.getEventId();
         String saleType = dto.getSaleType();
-        BigDecimal goldAmount = new BigDecimal(dto.getGoldBalance());
+        BigDecimal pureGoldAmount = new BigDecimal(dto.getPureGoldBalance());
         Long moneyAmount = Long.valueOf(dto.getMoneyBalance());
 
         Store store = null;
         Factory factory = null;
-        BigDecimal goldAmountDelta;
         if ("STORE".equals(type)) {
 
             store = storeRepository.findById(entityId)
                     .orElseThrow(() -> new IllegalArgumentException("TENANT ID: " + dto.getTenantId() + " STORE: " + NOT_FOUND));
 
-            BigDecimal currentGoldBalance = store.getCurrentGoldBalance();
-            goldAmountDelta = currentGoldBalance.add(goldAmount);
-            store.updateBalance(goldAmountDelta, moneyAmount);
+            store.updateBalance(pureGoldAmount, moneyAmount);
 
         } else if ("FACTORY".equals(type)) {
             factory = factoryRepository.findById(entityId)
                     .orElseThrow(() -> new IllegalArgumentException("TENANT ID: " + dto.getTenantId() + " FACTORY: " + NOT_FOUND));
 
-            BigDecimal currentGoldBalance = factory.getCurrentGoldBalance();
-            goldAmountDelta = currentGoldBalance.add(goldAmount);
-
-            factory.updateBalance(goldAmountDelta, moneyAmount);
+            factory.updateBalance(pureGoldAmount, moneyAmount);
 
         } else {
             throw new IllegalArgumentException("Unknown balance type: " + type);
@@ -70,7 +64,7 @@ public class KafkaService {
             TransactionHistory history = TransactionHistory.builder()
                     .eventId(eventId)
                     .transactionType(saleType)
-                    .goldAmount(goldAmount)
+                    .goldAmount(pureGoldAmount)
                     .moneyAmount(moneyAmount)
                     .store(store)
                     .factory(factory)
