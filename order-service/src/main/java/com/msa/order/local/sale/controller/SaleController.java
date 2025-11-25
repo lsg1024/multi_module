@@ -110,10 +110,9 @@ public class SaleController {
             @AccessToken String accessToken,
             @RequestHeader(name = "Idempotency-Key") String eventId,
             @PathVariable(name = "type") String type,
-            @RequestParam(name = "code") Long saleCode,
-            @RequestParam(name = "id") Long flowCode) {
+            @RequestParam(name = "id") String flowCode) {
 
-        saleService.cancelSale(accessToken, eventId, type, saleCode, flowCode);
+        saleService.cancelSale(accessToken, eventId, type, flowCode);
         return ResponseEntity.ok(ApiResponse.success("삭제 완료"));
     }
 
