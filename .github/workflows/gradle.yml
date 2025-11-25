@@ -139,6 +139,24 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Create Eureka Properties
+        run: |
+          mkdir -p eureka-service/src/main/resources
+          
+          echo "spring.application.name=eurekaServer" > eureka-service/src/main/resources/application.properties
+          echo "spring.profiles.active=secret" >> eureka-service/src/main/resources/application.properties
+          echo "server.port=\${EUREKA_PORT}" >> eureka-service/src/main/resources/application.properties
+          echo "eureka.client.register-with-eureka=false" >> eureka-service/src/main/resources/application.properties
+          echo "eureka.client.fetch-registry=false" >> eureka-service/src/main/resources/application.properties
+          
+          touch eureka-service/src/main/resources/application-secret.properties
+          echo "ID=${{ secrets.ID }}" >> eureka-service/src/main/resources/application-secret.properties
+          echo "PW=${{ secrets.PW }}" >> eureka-service/src/main/resources/application-secret.properties
+          echo "EUREKA_PORT=${{ secrets.EUREKA_PORT }}" >> eureka-service/src/main/resources/application-secret.properties
+          
+          # 생성 확인
+          ls -al eureka-service/src/main/resources/
+
       - name: Grant execute permission for Gradle
         run: chmod +x ./gradlew
 
@@ -166,15 +184,3 @@ jobs:
               -p ${{ secrets.EUREKA_PORT }}:${{ secrets.EUREKA_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/eureka-service:latest
           EOF
-
-  debug-vars:
-    needs: check-changes
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Print Output Variables
-        run: |
-          echo "Config: ${{ needs.check-changes.outputs.config }}"
-          echo "Eureka: ${{ needs.check-changes.outputs.eureka }}"
-          echo "User: ${{ needs.check-changes.outputs.user }}"
-          echo "Common: ${{ needs.check-changes.outputs.common }}"
