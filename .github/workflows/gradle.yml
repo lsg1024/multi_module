@@ -81,15 +81,24 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/config-server:latest
 
       - name: Deploy Config to NAS
+        env:
+          NAS_USERNAME: ${{ secrets.NAS_USERNAME }}
+          NAS_PASSWORD: ${{ secrets.NAS_PASSWORD }}
+          NAS_HOST: ${{ secrets.NAS_HOST }}
+          SSH_PORT: ${{ secrets.NAS_SSH_PORT }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          CONFIG_PORT: ${{ secrets.CONFIG_PORT }}
         run: |
-          sudo apt-get install -y sshpass
-          sshpass -p "${{ secrets.NAS_PASSWORD }}" ssh -t -o StrictHostKeyChecking=no -p ${{ secrets.NAS_SSH_PORT }} ${{ secrets.NAS_USERNAME }}@${{ secrets.NAS_HOST }} << EOF
+          sshpass -p "$NAS_PASSWORD" ssh -t -o StrictHostKeyChecking=no -p $SSH_PORT $NAS_USERNAME@$NAS_HOST << EOF
+          
             export PATH=/usr/local/bin:\$PATH
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-            docker pull ${{ secrets.DOCKER_USERNAME }}/config-server:latest
+            docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+            docker pull $DOCKER_USERNAME/config-server:latest
             docker stop config-server || true
             docker rm config-server || true
-            docker run -d --name config-server -p ${{ secrets.CONFIG_PORT }}:${{ secrets.CONFIG_PORT }} ${{ secrets.DOCKER_USERNAME }}/config-server:latest
+            docker run -d --name config-server -p $CONFIG_PORT:$CONFIG_PORT $DOCKER_USERNAME/config-server:latest
+            exit
           EOF
 
   verify-config-server:
