@@ -113,7 +113,7 @@ jobs:
           RETRIES=12
           COUNT=0
           while [ $COUNT -lt $RETRIES ]; do
-            if curl -s -f --connect-timeout 5 http://${{ secrets.NAS_HOST }}:${{ secrets.CONFIG_PORT }}/actuator/health > /dev/null; then
+            if curl -s -f -u "${{ secrets.ID }}:${{ secrets.PW }}" --connect-timeout 5 http://${{ secrets.NAS_HOST }}:${{ secrets.CONFIG_PORT }}/actuator/health > /dev/null; then
               echo "Config Server is UP and Healthy (Externally Accessible)!"
               exit 0
             fi
