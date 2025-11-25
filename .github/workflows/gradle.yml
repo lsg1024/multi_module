@@ -1,67 +1,69 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
-
-name: Java CI with Gradle
+name: Deploy Multi-Module to Synology NAS
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "production" ]
   pull_request:
     branches: [ "master" ]
 
 jobs:
-  build:
-
+  build-and-push:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
+      - uses: actions/checkout@v4
 
-    # Configure Gradle for optimal use in GitHub Actions, including caching of downloaded dependencies.
-    # See: https://github.com/gradle/actions/blob/main/setup-gradle/README.md
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-    - name: Build with Gradle Wrapper
-      run: ./gradlew build
+      - name: Create Config Server Properties
+        run: |
+          mkdir -p config-service/src/main/resources
+          echo "spring.application.name=ConfigServer" > config-server/src/main/resources/application.properties
+          echo "spring.profiles.active=secret" >> config-server/src/main/resources/application.properties
+          echo "server.port=${{ secrets.CONFIG_PORT }}" >> config-server/src/main/resources/application.properties
+          echo "spring.cloud.config.server.git.uri=${{ secrets.PRIVATE_GIT }}" >> config-server/src/main/resources/application.properties
+          echo "spring.cloud.config.server.git.ignoreLocalSshSettings=true" >> config-server/src/main/resources/application.properties
+          echo "spring.cloud.config.server.git.private-key=${{ secrets.PRIVATE_URL }}" >> config-server/src/main/resources/application.properties
+          
+          cat config-server/src/main/resources/application.properties
 
-    # NOTE: The Gradle Wrapper is the default and recommended way to run Gradle (https://docs.gradle.org/current/userguide/gradle_wrapper.html).
-    # If your project does not have the Gradle Wrapper configured, you can use the following configuration to run Gradle with a specified version.
-    #
-    # - name: Setup Gradle
-    #   uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
-    #   with:
-    #     gradle-version: '8.9'
-    #
-    # - name: Build with Gradle 8.9
-    #   run: gradle build
+      - name: Grant execute permission for Gradle
+        run: chmod +x ./gradlew
 
-  dependency-submission:
+      - name: Build with Gradle
+        run: ./gradlew clean :config-service:build -x test
 
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build and Push Config Server Image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/config-server:latest ./config-server
+          docker push ${{ secrets.DOCKER_USERNAME }}/config-server:latest
+
+  deploy-to-nas:
+    needs: build-and-push
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-
-    # Generates and submits a dependency graph, enabling Dependabot Alerts for all project dependencies.
-    # See: https://github.com/gradle/actions/blob/main/dependency-submission/README.md
-    - name: Generate and submit dependency graph
-      uses: gradle/actions/dependency-submission@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+      - name: SSH into Synology NAS and Deploy Config Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.NAS_HOST }}
+          username: ${{ secrets.NAS_USERNAME }}
+          password: ${{ secrets.NAS_PASSWORD }}
+          port: ${{ secrets.NAS_SSH_PORT }}
+          script: |
+            echo "${{ secrets.DOCKER_PASSWORD }}" | sudo docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+            
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/config-server:latest
+            
+            sudo docker stop config-server || true
+            sudo docker rm config-server || true
+            
+            sudo docker run -d \
+              --name config-server \
+              -p ${{ secrets.CONFIG_PORT }}:${{ secrets.CONFIG_PORT }} \
+              ${{ secrets.DOCKER_USERNAME }}/config-service:latest
