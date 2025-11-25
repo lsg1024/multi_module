@@ -21,14 +21,21 @@ jobs:
       - name: Create Config Server Properties
         run: |
           mkdir -p config-server/src/main/resources
+
           echo "spring.application.name=ConfigServer" > config-server/src/main/resources/application.properties
           echo "spring.profiles.active=secret" >> config-server/src/main/resources/application.properties
-          echo "server.port=${{ secrets.CONFIG_PORT }}" >> config-server/src/main/resources/application.properties
-          echo "spring.cloud.config.server.git.uri=${{ secrets.PRIVATE_GIT }}" >> config-server/src/main/resources/application.properties
-          echo "spring.cloud.config.server.git.ignoreLocalSshSettings=true" >> config-server/src/main/resources/application.properties
-          echo "spring.cloud.config.server.git.private-key=${{ secrets.PRIVATE_URL }}" >> config-server/src/main/resources/application.properties
           
-          cat config-server/src/main/resources/application.properties
+          touch config-server/src/main/resources/application-secret.properties
+
+          echo "ID=${{ secrets.ID }}" >> config-server/src/main/resources/application-secret.properties
+          echo "PW=${{ secrets.PW }}" >> config-server/src/main/resources/application-secret.properties
+          
+          echo "server.port=${{ secrets.CONFIG_PORT }}" >> config-server/src/main/resources/application-secret.properties
+          echo "spring.cloud.config.server.git.uri=${{ secrets.PRIVATE_GIT }}" >> config-server/src/main/resources/application-secret.properties
+          echo "spring.cloud.config.server.git.ignoreLocalSshSettings=true" >> config-server/src/main/resources/application-secret.properties
+          echo "spring.cloud.config.server.git.private-key=${{ secrets.PRIVATE_URL }}" >> config-server/src/main/resources/application-secret.properties
+          
+          ls -al config-server/src/main/resources/
 
       - name: Grant execute permission for Gradle
         run: chmod +x ./gradlew

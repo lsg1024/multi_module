@@ -1,6 +1,7 @@
 ext {
     set('springCloudVersion', "2024.0.1")
 }
+
 jar {enabled = false}
 bootJar { enabled = true }
 
