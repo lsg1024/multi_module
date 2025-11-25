@@ -63,8 +63,6 @@ project(':common') {
 }
 
 project(':user-service') {
-    bootJar {enabled = true}
-    jar {enabled = false}
     dependencies {
         implementation project(':common')
         implementation(testFixtures(project(":common")))
