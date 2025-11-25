@@ -48,22 +48,38 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: SSH into Synology NAS and Deploy Config Server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.NAS_HOST }}
-          username: ${{ secrets.NAS_USERNAME }}
-          password: ${{ secrets.NAS_PASSWORD }}
-          port: ${{ secrets.NAS_SSH_PORT }}
-          script: |
-            echo "${{ secrets.NAS_PASSWORD }}" | sudo -S docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
+      - name: Install sshpass
+        run: sudo apt-get install -y sshpass
 
-            echo "${{ secrets.NAS_PASSWORD }}" | sudo -S docker pull ${{ secrets.DOCKER_USERNAME }}/config-server:latest
-
-            echo "${{ secrets.NAS_PASSWORD }}" | sudo -S docker stop config-server || true
-            echo "${{ secrets.NAS_PASSWORD }}" | sudo -S docker rm config-server || true
-
-            echo "${{ secrets.NAS_PASSWORD }}" | sudo -S docker run -d \
+      - name: SSH into Synology NAS and Deploy
+        env:
+          NAS_USERNAME: ${{ secrets.NAS_USERNAME }}
+          NAS_PASSWORD: ${{ secrets.NAS_PASSWORD }}
+          NAS_HOST: ${{ secrets.NAS_HOST }}
+          SSH_PORT: ${{ secrets.NAS_SSH_PORT }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          CONFIG_PORT: ${{ secrets.PORT }}
+        run: |
+          sshpass -p "$NAS_PASSWORD" ssh -t -o StrictHostKeyChecking=no -p $SSH_PORT $NAS_USERNAME@$NAS_HOST << EOF
+          
+            export PATH=/usr/local/bin:\$PATH
+            echo "=== 1. Docker Login ==="
+            docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+  
+            echo "=== 2. Pull Config Server Image ==="
+            docker pull $DOCKER_USERNAME/config-server:latest
+  
+            echo "=== 3. Reset Container ==="
+            docker stop config-server || true
+            docker rm config-server || true
+  
+            echo "=== 4. Run Config Server ==="
+            docker run -d \
               --name config-server \
-              -p ${{ secrets.PORT }}:${{ secrets.PORT }} \
-              ${{ secrets.DOCKER_USERNAME }}/config-server:latest
+              -p $CONFIG_PORT:$CONFIG_PORT \
+              $DOCKER_USERNAME/config-server:latest
+  
+            echo "=== Deployment Completed ==="
+            exit
+          EOF
