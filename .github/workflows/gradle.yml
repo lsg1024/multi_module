@@ -187,7 +187,7 @@ jobs:
           EOF
           
   deploy-api-gateway:
-    needs: [check-change]
+    needs: [check-changes, verify-config-server]
     if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.api-gateway, 'true') || contains(needs.check-changes.outputs.common, 'true'))
     runs-on: ubuntu-latest
     steps:
@@ -233,7 +233,7 @@ jobs:
           docker build -t ${{ secrets.DOCKER_USERNAME }}/api-gateway:latest ./api-gateway
           docker push ${{ secrets.DOCKER_USERNAME }}/api-gateway:latest
 
-      - name: Deploy Eureka to NAS
+      - name: Deploy Api-GateWay to NAS
         run: |
           sudo apt-get install -y sshpass
           sshpass -p "${{ secrets.NAS_PASSWORD }}" ssh -t -o StrictHostKeyChecking=no -p ${{ secrets.NAS_SSH_PORT }} ${{ secrets.NAS_USERNAME }}@${{ secrets.NAS_HOST }} << EOF
@@ -247,4 +247,67 @@ jobs:
               --name api-gateway \
               -p ${{ secrets.API_GATWAY_PORT }}:${{ secrets.API_GATWAY_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/api-gateway:latest
+          EOF
+
+  deploy-auth:
+    needs: [ check-changes, verify-config-server ]
+    if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.auth, 'true') || contains(needs.check-changes.outputs.common, 'true'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Create Auth Properties
+        run: |
+          mkdir -p auth-service/src/main/resources
+
+          cat <<EOF > auth-service/src/main/resources/bootstrap.yml
+          spring:
+            application:
+              name: auth
+            profiles:
+              active: dev
+            cloud:
+              config:
+                uri: http://${{ secrets.ID }}:${{ secrets.PW }}@${{ secrets.NAS_HOST }}:${{ secrets.CONFIG_PORT }}
+                fail-fast: true
+
+          eureka:
+            client:
+              register-with-eureka: true
+              fetch-registry: true
+              service-url:
+                defaultZone: http://${{ secrets.ID }}:${{ secrets.PW }}@${{ secrets.NAS_HOST }}:${{ secrets.EUREKA_PORT }}/eureka/
+          EOF
+
+      - name: Grant execute permission for Gradle
+        run: chmod +x ./gradlew
+
+      - name: Build Auth Server
+        run: ./gradlew clean :auth-service:build -x test
+
+      - name: Docker Build & Push
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/auth-service:latest ./auth-service
+          docker push ${{ secrets.DOCKER_USERNAME }}/auth-service:latest
+
+      - name: Deploy Auth to NAS
+        run: |
+          sudo apt-get install -y sshpass
+          sshpass -p "${{ secrets.NAS_PASSWORD }}" ssh -t -o StrictHostKeyChecking=no -p ${{ secrets.NAS_SSH_PORT }} ${{ secrets.NAS_USERNAME }}@${{ secrets.NAS_HOST }} << EOF
+            export PATH=/usr/local/bin:\$PATH
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            docker pull ${{ secrets.DOCKER_USERNAME }}/auth-service:latest
+            docker stop auth-service || true
+            docker rm auth-service || true
+
+            docker run -d \
+              --name api-gateway \
+              -p ${{ secrets.AUTH_PORT }}:${{ secrets.AUTH_PORT }} \
+              ${{ secrets.DOCKER_USERNAME }}/auth-service:latest
           EOF

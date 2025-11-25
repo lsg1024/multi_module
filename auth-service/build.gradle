@@ -9,6 +9,9 @@ ext {
     querydslVersion = '5.1.0'
 }
 
+jar {enabled = false}
+bootJar { enabled = true }
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
