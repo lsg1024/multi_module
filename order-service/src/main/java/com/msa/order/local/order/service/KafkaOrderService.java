@@ -185,6 +185,7 @@ public class KafkaOrderService {
 
         StatusHistory statusHistory;
 
+        StoreDto.Response storeInfoForGrade = null;
         try {
 
             if (updateRequest.getStoreId() != null) {
@@ -195,6 +196,8 @@ public class KafkaOrderService {
                         .storeHarry(storeInfo.getStoreHarry())
                         .grade(storeInfo.getGrade())
                         .build());
+
+                storeInfoForGrade = storeInfo;
             }
 
             if (updateRequest.getFactoryId() != null) {
@@ -213,10 +216,18 @@ public class KafkaOrderService {
             }
 
             ProductDetailDto productInfo = null;
-            if (updateRequest.getProductId() != null) {
-                Long storeIdForGrade = updateRequest.getStoreId() != null ? updateRequest.getStoreId() : order.getStoreId();
-                StoreDto.Response storeInfoForGrade = storeClient.getStoreInfo(tenantId, storeIdForGrade);
-                productInfo = productClient.getProductInfo(tenantId, updateRequest.getProductId(), storeInfoForGrade.getGrade());
+            if (updateRequest.getProductId() != null || updateRequest.getStoreId() != null) {
+
+                Long targetProductId = updateRequest.getProductId() != null
+                        ? updateRequest.getProductId()
+                        : order.getOrderProduct().getProductId();
+
+
+                String targetGrade = storeInfoForGrade != null
+                        ? storeInfoForGrade.getGrade()
+                        : order.getStoreGrade();
+
+                productInfo = productClient.getProductInfo(tenantId, targetProductId, targetGrade);
             }
 
             AssistantStoneDto.Response assistantStoneInfo = null;

@@ -50,7 +50,6 @@ public class OrdersController {
     public ResponseEntity<ApiResponse<List<StockDto.ResponseDetail>>> getOrderRegisterStock(
             @RequestParam(name = "ids") List<Long> flowCodes) {
         List<StockDto.ResponseDetail> orderRegisterStock = ordersService.getOrderRegisterStock(flowCodes);
-
         return ResponseEntity.ok(ApiResponse.success(orderRegisterStock));
     }
 
