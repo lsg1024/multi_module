@@ -15,8 +15,10 @@ import static com.msa.order.global.exception.ExceptionMessage.NO_CONNECT_SERVER;
 @Service
 public class MaterialClient {
 
+    @Value("${BASE_URL}")
+    private String BASE_URL;
     @Value("${PRODUCT_SERVER_URL}")
-    private String baseUrl;
+    private String PRODUCT_URL;
 
     private final RestClientUtil restClientUtil;
 
@@ -25,12 +27,12 @@ public class MaterialClient {
     }
 
     @Retry(value = 3)
-    public String getMaterialInfo(String tenantId, Long materialId) {
+    public String getMaterialInfo(String token, Long materialId) {
         ResponseEntity<ApiResponse<String>> response;
 
         try {
-            String url = "http://" + tenantId + baseUrl + "/material/" + materialId;
-            response = restClientUtil.get(url,
+            String url = "https://" + BASE_URL + PRODUCT_URL + "/material/" + materialId;
+            response = restClientUtil.get(url, token,
                     new ParameterizedTypeReference<>() {}
             );
         } catch (Exception e) {

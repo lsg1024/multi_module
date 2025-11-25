@@ -12,8 +12,7 @@ import java.util.List;
 public class OrderAsyncRequested {
     private String eventId;       // 멱등 처리용
     private Long flowCode;
-    private String tenantId;
-
+    private String token;
     private Long storeId;
     private Long factoryId;
     private Long productId;
@@ -28,10 +27,10 @@ public class OrderAsyncRequested {
     private String nickname;
 
     @Builder
-    public OrderAsyncRequested(String eventId, Long flowCode, String tenantId, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, boolean assistantStone, Long assistantStoneId, OffsetDateTime assistantStoneCreateAt, List<Long> stoneIds, String orderStatus, String nickname) {
+    public OrderAsyncRequested(String eventId, Long flowCode, String token, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, boolean assistantStone, Long assistantStoneId, OffsetDateTime assistantStoneCreateAt, List<Long> stoneIds, String orderStatus, String nickname) {
         this.eventId = eventId;
         this.flowCode = flowCode;
-        this.tenantId = tenantId;
+        this.token = token;
         this.storeId = storeId;
         this.factoryId = factoryId;
         this.productId = productId;

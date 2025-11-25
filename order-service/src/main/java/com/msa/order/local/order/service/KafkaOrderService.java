@@ -53,7 +53,7 @@ public class KafkaOrderService {
     }
 
     public void createHandle(OrderAsyncRequested evt) {
-        final String tenantId = evt.getTenantId();
+        final String token = evt.getToken();
 
         Orders order = ordersRepository.findByFlowCode(evt.getFlowCode())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
@@ -69,7 +69,7 @@ public class KafkaOrderService {
         StatusHistory statusHistory;
 
         try {
-            StoreDto.Response latestStoreInfo = storeClient.getStoreInfo(tenantId, evt.getStoreId());
+            StoreDto.Response latestStoreInfo = storeClient.getStoreInfo(token, evt.getStoreId());
             if (!Objects.equals(latestStoreInfo.getStoreName(), order.getStoreName())) {
 
                 order.updateStore(StoreDto.Response.builder()
@@ -80,7 +80,7 @@ public class KafkaOrderService {
                         .build());
             }
 
-            FactoryDto.Response latestFactoryInfo = factoryClient.getFactoryInfo(tenantId, evt.getFactoryId());
+            FactoryDto.Response latestFactoryInfo = factoryClient.getFactoryInfo(token, evt.getFactoryId());
             if (!Objects.equals(latestFactoryInfo.getFactoryName(), order.getFactoryName())) {
 
                 order.updateFactory(
@@ -89,9 +89,9 @@ public class KafkaOrderService {
                 );
             }
 
-            ProductDetailDto latestProductInfo = productClient.getProductInfo(tenantId, evt.getProductId(), order.getStoreGrade());
-            String latestMaterialName = materialClient.getMaterialInfo(tenantId, evt.getMaterialId());
-            String latestColorName = colorClient.getColorInfo(tenantId, evt.getColorId());
+            ProductDetailDto latestProductInfo = productClient.getProductInfo(token, evt.getProductId(), order.getStoreGrade());
+            String latestMaterialName = materialClient.getMaterialInfo(token, evt.getMaterialId());
+            String latestColorName = colorClient.getColorInfo(token, evt.getColorId());
 
             if (!Objects.equals(latestProductInfo.getProductName(), orderProduct.getProductName()) ||
                     !Objects.equals(latestProductInfo.getProductFactoryName(), orderProduct.getProductFactoryName()) ||
@@ -119,7 +119,7 @@ public class KafkaOrderService {
                         latestProductInfo.getSetTypeName());
             }
 
-            AssistantStoneDto.Response assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(tenantId, evt.getAssistantStoneId());
+            AssistantStoneDto.Response assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(token, evt.getAssistantStoneId());
             if (evt.isAssistantStone()) {
                 orderProduct.updateOrderProductAssistantStone(
                         true,
@@ -137,7 +137,7 @@ public class KafkaOrderService {
 
             List<Long> stoneIds = evt.getStoneIds();
             for (Long stoneId : stoneIds) {
-                if (!stoneClient.getExistStoneId(tenantId, stoneId)) {
+                if (!stoneClient.getExistStoneId(token, stoneId)) {
                     throw new IllegalArgumentException(NOT_FOUND_STONE);
                 }
             }
@@ -171,7 +171,7 @@ public class KafkaOrderService {
     public void updateHandle(OrderUpdateRequest updateRequest) {
 
         // 멀티테넌시 컨텍스트 전파
-        final String tenantId = updateRequest.getTenantId();
+        final String token = updateRequest.getToken();
 
         Orders order = ordersRepository.findByFlowCode(updateRequest.getFlowCode())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
@@ -189,7 +189,7 @@ public class KafkaOrderService {
         try {
 
             if (updateRequest.getStoreId() != null) {
-                StoreDto.Response storeInfo = storeClient.getStoreInfo(tenantId, updateRequest.getStoreId());
+                StoreDto.Response storeInfo = storeClient.getStoreInfo(token, updateRequest.getStoreId());
                 order.updateStore(StoreDto.Response.builder()
                         .storeId(storeInfo.getStoreId())
                         .storeName(storeInfo.getStoreName())
@@ -201,18 +201,18 @@ public class KafkaOrderService {
             }
 
             if (updateRequest.getFactoryId() != null) {
-                FactoryDto.Response factoryInfo = factoryClient.getFactoryInfo(tenantId, updateRequest.getFactoryId());
+                FactoryDto.Response factoryInfo = factoryClient.getFactoryInfo(token, updateRequest.getFactoryId());
                 order.updateFactory(updateRequest.getFactoryId(), factoryInfo.getFactoryName());
             }
 
             String materialName = null;
             if (updateRequest.getMaterialId() != null) {
-                materialName = materialClient.getMaterialInfo(tenantId, updateRequest.getMaterialId());
+                materialName = materialClient.getMaterialInfo(token, updateRequest.getMaterialId());
             }
 
             String colorName = null;
             if (updateRequest.getColorId() != null) {
-                colorName = colorClient.getColorInfo(tenantId, updateRequest.getColorId());
+                colorName = colorClient.getColorInfo(token, updateRequest.getColorId());
             }
 
             ProductDetailDto productInfo = null;
@@ -227,12 +227,12 @@ public class KafkaOrderService {
                         ? storeInfoForGrade.getGrade()
                         : order.getStoreGrade();
 
-                productInfo = productClient.getProductInfo(tenantId, targetProductId, targetGrade);
+                productInfo = productClient.getProductInfo(token, targetProductId, targetGrade);
             }
 
             AssistantStoneDto.Response assistantStoneInfo = null;
             if (updateRequest.isAssistantStone() && updateRequest.getAssistantStoneId() != null) {
-                assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(tenantId, updateRequest.getAssistantStoneId());
+                assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(token, updateRequest.getAssistantStoneId());
             }
 
             OrderProduct orderProduct = order.getOrderProduct();

@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
@@ -27,8 +26,10 @@ import static com.msa.order.global.exception.ExceptionMessage.NO_CONNECT_SERVER;
 @Service
 public class ProductClient {
 
+    @Value("${BASE_URL}")
+    private String BASE_URL;
     @Value("${PRODUCT_SERVER_URL}")
-    private String baseUrl;
+    private String PRODUCT_URL;
 
     private final RestClientUtil restClientUtil;
 
@@ -37,13 +38,13 @@ public class ProductClient {
     }
 
     @Retryable(retryFor = RetryableExternalException.class, backoff = @Backoff(value = 200, multiplier = 2, random = true))
-    public ProductDetailDto getProductInfo(String tenantId, Long productId, String grade) {
+    public ProductDetailDto getProductInfo(String token, Long productId, String grade) {
 
         ResponseEntity<ApiResponse<ProductDetailDto>> response;
 
         try {
-            String url = "http://" + tenantId + baseUrl + "/product/" + productId + "/" + grade;
-            response = restClientUtil.get(url,
+            String url = "https://" + BASE_URL + PRODUCT_URL + "/product/" + productId + "/" + grade;
+            response = restClientUtil.get(url, token,
                     new ParameterizedTypeReference<>() {
                     }
             );
@@ -64,13 +65,13 @@ public class ProductClient {
     }
 
     @Retryable(recover= "recoverGetProductImages" ,retryFor = RetryableExternalException.class, backoff = @Backoff(value = 200, multiplier = 2, random = true))
-    public Map<Long, ProductImageDto> getProductImages(String tenantId, List<Long> productIds) {
+    public Map<Long, ProductImageDto> getProductImages(String token, List<Long> productIds) {
 
         if (productIds == null || productIds.isEmpty()) {
             return Collections.emptyMap();
         }
 
-        String url = UriComponentsBuilder.fromUriString("http://" + tenantId + baseUrl + "/products/images")
+        String url = UriComponentsBuilder.fromUriString("https://" + BASE_URL + PRODUCT_URL + "/products/images")
                 .queryParam("ids", productIds)
                 .build(true)
                 .toUriString();
@@ -79,7 +80,7 @@ public class ProductClient {
             ParameterizedTypeReference<ApiResponse<Map<Long, ProductImageDto>>> responseType =
                     new ParameterizedTypeReference<>() {};
 
-            ResponseEntity<ApiResponse<Map<Long, ProductImageDto>>> response = restClientUtil.get(url, responseType);
+            ResponseEntity<ApiResponse<Map<Long, ProductImageDto>>> response = restClientUtil.get(url, token, responseType);
 
             if (!response.getStatusCode().is2xxSuccessful()) {
                 log.warn("Product 이미지 조회 응답 실패 - Status: {}", response.getStatusCode());
@@ -90,14 +91,6 @@ public class ProductClient {
         } catch (RestClientException e) {
             throw new RetryableExternalException(NO_CONNECT_SERVER + e.getMessage());
         }
-    }
-
-    @Recover
-    public Map<Long, ProductImageDto> recoverGetProductImages(RetryableExternalException e, String tenantId, List<Long> productIds) {
-        log.error("ProductClient: getProductImages 모든 재시도 실패. Fallback 실행. tenantId={}, productIds={}, error={}",
-                tenantId, productIds, e.getMessage());
-
-        return Collections.emptyMap();
     }
 
 }

@@ -24,7 +24,6 @@ import com.msa.product.local.set.entity.SetType;
 import com.msa.product.local.set.repository.SetTypeRepository;
 import com.msa.product.local.stone.stone.entity.Stone;
 import com.msa.product.local.stone.stone.repository.StoneRepository;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -71,14 +70,14 @@ public class ProductService {
     }
 
     //생성
-    public void saveProduct(HttpServletRequest request, ProductDto productDto) {
+    public void saveProduct(String token, ProductDto productDto) {
         boolean existsByProductName = productRepository.existsByProductName(productDto.getProductName());
 
         if (existsByProductName) {
             throw new IllegalArgumentException(IS_EXIST);
         }
 
-        String factoryName = validFactory(request, productDto.getFactoryId());
+        String factoryName = validFactory(token, productDto.getFactoryId());
 
         BigDecimal weight = Optional.ofNullable(productDto.getStandardWeight())
                 .filter(s -> !s.isBlank())
@@ -190,11 +189,11 @@ public class ProductService {
     }
 
     //수정 - 이미지 수정은 별도
-    public void updateProduct(HttpServletRequest request, Long productId, ProductDto.Update updateDto) {
+    public void updateProduct(String accessToken, Long productId, ProductDto.Update updateDto) {
 
         validProductSameName(updateDto.getProductName(), productId);
 
-        String factoryName = validFactory(request, updateDto.getFactoryId());
+        String factoryName = validFactory(accessToken, updateDto.getFactoryId());
 
         Product product = productRepository.findWithAllOptionsById(productId)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
@@ -241,8 +240,8 @@ public class ProductService {
         }
     }
 
-    private String validFactory(HttpServletRequest request, Long productDto) {
-        FactoryDto.Response factoryInfo = accountClient.getFactoryInfo(request, productDto);
+    private String validFactory(String token, Long productDto) {
+        FactoryDto.Response factoryInfo = accountClient.getFactoryInfo(token, productDto);
         if (factoryInfo.getFactoryName() == null || factoryInfo.getFactoryName().isBlank()) {
             throw new IllegalArgumentException(productDto + " " + NOT_FOUND);
         }

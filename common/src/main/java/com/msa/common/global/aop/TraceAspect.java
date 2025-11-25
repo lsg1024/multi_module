@@ -1,5 +1,6 @@
 package com.msa.common.global.aop;
 
+import com.msa.common.global.tenant.TenantContext;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -19,13 +20,14 @@ public class TraceAspect {
 
     @Around("traceLogTarget()")
     public Object doTrace(ProceedingJoinPoint joinPoint) throws Throwable {
-        log.info("[TRACE START] method: {}", joinPoint.getSignature());
+        String tenant = TenantContext.getTenant();
+        log.info("[TRACE START: " + tenant + "] method: {}", joinPoint.getSignature());
         try {
             Object result = joinPoint.proceed();
-            log.info("[TRACE END] method: {}", joinPoint.getSignature());
+            log.info("[TRACE END:" + tenant + "] method: {}", joinPoint.getSignature());
             return result;
         } catch (Throwable e) {
-            log.error("[TRACE EXCEPTION] method: {}, exception: {}", joinPoint.getSignature(), e.getMessage());
+            log.error("[TRACE EXCEPTION" + tenant + "] method: {}, exception: {}", joinPoint.getSignature(), e.getMessage());
             throw e;
         }
     }

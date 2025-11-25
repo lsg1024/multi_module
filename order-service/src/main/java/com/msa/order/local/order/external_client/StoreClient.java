@@ -16,8 +16,11 @@ import static com.msa.order.global.exception.ExceptionMessage.NO_CONNECT_SERVER;
 
 @Service
 public class StoreClient {
+
+    @Value("${BASE_URL}")
+    private String BASE_URL;
     @Value("${ACCOUNT_SERVER_URL}")
-    private String baseUrl;
+    private String ACCOUNT_URL;
 
     private final RestClientUtil restClientUtil;
 
@@ -26,12 +29,11 @@ public class StoreClient {
     }
 
     @Retryable(retryFor = RetryableExternalException.class, backoff = @Backoff(value = 200, multiplier = 2, random = true))
-    public StoreDto.Response getStoreInfo(String tenantId, Long storeId) {
-        ResponseEntity<ApiResponse<StoreDto.Response>> response = null;
-
+    public StoreDto.Response getStoreInfo(String token, Long storeId) {
+        ResponseEntity<ApiResponse<StoreDto.Response>> response;
         try {
-            String url = "http://" + tenantId + baseUrl + "/store/" + storeId;
-            response = restClientUtil.get(url,
+            String url = "https://" + BASE_URL + ACCOUNT_URL + "/store/" + storeId;
+            response = restClientUtil.get(url, token,
                     new ParameterizedTypeReference<>() {
                     }
             );

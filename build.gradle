@@ -63,6 +63,8 @@ project(':common') {
 }
 
 project(':user-service') {
+    jar {enabled = false}
+    bootJar { enabled = true }
     dependencies {
         implementation project(':common')
         implementation(testFixtures(project(":common")))
@@ -70,6 +72,8 @@ project(':user-service') {
 }
 
 project(':account-service') {
+    jar {enabled = false}
+    bootJar { enabled = true }
     dependencies {
         implementation project(':common')
         implementation(testFixtures(project(":common")))
@@ -77,6 +81,8 @@ project(':account-service') {
 }
 
 project(':product-service') {
+    jar {enabled = false}
+    bootJar { enabled = true }
     dependencies {
         implementation project(':common')
         implementation(testFixtures(project(":common")))
@@ -84,6 +90,8 @@ project(':product-service') {
 }
 
 project(':order-service') {
+    jar {enabled = false}
+    bootJar { enabled = true }
     dependencies {
         implementation project(':common')
         implementation(testFixtures(project(":common")))

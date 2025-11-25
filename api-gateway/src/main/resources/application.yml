@@ -28,6 +28,8 @@ spring:
               - "http://*.localhost:*"
               - "http://localtest.me:*"
               - "http://*.localtest.me:*"
+              - "http://*.kkhan.co.kr"
+              - "https://*.kkhan.co.kr"
             allow-credentials: true
             allowedMethods:
               - GET
@@ -163,7 +165,7 @@ spring:
           uri: lb://account
           predicates:
             - Path=/internal/account/**
-#            - RemoteAddr=${ACCOUNT_INTERNAL_IP}
+          #            - RemoteAddr=${ACCOUNT_INTERNAL_IP}
           filters:
             - StripPrefix=2
             - name: LoggingFilter
@@ -182,7 +184,7 @@ spring:
           uri: lb://product
           predicates:
             - Path=/internal/product/**
-#            - RemoteAddr=${PRODUCT_INTERNAL_IP}
+          #            - RemoteAddr=${PRODUCT_INTERNAL_IP}
           filters:
             - StripPrefix=2
             - name: LoggingFilter
@@ -202,7 +204,7 @@ spring:
           uri: lb://order
           predicates:
             - Path=/internal/order/**
-#            - RemoteAddr=${ORDER_INTERNAL_IP}
+          #            - RemoteAddr=${ORDER_INTERNAL_IP}
           filters:
             - StripPrefix=2
             - name: LoggingFilter
@@ -227,6 +229,7 @@ management:
         include: gateway, health, refresh
 logging:
   level:
+    org.springframework.cloud.gateway: INFO
     org.springframework.security: DEBUG
 
 server:

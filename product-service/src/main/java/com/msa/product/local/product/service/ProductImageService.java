@@ -1,5 +1,6 @@
 package com.msa.product.local.product.service;
 
+import com.msa.common.global.tenant.TenantContext;
 import com.msa.product.local.product.dto.ProductImageDto;
 import com.msa.product.local.product.entity.Product;
 import com.msa.product.local.product.entity.ProductImage;
@@ -36,13 +37,15 @@ public class ProductImageService {
 
     public void uploadProductImages(Long productId, List<MultipartFile> images) {
 
+        String tenant = TenantContext.getTenant();
+
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         boolean existsProductImage = productImageRepository.existsByProduct_ProductId(productId);
 
         if (images != null && !images.isEmpty()) {
-            String productDirPath = baseUploadPath + "/products/" + productId;
+            String productDirPath = baseUploadPath + "/" + tenant +  "/products/" + productId;
             File dir = new File(productDirPath);
             if (!dir.exists()) dir.mkdirs();
 
@@ -156,7 +159,8 @@ public class ProductImageService {
     }
 
     private void deletePhysicalFile(String imagePath) {
-        File file = new File(baseUploadPath + "/products/" + imagePath);
+        String tenant = TenantContext.getTenant();
+        File file = new File(baseUploadPath + "/" + tenant +  "/products/" + imagePath);
         if (file.exists()) {
             boolean deleted = file.delete();
             if (!deleted) {

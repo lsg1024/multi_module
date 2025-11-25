@@ -6,7 +6,6 @@ import com.msa.common.global.util.CustomPage;
 import com.msa.product.local.product.dto.ProductDetailDto;
 import com.msa.product.local.product.dto.ProductDto;
 import com.msa.product.local.product.service.ProductService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -25,9 +24,9 @@ public class ProductController {
 
     @PostMapping("/products")
     public ResponseEntity<ApiResponse<String>> createProduct(
-            HttpServletRequest request,
+            @AccessToken String accessToken,
             @Valid @RequestBody ProductDto productDto) {
-        productService.saveProduct(request, productDto);
+        productService.saveProduct(accessToken, productDto);
         return ResponseEntity.ok(ApiResponse.success("카테고리 생성완료"));
     }
     @GetMapping("/products/{id}")
@@ -51,10 +50,10 @@ public class ProductController {
 
     @PatchMapping("/products/{id}")
     public ResponseEntity<ApiResponse<String>> updateProduct(
-            HttpServletRequest request,
+            @AccessToken String accessToken,
             @PathVariable(name = "id") Long productId,
             @RequestBody ProductDto.Update productDto) {
-        productService.updateProduct(request, productId, productDto);
+        productService.updateProduct(accessToken, productId, productDto);
 
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }

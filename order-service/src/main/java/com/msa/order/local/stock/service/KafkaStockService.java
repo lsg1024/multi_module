@@ -50,7 +50,7 @@ public class KafkaStockService {
     }
     @Transactional
     public void saveStock(KafkaStockRequest stockDto) {
-        final String tenantId = stockDto.getTenantId();
+        final String token = stockDto.getToken();
 
         Stock stock = stockRepository.findByFlowCode(stockDto.getFlowCode())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
@@ -67,7 +67,7 @@ public class KafkaStockService {
         try {
             StoreDto.Response storeInfo;
             if (stockDto.getStoreId() != null && !stockDto.getStoreId().equals(stock.getStoreId())) {
-                storeInfo = storeClient.getStoreInfo(tenantId, stockDto.getStoreId());
+                storeInfo = storeClient.getStoreInfo(token, stockDto.getStoreId());
                 if (!storeInfo.getStoreName().equals(stock.getStoreName())) {
                     stock.updateStore(StoreDto.Response.builder()
                             .storeId(storeInfo.getStoreId())
@@ -82,7 +82,7 @@ public class KafkaStockService {
             }
 
             if (stockDto.getFactoryId() != null && !stockDto.getFactoryId().equals(stock.getFactoryId())) {
-                FactoryDto.Response latestFactoryInfo = factoryClient.getFactoryInfo(tenantId, stockDto.getFactoryId());
+                FactoryDto.Response latestFactoryInfo = factoryClient.getFactoryInfo(token, stockDto.getFactoryId());
                 if (!latestFactoryInfo.getFactoryName().equals(stock.getFactoryName())) {
                     stock.updateFactory(new FactoryDto.Response(latestFactoryInfo.getFactoryId(), latestFactoryInfo.getFactoryName(), latestFactoryInfo.getFactoryHarry()));
                 }
@@ -92,32 +92,32 @@ public class KafkaStockService {
 
             String latestMaterialName = product.getMaterialName();
             if (stockDto.getMaterialId() != null && !stockDto.getMaterialId().equals(product.getMaterialId())) {
-                latestMaterialName = materialClient.getMaterialInfo(tenantId, stockDto.getMaterialId());
+                latestMaterialName = materialClient.getMaterialInfo(token, stockDto.getMaterialId());
             }
 
             String latestClassificationName = product.getClassificationName();
             if (stockDto.getClassificationId() != null && !stockDto.getClassificationId().equals(product.getClassificationId())) {
-                latestClassificationName = classificationClient.getClassificationInfo(tenantId, stockDto.getClassificationId());
+                latestClassificationName = classificationClient.getClassificationInfo(token, stockDto.getClassificationId());
             }
 
             String latestColorName = product.getColorName();
             if (stockDto.getColorId() != null && !stockDto.getColorId().equals(product.getColorId())) {
-                latestColorName = colorClient.getColorInfo(tenantId, stockDto.getColorId());
+                latestColorName = colorClient.getColorInfo(token, stockDto.getColorId());
             }
 
             String latestSetTypeName = product.getSetTypeName();
             if (stockDto.getSetTypeId() != null && !stockDto.getSetTypeId().equals(product.getSetTypeId())) {
-                latestSetTypeName = setTypeClient.getSetTypeName(tenantId, stockDto.getSetTypeId());
+                latestSetTypeName = setTypeClient.getSetTypeName(token, stockDto.getSetTypeId());
             }
 
             AssistantStoneDto.Response latestAssistantStoneInfo;
             if (stockDto.getAssistantStoneId() != null && !stockDto.getAssistantStoneId().equals(product.getAssistantStoneId())) {
-                latestAssistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(tenantId, stockDto.getAssistantStoneId());
+                latestAssistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(token, stockDto.getAssistantStoneId());
             } else {
                 latestAssistantStoneInfo = new AssistantStoneDto.Response(product.getAssistantStoneId(), product.getAssistantStoneName(), "");
             }
 
-            ProductDetailDto latestProductInfo = productClient.getProductInfo(tenantId, stockDto.getProductId(), storeInfo.getGrade());
+            ProductDetailDto latestProductInfo = productClient.getProductInfo(token, stockDto.getProductId(), storeInfo.getGrade());
 
             if (!Objects.equals(latestProductInfo.getProductName(), product.getProductName()) ||
                     !Objects.equals(latestProductInfo.getLaborCost(), product.getProductLaborCost()) ||

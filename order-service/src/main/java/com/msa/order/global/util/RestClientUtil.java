@@ -1,10 +1,11 @@
 package com.msa.order.global.util;
 
 import com.msa.common.global.api.ApiResponse;
+import com.msa.common.global.jwt.JwtUtil;
+import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -12,9 +13,11 @@ import org.springframework.web.client.RestTemplate;
 public class RestClientUtil {
 
     private final RestTemplate restTemplate;
+    private final JwtUtil jwtUtil;
 
-    public RestClientUtil(@Qualifier("clientRestTemplate") RestTemplate restTemplate) {
+    public RestClientUtil(@Qualifier("clientRestTemplate") RestTemplate restTemplate, JwtUtil jwtUtil) {
         this.restTemplate = restTemplate;
+        this.jwtUtil = jwtUtil;
     }
 
     // POST
@@ -24,10 +27,11 @@ public class RestClientUtil {
                 null, typeRef);
     }
 
-    public <R> ResponseEntity<ApiResponse<R>> get(String url,
+    public <R> ResponseEntity<ApiResponse<R>> get(String url, String token,
                                                   ParameterizedTypeReference<ApiResponse<R>> typeRef) {
+        HttpEntity<T> requestEntity = new HttpEntity<>(getHeader(token));
         return restTemplate.exchange(url, HttpMethod.GET,
-                null, typeRef);
+                requestEntity, typeRef);
     }
 
     public <T, R> ResponseEntity<ApiResponse<R>> put(String url, T body,
@@ -40,5 +44,19 @@ public class RestClientUtil {
                                                      ParameterizedTypeReference<ApiResponse<R>> typeRef) {
         return restTemplate.exchange(url, HttpMethod.DELETE,
                 null, typeRef);
+    }
+
+    private HttpHeaders getHeader(String token) {
+        HttpHeaders headers = new HttpHeaders();
+        String tenantId = jwtUtil.getTenantId(token);
+        String forward = jwtUtil.getForward(token);
+        String device = jwtUtil.getDevice(token);
+
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.add("X-Forwarded-For", forward);
+        headers.add("X-Tenant-ID", tenantId);
+        headers.add("User-Agent", device);
+
+        return headers;
     }
 }

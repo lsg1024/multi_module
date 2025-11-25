@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 public class OrderUpdateRequest {
     private String eventId;       // 멱등 처리용
     private Long flowCode;
-    private String tenantId;
+    private String token;
 
     private Long storeId;
     private Long factoryId;
@@ -25,10 +25,10 @@ public class OrderUpdateRequest {
     private String nickname;
 
     @Builder
-    public OrderUpdateRequest(String eventId, Long flowCode, String tenantId, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, boolean assistantStone, Long assistantStoneId, OffsetDateTime assistantStoneCreateAt, String nickname) {
+    public OrderUpdateRequest(String eventId, Long flowCode, String token, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, boolean assistantStone, Long assistantStoneId, OffsetDateTime assistantStoneCreateAt, String nickname) {
         this.eventId = eventId;
         this.flowCode = flowCode;
-        this.tenantId = tenantId;
+        this.token = token;
         this.storeId = storeId;
         this.factoryId = factoryId;
         this.productId = productId;

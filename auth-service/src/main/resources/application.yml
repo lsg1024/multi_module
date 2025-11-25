@@ -16,3 +16,4 @@ spring:
         redis:
             enable-statistics: true
 
+USER_SERVER_URL: ${USER_SERVER_URL}

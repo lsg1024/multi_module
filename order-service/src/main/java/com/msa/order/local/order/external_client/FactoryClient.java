@@ -16,8 +16,10 @@ import static com.msa.order.global.exception.ExceptionMessage.NO_CONNECT_SERVER;
 @Service
 public class FactoryClient {
 
+    @Value("${BASE_URL}")
+    private String BASE_URL;
     @Value("${ACCOUNT_SERVER_URL}")
-    private String baseUrl;
+    private String ACCOUNT_URL;
 
     private final RestClientUtil restClientUtil;
 
@@ -26,12 +28,12 @@ public class FactoryClient {
     }
 
     @Retry(value = 3)
-    public FactoryDto.Response getFactoryInfo(String tenantId, Long factoryId) {
+    public FactoryDto.Response getFactoryInfo(String token, Long factoryId) {
         ResponseEntity<ApiResponse<FactoryDto.Response>> response;
 
         try {
-            String url = "http://" + tenantId + baseUrl + "/factory/" + factoryId;
-            response = restClientUtil.get(url,
+            String url = "https://" + BASE_URL + ACCOUNT_URL + "/factory/" + factoryId;
+            response = restClientUtil.get(url, token,
                     new ParameterizedTypeReference<>() {}
             );
         } catch (Exception e) {

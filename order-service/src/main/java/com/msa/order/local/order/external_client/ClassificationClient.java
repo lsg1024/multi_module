@@ -17,9 +17,10 @@ import static com.msa.order.global.exception.ExceptionMessage.NO_CONNECT_SERVER;
 @Service
 public class ClassificationClient {
 
+    @Value("${BASE_URL}")
+    private String BASE_URL;
     @Value("${PRODUCT_SERVER_URL}")
-    private String baseUrl;
-
+    private String PRODUCT_URL;
     private final RestClientUtil restClientUtil;
 
     public ClassificationClient(RestClientUtil restClientUtil) {
@@ -27,12 +28,12 @@ public class ClassificationClient {
     }
 
     @Retry(value = 3)
-    public String getClassificationInfo(String tenantId, Long classificationId) {
+    public String getClassificationInfo(String token, Long classificationId) {
         ResponseEntity<ApiResponse<String>> response;
 
         try {
-            String url = "http://" + tenantId + baseUrl + "/classification/" + classificationId;
-            response = restClientUtil.get(url,
+            String url = "https://" + BASE_URL + PRODUCT_URL + "/classification/" + classificationId;
+            response = restClientUtil.get(url, token,
                     new ParameterizedTypeReference<>() {}
             );
         } catch (Exception e) {

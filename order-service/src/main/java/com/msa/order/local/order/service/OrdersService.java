@@ -135,8 +135,6 @@ public class OrdersService {
     // 주문 전체 리스트 조회
     @Transactional(readOnly = true)
     public CustomPage<OrderDto.Response> getOrderProducts(String accessToken, String input, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort, String orderStatus, Pageable pageable) {
-        String tenantId = jwtUtil.getTenantId(accessToken);
-
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
         OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
         OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
@@ -150,7 +148,7 @@ public class OrdersService {
                 .distinct()
                 .toList();
 
-        Map<Long, ProductImageDto> productImages = productClient.getProductImages(tenantId, productIds);
+        Map<Long, ProductImageDto> productImages = productClient.getProductImages(accessToken, productIds);
 
         List<OrderDto.Response> finalResponse = queryDtos.stream()
                 .map(queryDto -> {
@@ -167,7 +165,6 @@ public class OrdersService {
     //주문
     public Long saveOrder(String accessToken, String orderStatus, OrderDto.Request orderDto) {
         String nickname = jwtUtil.getNickname(accessToken);
-        String tenantId = TenantContext.getTenant();
 
         Long storeId = Long.valueOf(orderDto.getStoreId());
         Long factoryId = Long.valueOf(orderDto.getFactoryId());
@@ -262,7 +259,7 @@ public class OrdersService {
         OrderAsyncRequested.OrderAsyncRequestedBuilder orderAsyncRequestedBuilder = OrderAsyncRequested.builder()
                 .eventId(UUID.randomUUID().toString())
                 .flowCode(order.getFlowCode())
-                .tenantId(tenantId)
+                .token(accessToken)
                 .storeId(storeId)
                 .factoryId(factoryId)
                 .productId(productId)
@@ -322,7 +319,7 @@ public class OrdersService {
         OrderUpdateRequest.OrderUpdateRequestBuilder updateRequestBuilder = OrderUpdateRequest.builder()
                 .eventId(UUID.randomUUID().toString())
                 .flowCode(order.getFlowCode())
-                .tenantId(tenantId)
+                .token(accessToken)
                 .nickname(nickname);
 
         // orderProduct 추가
@@ -453,25 +450,22 @@ public class OrdersService {
 
     //판매처 변경 -> account -> store 리스트 호출 /store/list
     public void updateOrderStore(String accessToken, String id, StoreDto.Request storeDto) {
-        String tenantId = jwtUtil.getTenantId(accessToken);
-
         long flowCode = Long.parseLong(id);
         Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        StoreDto.Response storeInfo = storeClient.getStoreInfo(tenantId, storeDto.getStoreId());
+        StoreDto.Response storeInfo = storeClient.getStoreInfo(accessToken, storeDto.getStoreId());
 
         order.updateStore(storeInfo);
     }
 
     //제조사 변경 ->
     public void updateOrderFactory(String accessToken, String id, FactoryDto.Request factoryDto) {
-        String tenantId = jwtUtil.getTenantId(accessToken);
         long flowCode = Long.parseLong(id);
         Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        FactoryDto.Response factoryInfo = factoryClient.getFactoryInfo(tenantId, factoryDto.getFactoryId());
+        FactoryDto.Response factoryInfo = factoryClient.getFactoryInfo(accessToken, factoryDto.getFactoryId());
 
         order.updateFactory(factoryInfo.getFactoryId(), factoryInfo.getFactoryName());
     }
@@ -525,8 +519,6 @@ public class OrdersService {
     // 수리 예정 목록 출력
     @Transactional(readOnly = true)
     public CustomPage<OrderDto.Response> getFixProducts(String accessToken, String input, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort, String orderStatus, Pageable pageable) {
-        String tenantId = jwtUtil.getTenantId(accessToken);
-
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
         OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
         OrderDto.OrderCondition fixCondition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
@@ -538,7 +530,7 @@ public class OrdersService {
                 .distinct()
                 .toList();
 
-        Map<Long, ProductImageDto> productImages = productClient.getProductImages(tenantId, productIds);
+        Map<Long, ProductImageDto> productImages = productClient.getProductImages(accessToken, productIds);
 
         List<OrderDto.Response> finalResponse = fixOrders.stream()
                 .map(queryDto -> {
@@ -555,8 +547,6 @@ public class OrdersService {
     // 출고 예정 목록 출력
     @Transactional(readOnly = true)
     public CustomPage<OrderDto.Response> getDeliveryProducts(String accessToken, String input, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort, Pageable pageable) {
-        String tenantId = jwtUtil.getTenantId(accessToken);
-
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
         OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
         OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
@@ -569,7 +559,7 @@ public class OrdersService {
                 .distinct()
                 .toList();
 
-        Map<Long, ProductImageDto> productImages = productClient.getProductImages(tenantId, productIds);
+        Map<Long, ProductImageDto> productImages = productClient.getProductImages(accessToken, productIds);
 
         List<OrderDto.Response> finalResponse = expectOrderPages.stream()
                 .map(queryDto -> {
@@ -586,8 +576,6 @@ public class OrdersService {
     // 주문 상태에서 삭제된 목록 출력
     @Transactional(readOnly = true)
     public CustomPage<OrderDto.Response> getDeletedProducts(String accessToken, String input, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort, String orderStatus, Pageable pageable) {
-        String tenantId = jwtUtil.getTenantId(accessToken);
-
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
         OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
         OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
@@ -600,7 +588,7 @@ public class OrdersService {
                 .distinct()
                 .toList();
 
-        Map<Long, ProductImageDto> productImages = productClient.getProductImages(tenantId, productIds);
+        Map<Long, ProductImageDto> productImages = productClient.getProductImages(accessToken, productIds);
 
         List<OrderDto.Response> finalResponse = expectOrderPages.stream()
                 .map(queryDto -> {
