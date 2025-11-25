@@ -284,7 +284,7 @@ jobs:
                 defaultZone: http://${{ secrets.ID }}:${{ secrets.PW }}@${{ secrets.NAS_HOST }}:${{ secrets.EUREKA_PORT }}/eureka/
           EOF
           
-          touch product-service/src/main/resources/application-secret.properties
+          touch auth-service/src/main/resources/application-secret.properties
           echo "USER_SERVER_URL=.kkhan.co.kr/internal/users/login" >> auth-service/src/main/resources/application-secret.properties
 
 
