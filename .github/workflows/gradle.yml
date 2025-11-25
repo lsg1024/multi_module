@@ -159,11 +159,11 @@ jobs:
             export PATH=/usr/local/bin:\$PATH
             docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
             docker pull ${{ secrets.DOCKER_USERNAME }}/eureka-service:latest
-            docker stop eureka-server || true
-            docker rm eureka-server || true
+            docker stop eureka-service || true
+            docker rm eureka-service || true
           
             docker run -d \
-              --name eureka-server \
+              --name eureka-service \
               -p ${{ secrets.EUREKA_PORT }}:${{ secrets.EUREKA_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/eureka-service:latest
           EOF
