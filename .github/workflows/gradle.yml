@@ -283,6 +283,10 @@ jobs:
               service-url:
                 defaultZone: http://${{ secrets.ID }}:${{ secrets.PW }}@${{ secrets.NAS_HOST }}:${{ secrets.EUREKA_PORT }}/eureka/
           EOF
+          
+          touch product-service/src/main/resources/application-secret.properties
+          echo "USER_SERVER_URL=kkhan.co.kr/internal/users/login" >> product-service/src/main/resources/application-secret.properties
+
 
       - name: Grant execute permission for Gradle
         run: chmod +x ./gradlew
@@ -391,7 +395,6 @@ jobs:
         run: |
           mkdir -p product-service/src/main/resources
           
-          # 1. bootstrap.yml 생성
           cat <<EOF > product-service/src/main/resources/bootstrap.yml
           spring:
             application:
@@ -421,7 +424,7 @@ jobs:
           
           touch product-service/src/main/resources/application-secret.properties
           echo "FILE_UPLOAD_PATH=/app/images/" >> product-service/src/main/resources/application-secret.properties
-          echo "ACCOUNT_SERVER_URL=http://account-service:8080/account/api" >> product-service/src/main/resources/application-secret.properties
+          echo "ACCOUNT_SERVER_URL=kkhan.co.kr/account/api" >> product-service/src/main/resources/application-secret.properties
 
       - name: Grant execute permission for Gradle
         run: chmod +x ./gradlew

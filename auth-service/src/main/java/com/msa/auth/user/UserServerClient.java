@@ -4,6 +4,7 @@ import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.domain.dto.UserDto;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.security.authentication.AuthenticationServiceException;
@@ -17,6 +18,8 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class UserServerClient {
 
+    @Value("${USER_SERVER_URL}")
+    private String USER_CLIENT_URL;
     private final RestTemplate restTemplate;
 
     public UserServerClient(RestTemplate restTemplate) {
@@ -27,7 +30,7 @@ public class UserServerClient {
 
         String tenantId = request.getHeader("X-Tenant-ID");
 
-        String url = "http://" + tenantId + ".localtest.me:8080/internal/users/login";
+        String url = "http://" + tenantId + USER_CLIENT_URL;
 
         HttpHeaders headers = new HttpHeaders();
 
