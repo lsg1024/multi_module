@@ -16,9 +16,15 @@ spring:
         for-enabled: true
         proto-enabled: true
         host-enabled: true
+        prefix-enabled: true
 
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+        - name: TenantHeaderFilter
+        - name: LoggingFilter
+        - name: ForwardedForHeaderFilter
+        - name: UserAgentHeaderFilter
+
       globalcors:
         add-to-simple-url-handler-mapping: true
         cors-configurations:
@@ -28,6 +34,8 @@ spring:
               - "http://*.localhost:*"
               - "http://localtest.me:*"
               - "http://*.localtest.me:*"
+              - "http://*.kkhan.co.kr"
+              - "https://*.kkhan.co.kr"
             allow-credentials: true
             allowedMethods:
               - GET
@@ -43,8 +51,8 @@ spring:
               - Location
               - X-Tenant-ID
               - X-Request-Id
-      routes:
 
+      routes:
         ################################
         # 외부 라우팅: 클라이언트 <-> 서비스 #
         ################################
@@ -54,21 +62,16 @@ spring:
           predicates:
             - Path=/users/signup
             - Method=POST,OPTIONS
+#            - Host=**.kkhan.co.kr
           filters:
             - StripPrefix=1
-            - name: LoggingFilter
-            - name: TenantHeaderFilter
-
         - id: auth
           uri: lb://auth
           predicates:
             - Path=/auth/**
+#            - Host=**.kkhan.co.kr
           filters:
             - StripPrefix=1
-            - name: LoggingFilter
-            - name: TenantHeaderFilter
-            - name: ForwardedForHeaderFilter
-            - name: UserAgentHeaderFilter
             - RemoveRequestHeader=X-User-ID
             - name: AuthorizationHeaderFilter
               args:
@@ -78,12 +81,9 @@ spring:
           uri: lb://users
           predicates:
             - Path=/users/**
+#            - Host=**.kkhan.co.kr
           filters:
             - StripPrefix=1
-            - name: LoggingFilter
-            - name: TenantHeaderFilter
-            - name: ForwardedForHeaderFilter
-            - name: UserAgentHeaderFilter
             - name: AuthorizationHeaderFilter
               args:
                 require: true
@@ -94,12 +94,9 @@ spring:
           uri: lb://account
           predicates:
             - Path=/account/**
+#            - Host=**.kkhan.co.kr
           filters:
             - StripPrefix=1
-            - name: LoggingFilter
-            - name: TenantHeaderFilter
-            - name: ForwardedForHeaderFilter
-            - name: UserAgentHeaderFilter
             - name: AuthorizationHeaderFilter
               args:
                 require: true
@@ -110,12 +107,9 @@ spring:
           uri: lb://product
           predicates:
             - Path=/product/**
+#            - Host=**.kkhan.co.kr
           filters:
             - StripPrefix=1
-            - name: LoggingFilter
-            - name: TenantHeaderFilter
-            - name: ForwardedForHeaderFilter
-            - name: UserAgentHeaderFilter
             - name: AuthorizationHeaderFilter
               args:
                 require: true
@@ -126,12 +120,9 @@ spring:
           uri: lb://order
           predicates:
             - Path=/order/**
+#            - Host=**.kkhan.co.kr
           filters:
             - StripPrefix=1
-            - name: LoggingFilter
-            - name: TenantHeaderFilter
-            - name: ForwardedForHeaderFilter
-            - name: UserAgentHeaderFilter
             - name: AuthorizationHeaderFilter
               args:
                 require: true
@@ -140,82 +131,55 @@ spring:
 
         #############################
         # 내부 라우팅: 서비스 <-> 서비스 #
+        # 내부 통신은 Host 체크를 하지 않거나 별도 처리
         #############################
-        - id: users-internal # 일단 내부로 돌리긴 했는데 추후 내부 통신에 따라 login과 비login으로 분리 필요할지도..
+        - id: users-internal
           uri: lb://users
           predicates:
             - Path=/internal/users/**
           filters:
             - StripPrefix=2
-            - name: LoggingFilter
-            - name: TenantHeaderFilter
-            - name: ForwardedForHeaderFilter
-            - name: UserAgentHeaderFilter
             - RemoveRequestHeader=Cookie
             - RemoveRequestHeader=X-User-ID
             - name: AuthorizationHeaderFilter
               args:
                 require: false
-                verifyDevice: false
-                verifyForwardedFor: false
 
         - id: account-internal
           uri: lb://account
           predicates:
             - Path=/internal/account/**
-#            - RemoteAddr=${ACCOUNT_INTERNAL_IP}
           filters:
             - StripPrefix=2
-            - name: LoggingFilter
-            - name: TenantHeaderFilter
-            - name: ForwardedForHeaderFilter
             - RemoveRequestHeader=Cookie
             - RemoveRequestHeader=X-User-ID
-            - name: UserAgentHeaderFilter
             - name: AuthorizationHeaderFilter
               args:
                 require: false
-                verifyDevice: false
-                verifyForwardedFor: false
 
         - id: product-internal
           uri: lb://product
           predicates:
             - Path=/internal/product/**
-#            - RemoteAddr=${PRODUCT_INTERNAL_IP}
           filters:
             - StripPrefix=2
-            - name: LoggingFilter
-            - name: TenantHeaderFilter
-            - name: ForwardedForHeaderFilter
             - RemoveRequestHeader=Cookie
             - RemoveRequestHeader=X-User-ID
-            - name: UserAgentHeaderFilter
             - name: AuthorizationHeaderFilter
               args:
                 require: false
-                verifyDevice: false
-                verifyForwardedFor: false
-
 
         - id: order-internal
           uri: lb://order
           predicates:
             - Path=/internal/order/**
-#            - RemoteAddr=${ORDER_INTERNAL_IP}
           filters:
             - StripPrefix=2
-            - name: LoggingFilter
-            - name: TenantHeaderFilter
-            - name: ForwardedForHeaderFilter
             - RemoveRequestHeader=Cookie
             - RemoveRequestHeader=X-User-ID
-            - name: UserAgentHeaderFilter
             - name: AuthorizationHeaderFilter
               args:
                 require: false
-                verifyDevice: false
-                verifyForwardedFor: false
 
 management:
   endpoint:
@@ -227,6 +191,7 @@ management:
         include: gateway, health, refresh
 logging:
   level:
+    org.springframework.cloud.gateway: INFO
     org.springframework.security: DEBUG
 
 server:

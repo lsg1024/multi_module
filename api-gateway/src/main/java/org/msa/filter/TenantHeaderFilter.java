@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class TenantHeaderFilter extends AbstractGatewayFilterFactory<TenantHeaderFilter.Config> {
 
+    public static final String TENANT_ATTRIBUTE_KEY = "TENANT_ID";
+
     public TenantHeaderFilter() { super(Config.class); }
 
     @Getter @Setter
@@ -30,9 +32,13 @@ public class TenantHeaderFilter extends AbstractGatewayFilterFactory<TenantHeade
             String tenant;
             if (c.isDeriveFromHost() && hostname.contains(".")) {
                 tenant = hostname.split("\\.")[0];
+
+                exchange.getAttributes().put(TENANT_ATTRIBUTE_KEY, tenant);
+
                 ServerHttpRequest req = exchange.getRequest().mutate()
                         .headers(h -> h.set(c.getHeader(), tenant))
                         .build();
+
                 return chain.filter(exchange.mutate().request(req).build());
             } else {
                 exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
