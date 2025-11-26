@@ -1,48 +1,49 @@
-package com.msa.order.local.order.external_client;
+package com.msa.order.global.feign_client.client;
 
 import com.msa.common.global.api.ApiResponse;
+import com.msa.common.global.jwt.JwtUtil;
 import com.msa.order.global.exception.RetryableExternalException;
-import com.msa.order.global.util.RestClientUtil;
+import com.msa.order.global.feign_client.AccountFeignClient;
 import com.msa.order.local.order.dto.StoreDto;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
+import feign.FeignException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND;
 import static com.msa.order.global.exception.ExceptionMessage.NO_CONNECT_SERVER;
 
 @Service
+@RequiredArgsConstructor
 public class StoreClient {
 
-    @Value("${BASE_URL}")
-    private String BASE_URL;
-    @Value("${ACCOUNT_SERVER_URL}")
-    private String ACCOUNT_URL;
-
-    private final RestClientUtil restClientUtil;
-
-    public StoreClient(RestClientUtil restClientUtil) {
-        this.restClientUtil = restClientUtil;
-    }
+    private final JwtUtil jwtUtil;
+    private final AccountFeignClient accountFeignClient;
 
     @Retryable(retryFor = RetryableExternalException.class, backoff = @Backoff(value = 200, multiplier = 2, random = true))
     public StoreDto.Response getStoreInfo(String token, Long storeId) {
         ResponseEntity<ApiResponse<StoreDto.Response>> response;
+
+        Map<String, Object> headers = new HashMap<>();
+        headers.put("Authorization", "Bearer " + token);
+        headers.put("X-Forwarded-For", jwtUtil.getForward(token));
+        headers.put("X-Tenant-ID", jwtUtil.getTenantId(token));
+        headers.put("User-Agent", jwtUtil.getDevice(token));
+
         try {
-            String url = "https://" + BASE_URL + ACCOUNT_URL + "/store/" + storeId;
-            response = restClientUtil.get(url, token,
-                    new ParameterizedTypeReference<>() {
-                    }
-            );
+            response = accountFeignClient.getStoreInfo(headers, storeId);
+        } catch (FeignException e) {
+            if (e.status() >= 400 && e.status() < 500) {
+                throw new IllegalArgumentException(NOT_FOUND);
+            }
+            throw new RetryableExternalException(NO_CONNECT_SERVER + e.getMessage());
         } catch (Exception e) {
             throw new RetryableExternalException(NO_CONNECT_SERVER + e.getMessage());
-
-        }
-        if (response.getStatusCode().is4xxClientError()) {
-            throw new IllegalArgumentException(NOT_FOUND);
         }
 
         StoreDto.Response data = response.getBody().getData();
@@ -52,5 +53,4 @@ public class StoreClient {
 
         return data;
     }
-
 }
