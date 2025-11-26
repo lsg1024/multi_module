@@ -2,6 +2,7 @@ package com.msa.auth.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msa.auth.redis.RedisRefreshTokenService;
+import com.msa.auth.user.UserFeignClient;
 import com.msa.auth.user.UserServerClient;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.domain.dto.UserDto;
@@ -39,14 +40,16 @@ public class CustomLoginFilter extends UsernamePasswordAuthenticationFilter {
     private final JwtUtil jwtUtil;
     private final RedisRefreshTokenService redisRefreshTokenService;
     private final UserServerClient userServerClient;
+    private final UserFeignClient userFeignClient;
 
-    public CustomLoginFilter(AuthenticationManager authenticationManager, long accessTtl, long refreshTtl, JwtUtil jwtUtil, RedisRefreshTokenService redisRefreshTokenService, UserServerClient userServerClient) {
+    public CustomLoginFilter(AuthenticationManager authenticationManager, long accessTtl, long refreshTtl, JwtUtil jwtUtil, RedisRefreshTokenService redisRefreshTokenService, UserServerClient userServerClient, UserFeignClient userFeignClient) {
         super.setAuthenticationManager(authenticationManager);
         this.accessTtl = accessTtl;
         this.refreshTtl = refreshTtl;
         this.jwtUtil = jwtUtil;
         this.redisRefreshTokenService = redisRefreshTokenService;
         this.userServerClient = userServerClient;
+        this.userFeignClient = userFeignClient;
     }
 
     @Override
@@ -60,7 +63,7 @@ public class CustomLoginFilter extends UsernamePasswordAuthenticationFilter {
             String body = StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8);
             loginDto = objectMapper.readValue(body, UserDto.Login.class);
 
-            ResponseEntity<ApiResponse<UserDto.UserInfo>> result = userServerClient.getLogin(request, loginDto);
+            ResponseEntity<ApiResponse<UserDto.UserInfo>> result = userFeignClient.getLogin(request, loginDto);
 
             UserDto.UserInfo userinfo = result.getBody().getData();
 
