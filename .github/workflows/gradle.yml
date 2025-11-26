@@ -217,6 +217,8 @@ jobs:
           eureka:
             instance:
               prefer-ip-address: true
+              hostname: 172.20.0.4
+              instance-id: ${spring.application.name}:${{ secrets.API_GATWAY_PORT }}
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -284,6 +286,8 @@ jobs:
           eureka:
             instance:
               prefer-ip-address: true
+              hostname: 172.20.0.5
+              instance-id: ${spring.application.name}:${{ secrets.AUTH_PORT }}
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -355,6 +359,8 @@ jobs:
           eureka:
             instance:
               prefer-ip-address: true
+              hostname: 172.20.0.6
+              instance-id: ${spring.application.name}:${{ secrets.USER_PORT }}
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -430,6 +436,8 @@ jobs:
           eureka:
             instance:
               prefer-ip-address: true
+              hostname: 172.20.0.8
+              instance-id: ${spring.application.name}:${{ secrets.PRODUCT_PORT }}
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -503,6 +511,8 @@ jobs:
           eureka:
             instance:
               prefer-ip-address: true
+              hostname: 172.20.0.7
+              instance-id: ${spring.application.name}:${{ secrets.ACCOUNT_PORT }}
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -570,6 +580,8 @@ jobs:
           eureka:
             instance:
               prefer-ip-address: true
+              hostname: 172.20.0.9
+              instance-id: ${spring.application.name}:${{ secrets.ORDER_PORT }}
             client:
               register-with-eureka: true
               fetch-registry: true
