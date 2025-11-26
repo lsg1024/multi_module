@@ -98,7 +98,7 @@ jobs:
             docker pull $DOCKER_USERNAME/config-server:latest
             docker stop config-server || true
             docker rm config-server || true
-            docker run -d --name config-server -p $CONFIG_PORT:$CONFIG_PORT $DOCKER_USERNAME/config-server:latest
+            docker run -d --name config-server --network msa-network --ip 172.20.0.3 -p $CONFIG_PORT:$CONFIG_PORT $DOCKER_USERNAME/config-server:latest
             exit
           EOF
 
@@ -181,6 +181,8 @@ jobs:
           
             docker run -d \
               --name eureka-service \
+              --network msa-network \
+              --ip 172.20.0.2 \
               -p ${{ secrets.EUREKA_PORT }}:${{ secrets.EUREKA_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/eureka-service:latest
           EOF
@@ -246,6 +248,8 @@ jobs:
 
             docker run -d \
               --name api-gateway \
+              --network msa-network \
+              --ip 172.20.0.4 \
               -p ${{ secrets.API_GATWAY_PORT }}:${{ secrets.API_GATWAY_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/api-gateway:latest
           EOF
@@ -315,6 +319,8 @@ jobs:
 
             docker run -d \
               --name auth-service \
+              --network msa-network \
+              --ip 172.20.0.5 \
               -p ${{ secrets.AUTH_PORT }}:${{ secrets.AUTH_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/auth-service:latest
           EOF
@@ -380,6 +386,8 @@ jobs:
 
             docker run -d \
               --name user-service \
+              --network msa-network \
+              --ip 172.20.0.6 \
               -p ${{ secrets.USER_PORT }}:${{ secrets.USER_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/user-service:latest
           EOF
@@ -457,6 +465,8 @@ jobs:
 
             docker run -d \
               --name product-service \
+              --network msa-network \
+              --ip 172.20.0.8 \
               -p ${{ secrets.PRODUCT_PORT }}:${{ secrets.PRODUCT_PORT }} \
               -v /volume1/docker/msa/product/logs:/app/logs \
               -v /volume1/docker/msa/product/images:/app/images \
@@ -524,6 +534,8 @@ jobs:
 
             docker run -d \
               --name account-service \
+              --network msa-network \
+              --ip 172.20.0.7 \
               -p ${{ secrets.ACCOUNT_PORT }}:${{ secrets.ACCOUNT_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/account-service:latest
           EOF
@@ -593,6 +605,8 @@ jobs:
             docker rm order-service || true
 
             docker run -d \
+              --network msa-network \
+              --ip 172.20.0.9 \
               --name order-service \
               -p ${{ secrets.ORDER_PORT }}:${{ secrets.ORDER_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/order-service:latest
