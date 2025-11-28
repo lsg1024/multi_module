@@ -34,24 +34,22 @@ public class LoggingFilter extends AbstractGatewayFilterFactory<Object> {
             // 2. 시작 시간 기록
             long startTime = System.currentTimeMillis();
 
-            log.info("[{}] [ReqId:{}] Request: {} {}", tenant, requestId, mutatedRequest.getMethod(), mutatedRequest.getURI());
+            log.info("[{}] Request: {} {}", tenant, mutatedRequest.getMethod(), mutatedRequest.getURI());
 
             // 3. 필터 체인 실행
             return chain.filter(exchange.mutate().request(mutatedRequest).build())
                     .then(Mono.fromRunnable(() -> {
-                        // 4. 종료 후 상태 코드 및 시간 로깅 (doOnSuccess 대신 then 사용 권장)
                         ServerHttpResponse response = exchange.getResponse();
                         HttpStatusCode status = response.getStatusCode();
                         long duration = System.currentTimeMillis() - startTime;
 
-                        if (status != null && status.isError()) {
-                            // 에러 상태 코드일 경우 (4xx, 5xx) Error 레벨로 로깅
-                            log.error("[{}] [ReqId:{}] Response FAILED: {} | Status: {} | Time: {}ms",
-                                    tenant, requestId, mutatedRequest.getURI(), status, duration);
+                        if (status.isError()) {
+                            log.error("[{}] Response FAILED: {} | Status: {} | Time: {}ms",
+                                    tenant, mutatedRequest.getURI(), status, duration);
                         } else {
                             // 정상일 경우 Info 레벨
-                            log.info("[{}] [ReqId:{}] Response OK: {} | Status: {} | Time: {}ms",
-                                    tenant, requestId, mutatedRequest.getURI(), status, duration);
+                            log.info("[{}] Response OK: {} | Status: {} | Time: {}ms",
+                                    tenant, mutatedRequest.getURI(), status, duration);
                         }
                     }));
         }, -1); // 순서를 가장 앞(-1)으로 유지
