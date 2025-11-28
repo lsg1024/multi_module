@@ -3,7 +3,6 @@ package com.msa.auth.filter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msa.auth.redis.RedisRefreshTokenService;
 import com.msa.auth.user.UserFeignClient;
-import com.msa.auth.user.UserServerClient;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.domain.dto.UserDto;
 import com.msa.common.global.jwt.JwtUtil;
@@ -37,18 +36,18 @@ public class CustomLoginFilter extends UsernamePasswordAuthenticationFilter {
 
     private final long accessTtl;
     private final long refreshTtl;
+    private final String cookieUrl;
     private final JwtUtil jwtUtil;
     private final RedisRefreshTokenService redisRefreshTokenService;
-    private final UserServerClient userServerClient;
     private final UserFeignClient userFeignClient;
 
-    public CustomLoginFilter(AuthenticationManager authenticationManager, long accessTtl, long refreshTtl, JwtUtil jwtUtil, RedisRefreshTokenService redisRefreshTokenService, UserServerClient userServerClient, UserFeignClient userFeignClient) {
+    public CustomLoginFilter(AuthenticationManager authenticationManager, long accessTtl, long refreshTtl, String cookieUrl, JwtUtil jwtUtil, RedisRefreshTokenService redisRefreshTokenService, UserFeignClient userFeignClient) {
+        this.cookieUrl = cookieUrl;
         super.setAuthenticationManager(authenticationManager);
         this.accessTtl = accessTtl;
         this.refreshTtl = refreshTtl;
         this.jwtUtil = jwtUtil;
         this.redisRefreshTokenService = redisRefreshTokenService;
-        this.userServerClient = userServerClient;
         this.userFeignClient = userFeignClient;
     }
 
@@ -126,6 +125,7 @@ public class CustomLoginFilter extends UsernamePasswordAuthenticationFilter {
 
     private Cookie createCookie(String value, Long TTL) {
             Cookie cookie = new Cookie("refreshToken", value);
+            cookie.setDomain(cookieUrl);
             cookie.setMaxAge((int) (TTL / 1000));
             cookie.setPath("/");
             cookie.setHttpOnly(true);

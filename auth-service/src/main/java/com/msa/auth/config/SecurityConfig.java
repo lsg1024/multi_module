@@ -5,7 +5,6 @@ import com.msa.auth.filter.CustomLogoutFilter;
 import com.msa.auth.filter.JwtFilter;
 import com.msa.auth.redis.RedisRefreshTokenService;
 import com.msa.auth.user.UserFeignClient;
-import com.msa.auth.user.UserServerClient;
 import com.msa.common.global.jwt.JwtUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -35,9 +34,11 @@ public class SecurityConfig {
     @Value("${jwt.refresh_ttl}")
     private Long REFRESH_TTL;
 
+    @Value("${cookie_url}")
+    private String COOKIE_URL;
+
     private final JwtUtil jwtUtil;
     private final RedisRefreshTokenService redisService;
-    private final UserServerClient userClient;
     private final UserFeignClient userFeignClient;
     private final AuthenticationConfiguration authConfig;
 
@@ -71,7 +72,7 @@ public class SecurityConfig {
 
         // 4) 커스텀 로그인 필터 — /auth/login
         CustomLoginFilter loginFilter = new CustomLoginFilter(
-                authenticationManager(), ACCESS_TTL, REFRESH_TTL, jwtUtil, redisService, userClient, userFeignClient
+                authenticationManager(), ACCESS_TTL, REFRESH_TTL, COOKIE_URL, jwtUtil, redisService, userFeignClient
         );
         loginFilter.setFilterProcessesUrl("/login");
 

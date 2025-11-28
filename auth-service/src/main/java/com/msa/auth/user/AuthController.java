@@ -20,6 +20,9 @@ public class AuthController {
     @Value("${jwt.refresh_ttl}")
     private Long REFRESH_TTL;
 
+    @Value("${cookie_url}")
+    private String COOKIE_URL;
+
     private final RefreshTokenService refreshTokenService;
 
     public AuthController(RefreshTokenService refreshTokenService) {
@@ -48,6 +51,7 @@ public class AuthController {
 
     private Cookie createCookie(String value, Long TTL) {
         Cookie cookie = new Cookie("refreshToken", value);
+        cookie.setDomain(COOKIE_URL);
         cookie.setMaxAge((int) (TTL / 1000));
         cookie.setPath("/");
         cookie.setHttpOnly(true);
