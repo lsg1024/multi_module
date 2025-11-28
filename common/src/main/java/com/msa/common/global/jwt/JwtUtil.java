@@ -55,7 +55,6 @@ public class JwtUtil {
 
         Instant now = Instant.now();
         Instant expireAt = now.plusMillis(expireTime);
-
         return Jwts.builder()
                 .claim("category", category)
                 .claim("id", id)
