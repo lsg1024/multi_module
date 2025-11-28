@@ -42,6 +42,8 @@ jobs:
     needs: check-changes
     if: ${{ needs.check-changes.outputs.config == 'true' || needs.check-changes.outputs.common == 'true' }}
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -106,6 +108,8 @@ jobs:
     needs: [deploy-config]
     if: always() && (needs.deploy-config.result == 'success' || needs.deploy-config.result == 'skipped')
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       - name: Wait for Config Server Health (External Check)
         run: |
@@ -132,6 +136,8 @@ jobs:
     needs: [check-changes, verify-config-server]
     if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.eureka, 'true') || contains(needs.check-changes.outputs.common, 'true'))
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -186,11 +192,13 @@ jobs:
               -p ${{ secrets.EUREKA_PORT }}:${{ secrets.EUREKA_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/eureka-service:latest
           EOF
-          
+
   deploy-api-gateway:
     needs: [check-changes, verify-config-server]
     if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.api-gateway, 'true') || contains(needs.check-changes.outputs.common, 'true'))
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -218,7 +226,7 @@ jobs:
             instance:
               prefer-ip-address: true
               hostname: 172.20.0.4
-              instance-id: ${spring.application.name}:${{ secrets.API_GATWAY_PORT }}
+              instance-id: \${spring.application.name}:${{ secrets.API_GATWAY_PORT }}
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -260,6 +268,8 @@ jobs:
     needs: [ check-changes, verify-config-server ]
     if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.auth, 'true') || contains(needs.check-changes.outputs.common, 'true'))
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -287,7 +297,7 @@ jobs:
             instance:
               prefer-ip-address: true
               hostname: 172.20.0.5
-              instance-id: ${spring.application.name}:${{ secrets.AUTH_PORT }}
+              instance-id: \${spring.application.name}:${{ secrets.AUTH_PORT }}
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -333,6 +343,8 @@ jobs:
     needs: [ check-changes, verify-config-server ]
     if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.user, 'true') || contains(needs.check-changes.outputs.common, 'true'))
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -360,7 +372,7 @@ jobs:
             instance:
               prefer-ip-address: true
               hostname: 172.20.0.6
-              instance-id: ${spring.application.name}:${{ secrets.USER_PORT }}
+              instance-id: \${spring.application.name}:${{ secrets.USER_PORT }}
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -402,6 +414,8 @@ jobs:
     needs: [ check-changes, verify-config-server ]
     if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.product, 'true') || contains(needs.check-changes.outputs.common, 'true'))
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -437,7 +451,7 @@ jobs:
             instance:
               prefer-ip-address: true
               hostname: 172.20.0.8
-              instance-id: ${spring.application.name}:${{ secrets.PRODUCT_PORT }}
+              instance-id: \${spring.application.name}:${{ secrets.PRODUCT_PORT }}
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -485,6 +499,8 @@ jobs:
     needs: [ check-changes, verify-config-server ]
     if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.account, 'true') || contains(needs.check-changes.outputs.common, 'true'))
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -512,7 +528,7 @@ jobs:
             instance:
               prefer-ip-address: true
               hostname: 172.20.0.7
-              instance-id: ${spring.application.name}:${{ secrets.ACCOUNT_PORT }}
+              instance-id: \${spring.application.name}:${{ secrets.ACCOUNT_PORT }}
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -554,6 +570,8 @@ jobs:
     needs: [ check-changes, verify-config-server ]
     if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.order, 'true') || contains(needs.check-changes.outputs.common, 'true'))
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -581,7 +599,7 @@ jobs:
             instance:
               prefer-ip-address: true
               hostname: 172.20.0.9
-              instance-id: ${spring.application.name}:${{ secrets.ORDER_PORT }}
+              instance-id: \${spring.application.name}:${{ secrets.ORDER_PORT }}
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -623,4 +641,3 @@ jobs:
               -p ${{ secrets.ORDER_PORT }}:${{ secrets.ORDER_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/order-service:latest
           EOF
-          
