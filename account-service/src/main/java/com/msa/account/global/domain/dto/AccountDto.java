@@ -9,8 +9,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import static com.msa.account.global.domain.dto.util.ExchangeEnumUtil.getLevelTypeTitle;
-import static com.msa.account.global.domain.dto.util.ExchangeEnumUtil.getTradeTypeTitle;
+import static com.msa.account.global.util.ExchangeEnumUtil.getLevelTypeTitle;
+import static com.msa.account.global.util.ExchangeEnumUtil.getTradeTypeTitle;
 
 public class AccountDto {
     private static final String ERR_KO_EN_NUM_ONLY = "영어, 한글, 숫자만 허용됩니다.";
