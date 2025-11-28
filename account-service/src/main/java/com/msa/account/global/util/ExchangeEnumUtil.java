@@ -1,4 +1,4 @@
-package com.msa.account.global.domain.dto.util;
+package com.msa.account.global.util;
 
 import com.msa.account.global.domain.entity.OptionLevel;
 import com.msa.account.global.domain.entity.OptionTradeType;
