@@ -1,7 +1,7 @@
 package com.msa.account.local.factory.service;
 
 import com.msa.account.global.domain.dto.AccountDto;
-import com.msa.account.global.domain.dto.util.AuthorityUserRoleUtil;
+import com.msa.common.global.util.AuthorityUserRoleUtil;
 import com.msa.account.global.domain.entity.GoldHarry;
 import com.msa.account.global.domain.entity.OptionLevel;
 import com.msa.account.global.domain.repository.GoldHarryRepository;
@@ -63,7 +63,7 @@ public class FactoryService {
         Factory factory = factoryRepository.findWithAllOptionById(Long.valueOf(factoryId))
                 .orElseThrow(() -> new NotFoundException(NOT_FOUND_FACTORY));
 
-        if (authorityUserRoleUtil.factoryVerification(token, factory)) {
+        if (authorityUserRoleUtil.verification(token)) {
             AccountDto.AccountInfo factoryInfo = updateInfo.getAccountInfo();
 
             if (factory.isNameChanged(factoryInfo.getAccountName())) {
@@ -88,7 +88,7 @@ public class FactoryService {
         Factory factory = factoryRepository.findById(Long.valueOf(factoryId))
                 .orElseThrow(() -> new NotFoundException(NOT_FOUND_FACTORY));
 
-        if (authorityUserRoleUtil.factoryVerification(token, factory)) {
+        if (authorityUserRoleUtil.verification(token)) {
             factoryRepository.delete(factory);
             return;
         }
@@ -111,7 +111,8 @@ public class FactoryService {
     public void updateFactoryHarry(String accessToken, String factoryId, String harryId) {
         Factory factory = factoryRepository.findById(Long.valueOf(factoryId))
                 .orElseThrow(() -> new NotFoundException(NOT_FOUND_FACTORY));
-        if (authorityUserRoleUtil.factoryVerification(accessToken, factory)) {
+
+        if (authorityUserRoleUtil.verification(accessToken)) {
             GoldHarry goldHarry = goldHarryRepository.findById(Long.valueOf(harryId))
                     .orElseThrow(() -> new NotFoundException(WRONG_HARRY));
 
@@ -125,8 +126,8 @@ public class FactoryService {
     public void updateFactoryGrade(String accessToken, String factoryId, String grade) {
         Factory factory = factoryRepository.findById(Long.valueOf(factoryId))
                 .orElseThrow(() -> new NotFoundException(NOT_FOUND_FACTORY));
-        if (authorityUserRoleUtil.factoryVerification(accessToken, factory)) {
 
+        if (authorityUserRoleUtil.verification(accessToken)) {
             factory.getCommonOption().updateOptionLevel(grade);
             return;
         }

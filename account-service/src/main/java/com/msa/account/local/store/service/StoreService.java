@@ -1,7 +1,7 @@
 package com.msa.account.local.store.service;
 
 import com.msa.account.global.domain.dto.AccountDto;
-import com.msa.account.global.domain.dto.util.AuthorityUserRoleUtil;
+import com.msa.common.global.util.AuthorityUserRoleUtil;
 import com.msa.account.global.domain.entity.GoldHarry;
 import com.msa.account.global.domain.entity.OptionLevel;
 import com.msa.account.global.domain.repository.GoldHarryRepository;
@@ -78,7 +78,7 @@ public class StoreService {
         Store store = storeRepository.findWithAllOptionsById(Long.valueOf(storeId))
                 .orElseThrow(() -> new NotFoundException(NOT_FOUND_STORE));
 
-        if (authorityUserRoleUtil.storeVerification(token, store)) {
+        if (authorityUserRoleUtil.verification(token)) {
             AccountDto.AccountInfo storeInfo = updateInfo.getAccountInfo();
 
             //상점 이름 검증
@@ -111,7 +111,7 @@ public class StoreService {
             throw new IllegalArgumentException("기본 값은 삭제가 불가능 합니다.");
         }
 
-        if (authorityUserRoleUtil.storeVerification(token, store)) {
+        if (authorityUserRoleUtil.verification(token)) {
             storeRepository.delete(store);
             return;
         }
@@ -134,7 +134,8 @@ public class StoreService {
     public void updateStoreHarry(String accessToken, String storeId, String harryId) {
         Store store = storeRepository.findById(Long.valueOf(storeId))
                 .orElseThrow(() -> new NotFoundException(NOT_FOUND_STORE));
-        if (authorityUserRoleUtil.storeVerification(accessToken, store)) {
+
+        if (authorityUserRoleUtil.verification(accessToken)) {
             GoldHarry goldHarry = goldHarryRepository.findById(Long.valueOf(harryId))
                     .orElseThrow(() -> new NotFoundException(WRONG_HARRY));
 
@@ -148,8 +149,8 @@ public class StoreService {
     public void updateStoreGrade(String accessToken, String storeId, String grade) {
         Store store = storeRepository.findById(Long.valueOf(storeId))
                 .orElseThrow(() -> new NotFoundException(NOT_FOUND_STORE));
-        if (authorityUserRoleUtil.storeVerification(accessToken, store)) {
 
+        if (authorityUserRoleUtil.verification(accessToken)) {
             store.getCommonOption().updateOptionLevel(grade);
             return;
         }
