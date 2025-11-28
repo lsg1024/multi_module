@@ -2,6 +2,7 @@ package com.msa.product.local.stone.assistantStone.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
@@ -22,4 +23,15 @@ public class AssistantStone {
     private String assistanceStoneNote;
     @Column(name = "ASSISTANCE_STONE_DELETED")
     private boolean assistanceStoneDeleted = false;
+
+    @Builder
+    public AssistantStone(String assistanceStoneName, String assistanceStoneNote) {
+        this.assistanceStoneName = assistanceStoneName;
+        this.assistanceStoneNote = assistanceStoneNote;
+    }
+
+    public void updateAssistantStone(String assistantStoneName, String assistanceStoneNote) {
+        this.assistanceStoneName = assistantStoneName;
+        this.assistanceStoneNote = assistanceStoneNote;
+    }
 }
