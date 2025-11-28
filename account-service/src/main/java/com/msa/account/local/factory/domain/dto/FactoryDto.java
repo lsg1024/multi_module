@@ -14,8 +14,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import static com.msa.account.global.domain.dto.util.ExchangeEnumUtil.getLevelTypeTitle;
-import static com.msa.account.global.domain.dto.util.ExchangeEnumUtil.getTradeTypeTitle;
+import static com.msa.account.global.util.ExchangeEnumUtil.getLevelTypeTitle;
+import static com.msa.account.global.util.ExchangeEnumUtil.getTradeTypeTitle;
 
 public class FactoryDto {
 

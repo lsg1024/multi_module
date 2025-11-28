@@ -1,4 +1,4 @@
-package com.msa.order.local.order.external_client.dto;
+package com.msa.order.global.feign_client.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

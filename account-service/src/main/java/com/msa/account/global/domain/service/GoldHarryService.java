@@ -1,8 +1,10 @@
 package com.msa.account.global.domain.service;
 
 import com.msa.account.global.domain.dto.GoldHarryDto;
+import com.msa.common.global.util.AuthorityUserRoleUtil;
 import com.msa.account.global.domain.entity.GoldHarry;
 import com.msa.account.global.domain.repository.GoldHarryRepository;
+import com.msa.account.global.exception.NotAuthorityException;
 import com.msa.account.global.exception.NotFoundException;
 import com.msa.account.global.kafka.KafkaProducer;
 import com.msa.account.global.kafka.dto.KafkaEventDto;
@@ -22,11 +24,13 @@ public class GoldHarryService {
 
     private final JwtUtil jwtUtil;
     private final KafkaProducer kafkaProducer;
+    private final AuthorityUserRoleUtil authorityUserRoleUtil;
     private final GoldHarryRepository goldHarryRepository;
 
-    public GoldHarryService(JwtUtil jwtUtil, KafkaProducer kafkaProducer, GoldHarryRepository goldHarryRepository) {
+    public GoldHarryService(JwtUtil jwtUtil, KafkaProducer kafkaProducer, AuthorityUserRoleUtil authorityUserRoleUtil, GoldHarryRepository goldHarryRepository) {
         this.jwtUtil = jwtUtil;
         this.kafkaProducer = kafkaProducer;
+        this.authorityUserRoleUtil = authorityUserRoleUtil;
         this.goldHarryRepository = goldHarryRepository;
     }
 
@@ -53,10 +57,9 @@ public class GoldHarryService {
 
     public void delete(String accessToken, String goldHarryId) {
         String tenantId = jwtUtil.getTenantId(accessToken);
-        String role = jwtUtil.getRole(accessToken);
 
         GoldHarry goldHarry;
-        if (role.equals("ADMIN") || role.equals("USER")) {
+        if (authorityUserRoleUtil.verification(accessToken)) {
             goldHarry = goldHarryRepository.findById(Long.valueOf(goldHarryId))
                     .orElseThrow(() -> new NotFoundException(WRONG_HARRY));
 
@@ -82,9 +85,13 @@ public class GoldHarryService {
         return goldHarryList;
     }
 
-//    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-//    public void handleGoldHarryLossUpdateEvent(KafkaEventDto.UpdateLossDto kafkaEventDto) {
-//        kafkaProducer.sendGoldHarryLossUpdated(kafkaEventDto.getTenantId(), kafkaEventDto.getGoldHarryId(), kafkaEventDto.getGoldHarryDto().getGoldHarryLoss());
-//    }
-
+    public void createHarry(String accessToken, GoldHarryDto.Request goldHarryDto) {
+        if (authorityUserRoleUtil.verification(accessToken)) {
+            GoldHarry goldHarry = GoldHarry.builder()
+                    .goldHarryLoss(goldHarryDto.getGoldHarryLoss())
+                    .build();
+            goldHarryRepository.save(goldHarry);
+        }
+        throw new NotAuthorityException("생성 권한이 없는 사용자 입니다.");
+    }
 }

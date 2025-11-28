@@ -1,5 +1,8 @@
 package com.msa.order.local.order.service;
 
+import com.msa.order.global.feign_client.client.*;
+import com.msa.order.global.feign_client.dto.AssistantStoneDto;
+import com.msa.order.global.feign_client.dto.ProductDetailDto;
 import com.msa.order.global.kafka.dto.OrderAsyncRequested;
 import com.msa.order.global.kafka.dto.OrderUpdateRequest;
 import com.msa.order.local.order.dto.FactoryDto;
@@ -10,9 +13,6 @@ import com.msa.order.local.order.entity.StatusHistory;
 import com.msa.order.local.order.entity.order_enum.BusinessPhase;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.order.entity.order_enum.ProductStatus;
-import com.msa.order.local.order.external_client.*;
-import com.msa.order.local.order.external_client.dto.AssistantStoneDto;
-import com.msa.order.local.order.external_client.dto.ProductDetailDto;
 import com.msa.order.local.order.repository.OrdersRepository;
 import com.msa.order.local.order.repository.StatusHistoryRepository;
 import lombok.extern.slf4j.Slf4j;

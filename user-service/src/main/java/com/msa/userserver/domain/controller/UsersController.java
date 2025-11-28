@@ -22,28 +22,24 @@ public class UsersController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<UserDto.UserInfo>> loginCheck(@Valid @RequestBody UserDto.Login userDto) {
+    public ResponseEntity<ApiResponse<UserDto.UserInfo>> loginCheck(
+            @Valid @RequestBody UserDto.Login userDto) {
 
         UserDto.UserInfo userInfo = usersService.login(userDto);
-
         return ResponseEntity.ok(ApiResponse.success(userInfo));
 
     }
 
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<String>> createUser(@Valid @RequestBody UserDto.Create userDto) {
-
         usersService.createUser(userDto);
-
         return ResponseEntity.ok(ApiResponse.success("가입 완료"));
     }
 
     @GetMapping("/info")
     public ResponseEntity<ApiResponse<UserDto.UserInfo>> getUserInfo(
             @AccessToken String accessToken) {
-
         UserDto.UserInfo userInfo = usersService.getUserInfo(accessToken);
-
         return ResponseEntity.ok(ApiResponse.success(userInfo));
     }
 
@@ -52,9 +48,7 @@ public class UsersController {
     public ResponseEntity<ApiResponse<String>> updateUserInfo(
             @AccessToken String accessToken,
             @Valid @RequestBody UserDto.Update updateDto) {
-
         usersService.updateUserInfo(accessToken, updateDto);
-
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
 
@@ -62,9 +56,7 @@ public class UsersController {
     @DeleteMapping("/delete")
     public ResponseEntity<ApiResponse<String>> deletedUser(
             @AccessToken String accessToken) {
-
         usersService.deletedUser(accessToken);
-
         return ResponseEntity.ok(ApiResponse.success("삭제완료"));
     }
 
@@ -72,7 +64,6 @@ public class UsersController {
     @GetMapping("/list")
     public List<UserDto.UserInfo> getUserList(
             @AccessToken String accessToken) {
-
         return usersService.getAllUsers(accessToken);
     }
 

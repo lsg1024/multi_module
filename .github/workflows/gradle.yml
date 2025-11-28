@@ -42,6 +42,8 @@ jobs:
     needs: check-changes
     if: ${{ needs.check-changes.outputs.config == 'true' || needs.check-changes.outputs.common == 'true' }}
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -98,7 +100,7 @@ jobs:
             docker pull $DOCKER_USERNAME/config-server:latest
             docker stop config-server || true
             docker rm config-server || true
-            docker run -d --name config-server -p $CONFIG_PORT:$CONFIG_PORT $DOCKER_USERNAME/config-server:latest
+            docker run -d --name config-server --network msa-network --ip 172.20.0.3 -p $CONFIG_PORT:$CONFIG_PORT $DOCKER_USERNAME/config-server:latest
             exit
           EOF
 
@@ -106,6 +108,8 @@ jobs:
     needs: [deploy-config]
     if: always() && (needs.deploy-config.result == 'success' || needs.deploy-config.result == 'skipped')
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       - name: Wait for Config Server Health (External Check)
         run: |
@@ -132,6 +136,8 @@ jobs:
     needs: [check-changes, verify-config-server]
     if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.eureka, 'true') || contains(needs.check-changes.outputs.common, 'true'))
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -181,14 +187,18 @@ jobs:
           
             docker run -d \
               --name eureka-service \
+              --network msa-network \
+              --ip 172.20.0.2 \
               -p ${{ secrets.EUREKA_PORT }}:${{ secrets.EUREKA_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/eureka-service:latest
           EOF
-          
+
   deploy-api-gateway:
     needs: [check-changes, verify-config-server]
     if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.api-gateway, 'true') || contains(needs.check-changes.outputs.common, 'true'))
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -215,6 +225,8 @@ jobs:
           eureka:
             instance:
               prefer-ip-address: true
+              hostname: 172.20.0.4
+              instance-id: \${spring.application.name}:${{ secrets.API_GATWAY_PORT }}
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -246,6 +258,8 @@ jobs:
 
             docker run -d \
               --name api-gateway \
+              --network msa-network \
+              --ip 172.20.0.4 \
               -p ${{ secrets.API_GATWAY_PORT }}:${{ secrets.API_GATWAY_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/api-gateway:latest
           EOF
@@ -254,6 +268,8 @@ jobs:
     needs: [ check-changes, verify-config-server ]
     if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.auth, 'true') || contains(needs.check-changes.outputs.common, 'true'))
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -280,6 +296,8 @@ jobs:
           eureka:
             instance:
               prefer-ip-address: true
+              hostname: 172.20.0.5
+              instance-id: \${spring.application.name}:${{ secrets.AUTH_PORT }}
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -315,6 +333,8 @@ jobs:
 
             docker run -d \
               --name auth-service \
+              --network msa-network \
+              --ip 172.20.0.5 \
               -p ${{ secrets.AUTH_PORT }}:${{ secrets.AUTH_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/auth-service:latest
           EOF
@@ -323,6 +343,8 @@ jobs:
     needs: [ check-changes, verify-config-server ]
     if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.user, 'true') || contains(needs.check-changes.outputs.common, 'true'))
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -349,6 +371,8 @@ jobs:
           eureka:
             instance:
               prefer-ip-address: true
+              hostname: 172.20.0.6
+              instance-id: \${spring.application.name}:${{ secrets.USER_PORT }}
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -380,6 +404,8 @@ jobs:
 
             docker run -d \
               --name user-service \
+              --network msa-network \
+              --ip 172.20.0.6 \
               -p ${{ secrets.USER_PORT }}:${{ secrets.USER_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/user-service:latest
           EOF
@@ -388,6 +414,8 @@ jobs:
     needs: [ check-changes, verify-config-server ]
     if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.product, 'true') || contains(needs.check-changes.outputs.common, 'true'))
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -422,6 +450,8 @@ jobs:
           eureka:
             instance:
               prefer-ip-address: true
+              hostname: 172.20.0.8
+              instance-id: \${spring.application.name}:${{ secrets.PRODUCT_PORT }}
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -457,6 +487,8 @@ jobs:
 
             docker run -d \
               --name product-service \
+              --network msa-network \
+              --ip 172.20.0.8 \
               -p ${{ secrets.PRODUCT_PORT }}:${{ secrets.PRODUCT_PORT }} \
               -v /volume1/docker/msa/product/logs:/app/logs \
               -v /volume1/docker/msa/product/images:/app/images \
@@ -467,6 +499,8 @@ jobs:
     needs: [ check-changes, verify-config-server ]
     if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.account, 'true') || contains(needs.check-changes.outputs.common, 'true'))
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -493,6 +527,8 @@ jobs:
           eureka:
             instance:
               prefer-ip-address: true
+              hostname: 172.20.0.7
+              instance-id: \${spring.application.name}:${{ secrets.ACCOUNT_PORT }}
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -524,6 +560,8 @@ jobs:
 
             docker run -d \
               --name account-service \
+              --network msa-network \
+              --ip 172.20.0.7 \
               -p ${{ secrets.ACCOUNT_PORT }}:${{ secrets.ACCOUNT_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/account-service:latest
           EOF
@@ -532,6 +570,8 @@ jobs:
     needs: [ check-changes, verify-config-server ]
     if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.order, 'true') || contains(needs.check-changes.outputs.common, 'true'))
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -558,6 +598,8 @@ jobs:
           eureka:
             instance:
               prefer-ip-address: true
+              hostname: 172.20.0.9
+              instance-id: \${spring.application.name}:${{ secrets.ORDER_PORT }}
             client:
               register-with-eureka: true
               fetch-registry: true
@@ -593,8 +635,9 @@ jobs:
             docker rm order-service || true
 
             docker run -d \
+              --network msa-network \
+              --ip 172.20.0.9 \
               --name order-service \
               -p ${{ secrets.ORDER_PORT }}:${{ secrets.ORDER_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/order-service:latest
           EOF
-          

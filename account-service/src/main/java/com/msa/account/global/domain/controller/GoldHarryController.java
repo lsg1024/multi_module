@@ -24,6 +24,14 @@ public class GoldHarryController {
         return ResponseEntity.ok(ApiResponse.success(goldHarries));
     }
 
+    @PostMapping("/gold-harry")
+    public ResponseEntity<ApiResponse<String>> createHarry(
+            @AccessToken String accessToken,
+            @RequestBody GoldHarryDto.Request request) {
+        goldHarryService.createHarry(accessToken, request);
+        return ResponseEntity.ok(ApiResponse.success("생성 완료"));
+    }
+
     @PatchMapping("/gold-harry/{id}")
     public ResponseEntity<ApiResponse<String>> updateLoss(
             @AccessToken String accessToken,

@@ -2,6 +2,7 @@ package com.msa.product.local.product.service;
 
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.util.CustomPage;
+import com.msa.product.global.feign_client.client.FactoryClient;
 import com.msa.product.local.classification.entity.Classification;
 import com.msa.product.local.classification.repository.ClassificationRepository;
 import com.msa.product.local.color.entity.Color;
@@ -9,7 +10,6 @@ import com.msa.product.local.color.repository.ColorRepository;
 import com.msa.product.local.grade.WorkGrade;
 import com.msa.product.local.material.entity.Material;
 import com.msa.product.local.material.repository.MaterialRepository;
-import com.msa.product.local.product.controller.AccountClient;
 import com.msa.product.local.product.dto.*;
 import com.msa.product.local.product.entity.Product;
 import com.msa.product.local.product.entity.ProductStone;
@@ -42,7 +42,7 @@ import static com.msa.product.global.exception.ExceptionMessage.*;
 @Transactional
 public class ProductService {
     private final JwtUtil jwtUtil;
-    private final AccountClient accountClient;
+    private final FactoryClient factoryClient;
     private final SetTypeRepository setTypeRepository;
     private final MaterialRepository materialRepository;
     private final ClassificationRepository classificationRepository;
@@ -54,9 +54,9 @@ public class ProductService {
     private final ProductWorkGradePolicyGroupRepository productWorkGradePolicyGroupRepository;
     private final CustomProductWorkGradePolicyGroup customProductWorkGradePolicyGroupRepository;
 
-    public ProductService(JwtUtil jwtUtil, AccountClient accountClient, SetTypeRepository setTypeRepository, MaterialRepository materialRepository, ClassificationRepository classificationRepository, ColorRepository colorRepository, StoneRepository stoneRepository, ProductRepository productRepository, ProductStoneRepository productStoneRepository, ProductImageRepository productImageRepository, ProductWorkGradePolicyGroupRepository productWorkGradePolicyGroupRepository, CustomProductWorkGradePolicyGroup customProductWorkGradePolicyGroupRepository) {
+    public ProductService(JwtUtil jwtUtil, FactoryClient factoryClient, SetTypeRepository setTypeRepository, MaterialRepository materialRepository, ClassificationRepository classificationRepository, ColorRepository colorRepository, StoneRepository stoneRepository, ProductRepository productRepository, ProductStoneRepository productStoneRepository, ProductImageRepository productImageRepository, ProductWorkGradePolicyGroupRepository productWorkGradePolicyGroupRepository, CustomProductWorkGradePolicyGroup customProductWorkGradePolicyGroupRepository) {
         this.jwtUtil = jwtUtil;
-        this.accountClient = accountClient;
+        this.factoryClient = factoryClient;
         this.setTypeRepository = setTypeRepository;
         this.materialRepository = materialRepository;
         this.classificationRepository = classificationRepository;
@@ -241,7 +241,7 @@ public class ProductService {
     }
 
     private String validFactory(String token, Long productDto) {
-        FactoryDto.Response factoryInfo = accountClient.getFactoryInfo(token, productDto);
+        FactoryDto.Response factoryInfo = factoryClient.getFactoryInfo(token, productDto);
         if (factoryInfo.getFactoryName() == null || factoryInfo.getFactoryName().isBlank()) {
             throw new IllegalArgumentException(productDto + " " + NOT_FOUND);
         }
@@ -252,10 +252,9 @@ public class ProductService {
         List<ProductStoneDto.Request> reqs =
                 productDto.getProductStoneDtos() != null ? productDto.getProductStoneDtos() : Collections.emptyList();
 
-        // 1) 기존 행(요청 중 "숫자 양수"인 ID만) 조회
         List<Long> existingIds = reqs.stream()
                 .map(ProductStoneDto.Request::getProductStoneId)
-                .filter(this::isNumericPositive) // "" / null / "new_..." / "0" / "-1" → false
+                .filter(this::isNumericPositive)
                 .map(Long::parseLong)
                 .toList();
 
