@@ -412,7 +412,7 @@ jobs:
 
   deploy-product:
     needs: [ check-changes, verify-config-server ]
-    if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.product, 'true') || contains(needs.check-changes.outputs.common, 'true'))
+    if: needs.deploy-config.result == 'success' && needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.product, 'true') || contains(needs.check-changes.outputs.common, 'true'))
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
