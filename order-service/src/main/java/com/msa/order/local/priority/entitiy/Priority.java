@@ -2,6 +2,7 @@ package com.msa.order.local.priority.entitiy;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -21,5 +22,16 @@ public class Priority {
 
     public Integer getPriorityDate() {
         return priorityDate;
+    }
+
+    @Builder
+    public Priority(String priorityName, Integer priorityDate) {
+        this.priorityName = priorityName;
+        this.priorityDate = priorityDate;
+    }
+
+    public void updatePriority(String priorityName, Integer priorityDate) {
+        this.priorityName = priorityName;
+        this.priorityDate = priorityDate;
     }
 }
