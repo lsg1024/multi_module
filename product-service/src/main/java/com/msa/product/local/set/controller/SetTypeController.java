@@ -45,13 +45,14 @@ public class SetTypeController {
     }
 
     @GetMapping("/set-types")
-    public ResponseEntity<ApiResponse<List<SetTypeDto.ResponseSingle>>> getSetTypes() {
-        return ResponseEntity.ok(ApiResponse.success(setTypeService.getSetTypes()));
+    public ResponseEntity<ApiResponse<List<SetTypeDto.ResponseSingle>>> getSetTypes(
+            @RequestParam(name = "name", required = false) String setName) {
+        return ResponseEntity.ok(ApiResponse.success(setTypeService.getSetTypes(setName)));
     }
 
-    @PatchMapping("/set-types")
+    @PatchMapping("/set-types/{id}")
     public ResponseEntity<ApiResponse<String>> updateSetType(
-            @RequestParam(name = "id") Long setTypeId,
+            @PathVariable(name = "id") Long setTypeId,
             @Valid @RequestBody SetTypeDto setTypeDto) {
         setTypeService.updateSetType(setTypeId, setTypeDto);
 

@@ -54,8 +54,8 @@ public class SetTypeService {
 
     //조회 복수
     @Transactional(readOnly = true)
-    public List<SetTypeDto.ResponseSingle> getSetTypes() {
-        return setTypeRepository.findAllOrderByAsc();
+    public List<SetTypeDto.ResponseSingle> getSetTypes(String setName) {
+        return setTypeRepository.findAllOrderByAsc(setName);
     }
 
     //수정
