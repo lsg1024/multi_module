@@ -91,9 +91,9 @@ class SetTypeServiceTest {
                 SetTypeDto.ResponseSingle.builder().setTypeId("2").setTypeName("우정링").setTypeNote("메모2").build()
         );
 
-        given(setTypeRepository.findAllOrderByAsc()).willReturn(list);
+        given(setTypeRepository.findAllOrderByAsc("")).willReturn(list);
 
-        List<SetTypeDto.ResponseSingle> result = setTypeService.getSetTypes();
+        List<SetTypeDto.ResponseSingle> result = setTypeService.getSetTypes("");
 
         assertThat(result).hasSize(2);
         assertThat(result.get(0).getSetTypeName()).isEqualTo("커플링");

@@ -71,6 +71,10 @@ public class MaterialService {
             throw new IllegalArgumentException(IS_EXIST);
         }
 
+        if (material.isDeletable()) {
+            throw new IllegalArgumentException(CANNOT_DELETE_DEFAULT);
+        }
+
         material.updateMaterial(materialDto);
     }
 
@@ -81,8 +85,8 @@ public class MaterialService {
 
         Material material = materialRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-        boolean deletable = material.isDeletable();
-        if (deletable) {
+
+        if (material.isDeletable()) {
             throw new IllegalArgumentException(CANNOT_DELETE_DEFAULT);
         }
 
