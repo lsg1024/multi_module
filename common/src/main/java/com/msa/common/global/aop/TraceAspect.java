@@ -24,10 +24,10 @@ public class TraceAspect {
         log.info("[TRACE START: " + tenant + "] method: {}", joinPoint.getSignature());
         try {
             Object result = joinPoint.proceed();
-            log.info("[TRACE END:" + tenant + "] method: {}", joinPoint.getSignature());
+            log.info("[TRACE END: " + tenant + "] method: {}", joinPoint.getSignature());
             return result;
         } catch (Throwable e) {
-            log.error("[TRACE EXCEPTION" + tenant + "] method: {}, exception: {}", joinPoint.getSignature(), e.getMessage());
+            log.error("[TRACE EXCEPTION: " + tenant + "] method: {}, exception: {}", joinPoint.getSignature(), e.getMessage());
             throw e;
         }
     }
