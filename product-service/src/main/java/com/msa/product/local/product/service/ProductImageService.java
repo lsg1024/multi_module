@@ -62,17 +62,45 @@ public class ProductImageService {
         }
     }
 
-    public void uploadProductImages(Long productId, List<MultipartFile> images) {
+    public void uploadProductImage(Long productId, MultipartFile image) {
         String tenant = TenantContext.getTenant();
 
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        if (images != null && !images.isEmpty()) {
-            for (MultipartFile file : images) {
-                saveImageFileAndEntity(file, product, tenant);
+        List<ProductImage> currentImages = productImageRepository.findByProduct(product);
+
+        if (!currentImages.isEmpty()) {
+            for (ProductImage oldImage : currentImages) {
+                // 기존 물리 파일 삭제
+                deletePhysicalFile(oldImage.getImagePath(), tenant);
+                // 기존 DB 데이터 삭제
+                productImageRepository.delete(oldImage);
             }
+            product.getProductImages().clear();
         }
+
+        saveImageFileAndEntity(image, product, tenant);
+    }
+
+    public void deleteImage(Long imageId) {
+
+        String tenant = TenantContext.getTenant();
+
+        ProductImage image = productImageRepository.findById(imageId)
+                .orElseThrow(() -> new IllegalArgumentException("이미지를 찾을 수 없습니다. ID: " + imageId));
+
+        deletePhysicalFile(image.getImagePath(), tenant);
+
+        productImageRepository.delete(image);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, ProductImageDto.ApiResponse> getImagesByProductIds(List<Long> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return productImageRepository.findMainImagesByProductIds(productIds);
     }
 
     private void saveImageFileAndEntity(MultipartFile file, Product product, String tenant) {
@@ -118,81 +146,6 @@ public class ProductImageService {
         }
     }
 
-    public void updateImages(Long productId, List<MultipartFile> files, ProductImageDto.Request metaData) {
-        String tenant = TenantContext.getTenant();
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-
-        List<ProductImage> oldImages = productImageRepository.findByProduct(product);
-
-        List<Long> remainIds = metaData.getImages().stream()
-                .map(ProductImageDto.Request.ImageMeta::getId)
-                .filter(Objects::nonNull)
-                .toList();
-
-        List<ProductImage> imagesToDelete = oldImages.stream()
-                .filter(img -> !remainIds.contains(img.getImageId()))
-                .toList();
-
-        for (ProductImage oldImage : imagesToDelete) {
-            deletePhysicalFile(oldImage.getImagePath(), tenant);
-        }
-        productImageRepository.deleteAll(imagesToDelete);
-
-        List<ProductImage> newProductImages = new ArrayList<>();
-        int fileIndex = 0;
-
-        for (int i = 0; i < metaData.getImages().size(); i++) {
-            ProductImageDto.Request.ImageMeta imageMeta = metaData.getImages().get(i);
-
-            if (imageMeta.getId() != null) {
-                ProductImage productImage = productImageRepository.findById(imageMeta.getId())
-                        .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-                newProductImages.add(productImage);
-            } else {
-                if (files == null || fileIndex >= files.size()) {
-                    throw new IllegalArgumentException("업로드된 파일 개수가 메타데이터와 일치하지 않습니다.");
-                }
-                ProductImage savedImage = uploadAndSaveForUpdate(files.get(fileIndex++), product, tenant);
-                newProductImages.add(savedImage);
-            }
-        }
-
-        product.getProductImages().clear();
-        for (int i = 0; i < newProductImages.size(); i++) {
-            ProductImage image = newProductImages.get(i);
-            image.setImageMain(i == metaData.getMainImageIndex());
-            image.setProduct(product);
-            product.addImage(image);
-        }
-        productImageRepository.saveAll(newProductImages);
-    }
-
-    // Update 시 사용하는 단일 파일 업로드 헬퍼
-    private ProductImage uploadAndSaveForUpdate(MultipartFile file, Product product, String tenant) {
-        String absoluteDirPath = getAbsoluteProductDirPath(tenant, product.getProductId());
-
-        File dir = new File(absoluteDirPath);
-        if (!dir.exists()) dir.mkdirs();
-
-        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        String dbRelativePath = "/products/" + product.getProductId() + "/" + fileName;
-
-        try {
-            Path path = Paths.get(absoluteDirPath, fileName);
-            file.transferTo(path.toFile());
-        } catch (IOException e) {
-            throw new RuntimeException("이미지 저장 실패", e);
-        }
-
-        return ProductImage.builder()
-                .imageName(fileName)
-                .imageOriginName(file.getOriginalFilename())
-                .imagePath(dbRelativePath)
-                .imageMain(false)
-                .build();
-    }
-
     // 물리 파일 삭제
     private void deletePhysicalFile(String dbRelativePath, String tenant) {
         Path filePath = Paths.get(baseUploadPath, tenant, dbRelativePath);
@@ -208,26 +161,7 @@ public class ProductImageService {
 
     // 절대 경로 생성 헬퍼
     private String getAbsoluteProductDirPath(String tenant, Long productId) {
-        // 결과: /app/images/{tenant}/products/{productId}
         return Paths.get(baseUploadPath, tenant, "products", String.valueOf(productId)).toString();
     }
 
-    public Map<Long, ProductImageDto.ApiResponse> getImagesByProductIds(List<Long> productIds) {
-        if (productIds == null || productIds.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        return productImageRepository.findMainImagesByProductIds(productIds);
-    }
-
-    public void deleteImage(Long imageId) {
-
-        String tenant = TenantContext.getTenant();
-
-        ProductImage image = productImageRepository.findById(imageId)
-                .orElseThrow(() -> new IllegalArgumentException("이미지를 찾을 수 없습니다. ID: " + imageId));
-
-        deletePhysicalFile(image.getImagePath(), tenant);
-
-        productImageRepository.delete(image);
-    }
 }

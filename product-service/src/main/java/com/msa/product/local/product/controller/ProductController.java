@@ -26,8 +26,8 @@ public class ProductController {
     public ResponseEntity<ApiResponse<String>> createProduct(
             @AccessToken String accessToken,
             @Valid @RequestBody ProductDto productDto) {
-        productService.saveProduct(accessToken, productDto);
-        return ResponseEntity.ok(ApiResponse.success("생성 완료"));
+        Long productId = productService.saveProduct(accessToken, productDto);
+        return ResponseEntity.ok(ApiResponse.success("생성 완료", productId.toString()));
     }
     @GetMapping("/products/{id}")
     public ResponseEntity<ApiResponse<ProductDto.Detail>> getProduct(
