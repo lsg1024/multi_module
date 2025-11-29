@@ -120,8 +120,10 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                         JPAExpressions
                                 .select(productImage.imagePath)
                                 .from(productImage)
-                                .where(productImage.product.productId.eq(product.productId))
-                                .limit(1),
+                                .where(
+                                        productImage.product.productId.eq(product.productId)
+                                        .and(productImage.imageMain.eq(true))
+                                ),
                         Expressions.constant(Collections.emptyList()),
                         product.factoryId.stringValue(),
                         product.factoryName

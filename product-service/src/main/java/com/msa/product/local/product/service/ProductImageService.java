@@ -92,11 +92,9 @@ public class ProductImageService {
         String dbRelativePath = "/products/" + product.getProductId() + "/" + fileName;
 
         try {
-            // 물리적 파일 저장
             Path targetPath = Paths.get(absoluteDirPath, fileName);
             file.transferTo(targetPath.toFile());
 
-            // 엔티티 생성 및 저장
             boolean existsMain = productImageRepository.existsByProduct_ProductId(product.getProductId());
 
             ProductImage image = ProductImage.builder()
@@ -122,13 +120,11 @@ public class ProductImageService {
 
         List<ProductImage> oldImages = productImageRepository.findByProduct(product);
 
-        // 1. 유지할 이미지 ID 목록 추출
         List<Long> remainIds = metaData.getImages().stream()
                 .map(ProductImageDto.Request.ImageMeta::getId)
                 .filter(Objects::nonNull)
                 .toList();
 
-        // 2. 삭제할 이미지 선별 및 삭제
         List<ProductImage> imagesToDelete = oldImages.stream()
                 .filter(img -> !remainIds.contains(img.getImageId()))
                 .toList();
@@ -138,7 +134,6 @@ public class ProductImageService {
         }
         productImageRepository.deleteAll(imagesToDelete);
 
-        // 3. 새 이미지 리스트 구성
         List<ProductImage> newProductImages = new ArrayList<>();
         int fileIndex = 0;
 
@@ -146,12 +141,10 @@ public class ProductImageService {
             ProductImageDto.Request.ImageMeta imageMeta = metaData.getImages().get(i);
 
             if (imageMeta.getId() != null) {
-                // 기존 이미지 유지
                 ProductImage productImage = productImageRepository.findById(imageMeta.getId())
                         .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
                 newProductImages.add(productImage);
             } else {
-                // 새 파일 업로드
                 if (files == null || fileIndex >= files.size()) {
                     throw new IllegalArgumentException("업로드된 파일 개수가 메타데이터와 일치하지 않습니다.");
                 }
@@ -160,7 +153,6 @@ public class ProductImageService {
             }
         }
 
-        // 4. 연관관계 및 메인 이미지 재설정
         product.getProductImages().clear();
         for (int i = 0; i < newProductImages.size(); i++) {
             ProductImage image = newProductImages.get(i);
