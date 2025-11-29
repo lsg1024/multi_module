@@ -107,6 +107,10 @@ public class ProductRepositoryImpl implements CustomProductRepository {
             grade = WorkGrade.fromLevel(level);
         }
 
+        QProductImageDto_Response image = new QProductImageDto_Response(
+                productImage.imageId.max().stringValue(),
+                productImage.imagePath.max()
+        );
         List<ProductDto.Page> content = query
                 .select(new QProductDto_Page(
                         product.productId.stringValue(),
@@ -117,18 +121,12 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                         product.productNote,
                         productWorkGradePolicyGroup.productPurchasePrice.stringValue(),
                         productWorkGradePolicy.laborCost.coalesce(0).stringValue(),
-                        JPAExpressions
-                                .select(productImage.imagePath)
-                                .from(productImage)
-                                .where(
-                                        productImage.product.productId.eq(product.productId)
-                                        .and(productImage.imageMain.eq(true))
-                                ),
-                        Expressions.constant(Collections.emptyList()),
                         product.factoryId.stringValue(),
-                        product.factoryName
+                        product.factoryName,
+                        image
                 ))
                 .from(product)
+                .leftJoin(productImage).on(productImage.product.eq(product).and(productImage.imageMain.isTrue()))
                 .leftJoin(productStone).on(product.productId.eq(productStone.product.productId))
                 .leftJoin(product.material, material)
                 .leftJoin(product.setType, setType)

@@ -39,7 +39,6 @@ public class ProductImageService {
 
     public void bulkUploadByFileName(List<MultipartFile> files) {
         String tenant = TenantContext.getTenant();
-        log.info("Start Bulk Upload for Tenant: {}", tenant);
 
         for (MultipartFile file : files) {
             String originalFilename = file.getOriginalFilename();
@@ -212,5 +211,17 @@ public class ProductImageService {
             return Collections.emptyMap();
         }
         return productImageRepository.findMainImagesByProductIds(productIds);
+    }
+
+    public void deleteImage(Long imageId) {
+
+        String tenant = TenantContext.getTenant();
+
+        ProductImage image = productImageRepository.findById(imageId)
+                .orElseThrow(() -> new IllegalArgumentException("이미지를 찾을 수 없습니다. ID: " + imageId));
+
+        deletePhysicalFile(image.getImagePath(), tenant);
+
+        productImageRepository.delete(image);
     }
 }

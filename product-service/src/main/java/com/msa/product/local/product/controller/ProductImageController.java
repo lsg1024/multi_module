@@ -41,7 +41,7 @@ public class ProductImageController {
     @GetMapping("/products/images/**")
     public ResponseEntity<Resource> serveFile(HttpServletRequest request) {
         String requestUri = request.getRequestURI();
-        String relativePath = requestUri.substring(requestUri.indexOf("/images/") + 7);
+        String relativePath = requestUri.substring(requestUri.indexOf("/images/") + 8);
 
         String tenant = TenantContext.getTenant();
 
@@ -110,4 +110,14 @@ public class ProductImageController {
         Map<Long, ProductImageDto.ApiResponse> imagesByProductIds = productImageService.getImagesByProductIds(productIds);
         return ResponseEntity.ok(ApiResponse.success(imagesByProductIds));
     }
+
+    @DeleteMapping("/products/images/{imageId}")
+    public ResponseEntity<ApiResponse<String>> deleteProductImage(
+            @PathVariable(name = "imageId") Long imageId) {
+
+        productImageService.deleteImage(imageId);
+
+        return ResponseEntity.ok(ApiResponse.success("이미지 삭제 완료"));
+    }
+
 }

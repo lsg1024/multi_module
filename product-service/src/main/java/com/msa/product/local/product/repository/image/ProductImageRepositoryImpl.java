@@ -26,6 +26,7 @@ public class ProductImageRepositoryImpl implements CustomProductImageRepository 
     public List<ProductImageDto.Response> findImagesByProductId(Long productId) {
         return query
                 .select(new QProductImageDto_Response(
+                        productImage.imageId.stringValue(),
                         productImage.imagePath
                 ))
                 .from(productImage)
