@@ -7,6 +7,7 @@ import com.msa.common.global.tenant.TenantContext;
 import com.msa.product.local.product.dto.ProductImageDto;
 import com.msa.product.local.product.service.ProductImageService;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -22,6 +23,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 public class ProductImageController {
 
@@ -44,6 +46,8 @@ public class ProductImageController {
         String tenant = TenantContext.getTenant();
 
         Path filePath = Paths.get(baseUploadPath, tenant, relativePath);
+
+        log.info("serverFile filePath = {}", filePath);
 
         try {
             Resource resource = new UrlResource(filePath.toUri());
