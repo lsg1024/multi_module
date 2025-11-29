@@ -86,7 +86,7 @@ public class ProductImageService {
             if (!created) log.warn("Directory creation failed (might already exist): {}", absoluteDirPath);
         }
 
-        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        String fileName = UUID.randomUUID().toString();
 
 
         String dbRelativePath = "/products/" + product.getProductId() + "/" + fileName;
