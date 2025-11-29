@@ -27,7 +27,7 @@ public class ProductController {
             @AccessToken String accessToken,
             @Valid @RequestBody ProductDto productDto) {
         productService.saveProduct(accessToken, productDto);
-        return ResponseEntity.ok(ApiResponse.success("카테고리 생성완료"));
+        return ResponseEntity.ok(ApiResponse.success("생성 완료"));
     }
     @GetMapping("/products/{id}")
     public ResponseEntity<ApiResponse<ProductDto.Detail>> getProduct(
