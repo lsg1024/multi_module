@@ -32,6 +32,15 @@ public class ProductImageController {
         return ResponseEntity.ok(ApiResponse.success("이미지 업로드 완료"));
     }
 
+    @PostMapping("/products/images/bulk-name")
+    public ResponseEntity<ApiResponse<String>> bulkUploadByFileName(
+            @RequestParam("images") List<MultipartFile> images) {
+
+        productImageService.bulkUploadByFileName(images);
+
+        return ResponseEntity.ok(ApiResponse.success("상품 이름 기반 이미지 일괄 업로드 완료"));
+    }
+
     @PatchMapping(value = "/products/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<String>> updateProductImages(
             @PathVariable(name = "id") Long productId,
@@ -55,5 +64,4 @@ public class ProductImageController {
         Map<Long, ProductImageDto.ApiResponse> imagesByProductIds = productImageService.getImagesByProductIds(productIds);
         return ResponseEntity.ok(ApiResponse.success(imagesByProductIds));
     }
-
 }

@@ -6,6 +6,7 @@ import com.msa.product.local.product.entity.Product;
 import com.msa.product.local.product.entity.ProductImage;
 import com.msa.product.local.product.repository.ProductRepository;
 import com.msa.product.local.product.repository.image.ProductImageRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ import java.util.*;
 
 import static com.msa.product.global.exception.ExceptionMessage.NOT_FOUND;
 
+@Slf4j
 @Service
 @Transactional
 public class ProductImageService {
@@ -35,98 +37,130 @@ public class ProductImageService {
         this.productImageRepository = productImageRepository;
     }
 
-    public void uploadProductImages(Long productId, List<MultipartFile> images) {
+    public void bulkUploadByFileName(List<MultipartFile> files) {
+        String tenant = TenantContext.getTenant();
+        log.info("Start Bulk Upload for Tenant: {}", tenant);
 
+        for (MultipartFile file : files) {
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null) continue;
+
+            String productName = originalFilename.substring(0, originalFilename.lastIndexOf('.'));
+
+            Optional<Product> productOpt = productRepository.findByProductName(productName);
+
+            if (productOpt.isPresent()) {
+                Product product = productOpt.get();
+                try {
+                    saveImageFileAndEntity(file, product, tenant);
+                    log.info("Success: {} -> ID: {}", productName, product.getProductId());
+                } catch (Exception e) {
+                    log.error("Failed to save image for product: " + productName, e);
+                }
+            } else {
+                log.warn("Skipped: Product not found for name '{}'", productName);
+            }
+        }
+    }
+
+    public void uploadProductImages(Long productId, List<MultipartFile> images) {
         String tenant = TenantContext.getTenant();
 
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        boolean existsProductImage = productImageRepository.existsByProduct_ProductId(productId);
-
         if (images != null && !images.isEmpty()) {
-            String productDirPath = baseUploadPath + "/" + tenant +  "/products/" + productId;
-            File dir = new File(productDirPath);
-            if (!dir.exists()) dir.mkdirs();
-
             for (MultipartFile file : images) {
-                String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-                String imagePath = "/products/" + productId + "/" + fileName;
-                try {
-                    ProductImage image;
-                    if (existsProductImage) {
-                        image = ProductImage.builder()
-                                .imagePath(imagePath)
-                                .imageOriginName(file.getOriginalFilename())
-                                .imageName(fileName)
-                                .product(product)
-                                .build();
-                    } else {
-                        image = ProductImage.builder()
-                                .imagePath(imagePath)
-                                .imageOriginName(file.getOriginalFilename())
-                                .imageName(fileName)
-                                .product(product)
-                                .imageMain(true)
-                                .build();
-
-                        existsProductImage = true;
-                    }
-
-                    product.addImage(image);
-
-                    productImageRepository.save(image);
-
-                    Path path = Paths.get(productDirPath, fileName);
-                    file.transferTo(path.toFile());
-                } catch (IOException e) {
-                    throw new RuntimeException("이미지 저장 실패: " + e.getMessage(), e);
-                }
+                saveImageFileAndEntity(file, product, tenant);
             }
         }
     }
 
-    //metaData -> 기존 id 값들이 들어옴 사라지면 삭제, images에는 새로운 이미지 파일 업로드
+    private void saveImageFileAndEntity(MultipartFile file, Product product, String tenant) {
+        String absoluteDirPath = getAbsoluteProductDirPath(tenant, product.getProductId());
+
+        // 디렉토리 생성
+        File dir = new File(absoluteDirPath);
+        if (!dir.exists()) {
+            boolean created = dir.mkdirs();
+            if (!created) log.warn("Directory creation failed (might already exist): {}", absoluteDirPath);
+        }
+
+        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+
+
+        String dbRelativePath = "/products/" + product.getProductId() + "/" + fileName;
+
+        try {
+            // 물리적 파일 저장
+            Path targetPath = Paths.get(absoluteDirPath, fileName);
+            file.transferTo(targetPath.toFile());
+
+            // 엔티티 생성 및 저장
+            boolean existsMain = productImageRepository.existsByProduct_ProductId(product.getProductId());
+
+            ProductImage image = ProductImage.builder()
+                    .imagePath(dbRelativePath)
+                    .imageOriginName(file.getOriginalFilename())
+                    .imageName(fileName)
+                    .product(product)
+                    .imageMain(!existsMain)
+                    .build();
+
+            product.addImage(image);
+            productImageRepository.save(image);
+
+        } catch (IOException e) {
+            throw new RuntimeException("이미지 저장 실패: " + file.getOriginalFilename(), e);
+        }
+    }
+
     public void updateImages(Long productId, List<MultipartFile> files, ProductImageDto.Request metaData) {
+        String tenant = TenantContext.getTenant();
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         List<ProductImage> oldImages = productImageRepository.findByProduct(product);
 
+        // 1. 유지할 이미지 ID 목록 추출
         List<Long> remainIds = metaData.getImages().stream()
                 .map(ProductImageDto.Request.ImageMeta::getId)
                 .filter(Objects::nonNull)
                 .toList();
 
+        // 2. 삭제할 이미지 선별 및 삭제
         List<ProductImage> imagesToDelete = oldImages.stream()
                 .filter(img -> !remainIds.contains(img.getImageId()))
                 .toList();
 
         for (ProductImage oldImage : imagesToDelete) {
-            deletePhysicalFile(oldImage.getImagePath());
+            deletePhysicalFile(oldImage.getImagePath(), tenant);
         }
-
         productImageRepository.deleteAll(imagesToDelete);
 
+        // 3. 새 이미지 리스트 구성
         List<ProductImage> newProductImages = new ArrayList<>();
-
         int fileIndex = 0;
-        for (int i = 0; i < metaData.getImages().size(); i++){
+
+        for (int i = 0; i < metaData.getImages().size(); i++) {
             ProductImageDto.Request.ImageMeta imageMeta = metaData.getImages().get(i);
 
-            //기존 이미지
             if (imageMeta.getId() != null) {
-                ProductImage productImage = productImageRepository.findById(imageMeta.getId()).orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+                // 기존 이미지 유지
+                ProductImage productImage = productImageRepository.findById(imageMeta.getId())
+                        .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
                 newProductImages.add(productImage);
             } else {
-                if (fileIndex >= files.size()) {
-                    throw new IllegalArgumentException("FILE 개수가 일치하지 않음");
+                // 새 파일 업로드
+                if (files == null || fileIndex >= files.size()) {
+                    throw new IllegalArgumentException("업로드된 파일 개수가 메타데이터와 일치하지 않습니다.");
                 }
-                ProductImage saveImages = uploadAndSave(files.get(fileIndex++), product);
-                newProductImages.add(saveImages);
+                ProductImage savedImage = uploadAndSaveForUpdate(files.get(fileIndex++), product, tenant);
+                newProductImages.add(savedImage);
             }
         }
 
+        // 4. 연관관계 및 메인 이미지 재설정
         product.getProductImages().clear();
         for (int i = 0; i < newProductImages.size(); i++) {
             ProductImage image = newProductImages.get(i);
@@ -137,14 +171,18 @@ public class ProductImageService {
         productImageRepository.saveAll(newProductImages);
     }
 
-    private ProductImage uploadAndSave(MultipartFile file, Product product) {
-        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        String dirPath = "/products/" + product.getProductId();
-        File dir = new File(dirPath);
+    // Update 시 사용하는 단일 파일 업로드 헬퍼
+    private ProductImage uploadAndSaveForUpdate(MultipartFile file, Product product, String tenant) {
+        String absoluteDirPath = getAbsoluteProductDirPath(tenant, product.getProductId());
+
+        File dir = new File(absoluteDirPath);
         if (!dir.exists()) dir.mkdirs();
 
+        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        String dbRelativePath = "/products/" + product.getProductId() + "/" + fileName;
+
         try {
-            Path path = Paths.get(dirPath, fileName);
+            Path path = Paths.get(absoluteDirPath, fileName);
             file.transferTo(path.toFile());
         } catch (IOException e) {
             throw new RuntimeException("이미지 저장 실패", e);
@@ -153,28 +191,34 @@ public class ProductImageService {
         return ProductImage.builder()
                 .imageName(fileName)
                 .imageOriginName(file.getOriginalFilename())
-                .imagePath(dirPath + "/" + fileName)
+                .imagePath(dbRelativePath)
                 .imageMain(false)
                 .build();
     }
 
-    private void deletePhysicalFile(String imagePath) {
-        String tenant = TenantContext.getTenant();
-        File file = new File(baseUploadPath + "/" + tenant +  "/products/" + imagePath);
+    // 물리 파일 삭제
+    private void deletePhysicalFile(String dbRelativePath, String tenant) {
+        Path filePath = Paths.get(baseUploadPath, tenant, dbRelativePath);
+        File file = filePath.toFile();
+
         if (file.exists()) {
             boolean deleted = file.delete();
             if (!deleted) {
-                throw new RuntimeException("파일 삭제 실패: " + file.getAbsolutePath());
+                log.error("파일 삭제 실패: {}", file.getAbsolutePath());
             }
         }
     }
 
-    public Map<Long, ProductImageDto.ApiResponse> getImagesByProductIds(List<Long> productIds) {
+    // 절대 경로 생성 헬퍼
+    private String getAbsoluteProductDirPath(String tenant, Long productId) {
+        // 결과: /app/images/{tenant}/products/{productId}
+        return Paths.get(baseUploadPath, tenant, "products", String.valueOf(productId)).toString();
+    }
 
+    public Map<Long, ProductImageDto.ApiResponse> getImagesByProductIds(List<Long> productIds) {
         if (productIds == null || productIds.isEmpty()) {
             return Collections.emptyMap();
         }
-
         return productImageRepository.findMainImagesByProductIds(productIds);
     }
 }
