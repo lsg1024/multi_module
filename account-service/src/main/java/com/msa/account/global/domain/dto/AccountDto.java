@@ -149,11 +149,11 @@ public class AccountDto {
     public static class AccountInfo {
 
         @NotBlank(message = "필수 입력입니다.")
-        @Pattern(regexp = "^[A-Za-z0-9가-힣\\s]+$", message = ERR_KO_EN_NUM_ONLY)
+        @Pattern(regexp = "^[A-Za-z0-9가-힣ㄱ-ㅎㅏ-ㅣ\\s]+$", message = ERR_KO_EN_NUM_ONLY)
         private String accountName;
 
         @NotBlank(message = "필수 입력입니다.")
-        @Pattern(regexp = "^[A-Za-z0-9가-힣\\s]+$", message = ERR_KO_EN_NUM_ONLY)
+        @Pattern(regexp = "^[A-Za-z0-9가-힣ㄱ-ㅎㅏ-ㅣ\\s]+$", message = ERR_KO_EN_NUM_ONLY)
         private String accountOwnerName;
 
         @Pattern(regexp = "^[0-9]+$", message = ERR_NUM_ONLY)

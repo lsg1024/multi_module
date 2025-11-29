@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.util.Map;
 
-@FeignClient(name = "account", path = "/account/api")
+@FeignClient(name = "account", path = "/api")
 public interface AccountFeignClient {
 
     @CircuitBreaker(name = "factoryService", fallbackMethod = "loginFallback")

@@ -18,5 +18,6 @@ public class FactoryDto {
     public static class Response {
         private Long factoryId;
         private String factoryName;
+        private String factoryHarry;
     }
 }

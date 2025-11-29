@@ -35,6 +35,6 @@ public class StoneShape {
 
     public void updateStoneShape(StoneShapeDto stoneShapeDto) {
         this.stoneShapeName = stoneShapeDto.getStoneShapeName();
-        this.stoneShapeNote = stoneShapeDto.getStoneShapeName();
+        this.stoneShapeNote = stoneShapeDto.getStoneShapeNote();
     }
 }

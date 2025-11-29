@@ -50,8 +50,8 @@ public class ProductDto {
         private ClassificationDto.ResponseSingle classificationDto;
         private MaterialDto.ResponseSingle materialDto;
         private List<ProductWorkGradePolicyGroupDto.Response> productWorkGradePolicyGroupDto;
-        private List<ProductStoneDto.Response> productStoneDtos; //상품용 <- stone 호출
-        private List<ProductImageDto.Response> productImageDtos; //상품용 이미지
+        private List<ProductStoneDto.Response> productStoneDtos;
+        private List<ProductImageDto.Response> productImageDtos;
 
         @Builder
         @QueryProjection
@@ -101,12 +101,12 @@ public class ProductDto {
         private String productNote;
         private String productPurchaseCost;
         private String productLaborCost;
-        private String productImagePath;
+        private ProductImageDto.Response image;
         private List<ProductStoneDto.PageResponse> productStones;
 
         @Builder
         @QueryProjection
-        public Page(String productId, String productName, String productFactoryName, String productWeight, String productMaterial, String productNote, String productPurchaseCost, String productLaborCost, String productImagePath, List<ProductStoneDto.Response> productStones, String factoryId, String factoryName) {
+        public Page(String productId, String productName, String productFactoryName, String productWeight, String productMaterial, String productNote, String productPurchaseCost, String productLaborCost, String factoryId, String factoryName, ProductImageDto.Response image) {
             this.productId = productId;
             this.productName = productName;
             this.productFactoryName = productFactoryName;
@@ -115,9 +115,9 @@ public class ProductDto {
             this.productNote = productNote;
             this.productPurchaseCost = productPurchaseCost;
             this.productLaborCost = productLaborCost;
-            this.productImagePath = productImagePath;
             this.factoryId = factoryId;
             this.factoryName = factoryName;
+            this.image = image;
             this.productStones = new ArrayList<>();
         }
     }

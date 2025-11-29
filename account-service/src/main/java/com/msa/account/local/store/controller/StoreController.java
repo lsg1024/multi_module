@@ -10,16 +10,23 @@ import com.msa.common.global.jwt.AccessToken;
 import com.msa.common.global.util.CustomPage;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -30,10 +37,14 @@ public class StoreController {
 
     private final StoreService storeService;
     private final ExcelService excelService;
+    private final JobLauncher jobLauncher;
+    private final Job storeImportJob;
 
-    public StoreController(StoreService storeService, ExcelService excelService) {
+    public StoreController(StoreService storeService, ExcelService excelService, JobLauncher jobLauncher, Job storeImportJob) {
         this.storeService = storeService;
         this.excelService = excelService;
+        this.jobLauncher = jobLauncher;
+        this.storeImportJob = storeImportJob;
     }
 
     //상점 단일 조회
@@ -82,6 +93,31 @@ public class StoreController {
 
         storeService.createStore(accountInfo);
         return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @PostMapping("/stores/batch")
+    public ResponseEntity<ApiResponse<String>> createStoreForBatch(
+            @RequestParam("file") MultipartFile file) {
+
+        try {
+            Path tempPath = Files.createTempFile("store-upload-", ".json");
+
+            file.transferTo(tempPath.toFile());
+
+            JobParameters jobParameters = new JobParametersBuilder()
+                    .addString("filePath", tempPath.toAbsolutePath().toString())
+                    .addLong("time", System.currentTimeMillis())
+                    .toJobParameters();
+
+            jobLauncher.run(storeImportJob, jobParameters);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("저장 실패: " + e.getMessage()));
+        }
+
+        return ResponseEntity.ok(ApiResponse.success("저장 중..."));
     }
 
     //상점 수정

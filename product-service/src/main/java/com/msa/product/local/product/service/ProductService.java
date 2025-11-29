@@ -70,7 +70,7 @@ public class ProductService {
     }
 
     //생성
-    public void saveProduct(String token, ProductDto productDto) {
+    public Long saveProduct(String token, ProductDto productDto) {
         boolean existsByProductName = productRepository.existsByProductName(productDto.getProductName());
 
         if (existsByProductName) {
@@ -164,7 +164,8 @@ public class ProductService {
             isFirst = false;
         }
 
-        productRepository.save(product);
+        Product save = productRepository.save(product);
+        return save.getProductId();
     }
 
     //조회

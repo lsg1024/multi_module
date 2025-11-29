@@ -1,14 +1,14 @@
 package com.msa.account.global.domain.service;
 
 import com.msa.account.global.domain.dto.GoldHarryDto;
-import com.msa.common.global.util.AuthorityUserRoleUtil;
 import com.msa.account.global.domain.entity.GoldHarry;
 import com.msa.account.global.domain.repository.GoldHarryRepository;
-import com.msa.account.global.exception.NotAuthorityException;
 import com.msa.account.global.exception.NotFoundException;
 import com.msa.account.global.kafka.KafkaProducer;
 import com.msa.account.global.kafka.dto.KafkaEventDto;
 import com.msa.common.global.jwt.JwtUtil;
+import com.msa.common.global.util.AuthorityUserRoleUtil;
+import jakarta.ws.rs.ForbiddenException;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,7 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.msa.account.global.exception.ExceptionMessage.*;
+import static com.msa.account.global.exception.ExceptionMessage.DEFAULT_HARRY;
+import static com.msa.account.global.exception.ExceptionMessage.WRONG_HARRY;
 
 @Service
 @Transactional
@@ -91,7 +92,8 @@ public class GoldHarryService {
                     .goldHarryLoss(goldHarryDto.getGoldHarryLoss())
                     .build();
             goldHarryRepository.save(goldHarry);
+            return;
         }
-        throw new NotAuthorityException("생성 권한이 없는 사용자 입니다.");
+        throw new ForbiddenException("생성 권한이 없는 사용자 입니다.");
     }
 }

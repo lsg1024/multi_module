@@ -9,16 +9,23 @@ import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.AccessToken;
 import com.msa.common.global.util.CustomPage;
 import jakarta.validation.Valid;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -28,10 +35,14 @@ public class FactoryController {
 
     private final FactoryService factoryService;
     private final ExcelService excelService;
+    private final JobLauncher jobLauncher;
+    private final Job factoryImportJob;
 
-    public FactoryController(FactoryService factoryService, ExcelService excelService) {
+    public FactoryController(FactoryService factoryService, ExcelService excelService, JobLauncher jobLauncher, Job factoryImportJob) {
         this.factoryService = factoryService;
         this.excelService = excelService;
+        this.jobLauncher = jobLauncher;
+        this.factoryImportJob = factoryImportJob;
     }
 
     //단일 조회
@@ -63,6 +74,32 @@ public class FactoryController {
         factoryService.createFactory(accountInfo);
 
         return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    //생성 - batch
+    @PostMapping("/factories/batch")
+    public ResponseEntity<ApiResponse<String>> createFactoriesForBatch(
+            @RequestParam("file") MultipartFile file) {
+
+        try {
+            Path tempPath = Files.createTempFile("factory-upload-", ".json");
+
+            file.transferTo(tempPath.toFile());
+
+            JobParameters jobParameters = new JobParametersBuilder()
+                    .addString("filePath", tempPath.toAbsolutePath().toString())
+                    .addLong("time", System.currentTimeMillis())
+                    .toJobParameters();
+
+            jobLauncher.run(factoryImportJob, jobParameters);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("저장 실패: " + e.getMessage()));
+        }
+
+        return ResponseEntity.ok(ApiResponse.success("저장 중..."));
     }
 
     //수정

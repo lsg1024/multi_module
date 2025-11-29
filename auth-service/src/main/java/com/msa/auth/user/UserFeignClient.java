@@ -3,7 +3,6 @@ package com.msa.auth.user;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.domain.dto.UserDto;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 
-@Slf4j
 @Service
 public class UserFeignClient {
 

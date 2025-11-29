@@ -17,11 +17,14 @@ public class ProductImageDto {
     @Getter
     @NoArgsConstructor
     public static class Response {
+
+        private String imageId;
         private String imagePath;
 
         @Builder
         @QueryProjection
-        public Response(String imagePath) {
+        public Response(String imageId, String imagePath) {
+            this.imageId = imageId;
             this.imagePath = imagePath;
         }
 

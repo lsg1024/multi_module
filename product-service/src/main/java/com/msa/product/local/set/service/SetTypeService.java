@@ -80,7 +80,7 @@ public class SetTypeService {
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         boolean deletable = setType.isDeletable();
-        if (deletable) {
+        if (!deletable) {
             throw new IllegalArgumentException(CANNOT_DELETE_DEFAULT);
         }
 
