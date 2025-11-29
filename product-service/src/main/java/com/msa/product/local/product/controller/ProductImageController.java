@@ -3,18 +3,30 @@ package com.msa.product.local.product.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msa.common.global.api.ApiResponse;
+import com.msa.common.global.tenant.TenantContext;
 import com.msa.product.local.product.dto.ProductImageDto;
 import com.msa.product.local.product.service.ProductImageService;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 public class ProductImageController {
+
+    @Value("${FILE_UPLOAD_PATH}")
+    private String baseUploadPath;
 
     private final ObjectMapper objectMapper;
     private final ProductImageService productImageService;
@@ -22,6 +34,36 @@ public class ProductImageController {
     public ProductImageController(ObjectMapper objectMapper, ProductImageService productImageService) {
         this.objectMapper = objectMapper;
         this.productImageService = productImageService;
+    }
+
+    @GetMapping("/products/images/**")
+    public ResponseEntity<Resource> serveFile(HttpServletRequest request) {
+        String requestUri = request.getRequestURI();
+        String relativePath = requestUri.substring(requestUri.indexOf("/images/") + 7);
+
+        String tenant = TenantContext.getTenant();
+
+        Path filePath = Paths.get(baseUploadPath, tenant, relativePath);
+
+        try {
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (resource.exists() && resource.isReadable()) {
+                String contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
+                if (contentType == null) {
+                    contentType = "application/octet-stream";
+                }
+
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                        .body(resource);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @PostMapping("/products/{id}/images")
