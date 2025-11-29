@@ -8,7 +8,6 @@ import jakarta.persistence.EntityManager;
 
 import java.util.List;
 
-import static com.msa.product.local.color.entity.QColor.color;
 import static com.msa.product.local.set.entity.QSetType.setType;
 
 
@@ -23,7 +22,7 @@ public class SetTypeRepositoryImpl implements CustomSetTypeRepository{
 
     @Override
     public List<SetTypeDto.ResponseSingle> findAllOrderByAsc(String setName) {
-        BooleanExpression name = setName != null ? color.colorName.contains(setName) : null;
+        BooleanExpression name = setName != null ? setType.setTypeName.contains(setName) : null;
         return query
                 .select(new QSetTypeDto_ResponseSingle(
                         setType.setTypeId.stringValue(),

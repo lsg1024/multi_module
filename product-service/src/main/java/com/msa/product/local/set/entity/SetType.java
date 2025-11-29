@@ -20,7 +20,7 @@ public class SetType {
     @Column(name = "SET_TYPE_NOTE")
     private String setTypeNote;
     @Column(name = "DEFAULT_ID")
-    private boolean defaultId;
+    private boolean defaultId = false;
 
     @Builder
     public SetType(Long setTypeId, String setTypeName, String setTypeNote) {

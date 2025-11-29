@@ -1,24 +1,35 @@
 package com.msa.product.local.stone.stone.controller;
 
-import com.msa.product.local.stone.stone.dto.StoneDto;
-import com.msa.product.local.stone.stone.service.StoneService;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.AccessToken;
 import com.msa.common.global.util.CustomPage;
+import com.msa.product.local.stone.stone.dto.StoneDto;
+import com.msa.product.local.stone.stone.service.StoneService;
 import jakarta.validation.Valid;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 @RestController
 public class StoneController {
     private final StoneService stoneService;
+    private final JobLauncher jobLauncher;
+    private final Job stoneInsertJob;
 
-    public StoneController(StoneService stoneService) {
+    public StoneController(StoneService stoneService, JobLauncher jobLauncher, Job stoneInsertJob) {
         this.stoneService = stoneService;
+        this.jobLauncher = jobLauncher;
+        this.stoneInsertJob = stoneInsertJob;
     }
 
     // 생성
@@ -34,6 +45,31 @@ public class StoneController {
             @Valid @RequestBody List<StoneDto> stoneDto) {
         stoneDto.forEach(stoneService::saveStone);
         return ResponseEntity.ok(ApiResponse.success("생성 완료"));
+    }
+
+    @PostMapping("/stones/batch")
+    public ResponseEntity<ApiResponse<String>> uploadStonesBatch(
+            @RequestParam("file") MultipartFile file) {
+
+        try {
+            Path tempPath = Files.createTempFile("stone-upload-", ".json");
+
+            file.transferTo(tempPath.toFile());
+
+            JobParameters params = new JobParametersBuilder()
+                    .addString("filePath", tempPath.toAbsolutePath().toString())
+                    .addLong("time", System.currentTimeMillis())
+                    .toJobParameters();
+
+            jobLauncher.run(stoneInsertJob, params);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("저장 실패: " + e.getMessage()));
+        }
+
+        return ResponseEntity.ok(ApiResponse.success("저장 중..."));
     }
 
     // 단건 조회
