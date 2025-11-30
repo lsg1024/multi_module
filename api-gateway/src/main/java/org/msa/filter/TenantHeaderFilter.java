@@ -31,17 +31,22 @@ public class TenantHeaderFilter extends AbstractGatewayFilterFactory<TenantHeade
         return new OrderedGatewayFilter((exchange, chain) -> {
             String tenant = null;
 
+            log.info("TenantHeaderFilter start");
             if (c.isDeriveFromHost()) {
                 String host = exchange.getRequest().getHeaders().getFirst("Host");
-
+                log.info("TenantHeaderFilter host = {}", host);
                 if (StringUtils.hasText(host)) {
                     if (host.contains(":")) {
                         host = host.split(":")[0];
                     }
-
+                    log.info("TenantHeaderFilter StringUtils.hasText(host) = {}", host);
                     String[] parts = host.split("\\.");
                     if (parts.length >= 1) {
+                        for (String part : parts) {
+                            log.info("TenantHeaderFilter parts data = {}", part);
+                        }
                         tenant = parts[0];
+                        log.info("TenantHeaderFilter parts.length >= 1 = {}", tenant);
                     } else {
                         log.debug("Host does not contain subdomain: {}", host);
                     }
@@ -50,6 +55,7 @@ public class TenantHeaderFilter extends AbstractGatewayFilterFactory<TenantHeade
 
             if (!StringUtils.hasText(tenant)) {
                 String explicitTenant = exchange.getRequest().getHeaders().getFirst(c.getHeader());
+                log.info("TenantHeaderFilter explicitTenant = {}", explicitTenant);
                 if (StringUtils.hasText(explicitTenant)) {
                     tenant = explicitTenant;
                 }
@@ -57,12 +63,13 @@ public class TenantHeaderFilter extends AbstractGatewayFilterFactory<TenantHeade
 
             if (StringUtils.hasText(tenant)) {
                 exchange.getAttributes().put(TENANT_ATTRIBUTE_KEY, tenant);
-
                 String finalTenant = tenant;
+                log.info("TenantHeaderFilter TENANT_ATTRIBUTE_KEY = {}", tenant);
                 ServerHttpRequest req = exchange.getRequest().mutate()
                         .headers(h -> h.set(c.getHeader(), finalTenant))
                         .build();
 
+                log.info("TenantHeaderFilter finalTenant = {}", finalTenant);
                 return chain.filter(exchange.mutate().request(req).build());
             } else {
                 log.warn("Missing Tenant Information. Access Denied.");
