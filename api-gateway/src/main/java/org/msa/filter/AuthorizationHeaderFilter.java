@@ -52,22 +52,6 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Auth
                 return exchange.getResponse().setComplete();
             }
 
-            if (config.isVerifyTenant()) {
-                String tokenTenantId = jwtUtil.getTenantId(token);
-
-                String requestTenantId = exchange.getAttribute(TenantHeaderFilter.TENANT_ATTRIBUTE_KEY);
-
-                if (requestTenantId == null) {
-                    requestTenantId = exchange.getRequest().getHeaders().getFirst("X-Tenant-ID");
-                }
-
-                if (tokenTenantId != null && !tokenTenantId.equals(requestTenantId)) {
-                    log.warn("Tenant Mismatch! Token: {}, Request: {}", tokenTenantId, requestTenantId);
-                    exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                    return exchange.getResponse().setComplete();
-                }
-            }
-
             if (config.isVerifyDevice()) {
                 String device = jwtUtil.getDevice(token);
                 String userAgent = exchange.getRequest().getHeaders().getFirst("User-Agent");
