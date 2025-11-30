@@ -92,7 +92,7 @@ spring:
               args:
                 require: true
                 verifyDevice: true
-                verifyForwardedFor: true
+                verifyForwardedFor: false
 
         - id: account
           uri: lb://account

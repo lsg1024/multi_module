@@ -8,6 +8,7 @@ import com.msa.userserver.exception.UserNotFoundException;
 import com.msa.common.global.domain.dto.UserDto;
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.tenant.TenantContext;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @Transactional
 public class UsersService {
@@ -72,8 +74,8 @@ public class UsersService {
 
         String role = jwtUtil.getRole(accessToken);
         if (role.equals(Role.ADMIN.getKey())) {
-            Users targetUser = usersRepository.findById(Long.parseLong(updateDto.getId())).orElseThrow(() ->
-                    new UserNotFoundException("사용자 정보 불일치"));
+            Users targetUser = usersRepository.findById(Long.parseLong(updateDto.getId()))
+                    .orElseThrow(() -> new UserNotFoundException("사용자 정보 불일치"));
 
             targetUser.updateInfo(updateDto);
 
@@ -131,21 +133,23 @@ public class UsersService {
 
     public void updatePassword(String accessToken, UserDto.Password userDto) {
         String userId = jwtUtil.getId(accessToken);
-        Users userInfo = usersRepository.findByUserId(userId)
+
+        Users userInfo = usersRepository.findById(Long.valueOf(userId))
                 .orElseThrow(() -> new UserNotFoundException("유저 정보가 없습니다."));
 
-        boolean matches = encoder.matches(userDto.getOrigin_password(), userInfo.getPassword());
-
-        if (matches) {
-            throw new IllegalArgumentException("동일한 비밀번호로 수정 불가능합니다.");
+        if (!encoder.matches(userDto.getOrigin_password(), userInfo.getPassword())) {
+            throw new IllegalArgumentException("기존 비밀번호가 일치하지 않습니다.");
         }
 
-        if (userDto.getPassword().equals(userDto.getConfirm_password())) {
-            userInfo.updatePassword(encoder.encode(userDto.getPassword()));
-            return;
+        if (encoder.matches(userDto.getPassword(), userInfo.getPassword())) {
+            throw new IllegalArgumentException("기존 비밀번호와 동일한 비밀번호로 변경할 수 없습니다.");
         }
 
-        throw new IllegalArgumentException("동일한 비밀번호를 입력해주세요.");
+        if (!userDto.getPassword().equals(userDto.getConfirm_password())) {
+            throw new IllegalArgumentException("새 비밀번호 확인이 일치하지 않습니다.");
+        }
+
+        userInfo.updatePassword(encoder.encode(userDto.getPassword()));
     }
 }
 

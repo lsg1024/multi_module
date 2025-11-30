@@ -88,6 +88,8 @@ public class UserDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class Password {
+        @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*[0-9])(?=.*[$@!%*#?&]).{8,16}$",
+                message = PASSWORD_ERROR)
         private String origin_password;
         @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*[0-9])(?=.*[$@!%*#?&]).{8,16}$",
                 message = PASSWORD_ERROR)
