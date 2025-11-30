@@ -40,7 +40,7 @@ public class TenantHeaderFilter extends AbstractGatewayFilterFactory<TenantHeade
                     }
 
                     String[] parts = host.split("\\.");
-                    if (parts.length >= 3) {
+                    if (parts.length >= 1) {
                         tenant = parts[0];
                     } else {
                         log.debug("Host does not contain subdomain: {}", host);
