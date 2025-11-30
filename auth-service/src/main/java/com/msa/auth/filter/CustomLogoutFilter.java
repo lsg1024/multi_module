@@ -18,10 +18,12 @@ import java.io.IOException;
 
 public class CustomLogoutFilter extends GenericFilterBean {
 
+    private final String cookieUrl;
     private final JwtUtil jwtUtil;
     private final RedisRefreshTokenService redisRefreshTokenService;
 
-    public CustomLogoutFilter(JwtUtil jwtUtil, RedisRefreshTokenService redisRefreshTokenService) {
+    public CustomLogoutFilter(String cookieUrl, JwtUtil jwtUtil, RedisRefreshTokenService redisRefreshTokenService) {
+        this.cookieUrl = cookieUrl;
         this.jwtUtil = jwtUtil;
         this.redisRefreshTokenService = redisRefreshTokenService;
     }
@@ -95,6 +97,7 @@ public class CustomLogoutFilter extends GenericFilterBean {
 
     private Cookie createCookie(String key, String value, Long TTL) {
         Cookie cookie = new Cookie(key, value);
+        cookie.setDomain(cookieUrl);
         cookie.setMaxAge(TTL.intValue());
         cookie.setPath("/");
         cookie.setHttpOnly(true);

@@ -12,6 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -69,10 +70,16 @@ public class UsersService {
     public void updateUserInfo(String accessToken, final UserDto.Update updateDto) {
         checkToken(accessToken);
 
-        Users targetUser = usersRepository.findById(Long.parseLong(updateDto.getId())).orElseThrow(() ->
-                new UserNotFoundException("사용자 정보 불일치"));
+        String role = jwtUtil.getRole(accessToken);
+        if (role.equals(Role.ADMIN.getKey())) {
+            Users targetUser = usersRepository.findById(Long.parseLong(updateDto.getId())).orElseThrow(() ->
+                    new UserNotFoundException("사용자 정보 불일치"));
 
-        targetUser.updateInfo(updateDto);
+            targetUser.updateInfo(updateDto);
+
+
+        }
+        throw new IllegalArgumentException("권한이 부족합니다.");
     }
 
     //유저 삭제
@@ -87,10 +94,13 @@ public class UsersService {
 
         checkToken(accessToken);
 
-        return usersRepository.findAll().stream()
-                .map(u -> new UserDto.UserInfo(u.getId().toString(), u.getTenantId(), u.getNickname(), u.getRole().toString()))
-                .collect(Collectors.toList());
+        String userId = jwtUtil.getId(accessToken);
 
+        return usersRepository.findAll().stream()
+                .filter(u -> !userId.equals(u.getUserId()))
+                .map(u -> new UserDto.UserInfo(u.getId().toString(), u.getTenantId(), u.getNickname(), u.getRole().toString()))
+                .sorted(Comparator.comparingInt(u -> Integer.parseInt(u.getUserId())))
+                .collect(Collectors.toList());
     }
 
     private Users checkToken(String accessToken) {

@@ -24,9 +24,10 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Auth
 
     @Getter @Setter
     public static class Config {
-        private boolean require = true;              // false면 인증 스킵 (공개 라우트)
-        private boolean verifyDevice = true;         // UA 바인딩 검증
-        private boolean verifyForwardedFor = true;   // X-Forwarded-For 바인딩 검증
+        private boolean require = true;
+        private boolean verifyDevice = true;
+        private boolean verifyForwardedFor = true;
+        private boolean verifyTenant = true;
         private String userIdHeader = "X-User-ID";
         private int order = -1;
     }
@@ -49,6 +50,22 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Auth
             } catch (ExpiredJwtException e) {
                 exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                 return exchange.getResponse().setComplete();
+            }
+
+            if (config.isVerifyTenant()) {
+                String tokenTenantId = jwtUtil.getTenantId(token);
+
+                String requestTenantId = exchange.getAttribute(TenantHeaderFilter.TENANT_ATTRIBUTE_KEY);
+
+                if (requestTenantId == null) {
+                    requestTenantId = exchange.getRequest().getHeaders().getFirst("X-Tenant-ID");
+                }
+
+                if (tokenTenantId != null && !tokenTenantId.equals(requestTenantId)) {
+                    log.warn("Tenant Mismatch! Token: {}, Request: {}", tokenTenantId, requestTenantId);
+                    exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                    return exchange.getResponse().setComplete();
+                }
             }
 
             if (config.isVerifyDevice()) {
