@@ -7,8 +7,6 @@ import com.msa.order.global.feign_client.ProductFeignClient;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -24,7 +22,6 @@ public class ColorClient {
     private final JwtUtil jwtUtil;
     private final ProductFeignClient productFeignClient;
 
-    @Retryable(retryFor = RetryableExternalException.class, backoff = @Backoff(value = 200, multiplier = 2, random = true))
     public String getColorInfo(String token, Long colorId) {
         ResponseEntity<ApiResponse<String>> response;
 
@@ -40,9 +37,9 @@ public class ColorClient {
             if (e.status() >= 400 && e.status() < 500) {
                 throw new IllegalArgumentException(NOT_FOUND);
             }
-            throw new RetryableExternalException(NO_CONNECT_SERVER + e.getMessage());
+            throw new IllegalArgumentException(NO_CONNECT_SERVER + e.getMessage());
         } catch (Exception e) {
-            throw new RetryableExternalException(NO_CONNECT_SERVER + e.getMessage());
+            throw new IllegalArgumentException(NO_CONNECT_SERVER + e.getMessage());
         }
 
         String data = response.getBody().getData();

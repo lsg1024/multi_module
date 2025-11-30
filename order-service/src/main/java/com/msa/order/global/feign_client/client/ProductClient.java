@@ -9,8 +9,6 @@ import com.msa.order.global.feign_client.dto.ProductImageDto;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -28,7 +26,6 @@ public class ProductClient {
     private final JwtUtil jwtUtil;
     private final ProductFeignClient productFeignClient;
 
-    @Retryable(retryFor = RetryableExternalException.class, backoff = @Backoff(value = 200, multiplier = 2, random = true))
     public ProductDetailDto getProductInfo(String token, Long productId, String grade) {
         ResponseEntity<ApiResponse<ProductDetailDto>> response;
 
@@ -44,9 +41,9 @@ public class ProductClient {
             if (e.status() >= 400 && e.status() < 500) {
                 throw new IllegalArgumentException(NOT_FOUND);
             }
-            throw new RetryableExternalException(NO_CONNECT_SERVER + e.getMessage());
+            throw new IllegalArgumentException(NO_CONNECT_SERVER + e.getMessage());
         } catch (Exception e) {
-            throw new RetryableExternalException(NO_CONNECT_SERVER + e.getMessage());
+            throw new IllegalArgumentException(NO_CONNECT_SERVER + e.getMessage());
         }
 
         ProductDetailDto data = response.getBody().getData();
@@ -57,7 +54,6 @@ public class ProductClient {
         return data;
     }
 
-    @Retryable(retryFor = RetryableExternalException.class, backoff = @Backoff(value = 200, multiplier = 2, random = true))
     public Map<Long, ProductImageDto> getProductImages(String token, List<Long> productIds) {
 
         Map<String, Object> headers = new HashMap<>();
@@ -74,12 +70,12 @@ public class ProductClient {
             ResponseEntity<ApiResponse<Map<Long, ProductImageDto>>> response = productFeignClient.getProductImages(headers, productIds);
 
             if (!response.getStatusCode().is2xxSuccessful()) {
-                throw new RetryableExternalException("Product 이미지 조회 응답 실패 - Status: " + response.getStatusCode());
+                throw new IllegalArgumentException("Product 이미지 조회 응답 실패 - Status: " + response.getStatusCode());
             }
             return response.getBody().getData();
 
         } catch (Exception e) {
-            throw new RetryableExternalException(NO_CONNECT_SERVER + e.getMessage());
+            throw new IllegalArgumentException(NO_CONNECT_SERVER + e.getMessage());
         }
     }
 }

@@ -2,14 +2,11 @@ package com.msa.order.global.feign_client.client;
 
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.JwtUtil;
-import com.msa.order.global.exception.RetryableExternalException;
 import com.msa.order.global.feign_client.AccountFeignClient;
 import com.msa.order.local.order.dto.FactoryDto;
-import feign.FeignException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -25,7 +22,6 @@ public class FactoryClient {
     private final JwtUtil jwtUtil;
     private final AccountFeignClient accountFeignClient;
 
-    @Retryable(retryFor = RetryableExternalException.class, backoff = @Backoff(value = 200, multiplier = 2, random = true))
     public FactoryDto.Response getFactoryInfo(String token, Long factoryId) {
         ResponseEntity<ApiResponse<FactoryDto.Response>> response;
 
@@ -37,20 +33,18 @@ public class FactoryClient {
 
         try {
             response = accountFeignClient.getFactoryInfo(headers, factoryId);
-        } catch (FeignException e) {
-            if (e.status() >= 400 && e.status() < 500) {
-                throw new IllegalArgumentException(NOT_FOUND);
-            }
-            throw new RetryableExternalException(NO_CONNECT_SERVER + e.getMessage());
         } catch (Exception e) {
-            throw new RetryableExternalException(NO_CONNECT_SERVER + e.getMessage());
+            throw new IllegalArgumentException(NO_CONNECT_SERVER + e.getMessage());
         }
 
-        FactoryDto.Response factoryInfo = response.getBody().getData();
-        if (factoryInfo == null) {
+        if (response.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE) {
+            throw new IllegalArgumentException("Service Unavailable: " + response.getBody().getMessage());
+        }
+
+        if (response.getBody().getData() == null) {
             throw new IllegalArgumentException(NOT_FOUND + " " + factoryId);
         }
 
-        return factoryInfo;
+        return response.getBody().getData();
     }
 }
