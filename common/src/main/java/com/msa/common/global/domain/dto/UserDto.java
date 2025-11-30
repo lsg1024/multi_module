@@ -84,4 +84,15 @@ public class UserDto {
         private String role;
     }
 
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Password {
+        private String origin_password;
+        @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*[0-9])(?=.*[$@!%*#?&]).{8,16}$",
+                message = PASSWORD_ERROR)
+        private String password;
+        private String confirm_password;
+    }
 }
+

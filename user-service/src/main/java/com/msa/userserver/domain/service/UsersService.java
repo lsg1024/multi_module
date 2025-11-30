@@ -47,13 +47,14 @@ public class UsersService {
                 .tenantId(tenantId)
                 .password(encoder.encode(userDto.getPassword()))
                 .nickname(userDto.getNickname())
-                .role(Role.USER)
+                .role(Role.GUEST)
                 .build();
 
         usersRepository.save(user);
     }
 
     //유저 정보
+    @Transactional(readOnly = true)
     public UserDto.UserInfo getUserInfo(String accessToken) {
         Users users = checkToken(accessToken);
 
@@ -74,8 +75,6 @@ public class UsersService {
         targetUser.updateInfo(updateDto);
     }
 
-    //유저 정보 확인 -> jwt 아이디 이용
-
     //유저 삭제
     public void deletedUser(String accessToken) {
         Users user = checkToken(accessToken);
@@ -83,6 +82,7 @@ public class UsersService {
     }
 
     //유저 목록
+    @Transactional(readOnly = true)
     public List<UserDto.UserInfo> getAllUsers(String accessToken) {
 
         checkToken(accessToken);
@@ -119,4 +119,23 @@ public class UsersService {
         throw new IllegalArgumentException("유저 정보가 없습니다");
     }
 
+    public void updatePassword(String accessToken, UserDto.Password userDto) {
+        String userId = jwtUtil.getId(accessToken);
+        Users userInfo = usersRepository.findByUserId(userId)
+                .orElseThrow(() -> new UserNotFoundException("유저 정보가 없습니다."));
+
+        boolean matches = encoder.matches(userDto.getOrigin_password(), userInfo.getPassword());
+
+        if (matches) {
+            throw new IllegalArgumentException("동일한 비밀번호로 수정 불가능합니다.");
+        }
+
+        if (userDto.getPassword().equals(userDto.getConfirm_password())) {
+            userInfo.updatePassword(encoder.encode(userDto.getPassword()));
+            return;
+        }
+
+        throw new IllegalArgumentException("동일한 비밀번호를 입력해주세요.");
+    }
 }
+
