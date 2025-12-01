@@ -114,10 +114,13 @@ public class UsersService {
     }
 
     public UserDto.UserInfo login(UserDto.Login userDto) {
+
+        log.info("userDto = {}", userDto.getUserId());
         Users userInfo = usersRepository.findByUserId(userDto.getUserId())
                 .orElseThrow(() -> new UserNotFoundException("유저 정보가 없습니다."));
 
         boolean matches = encoder.matches(userDto.getPassword(), userInfo.getPassword());
+        log.info("Password match result: {}", matches); // 이 로그 추가
 
         if (matches) {
             return UserDto.UserInfo.builder()
@@ -128,7 +131,7 @@ public class UsersService {
                     .build();
         }
 
-        throw new IllegalArgumentException("유저 정보가 없습니다");
+        throw new IllegalArgumentException("아이디와 비밀번호를 확인해주세요.");
     }
 
     public void updatePassword(String accessToken, UserDto.Password userDto) {
