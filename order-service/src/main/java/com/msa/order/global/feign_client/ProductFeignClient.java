@@ -48,7 +48,7 @@ public interface ProductFeignClient {
             @PathVariable("grade") String grade
     );
 
-    @GetMapping("/products/images")
+    @GetMapping("/api/products/images")
     ResponseEntity<ApiResponse<Map<Long, ProductImageDto>>> getProductImages(
             @RequestHeader Map<String, Object> headers,
             @RequestParam("ids") List<Long> productIds
