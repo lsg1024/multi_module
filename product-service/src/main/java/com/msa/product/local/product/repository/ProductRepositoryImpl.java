@@ -5,12 +5,10 @@ import com.msa.product.local.classification.dto.QClassificationDto_ResponseSingl
 import com.msa.product.local.grade.WorkGrade;
 import com.msa.product.local.material.dto.QMaterialDto_ResponseSingle;
 import com.msa.product.local.product.dto.*;
-import com.msa.product.local.product.entity.QProductWorkGradePolicy;
 import com.msa.product.local.set.dto.QSetTypeDto_ResponseSingle;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -80,8 +78,6 @@ public class ProductRepositoryImpl implements CustomProductRepository {
     @Override
     public CustomPage<ProductDto.Page> findByAllProductName(String productName, String factoryName, String classificationId, String setTypeId, String level, Pageable pageable) {
 
-        QProductWorkGradePolicy productWorkGradePolicySub = new QProductWorkGradePolicy("productWorkGradePolicySub");
-
         BooleanBuilder builder = new BooleanBuilder();
 
         if (productName != null && !productName.isBlank()) {
@@ -111,6 +107,7 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 productImage.imageId.max().stringValue(),
                 productImage.imagePath.max()
         );
+
         List<ProductDto.Page> content = query
                 .select(new QProductDto_Page(
                         product.productId.stringValue(),
@@ -132,24 +129,22 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 .leftJoin(product.classification, classification)
                 .leftJoin(product.productWorkGradePolicyGroups, productWorkGradePolicyGroup)
                 .leftJoin(productWorkGradePolicyGroup.gradePolicies, productWorkGradePolicy)
-                .on(productWorkGradePolicy.grade.eq(grade)
-                        .and(productWorkGradePolicy.productWorkGradePolicyId.eq(
-                                JPAExpressions
-                                        .select(productWorkGradePolicySub.productWorkGradePolicyId.min())
-                                        .from(productWorkGradePolicySub)
-                                        .where(productWorkGradePolicySub.workGradePolicyGroup.product.eq(product))
-                                        .where(productWorkGradePolicySub.grade.eq(grade))
-                        )))
+                .on(productWorkGradePolicy.grade.eq(grade))
                 .where(
                         productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue()
-                        .and(builder)
+                                .and(builder)
                 )
                 .groupBy(
                         product.productId,
+                        product.productName,
+                        product.productFactoryName,
                         product.standardWeight,
                         material.materialName,
+                        product.productNote,
                         productWorkGradePolicyGroup.productPurchasePrice,
-                        productWorkGradePolicy.laborCost
+                        productWorkGradePolicy.laborCost,
+                        product.factoryId,
+                        product.factoryName
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -189,10 +184,10 @@ public class ProductRepositoryImpl implements CustomProductRepository {
 
         List<Tuple> rows = query
                 .select(
-                        product.productId,                        // 0
-                        productStone.productStoneId,              // 1
-                        stone.stoneId,                            // 2
-                        stone.stoneName,                          // 3
+                        product.productId,
+                        productStone.productStoneId,
+                        stone.stoneId,
+                        stone.stoneName,
                         productStone.stoneQuantity,
                         productStone.mainStone,
                         productStone.includeStone,
@@ -214,19 +209,19 @@ public class ProductRepositoryImpl implements CustomProductRepository {
         Map<Long, List<ProductStoneDto.PageResponse>> result = new LinkedHashMap<>();
 
         for (Tuple t : rows) {
-            Long productId   = t.get(product.productId);
-            Long productStoneId  = t.get(productStone.productStoneId);
-            Long stoneId   = t.get(stone.stoneId);
+            Long productId = t.get(product.productId);
+            Long productStoneId = t.get(productStone.productStoneId);
+            Long stoneId = t.get(stone.stoneId);
             String stoneName = t.get(stone.stoneName);
-            Integer quantity  = Optional.ofNullable(t.get(productStone.stoneQuantity)).orElse(0);
-            boolean main    = Optional.ofNullable(t.get(productStone.mainStone)).orElse(false);
+            Integer quantity = Optional.ofNullable(t.get(productStone.stoneQuantity)).orElse(0);
+            boolean main = Optional.ofNullable(t.get(productStone.mainStone)).orElse(false);
             boolean include = Optional.ofNullable(t.get(productStone.includeStone)).orElse(false);
-            Integer cost  = t.get(stoneWorkGradePolicy.laborCost);
+            Integer cost = t.get(stoneWorkGradePolicy.laborCost);
             Integer purchasePrice = t.get(stone.stonePurchasePrice);
 
             ProductStoneDto.PageResponse resp = new ProductStoneDto.PageResponse(
                     productStoneId != null ? productStoneId.toString() : null,
-                    stoneId  != null ? stoneId.toString()  : null,
+                    stoneId != null ? stoneId.toString() : null,
                     stoneName != null ? stoneName : "",
                     main, include, quantity, cost,
                     purchasePrice);
@@ -236,7 +231,6 @@ public class ProductRepositoryImpl implements CustomProductRepository {
 
         return result;
     }
-
     @Override
     public ProductDetailDto findProductDetail(Long productId, WorkGrade grade) {
         return query
@@ -264,29 +258,5 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 )
                 .fetchOne();
 
-//        List<ProductDetailDto.StoneInfo> stoneCosts = query
-//                .select(new QProductDetailDto_StoneInfo(
-//                        stone.stoneId.stringValue(),
-//                        stone.stoneName,
-//                        stone.stoneWeight.stringValue(),
-//                        stone.stonePurchasePrice,
-//                        stoneWorkGradePolicy.laborCost,
-//                        productStone.stoneQuantity,
-//                        productStone.mainStone,
-//                        productStone.includeStone,
-//                        productStone.productStoneNote
-//                ))
-//                .from(productStone)
-//                .join(productStone.stone, stone)
-//                .join(stone.gradePolicies, stoneWorkGradePolicy)
-//                .where(
-//                        productStone.product.productId.eq(productId),
-//                        stoneWorkGradePolicy.grade.eq(grade)
-//                )
-//                .fetch();
-//
-//        result.setStoneInfos(stoneCosts);
-
-//        return result;
     }
 }
