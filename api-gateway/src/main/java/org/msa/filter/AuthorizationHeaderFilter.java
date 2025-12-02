@@ -83,8 +83,7 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Auth
                         requestTenantId = exchange.getRequest().getHeaders().getFirst("X-Tenant-ID");
                     }
 
-                    // log.debug("[AuthFilter] Tenant Check. Token: {}, Req: {}", tokenTenantId, requestTenantId);
-
+                     log.debug("[AuthFilter] Tenant Check. Token: {}, Req: {}", tokenTenantId, requestTenantId);
                     if (tokenTenantId != null && !tokenTenantId.equals(requestTenantId)) {
                         log.warn("[AuthFilter] Fail: Tenant Mismatch! ReqID: {}, TokenT: {}, ReqT: {}", reqId, tokenTenantId, requestTenantId);
                         exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
