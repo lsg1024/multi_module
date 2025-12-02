@@ -100,20 +100,20 @@ public class StoneService {
         Stone stone = getStoneEntity(stoneRepository.findById(stoneId));
 
         boolean existsByStoneName = stoneRepository.existsByStoneName(stoneDto.getStoneName());
-        if (existsByStoneName) {
-            throw new IllegalArgumentException(IS_EXIST);
-        }
 
-        stone.updateStone(stoneDto);
-        stone.getGradePolicies().clear();
+        if (stoneDto.getStoneName().equals(stone.getStoneName()) || !existsByStoneName) {
+            stone.updateStone(stoneDto);
+            stone.getGradePolicies().clear();
 
-        for (StoneWorkGradePolicyDto dto : stoneDto.getStoneWorkGradePolicyDto()) {
-            StoneWorkGradePolicy policy = StoneWorkGradePolicy.builder()
-                    .grade(dto.getGrade())
-                    .laborCost(dto.getLaborCost())
-                    .build();
-            stone.addGradePolicy(policy);
+            for (StoneWorkGradePolicyDto dto : stoneDto.getStoneWorkGradePolicyDto()) {
+                StoneWorkGradePolicy policy = StoneWorkGradePolicy.builder()
+                        .grade(dto.getGrade())
+                        .laborCost(dto.getLaborCost())
+                        .build();
+                stone.addGradePolicy(policy);
+            }
         }
+        throw new IllegalArgumentException(IS_EXIST);
     }
 
     //삭제
