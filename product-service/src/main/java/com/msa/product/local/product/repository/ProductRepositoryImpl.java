@@ -127,7 +127,6 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 ))
                 .from(product)
                 .leftJoin(productImage).on(productImage.product.eq(product).and(productImage.imageMain.isTrue()))
-                .leftJoin(productStone).on(product.productId.eq(productStone.product.productId))
                 .leftJoin(product.material, material)
                 .leftJoin(product.setType, setType)
                 .leftJoin(product.classification, classification)
@@ -141,18 +140,14 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                                         .where(productWorkGradePolicySub.workGradePolicyGroup.product.eq(product))
                                         .where(productWorkGradePolicySub.grade.eq(grade))
                         )))
-                .leftJoin(stoneWorkGradePolicy).on(productStone.stone.stoneId.eq(stoneWorkGradePolicy.stone.stoneId)
-                        .and(stoneWorkGradePolicy.grade.eq(grade)))
                 .where(
                         productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue()
                         .and(builder)
                 )
                 .groupBy(
                         product.productId,
-                        product.productName,
                         product.standardWeight,
                         material.materialName,
-                        product.productNote,
                         productWorkGradePolicyGroup.productPurchasePrice,
                         productWorkGradePolicy.laborCost
                 )
@@ -162,8 +157,11 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 .fetch();
 
         JPAQuery<Long> countQuery = query
-                .select(product.count())
+                .select(product.countDistinct())
                 .from(product)
+                .leftJoin(product.material, material)
+                .leftJoin(product.setType, setType)
+                .leftJoin(product.classification, classification)
                 .leftJoin(product.productWorkGradePolicyGroups, productWorkGradePolicyGroup)
                 .where(
                         productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue()
