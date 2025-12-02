@@ -5,6 +5,7 @@ import com.msa.account.global.domain.dto.QAccountDto_AccountSingleResponse;
 import com.msa.account.global.excel.dto.AccountExcelDto;
 import com.msa.account.global.excel.dto.QAccountExcelDto;
 import com.msa.account.local.factory.domain.dto.FactoryDto;
+import com.msa.account.local.factory.domain.dto.QFactoryDto_ApiFactoryInfo;
 import com.msa.account.local.factory.domain.dto.QFactoryDto_FactoryResponse;
 import com.msa.common.global.util.CustomPage;
 import com.querydsl.core.types.dsl.BooleanExpression;
@@ -131,6 +132,17 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
                 .leftJoin(factory.address, address)
                 .leftJoin(factory.commonOption, commonOption)
                 .orderBy(factory.factoryName.desc())
+                .fetch();
+    }
+
+    @Override
+    public List<FactoryDto.ApiFactoryInfo> findAllFactory() {
+        return query
+                .select(new QFactoryDto_ApiFactoryInfo(
+                        factory.factoryId,
+                        factory.factoryName.toUpperCase()
+                ))
+                .from(factory)
                 .fetch();
     }
 }

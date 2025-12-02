@@ -10,7 +10,7 @@ spring:
         ttl: 1s
     gateway:
       httpclient:
-        connect-timeout: 5000
+        connect-timeout: 10000
       forwarded:
         enabled: true
       x-forwarded:

@@ -9,6 +9,7 @@ import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.AccessToken;
 import com.msa.common.global.util.CustomPage;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
@@ -30,6 +31,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+@Slf4j
 @RestController
 public class FactoryController {
 
@@ -176,5 +178,13 @@ public class FactoryController {
     public ResponseEntity<ApiResponse<FactoryDto.ApiFactoryInfo>> getFactoryInfo(@PathVariable Long id) {
         FactoryDto.ApiFactoryInfo factoryIdAndName = factoryService.getFactoryIdAndName(id);
         return ResponseEntity.ok(ApiResponse.success(factoryIdAndName));
+    }
+
+    @GetMapping("/api/factories")
+    public ResponseEntity<ApiResponse<List<FactoryDto.ApiFactoryInfo>>> getFactoryAll() {
+        log.info("/api/factories");
+        List<FactoryDto.ApiFactoryInfo> factoryInfos = factoryService.findAllFactory();
+        log.info("factoryInfo value = {}", factoryInfos.size());
+        return ResponseEntity.ok(ApiResponse.success(factoryInfos));
     }
 }

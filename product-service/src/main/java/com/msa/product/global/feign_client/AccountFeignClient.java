@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 
+import java.util.List;
 import java.util.Map;
 
 @FeignClient(name = "account", path = "/api", fallbackFactory = AccountFeignClientFallbackFactory.class)
@@ -19,5 +20,9 @@ public interface AccountFeignClient {
             @RequestHeader Map<String, Object> headers,
             @PathVariable("factoryId") Long factoryId
     );
+
+    @GetMapping("/factories")
+    ResponseEntity<ApiResponse<List<FactoryDto.ResponseBatch>>> getFactories(
+            @RequestHeader Map<String, Object> headers);
 
 }

@@ -8,18 +8,30 @@ import com.msa.product.local.product.dto.ProductDto;
 import com.msa.product.local.product.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 @Slf4j
 @RestController
 public class ProductController {
     private final ProductService productService;
+    private final JobLauncher jobLauncher;
+    private final Job productInsertJob;
 
-    public ProductController(ProductService productService) {
+    public ProductController(ProductService productService, JobLauncher jobLauncher, Job productInsertJob) {
         this.productService = productService;
+        this.jobLauncher = jobLauncher;
+        this.productInsertJob = productInsertJob;
     }
 
     @PostMapping("/products")
@@ -29,6 +41,35 @@ public class ProductController {
         Long productId = productService.saveProduct(accessToken, productDto);
         return ResponseEntity.ok(ApiResponse.success("생성 완료", productId.toString()));
     }
+
+    @PostMapping("/products/batch")
+    public ResponseEntity<ApiResponse<String>> createBatchProduct(
+            @AccessToken String accessToken,
+            @RequestParam("file") MultipartFile file) {
+
+        try {
+            Path tempPath = Files.createTempFile("product-upload-", ".json");
+
+            file.transferTo(tempPath.toFile());
+
+            JobParameters params = new JobParametersBuilder()
+                    .addString("filePath", tempPath.toAbsolutePath().toString())
+                    .addString("accessToken", accessToken)
+                    .addLong("time", System.currentTimeMillis())
+                    .toJobParameters();
+
+            jobLauncher.run(productInsertJob, params);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("저장 실패: " + e.getMessage()));
+        }
+
+        return ResponseEntity.ok(ApiResponse.success("저장 중..."));
+
+    }
+
     @GetMapping("/products/{id}")
     public ResponseEntity<ApiResponse<ProductDto.Detail>> getProduct(
             @PathVariable(name = "id") String productId) {
@@ -43,7 +84,7 @@ public class ProductController {
             @RequestParam(name = "classification", required = false) String classificationId,
             @RequestParam(name = "setType", required = false) String setTypeId,
             @RequestParam(name = "level", required = false) String level,
-            @PageableDefault(size = 12) Pageable pageable) { // 검색 옵션으로 제조사, 제조번호, 등급
+            @PageableDefault(size = 12) Pageable pageable) {
         CustomPage<ProductDto.Page> products = productService.getProducts(productName, factoryName, classificationId, setTypeId, pageable, level);
         return ResponseEntity.ok(ApiResponse.success(products));
     }

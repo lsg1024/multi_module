@@ -142,5 +142,11 @@ public class FactoryDto {
         private Long factoryId;
         private String factoryName;
         private String factoryHarry;
+
+        @QueryProjection
+        public ApiFactoryInfo(Long factoryId, String factoryName) {
+            this.factoryId = factoryId;
+            this.factoryName = factoryName;
+        }
     }
 }
