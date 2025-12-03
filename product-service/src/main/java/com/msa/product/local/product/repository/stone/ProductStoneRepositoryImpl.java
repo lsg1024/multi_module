@@ -38,7 +38,7 @@ public class ProductStoneRepositoryImpl implements CustomProductStoneRepository 
                         productStone.productStoneNote
                 ))
                 .from(productStone)
-                .join(productStone.stone, stone)
+                .leftJoin(productStone.stone, stone)
                 .where(productStone.product.productId.eq(productId))
                 .fetch();
 

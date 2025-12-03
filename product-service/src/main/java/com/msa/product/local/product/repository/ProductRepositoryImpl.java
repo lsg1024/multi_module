@@ -68,9 +68,9 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                         Expressions.constant(Collections.emptyList())  // productImageDtos
                 ))
                 .from(product)
-                .join(product.setType, setType)
-                .join(product.classification, classification)
-                .join(product.material, material)
+                .leftJoin(product.setType, setType)
+                .leftJoin(product.classification, classification)
+                .leftJoin(product.material, material)
                 .where(product.productId.eq(productId))
                 .fetchOne();
     }
