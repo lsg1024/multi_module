@@ -8,13 +8,16 @@ import com.msa.userserver.exception.UserNotFoundException;
 import com.msa.common.global.domain.dto.UserDto;
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.tenant.TenantContext;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @Transactional
 public class UsersService {
@@ -47,13 +50,14 @@ public class UsersService {
                 .tenantId(tenantId)
                 .password(encoder.encode(userDto.getPassword()))
                 .nickname(userDto.getNickname())
-                .role(Role.USER)
+                .role(Role.GUEST)
                 .build();
 
         usersRepository.save(user);
     }
 
     //유저 정보
+    @Transactional(readOnly = true)
     public UserDto.UserInfo getUserInfo(String accessToken) {
         Users users = checkToken(accessToken);
 
@@ -68,13 +72,17 @@ public class UsersService {
     public void updateUserInfo(String accessToken, final UserDto.Update updateDto) {
         checkToken(accessToken);
 
-        Users targetUser = usersRepository.findById(Long.parseLong(updateDto.getId())).orElseThrow(() ->
-                new UserNotFoundException("사용자 정보 불일치"));
+        String role = jwtUtil.getRole(accessToken);
+        if (role.equals(Role.ADMIN.getKey())) {
+            Users targetUser = usersRepository.findById(Long.parseLong(updateDto.getId()))
+                    .orElseThrow(() -> new UserNotFoundException("사용자 정보 불일치"));
 
-        targetUser.updateInfo(updateDto);
+            targetUser.updateInfo(updateDto);
+
+
+        }
+        throw new IllegalArgumentException("권한이 부족합니다.");
     }
-
-    //유저 정보 확인 -> jwt 아이디 이용
 
     //유저 삭제
     public void deletedUser(String accessToken) {
@@ -83,14 +91,18 @@ public class UsersService {
     }
 
     //유저 목록
+    @Transactional(readOnly = true)
     public List<UserDto.UserInfo> getAllUsers(String accessToken) {
 
         checkToken(accessToken);
 
-        return usersRepository.findAll().stream()
-                .map(u -> new UserDto.UserInfo(u.getId().toString(), u.getTenantId(), u.getNickname(), u.getRole().toString()))
-                .collect(Collectors.toList());
+        String userId = jwtUtil.getId(accessToken);
 
+        return usersRepository.findAll().stream()
+                .filter(u -> !userId.equals(u.getUserId()))
+                .map(u -> new UserDto.UserInfo(u.getId().toString(), u.getTenantId(), u.getNickname(), u.getRole().toString()))
+                .sorted(Comparator.comparingInt(u -> Integer.parseInt(u.getUserId())))
+                .collect(Collectors.toList());
     }
 
     private Users checkToken(String accessToken) {
@@ -102,10 +114,13 @@ public class UsersService {
     }
 
     public UserDto.UserInfo login(UserDto.Login userDto) {
+
+        log.info("userDto = {}", userDto.getUserId());
         Users userInfo = usersRepository.findByUserId(userDto.getUserId())
                 .orElseThrow(() -> new UserNotFoundException("유저 정보가 없습니다."));
 
         boolean matches = encoder.matches(userDto.getPassword(), userInfo.getPassword());
+        log.info("Password match result: {}", matches); // 이 로그 추가
 
         if (matches) {
             return UserDto.UserInfo.builder()
@@ -116,7 +131,28 @@ public class UsersService {
                     .build();
         }
 
-        throw new IllegalArgumentException("유저 정보가 없습니다");
+        throw new IllegalArgumentException("아이디와 비밀번호를 확인해주세요.");
     }
 
+    public void updatePassword(String accessToken, UserDto.Password userDto) {
+        String userId = jwtUtil.getId(accessToken);
+
+        Users userInfo = usersRepository.findById(Long.valueOf(userId))
+                .orElseThrow(() -> new UserNotFoundException("유저 정보가 없습니다."));
+
+        if (!encoder.matches(userDto.getOrigin_password(), userInfo.getPassword())) {
+            throw new IllegalArgumentException("기존 비밀번호가 일치하지 않습니다.");
+        }
+
+        if (encoder.matches(userDto.getPassword(), userInfo.getPassword())) {
+            throw new IllegalArgumentException("기존 비밀번호와 동일한 비밀번호로 변경할 수 없습니다.");
+        }
+
+        if (!userDto.getPassword().equals(userDto.getConfirm_password())) {
+            throw new IllegalArgumentException("새 비밀번호 확인이 일치하지 않습니다.");
+        }
+
+        userInfo.updatePassword(encoder.encode(userDto.getPassword()));
+    }
 }
+

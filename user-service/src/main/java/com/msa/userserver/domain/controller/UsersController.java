@@ -1,9 +1,9 @@
 package com.msa.userserver.domain.controller;
 
-import com.msa.userserver.domain.service.UsersService;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.domain.dto.UserDto;
 import com.msa.common.global.jwt.AccessToken;
+import com.msa.userserver.domain.service.UsersService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -26,20 +26,26 @@ public class UsersController {
             @Valid @RequestBody UserDto.Login userDto) {
 
         UserDto.UserInfo userInfo = usersService.login(userDto);
+
         return ResponseEntity.ok(ApiResponse.success(userInfo));
 
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<ApiResponse<String>> createUser(@Valid @RequestBody UserDto.Create userDto) {
+    public ResponseEntity<ApiResponse<String>> createUser(
+            @Valid @RequestBody UserDto.Create userDto) {
+
         usersService.createUser(userDto);
+
         return ResponseEntity.ok(ApiResponse.success("가입 완료"));
     }
 
     @GetMapping("/info")
     public ResponseEntity<ApiResponse<UserDto.UserInfo>> getUserInfo(
             @AccessToken String accessToken) {
+
         UserDto.UserInfo userInfo = usersService.getUserInfo(accessToken);
+
         return ResponseEntity.ok(ApiResponse.success(userInfo));
     }
 
@@ -48,7 +54,18 @@ public class UsersController {
     public ResponseEntity<ApiResponse<String>> updateUserInfo(
             @AccessToken String accessToken,
             @Valid @RequestBody UserDto.Update updateDto) {
+
         usersService.updateUserInfo(accessToken, updateDto);
+
+        return ResponseEntity.ok(ApiResponse.success("수정 완료"));
+    }
+
+    @PatchMapping("/change-password")
+    public ResponseEntity<ApiResponse<String>> updatePassword(
+            @AccessToken String accessToken,
+            @Valid @RequestBody UserDto.Password updatePassword) {
+
+        usersService.updatePassword(accessToken, updatePassword);
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
 
@@ -56,15 +73,20 @@ public class UsersController {
     @DeleteMapping("/delete")
     public ResponseEntity<ApiResponse<String>> deletedUser(
             @AccessToken String accessToken) {
+
         usersService.deletedUser(accessToken);
+
         return ResponseEntity.ok(ApiResponse.success("삭제완료"));
     }
 
     //유저 목록
     @GetMapping("/list")
-    public List<UserDto.UserInfo> getUserList(
+    public ResponseEntity<ApiResponse<List<UserDto.UserInfo>>> getUserList(
             @AccessToken String accessToken) {
-        return usersService.getAllUsers(accessToken);
+
+        List<UserDto.UserInfo> allUsers = usersService.getAllUsers(accessToken);
+        return ResponseEntity.ok(ApiResponse.success(allUsers));
     }
 
 }
+

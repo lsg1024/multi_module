@@ -84,7 +84,7 @@ public class SecurityConfig {
                 .addFilterBefore(new JwtFilter(jwtUtil), CustomLoginFilter.class);
 
         // 6) 커스텀 로그아웃 필터 - /auth/logout
-        CustomLogoutFilter logoutFilter = new CustomLogoutFilter(jwtUtil, redisService);
+        CustomLogoutFilter logoutFilter = new CustomLogoutFilter(COOKIE_URL, jwtUtil, redisService);
         http
                 .addFilterBefore(logoutFilter, LogoutFilter.class);
 

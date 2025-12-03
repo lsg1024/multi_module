@@ -20,4 +20,12 @@ public class FactoryDto {
         private String factoryName;
         private String factoryHarry;
     }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ResponseBatch {
+        private Long factoryId;
+        private String factoryName;
+    }
 }

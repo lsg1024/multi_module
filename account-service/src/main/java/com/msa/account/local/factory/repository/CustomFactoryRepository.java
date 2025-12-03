@@ -13,4 +13,5 @@ public interface CustomFactoryRepository {
     Optional<AccountDto.AccountSingleResponse> findByFactoryId(Long factoryId);
     CustomPage<FactoryDto.FactoryResponse> findAllFactory(String name, Pageable pageable);
     List<AccountExcelDto>  findAllFactoryExcel();
+    List<FactoryDto.ApiFactoryInfo> findAllFactory();
 }

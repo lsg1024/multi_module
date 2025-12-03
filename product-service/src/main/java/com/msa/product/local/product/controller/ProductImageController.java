@@ -1,6 +1,5 @@
 package com.msa.product.local.product.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.tenant.TenantContext;
 import com.msa.product.local.product.dto.ProductImageDto;
@@ -28,12 +27,9 @@ public class ProductImageController {
 
     @Value("${FILE_UPLOAD_PATH}")
     private String baseUploadPath;
-
-    private final ObjectMapper objectMapper;
     private final ProductImageService productImageService;
 
-    public ProductImageController(ObjectMapper objectMapper, ProductImageService productImageService) {
-        this.objectMapper = objectMapper;
+    public ProductImageController(ProductImageService productImageService) {
         this.productImageService = productImageService;
     }
 
@@ -45,8 +41,6 @@ public class ProductImageController {
         String tenant = TenantContext.getTenant();
 
         Path filePath = Paths.get(baseUploadPath, tenant, relativePath);
-
-        log.info("serverFile filePath = {}", filePath);
 
         try {
             Resource resource = new UrlResource(filePath.toUri());

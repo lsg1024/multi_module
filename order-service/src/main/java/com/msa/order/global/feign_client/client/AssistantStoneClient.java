@@ -8,8 +8,6 @@ import com.msa.order.global.feign_client.dto.AssistantStoneDto;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -25,7 +23,6 @@ public class AssistantStoneClient {
     private final JwtUtil jwtUtil;
     private final ProductFeignClient productFeignClient;
 
-    @Retryable(retryFor = RetryableExternalException.class, backoff = @Backoff(value = 200, multiplier = 2, random = true))
     public AssistantStoneDto.Response getAssistantStoneInfo(String token, Long assistantStoneId) {
         ResponseEntity<ApiResponse<AssistantStoneDto.Response>> response;
 
@@ -42,9 +39,9 @@ public class AssistantStoneClient {
             if (e.status() >= 400 && e.status() < 500) {
                 throw new IllegalArgumentException(NOT_FOUND);
             }
-            throw new RetryableExternalException(NO_CONNECT_SERVER + e.getMessage());
+            throw new IllegalArgumentException(NO_CONNECT_SERVER + e.getMessage());
         } catch (Exception e) {
-            throw new RetryableExternalException(NO_CONNECT_SERVER + e.getMessage());
+            throw new IllegalArgumentException(NO_CONNECT_SERVER + e.getMessage());
         }
 
         AssistantStoneDto.Response data = response.getBody().getData();

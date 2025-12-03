@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.Optional;
 
 @Configuration
-public class StoneUpdateBatchJob {
+public class StoneBatchJob {
 
     @Bean
     @StepScope

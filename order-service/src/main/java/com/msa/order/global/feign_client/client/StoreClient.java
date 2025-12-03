@@ -8,8 +8,6 @@ import com.msa.order.local.order.dto.StoreDto;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -25,7 +23,6 @@ public class StoreClient {
     private final JwtUtil jwtUtil;
     private final AccountFeignClient accountFeignClient;
 
-    @Retryable(retryFor = RetryableExternalException.class, backoff = @Backoff(value = 200, multiplier = 2, random = true))
     public StoreDto.Response getStoreInfo(String token, Long storeId) {
         ResponseEntity<ApiResponse<StoreDto.Response>> response;
 
@@ -41,9 +38,9 @@ public class StoreClient {
             if (e.status() >= 400 && e.status() < 500) {
                 throw new IllegalArgumentException(NOT_FOUND);
             }
-            throw new RetryableExternalException(NO_CONNECT_SERVER + e.getMessage());
+            throw new IllegalArgumentException(NO_CONNECT_SERVER + e.getMessage());
         } catch (Exception e) {
-            throw new RetryableExternalException(NO_CONNECT_SERVER + e.getMessage());
+            throw new IllegalArgumentException(NO_CONNECT_SERVER + e.getMessage());
         }
 
         StoreDto.Response data = response.getBody().getData();

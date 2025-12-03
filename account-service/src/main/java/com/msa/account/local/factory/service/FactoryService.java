@@ -1,7 +1,6 @@
 package com.msa.account.local.factory.service;
 
 import com.msa.account.global.domain.dto.AccountDto;
-import com.msa.common.global.util.AuthorityUserRoleUtil;
 import com.msa.account.global.domain.entity.GoldHarry;
 import com.msa.account.global.domain.entity.OptionLevel;
 import com.msa.account.global.domain.repository.GoldHarryRepository;
@@ -11,6 +10,7 @@ import com.msa.account.global.exception.NotFoundException;
 import com.msa.account.local.factory.domain.dto.FactoryDto;
 import com.msa.account.local.factory.domain.entity.Factory;
 import com.msa.account.local.factory.repository.FactoryRepository;
+import com.msa.common.global.util.AuthorityUserRoleUtil;
 import com.msa.common.global.util.CustomPage;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,7 +32,6 @@ public class FactoryService {
         this.factoryRepository = factoryRepository;
         this.goldHarryRepository = goldHarryRepository;
     }
-
 
     @Transactional(readOnly = true)
     public AccountDto.AccountSingleResponse getFactoryInfo(String factoryId) {
@@ -141,5 +140,9 @@ public class FactoryService {
             return factoryRepository.findAllFactoryExcel();
         }
         throw new NotAuthorityException(NO_ROLE);
+    }
+
+    public List<FactoryDto.ApiFactoryInfo> findAllFactory() {
+        return factoryRepository.findAllFactory();
     }
 }

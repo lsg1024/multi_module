@@ -37,7 +37,7 @@ public class UserFeignClient {
             throw e;
 
         } catch (Exception e) {
-            throw new AuthenticationServiceException("알 수 없는 인증 오류가 발생했습니다.");
+            throw new IllegalStateException("알수 없는 서버 연결 에러 발생");
         }
     }
 }

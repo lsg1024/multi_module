@@ -17,18 +17,18 @@ spring:
     consumer:
       auto-offset-reset: earliest
     bootstrap-servers: ${kafka.uri}
-  data:
-    redis:
-      cluster:
-        nodes:
-          - ${server.url}:${redis_master.port1},
-          - ${server.url}:${redis_master.port2},
-          - ${server.url}:${redis_master.port3},
-        max-redirects: 3
-  cache:
-    type: redis
-    redis:
-      enable-statistics: true
+#  data:
+#    redis:
+#      cluster:
+#        nodes:
+#          - ${server.url}:${redis_master.port1},
+#          - ${server.url}:${redis_master.port2},
+#          - ${server.url}:${redis_master.port3},
+#        max-redirects: 3
+#  cache:
+#    type: redis
+#    redis:
+#      enable-statistics: true
 
   jpa:
     hibernate:
