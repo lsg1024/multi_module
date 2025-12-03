@@ -1,4 +1,4 @@
-package com.msa.product.global.batch;
+package com.msa.product.global.batch.product;
 
 import com.msa.product.local.product.dto.ProductBatchDto;
 import com.msa.product.local.product.entity.Product;

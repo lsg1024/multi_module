@@ -6,6 +6,10 @@ import com.msa.product.local.product.dto.ProductImageDto;
 import com.msa.product.local.product.service.ProductImageService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -28,9 +32,36 @@ public class ProductImageController {
     @Value("${FILE_UPLOAD_PATH}")
     private String baseUploadPath;
     private final ProductImageService productImageService;
+    private final JobLauncher jobLauncher;
 
-    public ProductImageController(ProductImageService productImageService) {
+    private final Job imageMigrationJob;
+
+
+    public ProductImageController(ProductImageService productImageService, JobLauncher jobLauncher, Job imageMigrationJob) {
         this.productImageService = productImageService;
+        this.jobLauncher = jobLauncher;
+        this.imageMigrationJob = imageMigrationJob;
+    }
+
+
+    @PostMapping("/products/images/migration")
+    public ResponseEntity<ApiResponse<String>> runImageMigration() {
+
+        try {
+            JobParameters params = new JobParametersBuilder()
+                    .addString("tenant", TenantContext.getTenant())
+                    .addLong("time", System.currentTimeMillis())
+                    .toJobParameters();
+
+            jobLauncher.run(imageMigrationJob, params);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("마이그레이션 실패: " + e.getMessage()));
+        }
+
+        return ResponseEntity.ok(ApiResponse.success("이미지 정리 작업이 시작되었습니다."));
     }
 
     @GetMapping("/products/images/**")

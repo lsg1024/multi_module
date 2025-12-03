@@ -1,4 +1,4 @@
-package com.msa.product.global.batch;
+package com.msa.product.global.batch.other;
 
 import com.msa.product.local.stone.stone.dto.StoneDto;
 import com.msa.product.local.stone.stone.dto.StoneWorkGradePolicyDto;

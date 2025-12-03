@@ -1,4 +1,4 @@
-package com.msa.product.global.batch;
+package com.msa.product.global.batch.other;
 
 import com.msa.product.global.kafka.KafkaProducer;
 import lombok.extern.slf4j.Slf4j;
