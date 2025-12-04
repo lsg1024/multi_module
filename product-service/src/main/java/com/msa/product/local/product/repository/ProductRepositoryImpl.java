@@ -233,6 +233,11 @@ public class ProductRepositoryImpl implements CustomProductRepository {
     }
     @Override
     public ProductDetailDto findProductDetail(Long productId, WorkGrade grade) {
+
+        List<WorkGrade> candidateGrades = Arrays.stream(WorkGrade.values())
+                .filter(g -> g.ordinal() <= grade.ordinal())
+                .toList();
+
         return query
                 .select(new QProductDetailDto(
                         product.productId,
@@ -246,16 +251,18 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                         productWorkGradePolicy.laborCost
                 ))
                 .from(product)
-                .join(product.classification, classification)
-                .join(product.setType, setType)
-                .join(product.productWorkGradePolicyGroups, productWorkGradePolicyGroup)
-                .join(productWorkGradePolicyGroup.color, color)
-                .join(productWorkGradePolicyGroup.gradePolicies, productWorkGradePolicy)
+                .leftJoin(product.classification, classification)
+                .leftJoin(product.setType, setType)
+                .leftJoin(product.productWorkGradePolicyGroups, productWorkGradePolicyGroup)
+                .leftJoin(productWorkGradePolicyGroup.color, color)
+                .leftJoin(productWorkGradePolicyGroup.gradePolicies, productWorkGradePolicy)
                 .where(
                         product.productId.eq(productId),
                         productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue(),
-                        productWorkGradePolicy.grade.eq(grade)
+                        productWorkGradePolicy.grade.in(candidateGrades)
                 )
+                .orderBy(productWorkGradePolicy.grade.desc())
+                .limit(1)
                 .fetchOne();
 
     }

@@ -41,7 +41,7 @@ public interface ProductFeignClient {
             @PathVariable("materialId") Long materialId
     );
 
-    @GetMapping("/product/{productId}/{grade}")
+    @GetMapping("/api/product/{productId}/{grade}")
     ResponseEntity<ApiResponse<ProductDetailDto>> getProductInfo(
             @RequestHeader Map<String, Object> headers,
             @PathVariable("productId") Long productId,

@@ -56,7 +56,7 @@ public class SaleController {
             @RequestParam(name = "id") Long flowCode,
             @Valid @RequestBody SaleDto.updateRequest updateDto) {
         saleService.updateSale(accessToken, eventId, flowCode, updateDto);
-        return ResponseEntity.ok(ApiResponse.success("수정완료"));
+        return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
 
     // 결제 수정

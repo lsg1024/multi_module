@@ -191,6 +191,21 @@ public class SaleService {
         }
     }
 
+    public void updatePayment(String accessToken, String eventId, Long flowCode, SaleDto.updateRequest updateDto) {
+        String tenantId = jwtUtil.getTenantId(accessToken);
+        String nickname = jwtUtil.getNickname(accessToken);
+
+        if (eventId == null || eventId.isEmpty()) {
+            throw new IllegalStateException("잘못된 형식의 요청입니다.");
+        }
+
+        try {
+            performUpdate(eventId, flowCode, updateDto, tenantId, nickname);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     // 재고 -> 판매
     public void stockToSale(String accessToken, String eventId, Long flowCode, StockDto.stockRequest stockDto) {
 
@@ -392,7 +407,6 @@ public class SaleService {
 
         createNewSale(stock, saleDate, storeId, storeName, storeHarry, grade);
         stock.updateOrderStatus(OrderStatus.SALE);
-
 
         updateNewHistory(stock.getFlowCode(), nickname, BusinessPhase.SALE);
 
