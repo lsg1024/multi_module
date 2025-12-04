@@ -29,25 +29,22 @@ public class Sale extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "SALE_ID")
     private Long saleId;
-
     @Tsid
     @Column(name = "SALE_CODE")
     private Long saleCode;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "SALE_STATUS")
     private SaleStatus saleStatus;
-
     @Column(name = "ACCOUNT_ID", nullable = false)
     private Long accountId;
-
     @Column(name = "ACCOUNT_NAME", nullable = false)
     private String accountName;
-
     @Column(name = "ACCOUNT_HARRY", precision = 10, scale = 2)
     private BigDecimal accountHarry;
     @Column(name = "ACCOUNT_GRADE")
     private String accountGrade;
+    @Column(name = "ACCOUNT_GOLD_PRICE")
+    private Integer accountGoldPrice = 0;
 
     @OneToMany(mappedBy="sale", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SaleItem> items = new ArrayList<>();
@@ -63,12 +60,13 @@ public class Sale extends BaseEntity {
     }
 
     @Builder
-    public Sale(SaleStatus saleStatus, Long accountId, String accountName, BigDecimal accountHarry, String accountGrade, List<SaleItem> items) {
+    public Sale(SaleStatus saleStatus, Long accountId, String accountName, BigDecimal accountHarry, String accountGrade, Integer accountGoldPrice, List<SaleItem> items) {
         this.saleStatus = saleStatus;
         this.accountId = accountId;
         this.accountName = accountName;
         this.accountHarry = accountHarry;
         this.accountGrade = accountGrade;
+        this.accountGoldPrice = accountGoldPrice;
         this.items = items;
     }
 

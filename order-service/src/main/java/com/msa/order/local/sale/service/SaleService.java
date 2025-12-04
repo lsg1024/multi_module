@@ -279,7 +279,7 @@ public class SaleService {
                     .id(storeId)
                     .name(storeName)
                     .pureGoldBalance(pureGoldWeight.negate())
-                    .moneyBalance(saleDto.getPayAmount())
+                    .moneyBalance(saleDto.getPayAmount() * -1)
                     .build();
 
             publishAccountEvent(eventId, tenantId, storeId, dto);
@@ -586,10 +586,10 @@ public class SaleService {
         }
 
         return SalePayment.builder()
-                .cashAmount(cashAmount)
+                .cashAmount(cashAmount * -1)
                 .material(material)
                 .pureGoldWeight(pureGoldWeight.negate())
-                .goldWeight(goldWeight)
+                .goldWeight(goldWeight.negate())
                 .paymentNote(note)
                 .saleStatus(saleStatus)
                 .build();

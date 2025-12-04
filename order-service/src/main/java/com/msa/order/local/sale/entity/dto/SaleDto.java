@@ -69,7 +69,7 @@ public class SaleDto {
     public static class Request {
         private Long id;
         private String name;
-        private String harry;
+        private BigDecimal harry;
         private String grade;
         @NotBlank(message = "필수 입력값 입니다.")
         private String orderStatus;
