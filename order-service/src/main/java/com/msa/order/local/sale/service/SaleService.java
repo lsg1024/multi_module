@@ -21,7 +21,7 @@ import com.msa.order.local.sale.entity.Sale;
 import com.msa.order.local.sale.entity.SaleItem;
 import com.msa.order.local.sale.entity.SalePayment;
 import com.msa.order.local.sale.entity.dto.SaleDto;
-import com.msa.order.local.sale.entity.dto.SaleRow;
+import com.msa.order.local.sale.entity.dto.SaleItemResponse;
 import com.msa.order.local.sale.repository.CustomSaleRepository;
 import com.msa.order.local.sale.repository.SaleItemRepository;
 import com.msa.order.local.sale.repository.SalePaymentRepository;
@@ -170,28 +170,13 @@ public class SaleService {
     }
 
     @Transactional(readOnly = true)
-    public CustomPage<SaleRow> getSale(String input, String startAt, String endAt, String material, Pageable pageable) {
+    public CustomPage<SaleItemResponse> getSale(String input, String startAt, String endAt, String material, Pageable pageable) {
         SaleDto.Condition condition = new SaleDto.Condition(input, startAt, endAt, material);
         return customSaleRepository.findSales(condition, pageable);
     }
 
     // 판매 상품 수정
     public void updateSale(String accessToken, String eventId, Long flowCode, SaleDto.updateRequest updateDto) {
-        String tenantId = jwtUtil.getTenantId(accessToken);
-        String nickname = jwtUtil.getNickname(accessToken);
-
-        if (eventId == null || eventId.isEmpty()) {
-            throw new IllegalStateException("잘못된 형식의 요청입니다.");
-        }
-
-        try {
-            performUpdate(eventId, flowCode, updateDto, tenantId, nickname);
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    public void updatePayment(String accessToken, String eventId, Long flowCode, SaleDto.updateRequest updateDto) {
         String tenantId = jwtUtil.getTenantId(accessToken);
         String nickname = jwtUtil.getNickname(accessToken);
 
@@ -243,7 +228,8 @@ public class SaleService {
 
         updateNewHistory(stock.getFlowCode(), nickname, BusinessPhase.SALE);
 
-        BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeight(stockDto.getGoldWeight(), stock.getProduct().getMaterialName().toUpperCase());
+
+        BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), stock.getProduct().getMaterialName().toUpperCase(), storeHarry);
         Integer totalBalanceMoney = stock.getTotalStoneLaborCost() + stockDto.getStoneAddLaborCost() +
                 stock.getProduct().getProductLaborCost() + stockDto.getAddProductLaborCost();
 
@@ -273,7 +259,7 @@ public class SaleService {
             LocalDateTime saleDate = LocalDateTime.now();
             Long storeId = saleDto.getId();
             String storeName = saleDto.getName();
-            BigDecimal harry = new BigDecimal(saleDto.getHarry());
+            BigDecimal harry = saleDto.getHarry();
             String grade = saleDto.getGrade();
 
             Sale sale = getSale(saleDate, storeId, storeName, harry, grade);
@@ -283,7 +269,7 @@ public class SaleService {
             sale.addPayment(payment);
             salePaymentRepository.saveAndFlush(payment);
 
-            final BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeight(saleDto.getGoldWeight(), saleDto.getMaterial());
+            BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(saleDto.getGoldWeight(), saleDto.getMaterial().toUpperCase(), harry);
 
             AccountDto.updateCurrentBalance dto = AccountDto.updateCurrentBalance.builder()
                     .eventId(eventId)
@@ -292,7 +278,7 @@ public class SaleService {
                     .type("STORE")
                     .id(storeId)
                     .name(storeName)
-                    .pureGoldBalance(pureGoldWeight)
+                    .pureGoldBalance(pureGoldWeight.negate())
                     .moneyBalance(saleDto.getPayAmount())
                     .build();
 
@@ -338,7 +324,8 @@ public class SaleService {
             String storeName = saleItem.getStock().getStoreName();
             BigDecimal goldWeight = saleItem.getStock().getProduct().getGoldWeight();
             String materialName = saleItem.getStock().getProduct().getMaterialName();
-            BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeight(goldWeight, materialName);
+            BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(goldWeight.toPlainString(), materialName.toUpperCase(), sale.getAccountHarry());
+
             Integer productLaborCost = saleItem.getStock().getProduct().getProductLaborCost();
             Integer productAddLaborCost = saleItem.getStock().getProduct().getProductAddLaborCost();
             Integer totalStoneLaborCost = saleItem.getStock().getTotalStoneLaborCost();
@@ -346,7 +333,6 @@ public class SaleService {
 
             int totalLaborCost = productLaborCost + productAddLaborCost + totalStoneLaborCost + stoneAddLaborCost;
 
-            log.info("cancelSale goldWeight = {}, pureGoldWeight = {}", goldWeight, pureGoldWeight);
             updateNewHistory(newFlowCode, nickname, BusinessPhase.RETURN);
 
             // 미수액 변경
@@ -410,7 +396,7 @@ public class SaleService {
 
         updateNewHistory(stock.getFlowCode(), nickname, BusinessPhase.SALE);
 
-        BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeight(stockDto.getGoldWeight(), stockDto.getMaterialName().toUpperCase());
+        BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), stockDto.getMaterialName().toUpperCase(), storeHarry);
 
         AccountDto.updateCurrentBalance dto = AccountDto.updateCurrentBalance.builder()
                 .eventId(eventId)
@@ -504,7 +490,7 @@ public class SaleService {
 
         int moneyBalanceDelta = newTotalMoney - oldTotalMoney;
 
-        BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeight(updateDto.getGoldWeight(), stock.getProduct().getMaterialName().toUpperCase());
+        BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(updateDto.getGoldWeight(), stock.getProduct().getMaterialName().toUpperCase(), stock.getStoreHarry());
 
         AccountDto.updateCurrentBalance dto = AccountDto.updateCurrentBalance.builder()
                 .eventId(eventId)
@@ -587,7 +573,7 @@ public class SaleService {
 
         final Integer cashAmount = saleDto.getPayAmount();
         final String material = saleDto.getMaterial();
-        final BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeight(saleDto.getGoldWeight(), material);
+        BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(saleDto.getGoldWeight(), material, saleDto.getHarry());
         final BigDecimal goldWeight = new BigDecimal(saleDto.getGoldWeight());
         final String note = saleDto.getNote();
 
@@ -602,7 +588,7 @@ public class SaleService {
         return SalePayment.builder()
                 .cashAmount(cashAmount)
                 .material(material)
-                .pureGoldWeight(pureGoldWeight)
+                .pureGoldWeight(pureGoldWeight.negate())
                 .goldWeight(goldWeight)
                 .paymentNote(note)
                 .saleStatus(saleStatus)
