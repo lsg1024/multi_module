@@ -423,13 +423,13 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
                 default -> {
                     orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, orders.createAt));
-                    orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, orders.flowCode));
+                    orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, orders.orderId));
                 }
             }
         } else {
             // 정렬 조건이 없을 경우 기본 정렬
             orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, orders.createAt));
-            orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, orders.flowCode));
+            orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, orders.orderId));
         }
 
         return orderSpecifiers.toArray(new OrderSpecifier[0]);

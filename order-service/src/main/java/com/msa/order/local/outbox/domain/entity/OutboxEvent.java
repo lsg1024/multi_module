@@ -44,14 +44,4 @@ public class OutboxEvent extends BaseTimeEntity {
         this.status = EventStatus.FAILED;
     }
 
-    @Override
-    public String toString() {
-        return "OutboxEvent{" +
-                "id=" + id +
-                ", topic='" + topic + '\'' +
-                ", messageKey='" + messageKey + '\'' +
-                ", payload='" + payload + '\'' +
-                ", status=" + status +
-                '}';
-    }
 }

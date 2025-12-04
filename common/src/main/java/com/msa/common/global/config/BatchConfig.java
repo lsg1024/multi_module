@@ -15,7 +15,6 @@ public class BatchConfig extends DefaultBatchConfiguration {
     private final DataSource metaDataSource;
     private final PlatformTransactionManager metaTransactionManager;
 
-    // MetaDBConfig에서 등록한 Bean들을 주입받습니다.
     public BatchConfig(
             @Qualifier("metaDataSource") DataSource metaDataSource,
             @Qualifier("metaTransactionManager") PlatformTransactionManager metaTransactionManager) {

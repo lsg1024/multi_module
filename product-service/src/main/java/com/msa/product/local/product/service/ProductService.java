@@ -393,6 +393,7 @@ public class ProductService {
                 .filter(g -> g.getLevel().equals(grade))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
         return productRepository.findProductDetail(id, t_grade);
     }
 }

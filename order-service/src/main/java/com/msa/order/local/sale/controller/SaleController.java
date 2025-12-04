@@ -4,7 +4,7 @@ import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.AccessToken;
 import com.msa.common.global.util.CustomPage;
 import com.msa.order.local.sale.entity.dto.SaleDto;
-import com.msa.order.local.sale.entity.dto.SaleRow;
+import com.msa.order.local.sale.entity.dto.SaleItemResponse;
 import com.msa.order.local.sale.service.SaleService;
 import com.msa.order.local.stock.dto.StockDto;
 import com.msa.order.local.stock.service.StockService;
@@ -37,14 +37,14 @@ public class SaleController {
 
     //판매 관리 데이터 목록들
     @GetMapping("/sales")
-    public ResponseEntity<ApiResponse<CustomPage<SaleRow>>> getSales(
+    public ResponseEntity<ApiResponse<CustomPage<SaleItemResponse>>> getSales(
             @RequestParam(name = "search", required = false) String input,
             @RequestParam(name = "start") String startAt,
             @RequestParam(name = "end") String endAt,
             @RequestParam(name = "type", required = false) String material,
             @PageableDefault(size = 20) Pageable pageable) {
 
-        CustomPage<SaleRow> sale = saleService.getSale(input,startAt, endAt, material, pageable);
+        CustomPage<SaleItemResponse> sale = saleService.getSale(input,startAt, endAt, material, pageable);
         return ResponseEntity.ok(ApiResponse.success(sale));
     }
 
@@ -56,19 +56,8 @@ public class SaleController {
             @RequestParam(name = "id") Long flowCode,
             @Valid @RequestBody SaleDto.updateRequest updateDto) {
         saleService.updateSale(accessToken, eventId, flowCode, updateDto);
-        return ResponseEntity.ok(ApiResponse.success("수정완료"));
+        return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
-
-    // 결제 수정
-//    @PatchMapping("/sales/payment")
-//    public ResponseEntity<ApiResponse<String>> updatePayment(
-//            @AccessToken String accessToken,
-//            @RequestHeader(name = "Idempotency-Key") String eventId,
-//            @RequestParam(name = "id") Long flowCode,
-//            @Valid @RequestBody SaleDto.Request updateDto) {
-//        saleService.updatePayment(accessToken, eventId, flowCode, orderStatus, updateDto);
-//    }
-
 
     //주문 -> 판매
     @PatchMapping("/orders/order_sale")

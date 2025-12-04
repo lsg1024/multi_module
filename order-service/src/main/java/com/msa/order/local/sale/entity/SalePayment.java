@@ -12,7 +12,6 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
 
 @Getter
 @Entity
@@ -62,8 +61,6 @@ public class SalePayment extends BaseEntity {
     @Column(name = "PAYMENT_DELETED", nullable = false)
     private boolean deleted = false;
 
-    @Column(name = "DELETED_AT")
-    private OffsetDateTime deletedAt;
     public void setSale(Sale sale) {
         this.sale = sale;
     }

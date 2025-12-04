@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.util.List;
 import java.util.Map;
 
-@FeignClient(name = "product", fallbackFactory = ProductFeignClientFallbackFactory.class)
+@FeignClient(name = "product", path = "/api", fallbackFactory = ProductFeignClientFallbackFactory.class)
 public interface ProductFeignClient {
 
     @GetMapping("/classification/{classificationId}")
@@ -48,7 +48,7 @@ public interface ProductFeignClient {
             @PathVariable("grade") String grade
     );
 
-    @GetMapping("/api/products/images")
+    @GetMapping("/products/images")
     ResponseEntity<ApiResponse<Map<Long, ProductImageDto>>> getProductImages(
             @RequestHeader Map<String, Object> headers,
             @RequestParam("ids") List<Long> productIds

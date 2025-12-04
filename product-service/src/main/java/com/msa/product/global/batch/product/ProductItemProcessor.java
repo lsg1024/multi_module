@@ -1,4 +1,4 @@
-package com.msa.product.global.batch;
+package com.msa.product.global.batch.product;
 
 import com.msa.product.global.feign_client.client.FactoryClient;
 import com.msa.product.local.classification.repository.ClassificationRepository;

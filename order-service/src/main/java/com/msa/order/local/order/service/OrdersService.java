@@ -322,6 +322,7 @@ public class OrdersService {
                 .eventId(UUID.randomUUID().toString())
                 .tenantId(tenantId)
                 .token(accessToken)
+                .orderStatus(orderStatus)
                 .flowCode(order.getFlowCode())
                 .nickname(nickname);
 
