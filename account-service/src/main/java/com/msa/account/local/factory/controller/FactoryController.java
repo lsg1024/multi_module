@@ -182,9 +182,7 @@ public class FactoryController {
 
     @GetMapping("/api/factories")
     public ResponseEntity<ApiResponse<List<FactoryDto.ApiFactoryInfo>>> getFactoryAll() {
-        log.info("/api/factories");
         List<FactoryDto.ApiFactoryInfo> factoryInfos = factoryService.findAllFactory();
-        log.info("factoryInfo value = {}", factoryInfos.size());
         return ResponseEntity.ok(ApiResponse.success(factoryInfos));
     }
 }

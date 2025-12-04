@@ -51,7 +51,7 @@ public class KafkaConsumer {
         try {
             OrderUpdateRequest orderUpdateRequest = objectMapper.readValue(message, OrderUpdateRequest.class);
 
-            TenantContext.setTenant(orderUpdateRequest.getToken());
+            TenantContext.setTenant(orderUpdateRequest.getTenantId());
 
             kafkaOrderService.updateHandle(orderUpdateRequest);
         } catch (Exception e) {

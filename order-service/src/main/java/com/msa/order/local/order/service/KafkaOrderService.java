@@ -176,10 +176,6 @@ public class KafkaOrderService {
         Orders order = ordersRepository.findByFlowCode(updateRequest.getFlowCode())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        if (order.getOrderStatus() != OrderStatus.WAIT) {
-            return;
-        }
-
         StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
@@ -248,6 +244,10 @@ public class KafkaOrderService {
                     assistantStoneInfo != null ? assistantStoneInfo.getAssistantStoneName() : null,
                     updateRequest.getAssistantStoneCreateAt()
             );
+
+            if (order.getOrderStatus() == OrderStatus.WAIT) {
+                order.updateOrderStatus(OrderStatus.valueOf(updateRequest.getOrderStatus()));
+            }
 
             ordersRepository.save(order);
 

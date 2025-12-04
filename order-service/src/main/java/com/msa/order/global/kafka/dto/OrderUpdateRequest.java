@@ -13,7 +13,7 @@ public class OrderUpdateRequest {
     private Long flowCode;
     private String tenantId;
     private String token;
-
+    private String orderStatus;
     private Long storeId;
     private Long factoryId;
     private Long productId;
@@ -26,11 +26,12 @@ public class OrderUpdateRequest {
     private String nickname;
 
     @Builder
-    public OrderUpdateRequest(String eventId, Long flowCode, String tenantId, String token, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, boolean assistantStone, Long assistantStoneId, OffsetDateTime assistantStoneCreateAt, String nickname) {
+    public OrderUpdateRequest(String eventId, Long flowCode, String tenantId, String token, String orderStatus, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, boolean assistantStone, Long assistantStoneId, OffsetDateTime assistantStoneCreateAt, String nickname) {
         this.eventId = eventId;
         this.flowCode = flowCode;
         this.tenantId = tenantId;
         this.token = token;
+        this.orderStatus = orderStatus;
         this.storeId = storeId;
         this.factoryId = factoryId;
         this.productId = productId;
