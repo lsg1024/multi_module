@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 @Profile("dev")
 @Component
 public class CurrentTenantIdentifierResolverImpl implements CurrentTenantIdentifierResolver {
-
     @Override
     public String resolveCurrentTenantIdentifier() {
         String tenant = TenantContext.getTenant();
