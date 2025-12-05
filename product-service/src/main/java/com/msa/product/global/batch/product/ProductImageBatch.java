@@ -72,7 +72,6 @@ public class ProductImageBatch {
     @Bean
     @StepScope
     public ListItemReader<File> tempFileReader() {
-        // 컨테이너 내부 경로: /app/images/temp
         Path sourcePath = Paths.get(baseUploadPath, "temp");
         File sourceDir = sourcePath.toFile();
 
@@ -121,7 +120,6 @@ public class ProductImageBatch {
                 String productName = (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
                 String extension = (dotIndex == -1) ? ".jpg" : fileName.substring(dotIndex);
 
-                // 파일명(상품명) 공백 제거 등 전처리 필요시 추가
                 Long productId = productCache.get(productName.trim());
 
                 if (productId == null) {

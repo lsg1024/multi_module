@@ -23,8 +23,9 @@ public class ProductDto {
     @NotNull(message = "필수 입력 값입니다.")
     @Positive(message = "factoryId는 1 이상의 정수여야 합니다.")
     private Long factoryId;
+    @NotBlank(message = "제조사 품명은 필수 입력값입니다.")
     private String productFactoryName;
-    @NotBlank(message = "필수 입력 값입니다.")
+    @NotBlank(message = "제품명은 필수 입력값입니다.")
     private String productName;
     private String setType; // setId
     private String classification; // classificationId
@@ -76,7 +77,9 @@ public class ProductDto {
     @NoArgsConstructor
     public static class Update {
         private Long factoryId;
+        @NotBlank(message = "제조사 품명은 필수 입력값입니다.")
         private String productFactoryName;
+        @NotBlank(message = "제품명은 필수 입력값입니다.")
         private String productName;
         private String setType; // setId
         private String classification; // classificationId
