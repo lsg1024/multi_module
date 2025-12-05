@@ -44,7 +44,7 @@ public class Sale extends BaseEntity {
     @Column(name = "ACCOUNT_GRADE")
     private String accountGrade;
     @Column(name = "ACCOUNT_GOLD_PRICE")
-    private Integer accountGoldPrice = 0;
+    private Integer accountGoldPrice;
 
     @OneToMany(mappedBy="sale", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SaleItem> items = new ArrayList<>();
@@ -57,6 +57,7 @@ public class Sale extends BaseEntity {
         if (saleCode == null) {
             this.saleCode = TsidCreator.getTsid().toLong();
         }
+        accountGoldPrice = 0;
     }
 
     @Builder

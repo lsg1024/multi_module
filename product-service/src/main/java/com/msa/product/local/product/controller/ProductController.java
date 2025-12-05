@@ -93,7 +93,7 @@ public class ProductController {
     public ResponseEntity<ApiResponse<String>> updateProduct(
             @AccessToken String accessToken,
             @PathVariable(name = "id") Long productId,
-            @RequestBody ProductDto.Update productDto) {
+            @Valid @RequestBody ProductDto.Update productDto) {
         productService.updateProduct(accessToken, productId, productDto);
 
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
