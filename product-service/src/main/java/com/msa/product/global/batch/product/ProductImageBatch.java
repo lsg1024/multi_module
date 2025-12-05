@@ -1,9 +1,11 @@
 package com.msa.product.global.batch.product;
 
+import com.msa.common.global.tenant.TenantContext;
 import com.msa.product.local.product.entity.Product;
 import com.msa.product.local.product.repository.ProductRepository;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.StepExecution;
@@ -27,7 +29,6 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -98,19 +99,24 @@ public class ProductImageBatch {
 
             @BeforeStep
             public void beforeStep(StepExecution stepExecution) {
-                this.tenant = stepExecution.getJobParameters().getString("tenant");
+                tenant = TenantContext.getTenant();
                 if (!StringUtils.hasText(this.tenant)) {
                     throw new IllegalArgumentException("Tenant 정보가 없습니다.");
                 }
 
                 log.info(">>>> [Batch] 상품 데이터 캐싱 시작 (Name -> ID)");
-                productCache = productRepository.findAll().stream()
-                        .collect(Collectors.toMap(
-                                Product::getProductName,
-                                Product::getProductId,
-                                (oldVal, newVal) -> oldVal
-                        ));
-                log.info(">>>> [Batch] 캐싱 완료. 상품 수: {}", productCache.size());
+                try {
+                    productCache = productRepository.findAll().stream()
+                            .collect(Collectors.toMap(
+                                    Product::getProductName,
+                                    Product::getProductId,
+                                    (oldVal, newVal) -> oldVal
+                            ));
+                    log.info(">>>> [Batch] 캐싱 완료. 상품 수: {}", productCache.size());
+                } finally {
+                    TenantContext.clear();
+                }
+
             }
 
             @Override
@@ -139,7 +145,7 @@ public class ProductImageBatch {
         return items -> {
             for (ImageMoveDto item : items) {
                 try {
-                    Path productDir = Paths.get(baseUploadPath, item.getTenant(), String.valueOf(item.getProductId()));
+                    Path productDir = Paths.get(baseUploadPath, item.getTenant(), "products", String.valueOf(item.getProductId()));
 
                     if (!Files.exists(productDir)) {
                         Files.createDirectories(productDir);
@@ -149,23 +155,30 @@ public class ProductImageBatch {
                     try (var stream = Files.list(productDir)) {
                         fileCount = stream.count();
                     }
-
                     String newFileName = (fileCount + 1) + item.getExtension();
-                    Path targetFile = productDir.resolve(newFileName);
+                    Path targetPath = productDir.resolve(newFileName);
 
-                    Files.move(item.getFile().toPath(), targetFile, StandardCopyOption.REPLACE_EXISTING);
+                    Thumbnails.of(item.getFile())
+                            .size(300, 300)
+                            .outputQuality(1)
+                            .toFile(targetPath.toFile());
 
-                    log.info("이동 완료: {} -> {}/{}", item.getFile().getName(), item.getProductId(), newFileName);
+                    if (Files.exists(targetPath)) {
+                        Files.delete(item.getFile().toPath());
+                        log.info("가공 이동 완료: {} -> {} (Size Optimized)", item.getFile().getName(), targetPath);
+                    }
 
                 } catch (Exception e) {
-                    log.error("파일 이동 실패: " + item.getFile().getName(), e);
+                    log.error("이미지 처리 실패: " + item.getFile().getName(), e);
                 }
             }
         };
     }
 
-    @lombok.Data
-    @lombok.AllArgsConstructor
+    @Getter
+    @Setter
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class ImageMoveDto {
         private File file;
         private Long productId;

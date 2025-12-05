@@ -48,6 +48,9 @@ dependencies {
     implementation 'org.springframework.kafka:spring-kafka'
     implementation 'org.springframework.cloud:spring-cloud-starter-bus-kafka'
 
+    //image resize
+    implementation 'net.coobird:thumbnailator:0.4.20'
+
     //db
     runtimeOnly 'com.h2database:h2'
     testRuntimeOnly 'com.h2database:h2'
