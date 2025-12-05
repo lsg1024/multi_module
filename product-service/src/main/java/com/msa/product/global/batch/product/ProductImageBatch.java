@@ -9,7 +9,7 @@ import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.StepExecution;
-import org.springframework.batch.core.annotation.BeforeStep;
+import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.core.configuration.annotation.JobScope;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -58,18 +58,19 @@ public class ProductImageBatch {
             JobRepository jobRepository,
             PlatformTransactionManager transactionManager,
             ItemReader<File> tempFileReader,
-            ItemProcessor<File, ImageMoveDto> tempImageProcessor,
+            ProductImageProcessor tempImageProcessor,
             ItemWriter<ImageMoveDto> tempImageWriter) {
 
         return new StepBuilder("imageMigrationStep", jobRepository)
                 .<File, ImageMoveDto>chunk(100, transactionManager)
                 .reader(tempFileReader)
                 .processor(tempImageProcessor)
+                .listener(tempImageProcessor)
                 .writer(tempImageWriter)
                 .build();
     }
 
-    // 1. Reader: temp 폴더의 파일 읽기
+    // 1. Reader
     @Bean
     @StepScope
     public ListItemReader<File> tempFileReader() {
@@ -88,57 +89,12 @@ public class ProductImageBatch {
         return new ListItemReader<>(fileList);
     }
 
-    // 2. Processor: 파일명 -> ProductId 매핑
     @Bean
     @StepScope
-    public ItemProcessor<File, ImageMoveDto> tempImageProcessor() {
-        return new ItemProcessor<File, ImageMoveDto>() {
-
-            private Map<String, Long> productCache;
-            private String tenant;
-
-            @BeforeStep
-            public void beforeStep(StepExecution stepExecution) {
-                tenant = TenantContext.getTenant();
-                if (!StringUtils.hasText(this.tenant)) {
-                    throw new IllegalArgumentException("Tenant 정보가 없습니다.");
-                }
-
-                log.info(">>>> [Batch] 상품 데이터 캐싱 시작 (Name -> ID)");
-                try {
-                    productCache = productRepository.findAll().stream()
-                            .collect(Collectors.toMap(
-                                    Product::getProductName,
-                                    Product::getProductId,
-                                    (oldVal, newVal) -> oldVal
-                            ));
-                    log.info(">>>> [Batch] 캐싱 완료. 상품 수: {}", productCache.size());
-                } finally {
-                    TenantContext.clear();
-                }
-
-            }
-
-            @Override
-            public ImageMoveDto process(File file) {
-                String fileName = file.getName();
-                int dotIndex = fileName.lastIndexOf('.');
-                String productName = (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
-                String extension = (dotIndex == -1) ? ".jpg" : fileName.substring(dotIndex);
-
-                Long productId = productCache.get(productName.trim());
-
-                if (productId == null) {
-                    log.warn("매칭되는 상품 없음 (Skip): {}", fileName);
-                    return null;
-                }
-
-                return new ImageMoveDto(file, productId, extension, tenant);
-            }
-        };
+    public ProductImageProcessor tempImageProcessor() {
+        return new ProductImageProcessor(productRepository);
     }
 
-    // 3. Writer: 폴더 생성 및 이동 (Rename)
     @Bean
     @StepScope
     public ItemWriter<ImageMoveDto> tempImageWriter() {
@@ -165,7 +121,7 @@ public class ProductImageBatch {
 
                     if (Files.exists(targetPath)) {
                         Files.delete(item.getFile().toPath());
-                        log.info("가공 이동 완료: {} -> {} (Size Optimized)", item.getFile().getName(), targetPath);
+                        log.info("가공 이동 완료: {} -> {}", item.getFile().getName(), targetPath);
                     }
 
                 } catch (Exception e) {
@@ -184,5 +140,58 @@ public class ProductImageBatch {
         private Long productId;
         private String extension;
         private String tenant;
+    }
+
+    @RequiredArgsConstructor
+    public static class ProductImageProcessor implements ItemProcessor<File, ImageMoveDto>, StepExecutionListener {
+
+        private final ProductRepository productRepository;
+        private Map<String, Long> productCache;
+        private String tenant;
+
+        @Override
+        public void beforeStep(StepExecution stepExecution) {
+            this.tenant = stepExecution.getJobParameters().getString("tenant");
+
+            if (!StringUtils.hasText(this.tenant)) {
+                this.tenant = TenantContext.getTenant();
+            }
+
+            if (!StringUtils.hasText(this.tenant)) {
+                throw new IllegalArgumentException("Tenant 정보가 없습니다.");
+            }
+
+            TenantContext.setTenant(this.tenant);
+
+            log.info(">>>> [Batch] 상품 데이터 캐싱 시작 (Tenant: {})", this.tenant);
+            try {
+                productCache = productRepository.findAll().stream()
+                        .collect(Collectors.toMap(
+                                Product::getProductName,
+                                Product::getProductId,
+                                (oldVal, newVal) -> oldVal
+                        ));
+                log.info(">>>> [Batch] 캐싱 완료. 상품 수: {}", productCache.size());
+            } finally {
+                TenantContext.clear();
+            }
+        }
+
+        @Override
+        public ImageMoveDto process(File file) {
+            String fileName = file.getName();
+            int dotIndex = fileName.lastIndexOf('.');
+            String productName = (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
+            String extension = (dotIndex == -1) ? ".jpg" : fileName.substring(dotIndex);
+
+            Long productId = productCache.get(productName.trim());
+
+            if (productId == null) {
+                log.warn("매칭되는 상품 없음 (Skip): {}", fileName);
+                return null;
+            }
+
+            return new ImageMoveDto(file, productId, extension, tenant);
+        }
     }
 }
