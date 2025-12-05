@@ -135,7 +135,9 @@ jobs:
   deploy-eureka:
     needs: [check-changes, verify-config-server]
 
-    if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.eureka, 'true') || contains(needs.check-changes.outputs.common, 'true'))
+    if: needs.verify-config-server.result == 'success' &&
+      (needs.check-changes.outputs.eureka == 'true' || needs.check-changes.outputs.common == 'true')
+
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
@@ -196,7 +198,8 @@ jobs:
 
   deploy-api-gateway:
     needs: [check-changes, verify-config-server]
-    if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.api-gateway, 'true') || contains(needs.check-changes.outputs.common, 'true'))
+    if: needs.verify-config-server.result == 'success' &&
+      (needs.check-changes.outputs.api-gateway == 'true' || needs.check-changes.outputs.common == 'true')
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
@@ -267,7 +270,9 @@ jobs:
 
   deploy-auth:
     needs: [ check-changes, verify-config-server ]
-    if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.auth, 'true') || contains(needs.check-changes.outputs.common, 'true'))
+    if: needs.verify-config-server.result == 'success' &&
+      (needs.check-changes.outputs.auth == 'true' || needs.check-changes.outputs.common == 'true')
+
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
@@ -342,7 +347,8 @@ jobs:
 
   deploy-user:
     needs: [ check-changes, verify-config-server ]
-    if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.user, 'true') || contains(needs.check-changes.outputs.common, 'true'))
+    if: needs.verify-config-server.result == 'success' &&
+      (needs.check-changes.outputs.user == 'true' || needs.check-changes.outputs.common == 'true')
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
@@ -413,7 +419,9 @@ jobs:
 
   deploy-product:
     needs: [ check-changes, verify-config-server ]
-    if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.product, 'true') || contains(needs.check-changes.outputs.common, 'true'))
+
+    if: needs.verify-config-server.result == 'success' &&
+      (needs.check-changes.outputs.product == 'true' || needs.check-changes.outputs.common == 'true')
 
     runs-on: ubuntu-latest
     env:
@@ -499,7 +507,8 @@ jobs:
 
   deploy-account:
     needs: [ check-changes, verify-config-server ]
-    if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.account, 'true') || contains(needs.check-changes.outputs.common, 'true'))
+    if: needs.verify-config-server.result == 'success' &&
+      (needs.check-changes.outputs.account == 'true' || needs.check-changes.outputs.common == 'true')
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
@@ -570,7 +579,8 @@ jobs:
 
   deploy-order:
     needs: [ check-changes, verify-config-server ]
-    if: needs.verify-config-server.result == 'success' && (contains(needs.check-changes.outputs.order, 'true') || contains(needs.check-changes.outputs.common, 'true'))
+    if: needs.verify-config-server.result == 'success' &&
+      (needs.check-changes.outputs.order == 'true' || needs.check-changes.outputs.common == 'true')
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
