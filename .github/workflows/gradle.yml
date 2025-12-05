@@ -418,9 +418,9 @@ jobs:
           EOF
 
   deploy-product:
-    needs: [ check-changes, verify-config-server ]
+    needs: [ check-changes ]
 
-    if: needs.verify-config-server.result == 'success' &&
+    if:
       (needs.check-changes.outputs.product == 'true' || needs.check-changes.outputs.common == 'true')
 
     runs-on: ubuntu-latest
