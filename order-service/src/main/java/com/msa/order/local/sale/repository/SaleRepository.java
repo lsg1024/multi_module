@@ -15,4 +15,10 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
             "where s.saleCode= :id")
     Optional<Sale> findBySaleCode(@Param("id") Long saleCode);
     Optional<Sale> findByAccountIdAndCreateDate(Long storeId, LocalDateTime saleDate);
+    @Query("select s from Sale s " +
+            "left join fetch s.salePayments " +
+            "left join fetch s.items " +
+            "where s.accountId= :id and " +
+            "s.createDate= : today")
+    Optional<Sale> findByAccountId(@Param("id") Long accountId, @Param("today") LocalDateTime today);
 }

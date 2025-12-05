@@ -43,10 +43,7 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.msa.order.global.exception.ExceptionMessage.NOT_ACCESS;
@@ -610,4 +607,9 @@ public class SaleService {
         statusHistoryRepository.save(statusHistory);
     }
 
+    public String checkBeforeSale(Long accountId) {
+        Optional<Sale> sale = saleRepository.findByAccountId(accountId, LocalDateTime.now());
+
+        return sale.map(value -> value.getSaleCode().toString()).orElse("");
+    }
 }

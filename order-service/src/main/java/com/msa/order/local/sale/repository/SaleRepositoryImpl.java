@@ -247,7 +247,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                         Expressions.nullExpression(String.class),
                         finalPureGoldWeight,
                         Expressions.nullExpression(BigDecimal.class),
-                        Expressions.nullExpression(BigDecimal.class),
+                        Expressions.constant(BigDecimal.ONE),
                         salePayment.cashAmount.intValue(),
                         Expressions.nullExpression(Integer.class),
                         Expressions.nullExpression(String.class),

@@ -48,6 +48,15 @@ public class SaleController {
         return ResponseEntity.ok(ApiResponse.success(sale));
     }
 
+    //오늘 판매 관리 데이터 목록 확인
+    @GetMapping("/sale/check")
+    public ResponseEntity<ApiResponse<String>> checkBeforeSale(
+            @RequestParam(name = "id") Long accountId) {
+
+        String saleCode = saleService.checkBeforeSale(accountId);
+        return ResponseEntity.ok(ApiResponse.success(saleCode));
+    }
+
     // 판매 상품 수정
     @PatchMapping("/sales/product")
     public ResponseEntity<ApiResponse<String>> updateSale(
