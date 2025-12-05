@@ -2,7 +2,9 @@ package com.msa.product.global.batch.product;
 
 import com.msa.common.global.tenant.TenantContext;
 import com.msa.product.local.product.entity.Product;
+import com.msa.product.local.product.entity.ProductImage;
 import com.msa.product.local.product.repository.ProductRepository;
+import com.msa.product.local.product.repository.image.ProductImageRepository;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
@@ -29,10 +31,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -41,6 +40,7 @@ import java.util.stream.Collectors;
 public class ProductImageBatch {
 
     private final ProductRepository productRepository;
+    private final ProductImageRepository productImageRepository;
 
     @Value("${FILE_UPLOAD_PATH}")
     private String baseUploadPath;
@@ -101,31 +101,55 @@ public class ProductImageBatch {
         return items -> {
             for (ImageMoveDto item : items) {
                 try {
-                    Path productDir = Paths.get(baseUploadPath, item.getTenant(), "products", String.valueOf(item.getProductId()));
+                    TenantContext.setTenant(item.getTenant());
 
+                    Product product = productRepository.findById(item.getProductId())
+                            .orElse(null);
+
+                    if (product == null) {
+                        log.warn("상품 ID {}를 찾을 수 없어 이미지를 저장하지 않습니다.", item.getProductId());
+                        continue;
+                    }
+
+                    String uuid = UUID.randomUUID().toString();
+                    String savedFileName = uuid + item.getExtension();
+
+                    String dbRelativePath = "/products/" + product.getProductId() + "/" + savedFileName;
+
+                    Path productDir = Paths.get(baseUploadPath, item.getTenant(), "products", String.valueOf(item.getProductId()));
                     if (!Files.exists(productDir)) {
                         Files.createDirectories(productDir);
                     }
-
-                    long fileCount;
-                    try (var stream = Files.list(productDir)) {
-                        fileCount = stream.count();
-                    }
-                    String newFileName = (fileCount + 1) + item.getExtension();
-                    Path targetPath = productDir.resolve(newFileName);
+                    Path targetPath = productDir.resolve(savedFileName);
 
                     Thumbnails.of(item.getFile())
                             .size(300, 300)
                             .outputQuality(1)
                             .toFile(targetPath.toFile());
 
-                    if (Files.exists(targetPath)) {
-                        Files.delete(item.getFile().toPath());
-                        log.info("가공 이동 완료: {} -> {}", item.getFile().getName(), targetPath);
-                    }
+                    boolean existsMain = productImageRepository.existsByProduct_ProductId(product.getProductId());
+
+                    ProductImage image = ProductImage.builder()
+                            .imagePath(dbRelativePath)
+                            .imageOriginName(item.getFile().getName())
+                            .imageName(savedFileName)
+                            .product(product)
+                            .imageMain(!existsMain)
+                            .build();
+
+                    product.addImage(image);
+                    productImageRepository.save(image);
+
+                    // (5) 성공 시 원본(Temp) 파일 삭제
+//                    if (Files.exists(targetPath)) {
+//                        Files.delete(item.getFile().toPath());
+//                        log.info("이미지 마이그레이션 완료: [DB ID={}] {} -> {}", image.getImageId(), item.getFile().getName(), savedFileName);
+//                    }
 
                 } catch (Exception e) {
-                    log.error("이미지 처리 실패: " + item.getFile().getName(), e);
+                    log.error("이미지 저장 실패: " + item.getFile().getName(), e);
+                } finally {
+                    TenantContext.clear();
                 }
             }
         };
@@ -160,8 +184,6 @@ public class ProductImageBatch {
             if (!StringUtils.hasText(this.tenant)) {
                 throw new IllegalArgumentException("Tenant 정보가 없습니다.");
             }
-
-            TenantContext.setTenant(this.tenant);
 
             log.info(">>>> [Batch] 상품 데이터 캐싱 시작 (Tenant: {})", this.tenant);
             try {
