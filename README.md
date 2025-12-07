@@ -6,6 +6,22 @@
 프로젝트 진행 사유: 기존 사용중인 프로그램 가격 변경으로 인해 기존 제품 대체를 위해 개발
 <br>
 
+<p>Backend</p>
+Language: Java 17
+Framework: Spring Boot 3.4.7
+MSA: Spring Cloud (Eureka, Gateway, Config, OpenFeign, CircuitBreaker)
+Database: PostgreSQL, Redis (Caching, Session, Distributed Lock)
+Messaging: Apache Kafka (Event-Driven Architecture)
+Batch: Spring Batch
+ORM: JPA (Hibernate), QueryDSL
+Security: Spring Security, JWT
+
+<p>DevOps & Tools</p>
+CI/CD: GitHub Actions
+Container: Docker
+Infrastructure: Synology NAS (Deployment Target), AWS EC2 (implied)
+Migration: Flyway
+
 <h2>사용 언어 및 기술</h2>
 <div align="center">
 <p style="font-weight: bolder">사용 언어 및 프레임 워크</p>
