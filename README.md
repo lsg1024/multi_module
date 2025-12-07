@@ -6,7 +6,7 @@
 프로젝트 진행 사유: 기존 사용중인 프로그램 가격 변경으로 인해 기존 제품 대체를 위해 개발
 <br>
 
-<p>Backend</p>
+<h2>Backend</h2>
 Language: Java 17<br>
 Framework: Spring Boot 3.4.7<br>
 MSA: Spring Cloud (Eureka, Gateway, Config, OpenFeign, CircuitBreaker)<br>
@@ -16,7 +16,7 @@ Batch: Spring Batch<br>
 ORM: JPA (Hibernate), QueryDSL<br>
 Security: Spring Security, JWT<br>
 
-<p>DevOps & Tools</p>
+<h2>DevOps & Tools</h2>
 CI/CD: GitHub Actions<br>
 Container: Docker<br>
 Infrastructure: Synology NAS (Deployment Target), AWS EC2 (implied)<br>
