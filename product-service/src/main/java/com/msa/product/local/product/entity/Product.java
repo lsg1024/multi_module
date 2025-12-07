@@ -52,6 +52,9 @@ public class Product extends BaseEntity {
     @Column(name = "PRODUCT_NOTE")
     private String productNote;
 
+    @Column(name = "PRODUCT_RELATED_NUMBER")
+    private String productRelatedNumber;
+
     @Column(name = "PRODUCT_DELETED")
     private Boolean productDeleted;
 
@@ -65,7 +68,7 @@ public class Product extends BaseEntity {
     private List<ProductImage> productImages = new ArrayList<>();
 
     @Builder
-    public Product(Long productId, Long factoryId, String factoryName, String productFactoryName, String productName, BigDecimal standardWeight, String productNote, boolean productDeleted, List<ProductStone> productStones, List<ProductImage> productImages) {
+    public Product(Long productId, Long factoryId, String factoryName, String productFactoryName, String productName, BigDecimal standardWeight, String productNote, String productRelatedNumber, boolean productDeleted, List<ProductStone> productStones, List<ProductImage> productImages) {
         this.productId = productId;
         this.factoryId = factoryId;
         this.factoryName = factoryName;
@@ -73,6 +76,7 @@ public class Product extends BaseEntity {
         this.productName = productName;
         this.standardWeight = standardWeight;
         this.productNote = productNote;
+        this.productRelatedNumber = productRelatedNumber;
         this.productDeleted = productDeleted;
         this.productStones = productStones;
         this.productImages = productImages;

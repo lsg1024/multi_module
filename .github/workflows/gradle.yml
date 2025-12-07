@@ -100,13 +100,13 @@ jobs:
             docker pull $DOCKER_USERNAME/config-server:latest
             docker stop config-server || true
             docker rm config-server || true
-            docker run -d --name config-server --network msa-network --ip 172.20.0.3 -p $CONFIG_PORT:$CONFIG_PORT $DOCKER_USERNAME/config-server:latest
+            docker run -d --name config-server --network msa-network --ip 172.20.0.3 -e TZ=Asia/Seoul -p $CONFIG_PORT:$CONFIG_PORT $DOCKER_USERNAME/config-server:latest
             exit
           EOF
 
   verify-config-server:
     needs: [deploy-config]
-    if: always() && (needs.deploy-config.result == 'success' || needs.deploy-config.result == 'skipped')
+    if: (needs.deploy-config.result == 'success' || needs.deploy-config.result == 'skipped')
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
@@ -135,8 +135,7 @@ jobs:
   deploy-eureka:
     needs: [check-changes, verify-config-server]
 
-    if: needs.verify-config-server.result == 'success' &&
-      (needs.check-changes.outputs.eureka == 'true' || needs.check-changes.outputs.common == 'true')
+    if: (needs.check-changes.outputs.eureka == 'true' || needs.check-changes.outputs.common == 'true')
 
     runs-on: ubuntu-latest
     env:
@@ -192,14 +191,14 @@ jobs:
               --name eureka-service \
               --network msa-network \
               --ip 172.20.0.2 \
+              -e TZ=Asia/Seoul \
               -p ${{ secrets.EUREKA_PORT }}:${{ secrets.EUREKA_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/eureka-service:latest
           EOF
 
   deploy-api-gateway:
     needs: [check-changes, verify-config-server]
-    if: needs.verify-config-server.result == 'success' &&
-      (needs.check-changes.outputs.api-gateway == 'true' || needs.check-changes.outputs.common == 'true')
+    if: (needs.check-changes.outputs.api-gateway == 'true' || needs.check-changes.outputs.common == 'true')
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
@@ -264,14 +263,14 @@ jobs:
               --name api-gateway \
               --network msa-network \
               --ip 172.20.0.4 \
+              -e TZ=Asia/Seoul \
               -p ${{ secrets.API_GATWAY_PORT }}:${{ secrets.API_GATWAY_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/api-gateway:latest
           EOF
 
   deploy-auth:
     needs: [ check-changes, verify-config-server ]
-    if: needs.verify-config-server.result == 'success' &&
-      (needs.check-changes.outputs.auth == 'true' || needs.check-changes.outputs.common == 'true')
+    if: (needs.check-changes.outputs.auth == 'true' || needs.check-changes.outputs.common == 'true')
 
     runs-on: ubuntu-latest
     env:
@@ -341,14 +340,14 @@ jobs:
               --name auth-service \
               --network msa-network \
               --ip 172.20.0.5 \
+              -e TZ=Asia/Seoul \
               -p ${{ secrets.AUTH_PORT }}:${{ secrets.AUTH_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/auth-service:latest
           EOF
 
   deploy-user:
     needs: [ check-changes, verify-config-server ]
-    if: needs.verify-config-server.result == 'success' &&
-      (needs.check-changes.outputs.user == 'true' || needs.check-changes.outputs.common == 'true')
+    if: (needs.check-changes.outputs.user == 'true' || needs.check-changes.outputs.common == 'true')
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
@@ -413,15 +412,15 @@ jobs:
               --name user-service \
               --network msa-network \
               --ip 172.20.0.6 \
+              -e TZ=Asia/Seoul \
               -p ${{ secrets.USER_PORT }}:${{ secrets.USER_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/user-service:latest
           EOF
 
   deploy-product:
-    needs: [ check-changes, verify-config-server ]
+    needs: [ check-changes ]
 
-    if: needs.verify-config-server.result == 'success' &&
-      (needs.check-changes.outputs.product == 'true' || needs.check-changes.outputs.common == 'true')
+    if: (needs.check-changes.outputs.product == 'true' || needs.check-changes.outputs.common == 'true')
 
     runs-on: ubuntu-latest
     env:
@@ -499,6 +498,7 @@ jobs:
               --name product-service \
               --network msa-network \
               --ip 172.20.0.8 \
+              -e TZ=Asia/Seoul \
               -p ${{ secrets.PRODUCT_PORT }}:${{ secrets.PRODUCT_PORT }} \
               -v /volume1/docker/msa/product/logs:/app/logs \
               -v /volume1/docker/msa/product/images:/app/images \
@@ -507,8 +507,7 @@ jobs:
 
   deploy-account:
     needs: [ check-changes, verify-config-server ]
-    if: needs.verify-config-server.result == 'success' &&
-      (needs.check-changes.outputs.account == 'true' || needs.check-changes.outputs.common == 'true')
+    if: (needs.check-changes.outputs.account == 'true' || needs.check-changes.outputs.common == 'true')
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
@@ -573,14 +572,14 @@ jobs:
               --name account-service \
               --network msa-network \
               --ip 172.20.0.7 \
+              -e TZ=Asia/Seoul \
               -p ${{ secrets.ACCOUNT_PORT }}:${{ secrets.ACCOUNT_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/account-service:latest
           EOF
 
   deploy-order:
     needs: [ check-changes, verify-config-server ]
-    if: needs.verify-config-server.result == 'success' &&
-      (needs.check-changes.outputs.order == 'true' || needs.check-changes.outputs.common == 'true')
+    if: (needs.check-changes.outputs.order == 'true' || needs.check-changes.outputs.common == 'true')
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
@@ -649,6 +648,7 @@ jobs:
             docker run -d \
               --network msa-network \
               --ip 172.20.0.9 \
+              -e TZ=Asia/Seoul \
               --name order-service \
               -p ${{ secrets.ORDER_PORT }}:${{ secrets.ORDER_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/order-service:latest

@@ -67,7 +67,7 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
 
         BooleanExpression factoryName = name != null ? factory.factoryName.contains(name) : null;
 
-        List<FactoryDto.FactoryResponse> content = query
+        JPAQuery<FactoryDto.FactoryResponse> jpaQuery = query
                 .select(new QFactoryDto_FactoryResponse(
                         factory.factoryId,
                         factory.factoryName,
@@ -91,10 +91,14 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
                 .join(factory.address, address)
                 .join(factory.commonOption, commonOption)
                 .where(factory.factoryDeleted.isFalse().and(factoryName))
-                .orderBy(factory.factoryName.desc())
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .fetch();
+                .orderBy(factory.factoryName.desc());
+
+        if (pageable.isPaged()) {
+            jpaQuery.offset(pageable.getOffset())
+                    .limit(pageable.getPageSize());
+        }
+
+        List<FactoryDto.FactoryResponse> content = jpaQuery.fetch();
 
         JPAQuery<Long> countQuery = query
                 .select(factory.count())

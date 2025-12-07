@@ -7,6 +7,7 @@ import com.msa.product.local.product.entity.ProductImage;
 import com.msa.product.local.product.repository.ProductRepository;
 import com.msa.product.local.product.repository.image.ProductImageRepository;
 import lombok.extern.slf4j.Slf4j;
+import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -126,7 +127,11 @@ public class ProductImageService {
 
         try {
             Path targetPath = Paths.get(absoluteDirPath, fileName);
-            file.transferTo(targetPath.toFile());
+
+            Thumbnails.of(file.getInputStream())
+                    .size(300, 300)
+                    .outputQuality(1)
+                    .toFile(targetPath.toFile());
 
             boolean existsMain = productImageRepository.existsByProduct_ProductId(product.getProductId());
 

@@ -1,13 +1,17 @@
 package com.msa.product.global.batch.product;
 
+import com.msa.common.global.tenant.TenantContext;
 import com.msa.product.local.product.entity.Product;
+import com.msa.product.local.product.entity.ProductImage;
 import com.msa.product.local.product.repository.ProductRepository;
-import lombok.RequiredArgsConstructor;
+import com.msa.product.local.product.repository.image.ProductImageRepository;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.StepExecution;
-import org.springframework.batch.core.annotation.BeforeStep;
+import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.core.configuration.annotation.JobScope;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -27,11 +31,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 public class ProductImageBatch {
 
     private final ProductRepository productRepository;
+    private final ProductImageRepository productImageRepository;
 
     @Value("${FILE_UPLOAD_PATH}")
     private String baseUploadPath;
@@ -57,18 +58,19 @@ public class ProductImageBatch {
             JobRepository jobRepository,
             PlatformTransactionManager transactionManager,
             ItemReader<File> tempFileReader,
-            ItemProcessor<File, ImageMoveDto> tempImageProcessor,
+            ProductImageProcessor tempImageProcessor,
             ItemWriter<ImageMoveDto> tempImageWriter) {
 
         return new StepBuilder("imageMigrationStep", jobRepository)
                 .<File, ImageMoveDto>chunk(100, transactionManager)
                 .reader(tempFileReader)
                 .processor(tempImageProcessor)
+                .listener(tempImageProcessor)
                 .writer(tempImageWriter)
                 .build();
     }
 
-    // 1. Reader: temp 폴더의 파일 읽기
+    // 1. Reader
     @Bean
     @StepScope
     public ListItemReader<File> tempFileReader() {
@@ -87,23 +89,104 @@ public class ProductImageBatch {
         return new ListItemReader<>(fileList);
     }
 
-    // 2. Processor: 파일명 -> ProductId 매핑
     @Bean
     @StepScope
-    public ItemProcessor<File, ImageMoveDto> tempImageProcessor() {
-        return new ItemProcessor<File, ImageMoveDto>() {
+    public ProductImageProcessor tempImageProcessor() {
+        return new ProductImageProcessor(productRepository);
+    }
 
-            private Map<String, Long> productCache;
-            private String tenant;
+    @Bean
+    @StepScope
+    public ItemWriter<ImageMoveDto> tempImageWriter() {
+        return items -> {
+            for (ImageMoveDto item : items) {
+                try {
+                    TenantContext.setTenant(item.getTenant());
 
-            @BeforeStep
-            public void beforeStep(StepExecution stepExecution) {
-                this.tenant = stepExecution.getJobParameters().getString("tenant");
-                if (!StringUtils.hasText(this.tenant)) {
-                    throw new IllegalArgumentException("Tenant 정보가 없습니다.");
+                    Product product = productRepository.findById(item.getProductId())
+                            .orElse(null);
+
+                    if (product == null) {
+                        log.warn("상품 ID {}를 찾을 수 없어 이미지를 저장하지 않습니다.", item.getProductId());
+                        continue;
+                    }
+
+                    String uuid = UUID.randomUUID().toString();
+                    String savedFileName = uuid + item.getExtension();
+
+                    String dbRelativePath = "/products/" + product.getProductId() + "/" + savedFileName;
+
+                    Path productDir = Paths.get(baseUploadPath, item.getTenant(), "products", String.valueOf(item.getProductId()));
+                    if (!Files.exists(productDir)) {
+                        Files.createDirectories(productDir);
+                    }
+                    Path targetPath = productDir.resolve(savedFileName);
+
+                    Thumbnails.of(item.getFile())
+                            .size(300, 300)
+                            .outputQuality(1)
+                            .toFile(targetPath.toFile());
+
+                    boolean existsMain = productImageRepository.existsByProduct_ProductId(product.getProductId());
+
+                    ProductImage image = ProductImage.builder()
+                            .imagePath(dbRelativePath)
+                            .imageOriginName(item.getFile().getName())
+                            .imageName(savedFileName)
+                            .product(product)
+                            .imageMain(!existsMain)
+                            .build();
+
+                    product.addImage(image);
+                    productImageRepository.save(image);
+
+                    // (5) 성공 시 원본(Temp) 파일 삭제
+//                    if (Files.exists(targetPath)) {
+//                        Files.delete(item.getFile().toPath());
+//                        log.info("이미지 마이그레이션 완료: [DB ID={}] {} -> {}", image.getImageId(), item.getFile().getName(), savedFileName);
+//                    }
+
+                } catch (Exception e) {
+                    log.error("이미지 저장 실패: " + item.getFile().getName(), e);
+                } finally {
+                    TenantContext.clear();
                 }
+            }
+        };
+    }
 
-                log.info(">>>> [Batch] 상품 데이터 캐싱 시작 (Name -> ID)");
+    @Getter
+    @Setter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ImageMoveDto {
+        private File file;
+        private Long productId;
+        private String extension;
+        private String tenant;
+    }
+
+    @RequiredArgsConstructor
+    public static class ProductImageProcessor implements ItemProcessor<File, ImageMoveDto>, StepExecutionListener {
+
+        private final ProductRepository productRepository;
+        private Map<String, Long> productCache;
+        private String tenant;
+
+        @Override
+        public void beforeStep(StepExecution stepExecution) {
+            this.tenant = stepExecution.getJobParameters().getString("tenant");
+
+            if (!StringUtils.hasText(this.tenant)) {
+                this.tenant = TenantContext.getTenant();
+            }
+
+            if (!StringUtils.hasText(this.tenant)) {
+                throw new IllegalArgumentException("Tenant 정보가 없습니다.");
+            }
+
+            log.info(">>>> [Batch] 상품 데이터 캐싱 시작 (Tenant: {})", this.tenant);
+            try {
                 productCache = productRepository.findAll().stream()
                         .collect(Collectors.toMap(
                                 Product::getProductName,
@@ -111,65 +194,26 @@ public class ProductImageBatch {
                                 (oldVal, newVal) -> oldVal
                         ));
                 log.info(">>>> [Batch] 캐싱 완료. 상품 수: {}", productCache.size());
+            } finally {
+                TenantContext.clear();
+            }
+        }
+
+        @Override
+        public ImageMoveDto process(File file) {
+            String fileName = file.getName();
+            int dotIndex = fileName.lastIndexOf('.');
+            String productName = (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
+            String extension = (dotIndex == -1) ? ".jpg" : fileName.substring(dotIndex);
+
+            Long productId = productCache.get(productName.trim());
+
+            if (productId == null) {
+                log.warn("매칭되는 상품 없음 (Skip): {}", fileName);
+                return null;
             }
 
-            @Override
-            public ImageMoveDto process(File file) {
-                String fileName = file.getName();
-                int dotIndex = fileName.lastIndexOf('.');
-                String productName = (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
-                String extension = (dotIndex == -1) ? ".jpg" : fileName.substring(dotIndex);
-
-                Long productId = productCache.get(productName.trim());
-
-                if (productId == null) {
-                    log.warn("매칭되는 상품 없음 (Skip): {}", fileName);
-                    return null;
-                }
-
-                return new ImageMoveDto(file, productId, extension, tenant);
-            }
-        };
-    }
-
-    // 3. Writer: 폴더 생성 및 이동 (Rename)
-    @Bean
-    @StepScope
-    public ItemWriter<ImageMoveDto> tempImageWriter() {
-        return items -> {
-            for (ImageMoveDto item : items) {
-                try {
-                    Path productDir = Paths.get(baseUploadPath, item.getTenant(), String.valueOf(item.getProductId()));
-
-                    if (!Files.exists(productDir)) {
-                        Files.createDirectories(productDir);
-                    }
-
-                    long fileCount;
-                    try (var stream = Files.list(productDir)) {
-                        fileCount = stream.count();
-                    }
-
-                    String newFileName = (fileCount + 1) + item.getExtension();
-                    Path targetFile = productDir.resolve(newFileName);
-
-                    Files.move(item.getFile().toPath(), targetFile, StandardCopyOption.REPLACE_EXISTING);
-
-                    log.info("이동 완료: {} -> {}/{}", item.getFile().getName(), item.getProductId(), newFileName);
-
-                } catch (Exception e) {
-                    log.error("파일 이동 실패: " + item.getFile().getName(), e);
-                }
-            }
-        };
-    }
-
-    @lombok.Data
-    @lombok.AllArgsConstructor
-    public static class ImageMoveDto {
-        private File file;
-        private Long productId;
-        private String extension;
-        private String tenant;
+            return new ImageMoveDto(file, productId, extension, tenant);
+        }
     }
 }
