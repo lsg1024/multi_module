@@ -106,7 +106,7 @@ jobs:
 
   verify-config-server:
     needs: [deploy-config]
-    if: (needs.deploy-config.result == 'success' || needs.deploy-config.result == 'skipped')
+    if: always()
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
