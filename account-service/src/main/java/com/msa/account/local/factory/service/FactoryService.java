@@ -32,7 +32,6 @@ public class FactoryService {
         this.factoryRepository = factoryRepository;
         this.goldHarryRepository = goldHarryRepository;
     }
-
     @Transactional(readOnly = true)
     public AccountDto.AccountSingleResponse getFactoryInfo(String factoryId) {
         return factoryRepository.findByFactoryId(Long.valueOf(factoryId))

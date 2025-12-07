@@ -106,7 +106,7 @@ jobs:
 
   verify-config-server:
     needs: [deploy-config]
-    if: (needs.deploy-config.result == 'success' || needs.deploy-config.result == 'skipped')
+    if: always()
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
@@ -507,7 +507,10 @@ jobs:
 
   deploy-account:
     needs: [ check-changes, verify-config-server ]
-    if: (needs.check-changes.outputs.account == 'true' || needs.check-changes.outputs.common == 'true')
+    if: >-
+      always() &&
+      needs.verify-config-server.result == 'success' &&
+      (needs.check-changes.outputs.account == 'true' || needs.check-changes.outputs.common == 'true')
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
