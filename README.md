@@ -7,20 +7,20 @@
 <br>
 
 <p>Backend</p>
-Language: Java 17
-Framework: Spring Boot 3.4.7
-MSA: Spring Cloud (Eureka, Gateway, Config, OpenFeign, CircuitBreaker)
-Database: PostgreSQL, Redis (Caching, Session, Distributed Lock)
-Messaging: Apache Kafka (Event-Driven Architecture)
-Batch: Spring Batch
-ORM: JPA (Hibernate), QueryDSL
-Security: Spring Security, JWT
+Language: Java 17<br>
+Framework: Spring Boot 3.4.7<br>
+MSA: Spring Cloud (Eureka, Gateway, Config, OpenFeign, CircuitBreaker)<br>
+Database: PostgreSQL, Redis (Caching, Session, Distributed Lock)<br>
+Messaging: Apache Kafka (Event-Driven Architecture)<br>
+Batch: Spring Batch<br>
+ORM: JPA (Hibernate), QueryDSL<br>
+Security: Spring Security, JWT<br>
 
 <p>DevOps & Tools</p>
-CI/CD: GitHub Actions
-Container: Docker
-Infrastructure: Synology NAS (Deployment Target), AWS EC2 (implied)
-Migration: Flyway
+CI/CD: GitHub Actions<br>
+Container: Docker<br>
+Infrastructure: Synology NAS (Deployment Target), AWS EC2 (implied)<br>
+Migration: Flyway<br>
 
 <h2>사용 언어 및 기술</h2>
 <div align="center">
