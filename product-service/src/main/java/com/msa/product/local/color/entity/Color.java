@@ -35,6 +35,6 @@ public class Color {
         this.colorNote = colorDto.getNote();
     }
     public boolean isDeletable() {
-        return !defaultId;
+        return defaultId;
     }
 }
