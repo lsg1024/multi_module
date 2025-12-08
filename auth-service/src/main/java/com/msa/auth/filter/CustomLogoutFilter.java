@@ -81,8 +81,7 @@ public class CustomLogoutFilter extends GenericFilterBean {
 
         redisRefreshTokenService.deleteToken(owner, nickname);
 
-        String tenant = jwtUtil.getTenantId(refreshToken);
-        Cookie cookie = createCookie("refreshToken", tenant, refreshToken, 0L);
+        Cookie cookie = createCookie("refreshToken", refreshToken, 0L);
 
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
@@ -96,9 +95,9 @@ public class CustomLogoutFilter extends GenericFilterBean {
         response.getWriter().write(jsonResponse);
     }
 
-    private Cookie createCookie(String key, String tenant, String value, Long TTL) {
+    private Cookie createCookie(String key, String value, Long TTL) {
         Cookie cookie = new Cookie(key, value);
-        cookie.setDomain(tenant + cookieUrl);
+        cookie.setDomain(cookieUrl);
         cookie.setMaxAge(TTL.intValue());
         cookie.setPath("/");
         cookie.setHttpOnly(true);
