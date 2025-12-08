@@ -124,11 +124,11 @@ public class CustomLoginFilter extends UsernamePasswordAuthenticationFilter {
     }
 
     private Cookie createCookie(String value, Long TTL) {
-            Cookie cookie = new Cookie("refreshToken", value);
-            cookie.setDomain(cookieUrl);
-            cookie.setMaxAge((int) (TTL / 1000));
-            cookie.setPath("/");
-            cookie.setHttpOnly(true);
+        Cookie cookie = new Cookie("refreshToken", value);
+        cookie.setDomain(cookieUrl);
+        cookie.setMaxAge((int) (TTL / 1000));
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
         return cookie;
     }
 

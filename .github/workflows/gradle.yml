@@ -135,7 +135,10 @@ jobs:
   deploy-eureka:
     needs: [check-changes, verify-config-server]
 
-    if: (needs.check-changes.outputs.eureka == 'true' || needs.check-changes.outputs.common == 'true')
+    if: >-
+      always() &&
+      needs.verify-config-server.result == 'success' &&
+      (needs.check-changes.outputs.eureka == 'true' || needs.check-changes.outputs.common == 'true')
 
     runs-on: ubuntu-latest
     env:
@@ -198,7 +201,10 @@ jobs:
 
   deploy-api-gateway:
     needs: [check-changes, verify-config-server]
-    if: (needs.check-changes.outputs.api-gateway == 'true' || needs.check-changes.outputs.common == 'true')
+    if: >-
+      always() &&
+      needs.verify-config-server.result == 'success' &&
+      (needs.check-changes.outputs.api-gateway == 'true' || needs.check-changes.outputs.common == 'true')
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
@@ -270,7 +276,10 @@ jobs:
 
   deploy-auth:
     needs: [ check-changes, verify-config-server ]
-    if: (needs.check-changes.outputs.auth == 'true' || needs.check-changes.outputs.common == 'true')
+    if: >-
+      always() &&
+      needs.verify-config-server.result == 'success' &&
+      (needs.check-changes.outputs.auth == 'true' || needs.check-changes.outputs.common == 'true')
 
     runs-on: ubuntu-latest
     env:
@@ -347,7 +356,10 @@ jobs:
 
   deploy-user:
     needs: [ check-changes, verify-config-server ]
-    if: (needs.check-changes.outputs.user == 'true' || needs.check-changes.outputs.common == 'true')
+    if: >-
+      always() &&
+      needs.verify-config-server.result == 'success' &&
+      (needs.check-changes.outputs.user == 'true' || needs.check-changes.outputs.common == 'true')
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
@@ -418,9 +430,12 @@ jobs:
           EOF
 
   deploy-product:
-    needs: [ check-changes ]
+    needs: [ check-changes, verify-config-server ]
 
-    if: (needs.check-changes.outputs.product == 'true' || needs.check-changes.outputs.common == 'true')
+    if: >-
+      always() &&
+      needs.verify-config-server.result == 'success' &&
+      (needs.check-changes.outputs.product == 'true' || needs.check-changes.outputs.common == 'true')
 
     runs-on: ubuntu-latest
     env:
@@ -582,7 +597,10 @@ jobs:
 
   deploy-order:
     needs: [ check-changes, verify-config-server ]
-    if: (needs.check-changes.outputs.order == 'true' || needs.check-changes.outputs.common == 'true')
+    if: >-
+      always() &&
+      needs.verify-config-server.result == 'success' &&
+      (needs.check-changes.outputs.order == 'true' || needs.check-changes.outputs.common == 'true')
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul

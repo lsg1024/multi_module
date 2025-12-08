@@ -38,6 +38,6 @@ public class Material {
     }
 
     public boolean isDeletable() {
-        return !defaultId;
+        return defaultId;
     }
 }

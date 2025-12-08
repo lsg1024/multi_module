@@ -71,10 +71,6 @@ public class MaterialService {
             throw new IllegalArgumentException(IS_EXIST);
         }
 
-        if (material.isDeletable()) {
-            throw new IllegalArgumentException(CANNOT_DELETE_DEFAULT);
-        }
-
         material.updateMaterial(materialDto);
     }
 
