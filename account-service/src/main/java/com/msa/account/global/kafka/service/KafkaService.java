@@ -59,19 +59,17 @@ public class KafkaService {
             throw new IllegalArgumentException("Unknown balance type: " + type);
         }
 
-        if (!"SALE".equals(saleType)) {
+        TransactionHistory history = TransactionHistory.builder()
+                .eventId(eventId)
+                .transactionType(saleType)
+                .goldAmount(pureGoldAmount)
+                .moneyAmount(moneyAmount)
+                .store(store)
+                .factory(factory)
+                .build();
 
-            TransactionHistory history = TransactionHistory.builder()
-                    .eventId(eventId)
-                    .transactionType(saleType)
-                    .goldAmount(pureGoldAmount)
-                    .moneyAmount(moneyAmount)
-                    .store(store)
-                    .factory(factory)
-                    .build();
+        transactionHistoryRepository.save(history);
 
-            transactionHistoryRepository.save(history);
-        }
     }
 
 }

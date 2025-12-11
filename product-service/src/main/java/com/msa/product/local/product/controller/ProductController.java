@@ -42,6 +42,12 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.success("생성 완료", productId.toString()));
     }
 
+    /**
+     * 서버 관리자용 대량 등록 메서드
+     * @param accessToken 배치 처리 과정에 tenant 추출
+     * @param file 상품 json 코드
+     * @return 저장 응답
+     */
     @PostMapping("/products/batch")
     public ResponseEntity<ApiResponse<String>> createBatchProduct(
             @AccessToken String accessToken,
@@ -83,9 +89,11 @@ public class ProductController {
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "classification", required = false) String classificationId,
             @RequestParam(name = "setType", required = false) String setTypeId,
+            @RequestParam(name = "sortField", required = false) String sortField,
+            @RequestParam(name = "sort", required = false) String sort,
             @RequestParam(name = "level", required = false) String level,
             @PageableDefault(size = 12) Pageable pageable) {
-        CustomPage<ProductDto.Page> products = productService.getProducts(productName, factoryName, classificationId, setTypeId, pageable, level);
+        CustomPage<ProductDto.Page> products = productService.getProducts(productName, factoryName, classificationId, setTypeId, pageable, sortField, sort, level);
         return ResponseEntity.ok(ApiResponse.success(products));
     }
 

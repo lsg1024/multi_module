@@ -32,4 +32,9 @@ public class TransactionHistoryService {
         }
         return currentBalance;
     }
+
+    @Transactional(readOnly = true)
+    public void findAccountPurchase(String start, String end, String accountType, String accountName) {
+        transactionHistoryRepository.findTranscationHistory(start, end, accountType, accountName);
+    }
 }
