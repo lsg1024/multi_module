@@ -36,11 +36,11 @@ public class FactoryDto {
         private String factoryNote;
         private String address;
         private String tradeType;
-        private String level;
+        private String grade;
         private String goldHarryLoss;
 
         @QueryProjection
-        public FactoryResponse(Long factoryId, String factoryName, String factoryOwnerName, String factoryPhoneNumber, String factoryContactNumber1, String factoryContactNumber2, String factoryFaxNumber, String factoryNote, String address, String tradeType, String level, String goldHarryLoss) {
+        public FactoryResponse(Long factoryId, String factoryName, String factoryOwnerName, String factoryPhoneNumber, String factoryContactNumber1, String factoryContactNumber2, String factoryFaxNumber, String factoryNote, String address, String tradeType, String grade, String goldHarryLoss) {
             this.factoryId = factoryId;
             this.factoryName = factoryName;
             this.factoryOwnerName = factoryOwnerName;
@@ -51,7 +51,7 @@ public class FactoryDto {
             this.factoryNote = factoryNote;
             this.address = address;
             this.tradeType = getTradeTypeTitle(tradeType);
-            this.level = getLevelTypeTitle(level);
+            this.grade = getLevelTypeTitle(grade);
             this.goldHarryLoss = goldHarryLoss;
         }
     }

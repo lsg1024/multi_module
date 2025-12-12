@@ -60,7 +60,7 @@ public class AssistantStoneService {
 
             assistantStoneRepository.save(assistantStone);
         }
-        throw new ForbiddenException(NOT_ACCESS);
+        throw new IllegalArgumentException(NOT_ACCESS);
     }
 
     public void updateAssistantStone(String accessToken, String assistantId, AssistantStoneDto.Request assistantDto) {
@@ -73,7 +73,7 @@ public class AssistantStoneService {
 
             assistantStone.updateAssistantStone(assistantDto.getAssistantStoneName(), assistantStone.getAssistanceStoneNote());
         }
-        throw new ForbiddenException(NOT_ACCESS);
+        throw new IllegalArgumentException(NOT_ACCESS);
     }
 
     public void deletedAssistantStone(String accessToken, String assistantId) {
