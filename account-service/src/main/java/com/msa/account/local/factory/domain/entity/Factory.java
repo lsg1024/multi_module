@@ -83,7 +83,19 @@ public class Factory extends BaseEntity {
         this.factoryNote = factoryInfo.getAccountNote();
     }
     public void updateAddressInfo(AddressDto.AddressInfo addressInfo) {
-        this.address.update(addressInfo);
+        if (addressInfo == null) {
+            return;
+        }
+
+        if (this.address == null) {
+            this.address = Address.builder()
+                    .addressAdd(addressInfo.getAddressAdd())
+                    .addressBasic(addressInfo.getAddressBasic())
+                    .addressZipCode(addressInfo.getAddressZipCode())
+                    .build();
+        } else {
+            this.address.update(addressInfo);
+        }
     }
 
     public void updateCommonOption(CommonOptionDto.CommonOptionInfo optionInfo, GoldHarry goldHarry) {

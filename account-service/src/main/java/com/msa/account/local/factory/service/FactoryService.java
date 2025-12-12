@@ -74,8 +74,12 @@ public class FactoryService {
                     .orElseThrow(() -> new NotFoundException(WRONG_HARRY));
 
             factory.updateFactoryInfo(factoryInfo);
-            factory.updateAddressInfo(updateInfo.getAddressInfo());
             factory.updateCommonOption(updateInfo.getCommonOptionInfo(), goldHarry);
+
+            if (updateInfo.getAddressInfo() != null) {
+                factory.updateAddressInfo(updateInfo.getAddressInfo());
+            }
+
             return;
         }
 

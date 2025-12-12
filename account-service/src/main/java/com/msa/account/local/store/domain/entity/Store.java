@@ -97,12 +97,36 @@ public class Store extends BaseEntity {
         this.commonOption.updateGoldHarry(goldHarry);
     }
 
-    public void updateAddressInfo(AddressDto.AddressInfo addressInfo) {
-        this.address.update(addressInfo);
+    public void updateAdditionalOption(AdditionalOptionDto.AdditionalOptionInfo optionInfo) {
+        if (optionInfo == null) {
+            return;
+        }
+
+        if (this.additionalOption == null) {
+            this.additionalOption = AdditionalOption.builder()
+                    .optionApplyPastSales(optionInfo.isAdditionalApplyPastSales())
+                    .optionMaterialId(optionInfo.getAdditionalMaterialId())
+                    .optionMaterialName(optionInfo.getAdditionalMaterialName())
+                    .build();
+        } else {
+            this.additionalOption.update(optionInfo);
+        }
     }
 
-    public void updateAdditionalOption(AdditionalOptionDto.AdditionalOptionInfo optionInfo) {
-        this.additionalOption.update(optionInfo);
+    public void updateAddressInfo(AddressDto.AddressInfo addressInfo) {
+        if (addressInfo == null) {
+            return;
+        }
+
+        if (this.address == null) {
+            this.address = Address.builder()
+                    .addressAdd(addressInfo.getAddressAdd())
+                    .addressBasic(addressInfo.getAddressBasic())
+                    .addressZipCode(addressInfo.getAddressZipCode())
+                    .build();
+        } else {
+            this.address.update(addressInfo);
+        }
     }
 
     public void updateBalance(BigDecimal goldAmount, Long moneyAmount) {
