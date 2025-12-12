@@ -22,7 +22,7 @@ public class AccountDto {
         private Long accountId;
         private String accountName;
         private String tradeType;
-        private String level;
+        private String grade;
         private String goldHarryLoss;
         private String goldWeight;
         private String moneyAmount;
@@ -37,7 +37,7 @@ public class AccountDto {
 
         @Builder
         @QueryProjection
-        public accountResponse(Long accountId, String accountName, String goldWeight, String moneyAmount, String businessOwnerName, String businessOwnerNumber, String businessNumber1, String businessNumber2, String faxNumber, String note, String level, String tradeType, String goldHarryLoss, String lastPaymentDate, String address) {
+        public accountResponse(Long accountId, String accountName, String goldWeight, String moneyAmount, String businessOwnerName, String businessOwnerNumber, String businessNumber1, String businessNumber2, String faxNumber, String note, String grade, String tradeType, String goldHarryLoss, String lastPaymentDate, String address) {
             this.accountId = accountId;
             this.accountName = accountName;
             this.goldWeight = goldWeight;
@@ -48,7 +48,7 @@ public class AccountDto {
             this.businessNumber2 = businessNumber2;
             this.faxNumber = faxNumber;
             this.note = note;
-            this.level = getLevelTypeTitle(level);
+            this.grade = getLevelTypeTitle(grade);
             this.tradeType = getTradeTypeTitle(tradeType);
             this.goldHarryLoss = goldHarryLoss;
             this.lastPaymentDate = lastPaymentDate;
@@ -75,7 +75,7 @@ public class AccountDto {
 
         private String commonOptionId;
         private String tradeType;
-        private String level;
+        private String grade;
         private String goldHarryId;
         private String goldHarryLoss;
 
@@ -85,7 +85,7 @@ public class AccountDto {
         private String additionalMaterialName;
 
         @QueryProjection
-        public AccountSingleResponse(String accountId, String accountName, String accountOwnerName, String accountPhoneNumber, String accountContactNumber1, String accountContactNumber2, String accountFaxNumber, String accountNote, String addressId, String addressZipCode, String addressBasic, String addressAdd, String commonOptionId, String tradeType, String level, String goldHarryId, String goldHarryLoss) {
+        public AccountSingleResponse(String accountId, String accountName, String accountOwnerName, String accountPhoneNumber, String accountContactNumber1, String accountContactNumber2, String accountFaxNumber, String accountNote, String addressId, String addressZipCode, String addressBasic, String addressAdd, String commonOptionId, String tradeType, String grade, String goldHarryId, String goldHarryLoss) {
             this.accountId = accountId;
             this.accountName = accountName;
             this.accountOwnerName = accountOwnerName;
@@ -100,13 +100,13 @@ public class AccountDto {
             this.addressAdd = addressAdd;
             this.commonOptionId = commonOptionId;
             this.tradeType = getTradeTypeTitle(tradeType);
-            this.level = getLevelTypeTitle(level);
+            this.grade = getLevelTypeTitle(grade);
             this.goldHarryId = goldHarryId;
             this.goldHarryLoss = goldHarryLoss;
         }
 
         @QueryProjection
-        public AccountSingleResponse(String accountId, String accountName, String accountOwnerName, String accountPhoneNumber, String accountContactNumber1, String accountContactNumber2, String accountFaxNumber, String accountNote, String addressId, String addressZipCode, String addressBasic, String addressAdd, String commonOptionId, String tradeType, String level, String goldHarryId, String goldHarryLoss, String additionalOptionId, Boolean additionalApplyPastSales, String additionalMaterialId, String additionalMaterialName) {
+        public AccountSingleResponse(String accountId, String accountName, String accountOwnerName, String accountPhoneNumber, String accountContactNumber1, String accountContactNumber2, String accountFaxNumber, String accountNote, String addressId, String addressZipCode, String addressBasic, String addressAdd, String commonOptionId, String tradeType, String grade, String goldHarryId, String goldHarryLoss, String additionalOptionId, Boolean additionalApplyPastSales, String additionalMaterialId, String additionalMaterialName) {
             this.accountId = accountId;
             this.accountName = accountName;
             this.accountOwnerName = accountOwnerName;
@@ -121,7 +121,7 @@ public class AccountDto {
             this.addressAdd = addressAdd;
             this.commonOptionId = commonOptionId;
             this.tradeType = getTradeTypeTitle(tradeType);
-            this.level = getLevelTypeTitle(level);
+            this.grade = getLevelTypeTitle(grade);
             this.goldHarryId = goldHarryId;
             this.goldHarryLoss = goldHarryLoss;
             this.additionalOptionId = additionalOptionId;
