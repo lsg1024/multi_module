@@ -93,8 +93,14 @@ public class StoreService {
 
             store.updateStoreInfo(updateInfo.getAccountInfo());
             store.updateCommonOption(updateInfo.getCommonOptionInfo(), goldHarry);
-            store.updateAdditionalOption(updateInfo.getAdditionalOptionInfo());
-            store.updateAddressInfo(updateInfo.getAddressInfo());
+
+            if (updateInfo.getAdditionalOptionInfo() != null) {
+                store.updateAdditionalOption(updateInfo.getAdditionalOptionInfo());
+            }
+
+            if (updateInfo.getAddressInfo() != null) {
+                store.updateAddressInfo(updateInfo.getAddressInfo());
+            }
 
             return;
         }
