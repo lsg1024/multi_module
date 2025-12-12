@@ -78,7 +78,7 @@ public class ProductRepositoryImpl implements CustomProductRepository {
     }
 
     @Override
-    public CustomPage<ProductDto.Page> findByAllProductName(String productName, String factoryName, String classificationId, String setTypeId, String level,String sortField, String sort,  Pageable pageable) {
+    public CustomPage<ProductDto.Page> findByAllProductName(String productName, String factoryName, String classificationId, String setTypeId, String grade,String sortField, String sort,  Pageable pageable) {
 
         BooleanBuilder builder = new BooleanBuilder();
 
@@ -98,11 +98,11 @@ public class ProductRepositoryImpl implements CustomProductRepository {
             builder.and(product.setType.setTypeId.eq(Long.parseLong(setTypeId)));
         }
 
-        WorkGrade grade;
-        if (!StringUtils.hasText(level)) {
-            grade = WorkGrade.GRADE_1;
+        WorkGrade targetGrade;
+        if (!StringUtils.hasText(grade)) {
+            targetGrade = WorkGrade.GRADE_1;
         } else {
-            grade = WorkGrade.fromLevel(level);
+            targetGrade = WorkGrade.fromLevel(grade);
         }
 
         QProductImageDto_Response image = new QProductImageDto_Response(
@@ -118,7 +118,8 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                         product.productName,
                         product.productFactoryName,
                         product.standardWeight.stringValue(),
-                        material.materialName,
+                        product.material.materialName,
+                        color.colorName,
                         product.productNote,
                         productWorkGradePolicyGroup.productPurchasePrice.stringValue(),
                         productWorkGradePolicy.laborCost.coalesce(0).stringValue(),
@@ -132,8 +133,10 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 .leftJoin(product.setType, setType)
                 .leftJoin(product.classification, classification)
                 .leftJoin(product.productWorkGradePolicyGroups, productWorkGradePolicyGroup)
+                .on(productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue())
+                .leftJoin(productWorkGradePolicyGroup.color, color)
                 .leftJoin(productWorkGradePolicyGroup.gradePolicies, productWorkGradePolicy)
-                .on(productWorkGradePolicy.grade.eq(grade))
+                .on(productWorkGradePolicy.grade.eq(targetGrade))
                 .where(
                         productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue()
                                 .and(builder)
@@ -148,7 +151,8 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                         productWorkGradePolicyGroup.productPurchasePrice,
                         productWorkGradePolicy.laborCost,
                         product.factoryId,
-                        product.factoryName
+                        product.factoryName,
+                        color.colorName
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -162,6 +166,7 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 .leftJoin(product.setType, setType)
                 .leftJoin(product.classification, classification)
                 .leftJoin(product.productWorkGradePolicyGroups, productWorkGradePolicyGroup)
+                .leftJoin(productWorkGradePolicyGroup.color, color)
                 .where(
                         productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue()
                                 .and(builder)
@@ -172,7 +177,7 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                     .map(p -> Long.valueOf(p.getProductId()))
                     .toList();
 
-            Map<Long, List<ProductStoneDto.PageResponse>> stonesMap = loadStonesByProductIds(productIds, grade);
+            Map<Long, List<ProductStoneDto.PageResponse>> stonesMap = loadStonesByProductIds(productIds, targetGrade);
 
             for (ProductDto.Page dto : content) {
                 Long pid = Long.valueOf(dto.getProductId());

@@ -91,9 +91,9 @@ public class ProductController {
             @RequestParam(name = "setType", required = false) String setTypeId,
             @RequestParam(name = "sortField", required = false) String sortField,
             @RequestParam(name = "sort", required = false) String sort,
-            @RequestParam(name = "level", required = false) String level,
+            @RequestParam(name = "grade", required = false) String grade,
             @PageableDefault(size = 12) Pageable pageable) {
-        CustomPage<ProductDto.Page> products = productService.getProducts(productName, factoryName, classificationId, setTypeId, pageable, sortField, sort, level);
+        CustomPage<ProductDto.Page> products = productService.getProducts(productName, factoryName, classificationId, setTypeId, pageable, sortField, sort, grade);
         return ResponseEntity.ok(ApiResponse.success(products));
     }
 
