@@ -1,9 +1,12 @@
 package com.msa.account.local.transaction_history.controller;
 
 import com.msa.account.local.transaction_history.domain.dto.TransactionDto;
+import com.msa.account.local.transaction_history.domain.dto.TransactionPage;
 import com.msa.account.local.transaction_history.service.TransactionHistoryService;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.util.CustomPage;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,21 +36,19 @@ public class TransactionHistoryController {
 
     //매입 목록 호출 기능 -> 오늘 판매된 상품에 대한 공장 미수 데이터를 말함
     @GetMapping("/account/purchase")
-    public ResponseEntity<CustomPage<TransactionDto>> getAccountPurchases(
+    public ResponseEntity<ApiResponse<CustomPage<TransactionPage>>> getAccountPurchases(
             @RequestParam("start") String start,
             @RequestParam("end") String end,
             @RequestParam(value = "accountType", required = false) String accountType,
-            @RequestParam(value = "accountName", required = false) String accountName) {
+            @RequestParam(value = "accountName", required = false) String accountName,
+            @PageableDefault(size = 20) Pageable pageable) {
 
-        transactionHistoryService.findAccountPurchase(start, end, accountType, accountName);
+        CustomPage<TransactionPage> accountPurchasePage = transactionHistoryService.findAccountPurchase(start, end, accountType, accountName, pageable);
 
-        return null;
+        return ResponseEntity.ok(ApiResponse.success(accountPurchasePage));
     }
 
     //매입 추가 -> 결제, 반품, 판매에 대한 order 서버와 별도로 구현된 독립 구간 - order와 묶여 있으면 거기서 취소에 관한 로직과 여기서 추가외 관한 로직이 얽힐 수 있음
-
-
-
 
 
 }

@@ -3,7 +3,10 @@ package com.msa.account.local.transaction_history.service;
 import com.msa.account.local.factory.repository.FactoryRepository;
 import com.msa.account.local.store.repository.StoreRepository;
 import com.msa.account.local.transaction_history.domain.dto.TransactionDto;
+import com.msa.account.local.transaction_history.domain.dto.TransactionPage;
 import com.msa.account.local.transaction_history.repository.TransactionHistoryRepository;
+import com.msa.common.global.util.CustomPage;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,7 +37,7 @@ public class TransactionHistoryService {
     }
 
     @Transactional(readOnly = true)
-    public void findAccountPurchase(String start, String end, String accountType, String accountName) {
-        transactionHistoryRepository.findTranscationHistory(start, end, accountType, accountName);
+    public CustomPage<TransactionPage> findAccountPurchase(String start, String end, String accountType, String accountName, Pageable pageable) {
+        return transactionHistoryRepository.findTransactionHistory(start, end, accountType, accountName, pageable);
     }
 }
