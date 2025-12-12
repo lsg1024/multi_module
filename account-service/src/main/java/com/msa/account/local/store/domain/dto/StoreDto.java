@@ -39,11 +39,11 @@ public class StoreDto {
         private String note;
         private String address;
         private String tradeType;
-        private String level;
+        private String grade;
         private String goldHarryLoss;
 
         @QueryProjection
-        public StoreResponse(Long accountId, String accountName, String businessOwnerName, String businessOwnerNumber, String businessNumber1, String businessNumber2, String faxNumber, String note, String address, String tradeType, String level, String goldHarryLoss) {
+        public StoreResponse(Long accountId, String accountName, String businessOwnerName, String businessOwnerNumber, String businessNumber1, String businessNumber2, String faxNumber, String note, String address, String tradeType, String grade, String goldHarryLoss) {
             this.accountId = accountId;
             this.accountName = accountName;
             this.businessOwnerName = businessOwnerName;
@@ -54,7 +54,7 @@ public class StoreDto {
             this.note = note;
             this.address = address;
             this.tradeType = getTradeTypeTitle(tradeType);
-            this.level = getLevelTypeTitle(level);
+            this.grade = getLevelTypeTitle(grade);
             this.goldHarryLoss = goldHarryLoss;
         }
     }
