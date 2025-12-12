@@ -4,7 +4,6 @@ import com.msa.common.global.util.AuthorityUserRoleUtil;
 import com.msa.product.local.stone.assistantStone.dto.AssistantStoneDto;
 import com.msa.product.local.stone.assistantStone.entity.AssistantStone;
 import com.msa.product.local.stone.assistantStone.repository.AssistantStoneRepository;
-import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -59,6 +58,7 @@ public class AssistantStoneService {
                     .build();
 
             assistantStoneRepository.save(assistantStone);
+            return;
         }
         throw new IllegalArgumentException(NOT_ACCESS);
     }
@@ -72,6 +72,7 @@ public class AssistantStoneService {
                     .orElseThrow(() -> new NotFoundException(NOT_FOUND));
 
             assistantStone.updateAssistantStone(assistantDto.getAssistantStoneName(), assistantStone.getAssistanceStoneNote());
+            return;
         }
         throw new IllegalArgumentException(NOT_ACCESS);
     }
@@ -83,6 +84,7 @@ public class AssistantStoneService {
                     .orElseThrow(() -> new NotFoundException(NOT_FOUND));
 
             assistantStoneRepository.delete(assistantStone);
+            return;
         }
         throw new IllegalArgumentException(NOT_ACCESS);
     }
