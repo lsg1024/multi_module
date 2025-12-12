@@ -99,14 +99,14 @@ public class KafkaProducer {
     public void send(String topic, String key, String payload)
             throws ExecutionException, InterruptedException {
 
-        log.info("Kafka 동기 전송 시도. topic={}, key={}", topic, key);
+        log.info("Kafka 전송 시도. topic={}, key={}", topic, key);
 
         CompletableFuture<SendResult<String, Object>> future =
                 kafkaTemplate.send(topic, key, payload);
 
         SendResult<String, Object> res = future.get();
 
-        log.info("Kafka 동기 전송 성공. topic={}, key={}, partition={}, offset={}",
+        log.info("Kafka 전송 성공. topic={}, key={}, partition={}, offset={}",
                 res.getRecordMetadata().topic(),
                 res.getProducerRecord().key(),
                 res.getRecordMetadata().partition(),

@@ -1,6 +1,7 @@
 package com.msa.userserver.domain.service;
 
 
+import com.msa.common.global.util.AuthorityUserRoleUtil;
 import com.msa.userserver.domain.respository.UsersRepository;
 import com.msa.userserver.domain.entity.Role;
 import com.msa.userserver.domain.entity.Users;
@@ -24,11 +25,13 @@ public class UsersService {
 
     private final JwtUtil jwtUtil;
     private final BCryptPasswordEncoder encoder;
+    private final AuthorityUserRoleUtil authorityUserRoleUtil;
     private final UsersRepository usersRepository;
 
-    public UsersService(JwtUtil jwtUtil, BCryptPasswordEncoder encoder, UsersRepository usersRepository) {
+    public UsersService(JwtUtil jwtUtil, BCryptPasswordEncoder encoder, AuthorityUserRoleUtil authorityUserRoleUtil, UsersRepository usersRepository) {
         this.jwtUtil = jwtUtil;
         this.encoder = encoder;
+        this.authorityUserRoleUtil = authorityUserRoleUtil;
         this.usersRepository = usersRepository;
     }
 
@@ -72,16 +75,24 @@ public class UsersService {
     public void updateUserInfo(String accessToken, final UserDto.Update updateDto) {
         checkToken(accessToken);
 
-        String role = jwtUtil.getRole(accessToken);
-        if (role.equals(Role.ADMIN.getKey())) {
-            Users targetUser = usersRepository.findById(Long.parseLong(updateDto.getId()))
-                    .orElseThrow(() -> new UserNotFoundException("사용자 정보 불일치"));
+        Users targetUser = usersRepository.findById(Long.parseLong(updateDto.getId()))
+                .orElseThrow(() -> new UserNotFoundException("대상 사용자를 찾을 수 없습니다."));
 
-            targetUser.updateInfo(updateDto);
+        boolean isAdmin = authorityUserRoleUtil.isAdmin(accessToken);
+        boolean isSelf = authorityUserRoleUtil.isSelf(targetUser.getUserId(), accessToken);
 
-
+        if (!isSelf && !isAdmin) {
+            throw new IllegalArgumentException("사용자 정보를 수정할 권한이 없습니다.");
         }
-        throw new IllegalArgumentException("권한이 부족합니다.");
+
+
+        if (updateDto.getRole() != null && !updateDto.getRole().equals(targetUser.getRole().getKey())) {
+            if (!isAdmin) {
+                throw new IllegalArgumentException("관리자만 회원의 권한을 변경할 수 있습니다.");
+            }
+        }
+
+        targetUser.updateInfo(updateDto);
     }
 
     //유저 삭제
@@ -115,20 +126,24 @@ public class UsersService {
 
     public UserDto.UserInfo login(UserDto.Login userDto) {
 
-        log.info("userDto = {}", userDto.getUserId());
         Users userInfo = usersRepository.findByUserId(userDto.getUserId())
                 .orElseThrow(() -> new UserNotFoundException("유저 정보가 없습니다."));
 
         boolean matches = encoder.matches(userDto.getPassword(), userInfo.getPassword());
-        log.info("Password match result: {}", matches); // 이 로그 추가
 
         if (matches) {
-            return UserDto.UserInfo.builder()
+            UserDto.UserInfo user = UserDto.UserInfo.builder()
                     .userId(String.valueOf(userInfo.getId()))
                     .nickname(userInfo.getNickname())
                     .tenantId(userInfo.getTenantId())
                     .role(String.valueOf(userInfo.getRole()))
                     .build();
+
+            if (user.getRole().equals(Role.GUEST.getKey())) {
+                throw new IllegalArgumentException("권한이 부족합니다 관리자에게 접속 승인을 받아야 합니다.");
+            }
+
+            return user;
         }
 
         throw new IllegalArgumentException("아이디와 비밀번호를 확인해주세요.");

@@ -20,10 +20,10 @@ public interface StoreRepository extends JpaRepository<Store, Long>, CustomStore
     Optional<Store> findByStoreInfo(@Param("id") Long id);
     boolean existsByStoreName(String storeName);
     @Query("select s from Store s " +
-            "join fetch s.commonOption co " +
-            "join fetch co.goldHarry gh " +
-            "join fetch s.additionalOption ao " +
-            "join fetch s.address a " +
+            "left join fetch s.commonOption co " +
+            "left join fetch co.goldHarry gh " +
+            "left join fetch s.additionalOption ao " +
+            "left join fetch s.address a " +
             "where s.storeId = :storeId")
     Optional<Store> findWithAllOptionsById(@Param("storeId") Long storeId);
     @Query("select s.commonOption.optionLevel " +

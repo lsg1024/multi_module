@@ -32,4 +32,10 @@ public class AuthorityUserRoleUtil {
 
         return Objects.equals(role, ADMIN);
     }
+
+    public boolean isSelf(String userId, String token) {
+        String nickname = jwtUtil.getNickname(token);
+
+        return Objects.equals(nickname, userId);
+    }
 }

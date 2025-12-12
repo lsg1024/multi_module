@@ -77,9 +77,6 @@ public class UserDto {
     @AllArgsConstructor
     public static class Update {
         private String id;
-
-        @Pattern(regexp = "^[가-힣a-zA-Z0-9]+$",
-                message = "이름에 특수문자는 사용할 수 없습니다.")
         private String nickname;
         private String role;
     }

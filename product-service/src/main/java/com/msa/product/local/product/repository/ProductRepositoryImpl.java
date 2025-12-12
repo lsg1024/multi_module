@@ -8,6 +8,8 @@ import com.msa.product.local.product.dto.*;
 import com.msa.product.local.set.dto.QSetTypeDto_ResponseSingle;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Order;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -76,7 +78,7 @@ public class ProductRepositoryImpl implements CustomProductRepository {
     }
 
     @Override
-    public CustomPage<ProductDto.Page> findByAllProductName(String productName, String factoryName, String classificationId, String setTypeId, String level, Pageable pageable) {
+    public CustomPage<ProductDto.Page> findByAllProductName(String productName, String factoryName, String classificationId, String setTypeId, String grade,String sortField, String sort,  Pageable pageable) {
 
         BooleanBuilder builder = new BooleanBuilder();
 
@@ -96,11 +98,11 @@ public class ProductRepositoryImpl implements CustomProductRepository {
             builder.and(product.setType.setTypeId.eq(Long.parseLong(setTypeId)));
         }
 
-        WorkGrade grade;
-        if (!StringUtils.hasText(level)) {
-            grade = WorkGrade.GRADE_1;
+        WorkGrade targetGrade;
+        if (!StringUtils.hasText(grade)) {
+            targetGrade = WorkGrade.GRADE_1;
         } else {
-            grade = WorkGrade.fromLevel(level);
+            targetGrade = WorkGrade.fromLevel(grade);
         }
 
         QProductImageDto_Response image = new QProductImageDto_Response(
@@ -108,13 +110,16 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 productImage.imagePath.max()
         );
 
+        OrderSpecifier<?>[] orderSpecifiers = createOrderSpecifiers(sortField, sort);
+
         List<ProductDto.Page> content = query
                 .select(new QProductDto_Page(
                         product.productId.stringValue(),
                         product.productName,
                         product.productFactoryName,
                         product.standardWeight.stringValue(),
-                        material.materialName,
+                        product.material.materialName,
+                        color.colorName,
                         product.productNote,
                         productWorkGradePolicyGroup.productPurchasePrice.stringValue(),
                         productWorkGradePolicy.laborCost.coalesce(0).stringValue(),
@@ -128,8 +133,10 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 .leftJoin(product.setType, setType)
                 .leftJoin(product.classification, classification)
                 .leftJoin(product.productWorkGradePolicyGroups, productWorkGradePolicyGroup)
+                .on(productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue())
+                .leftJoin(productWorkGradePolicyGroup.color, color)
                 .leftJoin(productWorkGradePolicyGroup.gradePolicies, productWorkGradePolicy)
-                .on(productWorkGradePolicy.grade.eq(grade))
+                .on(productWorkGradePolicy.grade.eq(targetGrade))
                 .where(
                         productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue()
                                 .and(builder)
@@ -144,11 +151,12 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                         productWorkGradePolicyGroup.productPurchasePrice,
                         productWorkGradePolicy.laborCost,
                         product.factoryId,
-                        product.factoryName
+                        product.factoryName,
+                        color.colorName
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
-                .orderBy(product.createDate.desc())
+                .orderBy(orderSpecifiers)
                 .fetch();
 
         JPAQuery<Long> countQuery = query
@@ -158,6 +166,7 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 .leftJoin(product.setType, setType)
                 .leftJoin(product.classification, classification)
                 .leftJoin(product.productWorkGradePolicyGroups, productWorkGradePolicyGroup)
+                .leftJoin(productWorkGradePolicyGroup.color, color)
                 .where(
                         productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue()
                                 .and(builder)
@@ -168,7 +177,7 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                     .map(p -> Long.valueOf(p.getProductId()))
                     .toList();
 
-            Map<Long, List<ProductStoneDto.PageResponse>> stonesMap = loadStonesByProductIds(productIds, grade);
+            Map<Long, List<ProductStoneDto.PageResponse>> stonesMap = loadStonesByProductIds(productIds, targetGrade);
 
             for (ProductDto.Page dto : content) {
                 Long pid = Long.valueOf(dto.getProductId());
@@ -265,5 +274,29 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 .limit(1)
                 .fetchOne();
 
+    }
+
+    private OrderSpecifier<?>[] createOrderSpecifiers(String sortField, String sort) {
+        List<OrderSpecifier<?>> orderSpecifiers = new ArrayList<>();
+
+        if (sort != null && StringUtils.hasText(sortField)) {
+            Order direction = "ASC".equalsIgnoreCase(sort) ? Order.ASC : Order.DESC;
+
+            switch (sortField) {
+                case "factory" -> orderSpecifiers.add(new OrderSpecifier<>(direction, product.factoryName));
+                case "setType" -> orderSpecifiers.add(new OrderSpecifier<>(direction, product.setType.setTypeName));
+                case "classification" -> orderSpecifiers.add(new OrderSpecifier<>(direction, product.classification.classificationName));
+                case "productName" -> orderSpecifiers.add(new OrderSpecifier<>(direction, product.productName));
+
+                default -> {
+                    orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, product.createDate));
+                    orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, product.productId));
+                }
+            }
+        } else {
+            orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, product.createDate));
+            orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, product.productId));
+        }
+        return orderSpecifiers.toArray(new OrderSpecifier[0]);
     }
 }

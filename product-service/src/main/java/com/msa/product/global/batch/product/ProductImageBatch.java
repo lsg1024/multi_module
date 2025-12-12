@@ -7,7 +7,6 @@ import com.msa.product.local.product.repository.ProductRepository;
 import com.msa.product.local.product.repository.image.ProductImageRepository;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.StepExecution;
@@ -31,6 +30,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -122,10 +122,7 @@ public class ProductImageBatch {
                     }
                     Path targetPath = productDir.resolve(savedFileName);
 
-                    Thumbnails.of(item.getFile())
-                            .size(300, 300)
-                            .outputQuality(1)
-                            .toFile(targetPath.toFile());
+                    Files.copy(item.getFile().toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
                     boolean existsMain = productImageRepository.existsByProduct_ProductId(product.getProductId());
 
@@ -140,11 +137,6 @@ public class ProductImageBatch {
                     product.addImage(image);
                     productImageRepository.save(image);
 
-                    // (5) 성공 시 원본(Temp) 파일 삭제
-//                    if (Files.exists(targetPath)) {
-//                        Files.delete(item.getFile().toPath());
-//                        log.info("이미지 마이그레이션 완료: [DB ID={}] {} -> {}", image.getImageId(), item.getFile().getName(), savedFileName);
-//                    }
 
                 } catch (Exception e) {
                     log.error("이미지 저장 실패: " + item.getFile().getName(), e);

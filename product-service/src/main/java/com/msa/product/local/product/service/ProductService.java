@@ -185,8 +185,8 @@ public class ProductService {
     }
     //복수 조회
     @Transactional(readOnly = true)
-    public CustomPage<ProductDto.Page> getProducts(String productName, String factoryName, String classificationId, String setTypeId, Pageable pageable, String level) {
-        return productRepository.findByAllProductName(productName, factoryName, classificationId, setTypeId, level, pageable);
+    public CustomPage<ProductDto.Page> getProducts(String productName, String factoryName, String classificationId, String setTypeId, Pageable pageable, String sortField, String sort, String level) {
+        return productRepository.findByAllProductName(productName, factoryName, classificationId, setTypeId, level, sortField, sort, pageable);
     }
 
     //수정 - 이미지 수정은 별도
