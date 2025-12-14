@@ -17,35 +17,42 @@ public class UserClientFallbackFactory implements FallbackFactory<UserClient> {
 
     @Override
     public UserClient create(Throwable cause) {
+
         return (headers, loginDto) -> {
-            String errorMessage = "로그인 서비스 연결 실패";
-            HttpStatus status = HttpStatus.SERVICE_UNAVAILABLE;
+            ErrorResult errorResult = resolveError(cause);
 
-            if (cause instanceof FeignException feignException) {
-                log.error("UserClient Feign Error: Status={}, Msg={}", feignException.status(), feignException.getMessage());
+            log.error("[Fallback] loginDto: {}, Status: {}, Msg: {}", loginDto, errorResult.status, cause.getMessage());
 
-                String responseBody = feignException.contentUTF8();
-
-                if (responseBody != null && !responseBody.isEmpty()) {
-                    try {
-                        ApiResponse<?> errorResponse = objectMapper.readValue(responseBody, ApiResponse.class);
-                        if (errorResponse.getMessage() != null) {
-                            errorMessage = errorResponse.getMessage();
-                        }
-
-                        if (feignException.status() == 400) {
-                            status = HttpStatus.BAD_REQUEST;
-                        }
-                    } catch (Exception e) {
-                        log.error("Fallback JSON Parsing Error", e);
-                    }
-                }
-            } else {
-                log.error("UserClient Connection Error", cause);
-            }
-
-            return ResponseEntity.status(status)
-                    .body(ApiResponse.error(errorMessage));
+            return ResponseEntity.ok(ApiResponse.error(errorResult.message()));
         };
     }
+
+    private ErrorResult resolveError(Throwable cause) {
+        HttpStatus status = HttpStatus.SERVICE_UNAVAILABLE;
+        String message = "로그인 정보를 불러오는 중 오류가 발생했습니다.";
+
+        if (cause instanceof FeignException feignException) {
+
+            int feignStatus = feignException.status();
+            if (feignStatus > 0) {
+                status = HttpStatus.valueOf(feignStatus);
+            }
+
+            String content = feignException.contentUTF8();
+            if (content != null && !content.isEmpty()) {
+                try {
+                    ApiResponse<?> errorResponse = objectMapper.readValue(content, ApiResponse.class);
+                    if (errorResponse.getMessage() != null) {
+                        message = errorResponse.getMessage();
+                    }
+                } catch (Exception e) {
+                    log.warn("Fallback JSON Parsing Failed. Raw content: {}", content);
+                }
+            }
+        }
+
+        return new ErrorResult(status, message);
+    }
+
+    private record ErrorResult(HttpStatus status, String message) {}
 }

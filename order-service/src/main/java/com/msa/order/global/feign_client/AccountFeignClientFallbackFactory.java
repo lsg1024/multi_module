@@ -28,8 +28,7 @@ public class AccountFeignClientFallbackFactory implements FallbackFactory<Accoun
 
                 log.error("[Fallback] getFactoryInfo ID: {}, Status: {}, Msg: {}", factoryId, errorResult.status, cause.getMessage());
 
-                return ResponseEntity.status(errorResult.status)
-                        .body(ApiResponse.error(errorResult.message));
+                return ResponseEntity.ok(ApiResponse.error(errorResult.message));
             }
 
             @Override
@@ -38,8 +37,7 @@ public class AccountFeignClientFallbackFactory implements FallbackFactory<Accoun
 
                 log.error("[Fallback] getStoreInfo ID: {}, Status: {}, Msg: {}", storeId, errorResult.status, cause.getMessage());
 
-                return ResponseEntity.status(errorResult.status)
-                        .body(ApiResponse.error(errorResult.message));
+                return ResponseEntity.ok(ApiResponse.error(errorResult.message));
             }
         };
     }
