@@ -107,18 +107,18 @@ public class CustomLoginFilter extends UsernamePasswordAuthenticationFilter {
 
         HttpStatus errorStatus;
         if (failed instanceof BadCredentialsException) {
-            errorStatus = HttpStatus.UNAUTHORIZED;          // 401
+            errorStatus = HttpStatus.BAD_REQUEST;          // 400
         } else if (failed instanceof AuthenticationServiceException) {
             errorStatus = HttpStatus.INTERNAL_SERVER_ERROR; // 500
         } else {
-            errorStatus = HttpStatus.FORBIDDEN;
+            errorStatus = HttpStatus.UNAUTHORIZED;
         }
 
         response.setStatus(errorStatus.value());
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
-        ApiResponse<Void> error = ApiResponse.error(failed.getMessage());
+        ApiResponse<String> error = ApiResponse.error(failed.getMessage());
         String body = new ObjectMapper().writeValueAsString(error);
         response.getWriter().write(body);
     }

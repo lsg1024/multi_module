@@ -29,12 +29,8 @@ public class ApiResponse<T> {
         return new ApiResponse<>(true, message, data);
     }
 
-    // 일반 에러 응답 (data는 null)
     public static <T> ApiResponse<T> error(String message) {
         return new ApiResponse<>(false, message, null);
-    }
-    public static <T> ApiResponse<T> error(T data) {
-        return new ApiResponse<>(false, "NO", data);
     }
 }
 
