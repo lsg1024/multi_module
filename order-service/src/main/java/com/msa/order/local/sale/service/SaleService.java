@@ -41,7 +41,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -189,7 +191,7 @@ public class SaleService {
     }
 
     // 재고 -> 판매
-    public void stockToSale(String accessToken, String eventId, Long flowCode, StockDto.stockRequest stockDto) {
+    public void stockToSale(String accessToken, String eventId, Long flowCode, StockDto.stockRequest stockDto, boolean createNewSheet) {
 
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = jwtUtil.getTenantId(accessToken);
@@ -216,7 +218,7 @@ public class SaleService {
         BigDecimal storeHarry = stock.getStoreHarry();
         String grade = stock.getStoreGrade();
 
-        createNewSale(stock, saleDate, storeId, storeName, storeHarry, grade);
+        createOrAddToSale(stock, saleDate, storeId, storeName, storeHarry, grade, createNewSheet);
 
         stock.updateOrderStatus(OrderStatus.SALE);
         stock.updateStockNote(stockDto.getMainStoneNote(), stockDto.getAssistanceStoneNote(), stockDto.getStockNote());
@@ -244,7 +246,7 @@ public class SaleService {
         publishAccountEvent(eventId, tenantId, storeId, dto);
     }
 
-    public void createPayment(String accessToken, String eventId, SaleDto.Request saleDto) {
+    public void createPayment(String accessToken, String eventId, SaleDto.Request saleDto, boolean createNewSheet) {
 
         if (!StringUtils.hasText(eventId)) {
             throw new IllegalStateException("멱등키 누락");
@@ -259,7 +261,7 @@ public class SaleService {
             BigDecimal harry = saleDto.getHarry();
             String grade = saleDto.getGrade();
 
-            Sale sale = getSale(saleDate, storeId, storeName, harry, grade);
+            Sale sale = getSale(saleDate, storeId, storeName, harry, grade, createNewSheet);
 
             SalePayment payment = createSalePayment(saleDto);
             payment.updateEventId(eventId);
@@ -368,7 +370,7 @@ public class SaleService {
         }
     }
 
-    public void orderToSale(String accessToken, String eventId, Long flowCode, StockDto.StockRegisterRequest stockDto) {
+    public void orderToSale(String accessToken, String eventId, Long flowCode, StockDto.StockRegisterRequest stockDto, boolean createNewSheet) {
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = jwtUtil.getTenantId(accessToken);
 
@@ -388,7 +390,7 @@ public class SaleService {
         BigDecimal storeHarry = stock.getStoreHarry();
         String grade = stock.getStoreGrade();
 
-        createNewSale(stock, saleDate, storeId, storeName, storeHarry, grade);
+        createOrAddToSale(stock, saleDate, storeId, storeName, storeHarry, grade, createNewSheet);
         stock.updateOrderStatus(OrderStatus.SALE);
 
         updateNewHistory(stock.getFlowCode(), nickname, BusinessPhase.SALE);
@@ -532,29 +534,8 @@ public class SaleService {
         }
     }
 
-    private Sale getSale(LocalDateTime saleDate, Long storeId, String storeName, BigDecimal harry, String grade) {
-        return saleRepository.findByAccountIdAndCreateDate(storeId, saleDate)
-                .orElseGet(() -> {
-                    try {
-                        Sale newSale = Sale.builder()
-                                .saleStatus(SaleStatus.SALE)
-                                .accountId(storeId)
-                                .accountName(storeName)
-                                .accountHarry(harry)
-                                .accountGrade(grade)
-                                .items(new ArrayList<>())
-                                .build();
-                        return saleRepository.saveAndFlush(newSale);
-                    } catch (DataIntegrityViolationException dup) {
-
-                        return saleRepository.findByAccountIdAndCreateDate(storeId, saleDate)
-                                .orElseThrow(() -> dup);
-                    }
-                });
-    }
-
-    private void createNewSale(Stock stock, LocalDateTime saleDate, Long storeId, String storeName, BigDecimal storeHarry, String grade) {
-        Sale sale = getSale(saleDate, storeId, storeName, storeHarry, grade);
+    private void createOrAddToSale(Stock stock, LocalDateTime saleDate, Long storeId, String storeName, BigDecimal storeHarry, String grade, boolean createNewSheet) {
+        Sale sale = getSale(saleDate, storeId, storeName, storeHarry, grade, createNewSheet);
 
         SaleItem saleItem = SaleItem.builder()
                 .flowCode(stock.getFlowCode())
@@ -563,6 +544,35 @@ public class SaleService {
         sale.addItem(saleItem);
         saleItem.setStock(stock);
         saleItemRepository.save(saleItem);
+    }
+
+    private Sale getSale(LocalDateTime saleDate, Long storeId, String storeName, BigDecimal harry, String grade, boolean createNewSheet) {
+
+        if (createNewSheet) {
+            return createNewSaleEntity(storeId, storeName, harry, grade);
+        }
+
+        LocalDate today = saleDate.toLocalDate();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
+
+        return saleRepository.findLatestSaleByAccountIdAndDate(storeId, startOfDay, endOfDay)
+                .orElseGet(() ->
+                        createNewSaleEntity(storeId, storeName, harry, grade)
+                );
+    }
+
+    private Sale createNewSaleEntity(Long storeId, String storeName, BigDecimal harry, String grade) {
+        Sale newSale = Sale.builder()
+                .saleStatus(SaleStatus.SALE)
+                .accountId(storeId)
+                .accountName(storeName)
+                .accountHarry(harry)
+                .accountGrade(grade)
+                .items(new ArrayList<>())
+                .build();
+
+        return saleRepository.save(newSale);
     }
 
     @NotNull
@@ -608,8 +618,14 @@ public class SaleService {
     }
 
     public String checkBeforeSale(Long accountId) {
-        Optional<Sale> sale = saleRepository.findByAccountId(accountId, LocalDateTime.now());
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
 
-        return sale.map(value -> value.getSaleCode().toString()).orElse("");
+        String saleCodeByAccountIdAndDate = saleRepository.findSaleCodeByAccountIdAndDate(accountId, startOfDay, endOfDay)
+                .map(String::valueOf)
+                .orElse("");
+
+        return saleCodeByAccountIdAndDate;
     }
 }

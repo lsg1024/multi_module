@@ -19,8 +19,7 @@ import java.util.List;
 @Table(
         name = "SALE",
         uniqueConstraints = {
-                @UniqueConstraint(name = "UK_SALE_STORE_DATE", columnNames = {"STORE_ID", "create_date"}),
-                @UniqueConstraint(name = "UK_SALE_CODE",       columnNames = {"SALE_CODE"})
+                @UniqueConstraint(name = "UK_SALE_CODE", columnNames = {"SALE_CODE"})
         }
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
