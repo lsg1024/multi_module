@@ -74,9 +74,10 @@ public class SaleController {
             @AccessToken String accessToken,
             @RequestHeader(name = "Idempotency-Key") String eventId,
             @RequestParam(name = "id") Long flowCode,
+            @RequestParam(name = "new") boolean newSheet,
             @Valid @RequestBody StockDto.StockRegisterRequest stockDto) {
         stockService.updateOrderToStock(accessToken, flowCode, "STOCK", stockDto);
-        saleService.orderToSale(accessToken, eventId, flowCode, stockDto);
+        saleService.orderToSale(accessToken, eventId, flowCode, stockDto, newSheet);
         return ResponseEntity.ok(ApiResponse.success("등록 완료"));
     }
 
@@ -87,8 +88,9 @@ public class SaleController {
             @AccessToken String accessToken,
             @RequestHeader(name = "Idempotency-Key") String eventId,
             @RequestParam(name = "id") Long flowCode,
+            @RequestParam(name = "new") boolean newSheet,
             @Valid @RequestBody StockDto.stockRequest stockDto) {
-        saleService.stockToSale(accessToken, eventId, flowCode, stockDto);
+        saleService.stockToSale(accessToken, eventId, flowCode, stockDto, newSheet);
         return ResponseEntity.ok(ApiResponse.success("등록 완료"));
     }
 
@@ -97,9 +99,10 @@ public class SaleController {
     public ResponseEntity<ApiResponse<String>> createPayment(
             @AccessToken String accessToken,
             @RequestHeader(name = "Idempotency-Key") String eventId,
+            @RequestParam(name = "new") boolean newSheet,
             @Valid @RequestBody SaleDto.Request saleDto) {
 
-        saleService.createPayment(accessToken, eventId, saleDto);
+        saleService.createPayment(accessToken, eventId, saleDto, newSheet);
         return ResponseEntity.ok(ApiResponse.success("등록 완료"));
     }
 
