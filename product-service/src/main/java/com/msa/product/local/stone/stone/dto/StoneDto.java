@@ -56,15 +56,28 @@ public class StoneDto {
         private String stoneWeight;
         private Integer stonePurchasePrice;
         private List<StoneWorkGradePolicyDto.Response> stoneWorkGradePolicyDto;
+        private Integer productCount;
+        private List<ProductInfo> productInfos;
 
         @Builder
         @QueryProjection
-        public PageDto(String stoneId, String stoneName, String stoneNote, String stoneWeight, Integer stonePurchasePrice, List<StoneWorkGradePolicyDto.Response> stoneWorkGradePolicyDto) {            this.stoneId = stoneId;
+        public PageDto(String stoneId, String stoneName, String stoneNote, String stoneWeight, Integer stonePurchasePrice, List<StoneWorkGradePolicyDto.Response> stoneWorkGradePolicyDto, Integer productCount, List<ProductInfo> productInfos) {
+            this.stoneId = stoneId;
             this.stoneName = stoneName;
             this.stoneNote = stoneNote;
             this.stoneWeight = stoneWeight;
             this.stonePurchasePrice = stonePurchasePrice;
             this.stoneWorkGradePolicyDto = stoneWorkGradePolicyDto;
+            this.productCount = productCount;
+            this.productInfos = productInfos;
         }
+    }
+
+    @Getter
+    @Builder
+    public static class ProductInfo {
+        private Long productId;
+        private String productName;
+        private String imagePath;
     }
 }
