@@ -155,8 +155,6 @@ public class KafkaOrderService {
             statusHistoryRepository.save(statusHistory);
 
         } catch (Exception e) {
-            order.updateProductStatus(ProductStatus.RECEIPT_FAILED);
-
             statusHistory = StatusHistory.phaseChange(
                     order.getFlowCode(),
                     lastHistory.getSourceType(),

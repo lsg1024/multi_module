@@ -86,6 +86,7 @@ public class OrderDto {
         private String shippingAt;
         private String flowCode;
         private String storeName;
+        private String productId;
         private String productName;
         private String materialName;
         private String colorName;
@@ -104,6 +105,7 @@ public class OrderDto {
 
         public static Response from(OrderQueryDto queryDto, String imagePath) {
             Response response = new Response();
+            response.productId = queryDto.getProductId().toString();
             response.createAt = queryDto.getCreateAt();
             response.shippingAt = queryDto.getShippingAt();
             response.flowCode = queryDto.getFlowCode();
