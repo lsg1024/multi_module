@@ -1,6 +1,7 @@
 package com.msa.auth.user;
 
 import com.msa.common.global.api.ApiResponse;
+import com.msa.common.global.tenant.TenantContext;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -43,15 +44,16 @@ public class AuthController {
 
         String[] tokens = refreshTokenService.reissueRefreshToken(refreshToken, ACCESS_TTL, REFRESH_TTL);
 
+        String tenantId = TenantContext.getTenant();
         response.setHeader("Authorization", "Bearer " + tokens[0]);
-        response.addCookie(createCookie(tokens[1], REFRESH_TTL));
+        response.addCookie(createCookie(tokens[1], REFRESH_TTL, tenantId));
 
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
-    private Cookie createCookie(String value, Long TTL) {
+    private Cookie createCookie(String value, Long TTL, String tenantId) {
         Cookie cookie = new Cookie("refreshToken", value);
-        cookie.setDomain(COOKIE_URL);
+        cookie.setDomain(tenantId + "." + COOKIE_URL);
         cookie.setMaxAge((int) (TTL / 1000));
         cookie.setPath("/");
         cookie.setHttpOnly(true);

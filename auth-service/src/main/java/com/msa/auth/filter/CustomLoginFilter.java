@@ -98,7 +98,7 @@ public class CustomLoginFilter extends UsernamePasswordAuthenticationFilter {
         response.setCharacterEncoding("UTF-8");
 
         response.setHeader("Authorization", "Bearer " + accessToken);
-        response.addCookie(createCookie(refreshToken, refreshTtl));
+        response.addCookie(createCookie(refreshToken, refreshTtl, userInfo.getTenantId()));
         response.setStatus(HttpStatus.NO_CONTENT.value());
     }
 
@@ -123,9 +123,9 @@ public class CustomLoginFilter extends UsernamePasswordAuthenticationFilter {
         response.getWriter().write(body);
     }
 
-    private Cookie createCookie(String value, Long TTL) {
+    private Cookie createCookie(String value, Long TTL, String tenantId) {
         Cookie cookie = new Cookie("refreshToken", value);
-        cookie.setDomain(cookieUrl);
+        cookie.setDomain(tenantId + "." + cookieUrl);
         cookie.setMaxAge((int) (TTL / 1000));
         cookie.setPath("/");
         cookie.setHttpOnly(true);
