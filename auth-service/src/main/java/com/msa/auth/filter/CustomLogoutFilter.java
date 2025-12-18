@@ -12,7 +12,6 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.http.ResponseCookie;
 import org.springframework.web.filter.GenericFilterBean;
 
 import java.io.IOException;
@@ -75,15 +74,10 @@ public class CustomLogoutFilter extends GenericFilterBean {
 
         String owner = jwtUtil.getTenantId(refreshToken);
         String nickname = jwtUtil.getNickname(refreshToken);
-        boolean isExist = redisRefreshTokenService.existsToken(owner, nickname);
-        if (!isExist) {
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        }
 
         redisRefreshTokenService.deleteToken(owner, nickname);
 
-        String tenantId = jwtUtil.getTenantId(refreshToken);
-        ResponseCookie cookie = createCookie("refreshToken", refreshToken, 0L, tenantId);
+        Cookie cookie = createCookie("refreshToken", refreshToken, 0L);
 
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
@@ -92,19 +86,17 @@ public class CustomLogoutFilter extends GenericFilterBean {
         String jsonResponse = objectMapper.writeValueAsString(
                 ApiResponse.success("로그아웃 성공")
         );
-        response.addHeader("Set-Cookie", cookie.toString());
+        response.addCookie(cookie);
         response.setStatus(HttpServletResponse.SC_OK);
         response.getWriter().write(jsonResponse);
     }
 
-    private ResponseCookie createCookie(String key, String value, Long TTL, String tenantId) {
-        return ResponseCookie.from(key, value)
-                .domain(tenantId + "." + cookieUrl)
-                .path("/")
-                .httpOnly(true)
-                .secure(true)
-                .sameSite("None")
-                .maxAge(TTL / 1000)
-                .build();
+    private Cookie createCookie(String key, String value, Long TTL) {
+        Cookie cookie = new Cookie(key, value);
+        cookie.setDomain(cookieUrl);
+        cookie.setMaxAge(TTL.intValue());
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        return cookie;
     }
 }
