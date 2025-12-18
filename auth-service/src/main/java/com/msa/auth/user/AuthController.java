@@ -53,7 +53,6 @@ public class AuthController {
 
     private Cookie createCookie(String value, Long TTL, String tenantId) {
         Cookie cookie = new Cookie("refreshToken", value);
-        cookie.setDomain(tenantId + "." + COOKIE_URL);
         cookie.setMaxAge((int) (TTL / 1000));
         cookie.setPath("/");
         cookie.setSecure(true);
