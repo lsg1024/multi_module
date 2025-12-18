@@ -56,6 +56,7 @@ public class AuthController {
         cookie.setDomain(tenantId + "." + COOKIE_URL);
         cookie.setMaxAge((int) (TTL / 1000));
         cookie.setPath("/");
+        cookie.setSecure(true);
         cookie.setHttpOnly(true);
         return cookie;
     }

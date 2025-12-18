@@ -101,6 +101,7 @@ public class CustomLogoutFilter extends GenericFilterBean {
         cookie.setDomain(tenantId + "." + cookieUrl);
         cookie.setMaxAge(TTL.intValue());
         cookie.setPath("/");
+        cookie.setSecure(true);
         cookie.setHttpOnly(true);
         return cookie;
     }
