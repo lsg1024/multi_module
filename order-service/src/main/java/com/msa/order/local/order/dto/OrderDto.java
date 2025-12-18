@@ -140,11 +140,13 @@ public class OrderDto {
         private String flowCode;
         private String storeId;
         private String storeName;
+        private String storeHarry;
         private String storeGrade;
         private String factoryId;
         private String factoryName;
         private String productId;
         private String productName;
+        private String productFactoryName;
         private String productSize;
         private Integer productLaborCost;
         private Integer productAddLaborCost;
@@ -172,16 +174,18 @@ public class OrderDto {
         private String stoneAddLaborCost;
 
         @Builder
-        public ResponseDetail(String createAt, String shippingAt, String flowCode, String storeId, String storeName, String storeGrade, String factoryId, String productId, String productName, Integer productLaborCost, Integer productAddLaborCost, String stoneWeight, String classificationId, String classificationName, String materialName, String colorName, String setTypeName, String productSize, String orderNote, String factoryName, String goldWeight, String materialId, String colorId, String setTypeId, String mainStoneNote, String assistanceStoneNote, String priority, String productStatus, String orderStatus, boolean assistantStone, String assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, List<StoneDto.StoneInfo> stoneInfos, String stoneAddLaborCost) {
+        public ResponseDetail(String createAt, String shippingAt, String flowCode, String storeId, String storeName, String storeHarry, String storeGrade, String factoryId, String productId, String productName, String productFactoryName, Integer productLaborCost, Integer productAddLaborCost, String stoneWeight, String classificationId, String classificationName, String materialName, String colorName, String setTypeName, String productSize, String orderNote, String factoryName, String goldWeight, String materialId, String colorId, String setTypeId, String mainStoneNote, String assistanceStoneNote, String priority, String productStatus, String orderStatus, boolean assistantStone, String assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, List<StoneDto.StoneInfo> stoneInfos, String stoneAddLaborCost) {
             this.createAt = createAt;
             this.shippingAt = shippingAt;
             this.flowCode = flowCode;
             this.storeId = storeId;
             this.storeName = storeName;
+            this.storeHarry = storeHarry;
             this.storeGrade = storeGrade;
             this.factoryId = factoryId;
             this.productId = productId;
             this.productName = productName;
+            this.productFactoryName = productFactoryName;
             this.productLaborCost = productLaborCost;
             this.productAddLaborCost = productAddLaborCost;
             this.stoneWeight = stoneWeight;
