@@ -74,10 +74,6 @@ public class CustomLogoutFilter extends GenericFilterBean {
 
         String owner = jwtUtil.getTenantId(refreshToken);
         String nickname = jwtUtil.getNickname(refreshToken);
-        boolean isExist = redisRefreshTokenService.existsToken(owner, nickname);
-        if (!isExist) {
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        }
 
         redisRefreshTokenService.deleteToken(owner, nickname);
 
