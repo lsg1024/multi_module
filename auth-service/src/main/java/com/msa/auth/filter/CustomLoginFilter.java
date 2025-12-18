@@ -8,11 +8,11 @@ import com.msa.common.global.domain.dto.UserDto;
 import com.msa.common.global.jwt.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
@@ -97,8 +97,10 @@ public class CustomLoginFilter extends UsernamePasswordAuthenticationFilter {
         // 응답 헤더 및 쿠키 설정
         response.setCharacterEncoding("UTF-8");
 
+        String tenantId = userInfo.getTenantId();
         response.setHeader("Authorization", "Bearer " + accessToken);
-        response.addCookie(createCookie(refreshToken, refreshTtl, userInfo.getTenantId()));
+        ResponseCookie cookie = createCookie("refreshToken", refreshToken, refreshTtl, tenantId);
+        response.addHeader("Set-Cookie", cookie.toString());
         response.setStatus(HttpStatus.NO_CONTENT.value());
     }
 
@@ -123,13 +125,15 @@ public class CustomLoginFilter extends UsernamePasswordAuthenticationFilter {
         response.getWriter().write(body);
     }
 
-    private Cookie createCookie(String value, Long TTL, String tenantId) {
-        Cookie cookie = new Cookie("refreshToken", value);
-        cookie.setMaxAge((int) (TTL / 1000));
-        cookie.setPath("/");
-        cookie.setSecure(true);
-        cookie.setHttpOnly(true);
-        return cookie;
+    private ResponseCookie createCookie(String key, String value, Long TTL, String tenantId) {
+        return ResponseCookie.from(key, value)
+                .domain(tenantId + "." + cookieUrl)
+                .path("/")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("None")
+                .maxAge(TTL / 1000)
+                .build();
     }
 
 }

@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,18 +47,21 @@ public class AuthController {
 
         String tenantId = TenantContext.getTenant();
         response.setHeader("Authorization", "Bearer " + tokens[0]);
-        response.addCookie(createCookie(tokens[1], REFRESH_TTL, tenantId));
+        ResponseCookie cookie = createCookie("refreshToken", tokens[1], REFRESH_TTL, tenantId);
+        response.addHeader("Set-Cookie", cookie.toString());
 
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
-    private Cookie createCookie(String value, Long TTL, String tenantId) {
-        Cookie cookie = new Cookie("refreshToken", value);
-        cookie.setMaxAge((int) (TTL / 1000));
-        cookie.setPath("/");
-        cookie.setSecure(true);
-        cookie.setHttpOnly(true);
-        return cookie;
+    private ResponseCookie createCookie(String key, String value, Long TTL, String tenantId) {
+        return ResponseCookie.from(key, value)
+                .domain(tenantId + "." + COOKIE_URL)
+                .path("/")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("None")
+                .maxAge(TTL / 1000)
+                .build();
     }
 
 }

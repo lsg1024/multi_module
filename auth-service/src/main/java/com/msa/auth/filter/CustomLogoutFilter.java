@@ -12,6 +12,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.ResponseCookie;
 import org.springframework.web.filter.GenericFilterBean;
 
 import java.io.IOException;
@@ -82,7 +83,7 @@ public class CustomLogoutFilter extends GenericFilterBean {
         redisRefreshTokenService.deleteToken(owner, nickname);
 
         String tenantId = jwtUtil.getTenantId(refreshToken);
-        Cookie cookie = createCookie("refreshToken", refreshToken, 0L, tenantId);
+        ResponseCookie cookie = createCookie("refreshToken", refreshToken, 0L, tenantId);
 
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
@@ -91,17 +92,19 @@ public class CustomLogoutFilter extends GenericFilterBean {
         String jsonResponse = objectMapper.writeValueAsString(
                 ApiResponse.success("로그아웃 성공")
         );
-        response.addCookie(cookie);
+        response.addHeader("Set-Cookie", cookie.toString());
         response.setStatus(HttpServletResponse.SC_OK);
         response.getWriter().write(jsonResponse);
     }
 
-    private Cookie createCookie(String key, String value, Long TTL, String tenantId) {
-        Cookie cookie = new Cookie(key, value);
-        cookie.setMaxAge(TTL.intValue());
-        cookie.setPath("/");
-        cookie.setSecure(true);
-        cookie.setHttpOnly(true);
-        return cookie;
+    private ResponseCookie createCookie(String key, String value, Long TTL, String tenantId) {
+        return ResponseCookie.from(key, value)
+                .domain(tenantId + "." + cookieUrl)
+                .path("/")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("None")
+                .maxAge(TTL / 1000)
+                .build();
     }
 }
