@@ -136,6 +136,7 @@ public class SaleService {
                     .mainStoneNote(stock.getStockMainStoneNote())
                     .assistanceStoneNote(stock.getStockAssistanceStoneNote())
                     .note(stock.getStockNote())
+                    .accountGoldPrice(saleItem.getSale().getAccountGoldPrice())
                     .goldWeight(product.getGoldWeight())
                     .stoneWeight(product.getStoneWeight())
                     .productLaborCost(product.getProductLaborCost())
@@ -158,6 +159,7 @@ public class SaleService {
                 .flowCode(salePayment.getFlowCode())
                 .createAt(String.valueOf(salePayment.getCreateDate()))
                 .saleType(salePayment.getSaleStatus().name())
+                .id(sale.getAccountId().toString())
                 .name(sale.getAccountName())
                 .grade(sale.getAccountGrade())
                 .harry(sale.getAccountHarry())
@@ -174,7 +176,13 @@ public class SaleService {
         return customSaleRepository.findSales(condition, pageable);
     }
 
-    // 판매 상품 수정
+    /**
+     * 판매 상품 수정
+     * @param accessToken
+     * @param eventId
+     * @param flowCode
+     * @param updateDto
+     */
     public void updateSale(String accessToken, String eventId, Long flowCode, SaleDto.updateRequest updateDto) {
         String tenantId = jwtUtil.getTenantId(accessToken);
         String nickname = jwtUtil.getNickname(accessToken);
@@ -190,7 +198,14 @@ public class SaleService {
         }
     }
 
-    // 재고 -> 판매
+    /**
+     * 재고 -> 판매 등록
+     * @param accessToken 유저 유효성 체크
+     * @param eventId 멱등성 ID
+     * @param flowCode 고유 주문 상품 번호
+     * @param stockDto 판매 내역
+     * @param createNewSheet 기존 주문창 추가(true) 혹은 신규 생성(false)
+     */
     public void stockToSale(String accessToken, String eventId, Long flowCode, StockDto.stockRequest stockDto, boolean createNewSheet) {
 
         String nickname = jwtUtil.getNickname(accessToken);
@@ -218,6 +233,9 @@ public class SaleService {
         BigDecimal storeHarry = stock.getStoreHarry();
         String grade = stock.getStoreGrade();
 
+        Long factoryId = stock.getFactoryId();
+        String factoryName = stock.getFactoryName();
+
         createOrAddToSale(stock, saleDate, storeId, storeName, storeHarry, grade, createNewSheet);
 
         stock.updateOrderStatus(OrderStatus.SALE);
@@ -232,20 +250,17 @@ public class SaleService {
         Integer totalBalanceMoney = stock.getTotalStoneLaborCost() + stockDto.getStoneAddLaborCost() +
                 stock.getProduct().getProductLaborCost() + stockDto.getAddProductLaborCost();
 
-        AccountDto.updateCurrentBalance dto = AccountDto.updateCurrentBalance.builder()
-                .eventId(eventId)
-                .tenantId(tenantId)
-                .saleType(SaleStatus.SALE.name())
-                .type("STORE")
-                .id(storeId)
-                .name(storeName)
-                .pureGoldBalance(pureGoldWeight)
-                .moneyBalance(totalBalanceMoney)
-                .build();
-
-        publishAccountEvent(eventId, tenantId, storeId, dto);
+        publishBalanceChange(eventId, tenantId, SaleStatus.SALE.name(), "STORE", storeId, storeName, pureGoldWeight, totalBalanceMoney);
+        publishBalanceChange(eventId, tenantId, SaleStatus.SALE.name(), "FACTORY", factoryId, factoryName, pureGoldWeight, totalBalanceMoney);
     }
 
+    /**
+     * 상품 미수금 결제 처리
+     * @param accessToken 유저 유효성 체크
+     * @param eventId 멱등성 체크
+     * @param saleDto 상품 결제 정보
+     * @param createNewSheet 주문창 추가 여부 (추가 true/신규 false)
+     */
     public void createPayment(String accessToken, String eventId, SaleDto.Request saleDto, boolean createNewSheet) {
 
         if (!StringUtils.hasText(eventId)) {
@@ -262,6 +277,7 @@ public class SaleService {
             String grade = saleDto.getGrade();
 
             Sale sale = getSale(saleDate, storeId, storeName, harry, grade, createNewSheet);
+            sale.updateAccountGoldPrice(saleDto.getAccountGoldPrice());
 
             SalePayment payment = createSalePayment(saleDto);
             payment.updateEventId(eventId);
@@ -270,22 +286,10 @@ public class SaleService {
 
             BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(saleDto.getGoldWeight(), saleDto.getMaterial().toUpperCase(), harry);
 
-            AccountDto.updateCurrentBalance dto = AccountDto.updateCurrentBalance.builder()
-                    .eventId(eventId)
-                    .tenantId(tenantId)
-                    .saleType(saleDto.getOrderStatus())
-                    .type("STORE")
-                    .id(storeId)
-                    .name(storeName)
-                    .pureGoldBalance(pureGoldWeight.negate())
-                    .moneyBalance(saleDto.getPayAmount() * -1)
-                    .build();
-
-            publishAccountEvent(eventId, tenantId, storeId, dto);
+            publishBalanceChange(eventId, tenantId, saleDto.getOrderStatus(), "STORE", storeId, storeName, pureGoldWeight.negate(), saleDto.getPayAmount() * -1);
         } catch (DataIntegrityViolationException e) {
             log.warn("멱등성 키 중복: 이미 처리된 요청입니다. eventId={}", eventId);
         }
-
     }
 
     //반품 로직 -> 제품은 다시 재고로, 결제는 다시 원복 -> 마지막 결제일의 경우?
@@ -325,6 +329,9 @@ public class SaleService {
             String materialName = saleItem.getStock().getProduct().getMaterialName();
             BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(goldWeight.toPlainString(), materialName.toUpperCase(), sale.getAccountHarry());
 
+            Long factoryId = stock.getFactoryId();
+            String factoryName = stock.getFactoryName();
+
             Integer productLaborCost = saleItem.getStock().getProduct().getProductLaborCost();
             Integer productAddLaborCost = saleItem.getStock().getProduct().getProductAddLaborCost();
             Integer totalStoneLaborCost = saleItem.getStock().getTotalStoneLaborCost();
@@ -335,35 +342,14 @@ public class SaleService {
             updateNewHistory(newFlowCode, nickname, BusinessPhase.RETURN);
 
             // 미수액 변경
-            AccountDto.updateCurrentBalance dto = AccountDto.updateCurrentBalance.builder()
-                    .eventId(eventId)
-                    .tenantId(tenantId)
-                    .saleType(sale.getSaleStatus().name())
-                    .type("STORE")
-                    .id(storeId)
-                    .name(storeName)
-                    .pureGoldBalance(pureGoldWeight.negate())
-                    .moneyBalance(totalLaborCost * -1)
-                    .build();
-
-            publishAccountEvent(eventId, tenantId, storeId, dto);
+            publishBalanceChange(eventId, tenantId, sale.getSaleStatus().name(), "STORE", storeId, storeName, pureGoldWeight.negate(), totalLaborCost * -1);
+            publishBalanceChange(eventId, tenantId, sale.getSaleStatus().name(), "FACTORY", factoryId, factoryName, pureGoldWeight.negate(), totalLaborCost * -1);
         } else if (PAYMENT_STATUSES.contains(SaleStatus.valueOf(type))) {
             SalePayment payment = salePaymentRepository.findByFlowCode(newFlowCode)
                     .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
             Sale sale = payment.getSale();
-            AccountDto.updateCurrentBalance dto = AccountDto.updateCurrentBalance.builder()
-                    .eventId(eventId)
-                    .tenantId(tenantId)
-                    .saleType(payment.getSaleStatus().name())
-                    .type("STORE")
-                    .id(sale.getAccountId())
-                    .name(sale.getAccountName())
-                    .pureGoldBalance(payment.getPureGoldWeight().negate())
-                    .moneyBalance(payment.getCashAmount() * -1)
-                    .build();
-
-            publishAccountEvent(eventId, tenantId, sale.getAccountId(), dto);
+            publishBalanceChange(eventId, tenantId, sale.getSaleStatus().name(), "STORE", sale.getAccountId(), sale.getAccountName(), payment.getPureGoldWeight().negate(), payment.getCashAmount() * -1);
             salePaymentRepository.delete(payment);
         } else {
             throw new IllegalArgumentException("처리할 수 없는 취소 타입입니다: " + type);
@@ -390,25 +376,20 @@ public class SaleService {
         BigDecimal storeHarry = stock.getStoreHarry();
         String grade = stock.getStoreGrade();
 
+        Long factoryId = stock.getFactoryId();
+        String factoryName = stock.getFactoryName();
+
         createOrAddToSale(stock, saleDate, storeId, storeName, storeHarry, grade, createNewSheet);
         stock.updateOrderStatus(OrderStatus.SALE);
 
         updateNewHistory(stock.getFlowCode(), nickname, BusinessPhase.SALE);
 
         BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), stockDto.getMaterialName().toUpperCase(), storeHarry);
+        Integer totalBalanceMoney = stock.getTotalStoneLaborCost() + stockDto.getStoneAddLaborCost() +
+                stock.getProduct().getProductLaborCost() + stockDto.getProductAddLaborCost();
 
-        AccountDto.updateCurrentBalance dto = AccountDto.updateCurrentBalance.builder()
-                .eventId(eventId)
-                .tenantId(tenantId)
-                .saleType(SaleStatus.SALE.name())
-                .type("STORE")
-                .id(storeId)
-                .name(storeName)
-                .pureGoldBalance(pureGoldWeight)
-                .moneyBalance(stock.getTotalStoneLaborCost())
-                .build();
-
-        publishAccountEvent(eventId, tenantId, storeId, dto);
+        publishBalanceChange(eventId, tenantId, SaleStatus.SALE.name(), "STORE", storeId, storeName, pureGoldWeight, totalBalanceMoney);
+        publishBalanceChange(eventId, tenantId, SaleStatus.SALE.name(), "FACTORY", factoryId, factoryName, pureGoldWeight, totalBalanceMoney);
     }
 
     // 과거 판매 내역
@@ -446,6 +427,7 @@ public class SaleService {
         return saleDetailDtos;
     }
 
+    // 판매 수정
     private void performUpdate(String eventId, Long flowCode, SaleDto.updateRequest updateDto, String tenantId, String nickname) {
 
         SaleItem saleItem = saleItemRepository.findByFlowCode(flowCode)
@@ -491,18 +473,24 @@ public class SaleService {
 
         BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(updateDto.getGoldWeight(), stock.getProduct().getMaterialName().toUpperCase(), stock.getStoreHarry());
 
+        publishBalanceChange(eventId, tenantId, SaleStatus.SALE.name(), "STORE", stock.getStoreId(), stock.getStoreName(), pureGoldWeight, moneyBalanceDelta);
+    }
+
+    private void publishBalanceChange(String eventId, String tenantId, String saleType,
+                                      String type, Long id, String name,
+                                      BigDecimal pureGoldBalance, Integer moneyBalance) {
         AccountDto.updateCurrentBalance dto = AccountDto.updateCurrentBalance.builder()
                 .eventId(eventId)
                 .tenantId(tenantId)
-                .saleType(SaleStatus.SALE.name())
-                .type("STORE")
-                .id(stock.getStoreId())
-                .name(stock.getStoreName())
-                .pureGoldBalance(pureGoldWeight)
-                .moneyBalance(moneyBalanceDelta)
+                .saleType(saleType)
+                .type(type)
+                .id(id)
+                .name(name)
+                .pureGoldBalance(pureGoldBalance)
+                .moneyBalance(moneyBalance)
                 .build();
 
-        publishAccountEvent(eventId, tenantId, stock.getStoreId(), dto);
+        publishAccountEvent(eventId, tenantId, id, dto);
     }
 
     private void publishAccountEvent(String eventId, String tenantId, Long accountId, AccountDto.updateCurrentBalance dto) {
@@ -617,15 +605,30 @@ public class SaleService {
         statusHistoryRepository.save(statusHistory);
     }
 
+    /**
+     * 당일 주문장 존재 여부 확인
+     * @param accountId 주문 가게 아이디
+     * @return true(존재), false(미존재)
+     */
     public String checkBeforeSale(Long accountId) {
         LocalDate today = LocalDate.now();
         LocalDateTime startOfDay = today.atStartOfDay();
         LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
 
-        String saleCodeByAccountIdAndDate = saleRepository.findSaleCodeByAccountIdAndDate(accountId, startOfDay, endOfDay)
+        return saleRepository.findSaleCodeByAccountIdAndDate(accountId, startOfDay, endOfDay)
                 .map(String::valueOf)
                 .orElse("");
+    }
 
-        return saleCodeByAccountIdAndDate;
+    /**
+     * 주문장 시세 추가
+     * @param saleCode 주문장 고유 번호
+     * @param accountGoldPrice 추가할 시세
+     */
+    public void updateAccountGoldPrice(String saleCode, Integer accountGoldPrice) {
+        Sale sale = saleRepository.findBySaleCode(Long.valueOf(saleCode))
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        sale.updateAccountGoldPrice(accountGoldPrice);
     }
 }

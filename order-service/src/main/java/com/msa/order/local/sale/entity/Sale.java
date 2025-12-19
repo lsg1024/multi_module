@@ -60,14 +60,20 @@ public class Sale extends BaseEntity {
     }
 
     @Builder
-    public Sale(SaleStatus saleStatus, Long accountId, String accountName, BigDecimal accountHarry, String accountGrade, Integer accountGoldPrice, List<SaleItem> items) {
+    public Sale(SaleStatus saleStatus, Long accountId, String accountName, BigDecimal accountHarry, String accountGrade, List<SaleItem> items) {
         this.saleStatus = saleStatus;
         this.accountId = accountId;
         this.accountName = accountName;
         this.accountHarry = accountHarry;
         this.accountGrade = accountGrade;
-        this.accountGoldPrice = accountGoldPrice;
         this.items = items;
+    }
+
+    public void updateAccountGoldPrice(Integer newPrice) {
+        if (this.accountGoldPrice != null && this.accountGoldPrice > 0) {
+            throw new IllegalArgumentException("금 시세가 이미 설정되어 있어 변경할 수 없습니다.");
+        }
+        this.accountGoldPrice = newPrice;
     }
 
     public void addItem(SaleItem item) {
