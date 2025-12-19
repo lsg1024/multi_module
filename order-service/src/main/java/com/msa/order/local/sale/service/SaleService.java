@@ -136,6 +136,7 @@ public class SaleService {
                     .mainStoneNote(stock.getStockMainStoneNote())
                     .assistanceStoneNote(stock.getStockAssistanceStoneNote())
                     .note(stock.getStockNote())
+                    .accountGoldPrice(saleItem.getSale().getAccountGoldPrice())
                     .goldWeight(product.getGoldWeight())
                     .stoneWeight(product.getStoneWeight())
                     .productLaborCost(product.getProductLaborCost())
@@ -175,7 +176,13 @@ public class SaleService {
         return customSaleRepository.findSales(condition, pageable);
     }
 
-    // 판매 상품 수정
+    /**
+     * 판매 상품 수정
+     * @param accessToken
+     * @param eventId
+     * @param flowCode
+     * @param updateDto
+     */
     public void updateSale(String accessToken, String eventId, Long flowCode, SaleDto.updateRequest updateDto) {
         String tenantId = jwtUtil.getTenantId(accessToken);
         String nickname = jwtUtil.getNickname(accessToken);
@@ -191,7 +198,14 @@ public class SaleService {
         }
     }
 
-    // 재고 -> 판매
+    /**
+     * 재고 -> 판매 등록
+     * @param accessToken 유저 유효성 체크
+     * @param eventId 멱등성 ID
+     * @param flowCode 고유 주문 상품 번호
+     * @param stockDto 판매 내역
+     * @param createNewSheet 기존 주문창 추가(true) 혹은 신규 생성(false)
+     */
     public void stockToSale(String accessToken, String eventId, Long flowCode, StockDto.stockRequest stockDto, boolean createNewSheet) {
 
         String nickname = jwtUtil.getNickname(accessToken);
@@ -240,6 +254,13 @@ public class SaleService {
         publishBalanceChange(eventId, tenantId, SaleStatus.SALE.name(), "FACTORY", factoryId, factoryName, pureGoldWeight, totalBalanceMoney);
     }
 
+    /**
+     * 상품 미수금 결제 처리
+     * @param accessToken 유저 유효성 체크
+     * @param eventId 멱등성 체크
+     * @param saleDto 상품 결제 정보
+     * @param createNewSheet 주문창 추가 여부 (추가 true/신규 false)
+     */
     public void createPayment(String accessToken, String eventId, SaleDto.Request saleDto, boolean createNewSheet) {
 
         if (!StringUtils.hasText(eventId)) {
@@ -256,6 +277,7 @@ public class SaleService {
             String grade = saleDto.getGrade();
 
             Sale sale = getSale(saleDate, storeId, storeName, harry, grade, createNewSheet);
+            sale.updateAccountGoldPrice(saleDto.getAccountGoldPrice());
 
             SalePayment payment = createSalePayment(saleDto);
             payment.updateEventId(eventId);
@@ -405,6 +427,7 @@ public class SaleService {
         return saleDetailDtos;
     }
 
+    // 판매 수정
     private void performUpdate(String eventId, Long flowCode, SaleDto.updateRequest updateDto, String tenantId, String nickname) {
 
         SaleItem saleItem = saleItemRepository.findByFlowCode(flowCode)
@@ -582,15 +605,30 @@ public class SaleService {
         statusHistoryRepository.save(statusHistory);
     }
 
+    /**
+     * 당일 주문장 존재 여부 확인
+     * @param accountId 주문 가게 아이디
+     * @return true(존재), false(미존재)
+     */
     public String checkBeforeSale(Long accountId) {
         LocalDate today = LocalDate.now();
         LocalDateTime startOfDay = today.atStartOfDay();
         LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
 
-        String saleCodeByAccountIdAndDate = saleRepository.findSaleCodeByAccountIdAndDate(accountId, startOfDay, endOfDay)
+        return saleRepository.findSaleCodeByAccountIdAndDate(accountId, startOfDay, endOfDay)
                 .map(String::valueOf)
                 .orElse("");
+    }
 
-        return saleCodeByAccountIdAndDate;
+    /**
+     * 주문장 시세 추가
+     * @param saleCode 주문장 고유 번호
+     * @param accountGoldPrice 추가할 시세
+     */
+    public void updateAccountGoldPrice(String saleCode, Integer accountGoldPrice) {
+        Sale sale = saleRepository.findBySaleCode(Long.valueOf(saleCode))
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        sale.updateAccountGoldPrice(accountGoldPrice);
     }
 }

@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface SaleRepository extends JpaRepository<Sale, Long> {
+    Optional<Sale> findBySaleCode(Long saleCode);
     @Query("select s from Sale s " +
             "where s.accountId= :accountId " +
             "and s.createDate between :start and :end " +

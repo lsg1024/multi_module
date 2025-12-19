@@ -127,4 +127,13 @@ public class SaleController {
         return ResponseEntity.ok(ApiResponse.success(saleDetailDtos));
     }
 
+    // 주문장 시세 추가
+    @PatchMapping("/sales/update/gold-price")
+    public ResponseEntity<ApiResponse<String>> updateAccountGoldPrice(
+            @RequestParam("id") String saleCode,
+            @RequestBody Integer accountGoldPrice) {
+        saleService.updateAccountGoldPrice(saleCode, accountGoldPrice);
+        return ResponseEntity.ok(ApiResponse.success("추가 완료"));
+    }
+
 }

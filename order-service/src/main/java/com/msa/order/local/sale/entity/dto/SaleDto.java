@@ -26,6 +26,7 @@ public class SaleDto {
         private String mainStoneNote;
         private String assistanceStoneNote;
         private String note;
+        private Integer accountGoldPrice;
         private BigDecimal goldWeight;
         private BigDecimal stoneWeight;
         private Integer productLaborCost;
@@ -38,7 +39,7 @@ public class SaleDto {
         private List<StoneDto.StoneInfo> stoneInfos;
 
         @Builder
-        public Response(Long flowCode, String createAt, String saleType, String id, String name, String grade, BigDecimal harry, String productName, String productSize, String materialName, String colorName, String mainStoneNote, String assistanceStoneNote, String note, BigDecimal goldWeight, BigDecimal stoneWeight, Integer productLaborCost, Integer productAddLaborCost, Integer addStoneLaborCost, Boolean assistantStone, String assistantStoneId, String assistantStoneName, String assistantStoneCreateAt, List<StoneDto.StoneInfo> stoneInfos) {
+        public Response(Long flowCode, String createAt, String saleType, String id, String name, String grade, BigDecimal harry, String productName, String productSize, String materialName, String colorName, String mainStoneNote, String assistanceStoneNote, String note, Integer accountGoldPrice, BigDecimal goldWeight, BigDecimal stoneWeight, Integer productLaborCost, Integer productAddLaborCost, Integer addStoneLaborCost, Boolean assistantStone, String assistantStoneId, String assistantStoneName, String assistantStoneCreateAt, List<StoneDto.StoneInfo> stoneInfos) {
             this.flowCode = flowCode;
             this.createAt = createAt;
             this.saleType = saleType;
@@ -53,6 +54,7 @@ public class SaleDto {
             this.mainStoneNote = mainStoneNote;
             this.assistanceStoneNote = assistanceStoneNote;
             this.note = note;
+            this.accountGoldPrice = accountGoldPrice;
             this.goldWeight = goldWeight;
             this.stoneWeight = stoneWeight;
             this.productLaborCost = productLaborCost;
@@ -69,6 +71,7 @@ public class SaleDto {
     @Getter
     @NoArgsConstructor
     public static class Request {
+        private Integer accountGoldPrice;
         private Long id;
         private String name;
         private BigDecimal harry;
