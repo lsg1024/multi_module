@@ -158,6 +158,7 @@ public class SaleService {
                 .flowCode(salePayment.getFlowCode())
                 .createAt(String.valueOf(salePayment.getCreateDate()))
                 .saleType(salePayment.getSaleStatus().name())
+                .id(sale.getAccountId().toString())
                 .name(sale.getAccountName())
                 .grade(sale.getAccountGrade())
                 .harry(sale.getAccountHarry())

@@ -15,6 +15,7 @@ public class SaleDto {
         private Long flowCode;
         private String createAt;
         private String saleType;
+        private String id;
         private String name;
         private String grade;
         private BigDecimal harry;
@@ -37,10 +38,11 @@ public class SaleDto {
         private List<StoneDto.StoneInfo> stoneInfos;
 
         @Builder
-        public Response(Long flowCode, String createAt, String saleType, String name, String grade, BigDecimal harry, String productName, String productSize, String materialName, String colorName, String mainStoneNote, String assistanceStoneNote, String note, BigDecimal goldWeight, BigDecimal stoneWeight, Integer productLaborCost, Integer productAddLaborCost, Integer addStoneLaborCost, Boolean assistantStone, String assistantStoneId, String assistantStoneName, String assistantStoneCreateAt, List<StoneDto.StoneInfo> stoneInfos) {
+        public Response(Long flowCode, String createAt, String saleType, String id, String name, String grade, BigDecimal harry, String productName, String productSize, String materialName, String colorName, String mainStoneNote, String assistanceStoneNote, String note, BigDecimal goldWeight, BigDecimal stoneWeight, Integer productLaborCost, Integer productAddLaborCost, Integer addStoneLaborCost, Boolean assistantStone, String assistantStoneId, String assistantStoneName, String assistantStoneCreateAt, List<StoneDto.StoneInfo> stoneInfos) {
             this.flowCode = flowCode;
             this.createAt = createAt;
             this.saleType = saleType;
+            this.id = id;
             this.name = name;
             this.grade = grade;
             this.harry = harry;
