@@ -17,13 +17,13 @@ public class GoldController {
         this.goldService = goldService;
     }
 
-    @GetMapping("/gold")
+    @GetMapping("/gold-price")
     public ResponseEntity<ApiResponse<Integer>> getGoldPrice() {
         Integer goldPrice = goldService.getGoldPrice();
         return ResponseEntity.ok(ApiResponse.success(goldPrice));
     }
 
-    @PostMapping("/gold")
+    @PostMapping("/gold-price")
     public ResponseEntity<ApiResponse<String>> createGoldPrice(
             @RequestParam(name = "price") Integer price) {
         goldService.createGoldPrice(price);
