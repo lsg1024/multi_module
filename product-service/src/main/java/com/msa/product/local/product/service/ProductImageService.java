@@ -97,7 +97,7 @@ public class ProductImageService {
     }
 
     @Transactional(readOnly = true)
-    public Map<Long, ProductImageDto.ApiResponse> getImagesByProductIds(List<Long> productIds) {
+    public Map<Long, ProductImageDto.ProductImageResponse> getImagesByProductIds(List<Long> productIds) {
         if (productIds == null || productIds.isEmpty()) {
             return Collections.emptyMap();
         }

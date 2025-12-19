@@ -7,5 +7,5 @@ import java.util.Map;
 
 public interface CustomProductImageRepository {
     List<ProductImageDto.Response> findImagesByProductId(Long productId);
-    Map<Long, ProductImageDto.ApiResponse> findMainImagesByProductIds(List<Long> productIds);
+    Map<Long, ProductImageDto.ProductImageResponse> findMainImagesByProductIds(List<Long> productIds);
 }
