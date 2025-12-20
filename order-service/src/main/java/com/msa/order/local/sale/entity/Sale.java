@@ -2,7 +2,7 @@ package com.msa.order.local.sale.entity;
 
 import com.github.f4b6a3.tsid.TsidCreator;
 import com.msa.common.global.domain.BaseEntity;
-import com.msa.order.local.sale.sale_enum.SaleStatus;
+import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

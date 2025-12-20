@@ -1,7 +1,7 @@
 package com.msa.order.local.sale.entity;
 
 import com.msa.common.global.domain.BaseEntity;
-import com.msa.order.local.sale.sale_enum.SaleStatus;
+import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import com.msa.order.local.stock.entity.Stock;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

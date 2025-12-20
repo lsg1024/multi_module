@@ -40,4 +40,9 @@ public class TransactionHistoryService {
     public CustomPage<TransactionPage> findAccountPurchase(String start, String end, String accountType, String accountName, Pageable pageable) {
         return transactionHistoryRepository.findTransactionHistory(start, end, accountType, accountName, pageable);
     }
+
+    @Transactional(readOnly = true)
+    public CustomPage<TransactionPage> findFactoryPurchase(String start, String end, String accountType, String accountName, Pageable pageable) {
+        return transactionHistoryRepository.findTransactionHistoryFactory(start, end, accountType, accountName, pageable);
+    }
 }
