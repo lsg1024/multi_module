@@ -32,7 +32,7 @@ public class TransactionHistoryController {
     }
 
     //매입 목록 호출 기능 -> 오늘 판매된 상품에 대한 공장 미수 데이터를 말함
-    @GetMapping("/account/purchase")
+    @GetMapping("/purchase")
     public ResponseEntity<ApiResponse<CustomPage<TransactionPage>>> getAccountPurchases(
             @RequestParam("start") String start,
             @RequestParam("end") String end,
@@ -45,7 +45,7 @@ public class TransactionHistoryController {
         return ResponseEntity.ok(ApiResponse.success(accountPurchasePage));
     }
 
-    @GetMapping("/account/purchase/factory")
+    @GetMapping("/purchase/factory")
     public ResponseEntity<ApiResponse<CustomPage<TransactionPage>>> getFactoryPurchase(
             @RequestParam("start") String start,
             @RequestParam("end") String end,
