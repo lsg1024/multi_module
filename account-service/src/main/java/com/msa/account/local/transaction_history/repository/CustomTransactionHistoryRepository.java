@@ -6,4 +6,5 @@ import org.springframework.data.domain.Pageable;
 
 public interface CustomTransactionHistoryRepository {
     CustomPage<TransactionPage> findTransactionHistory(String start, String end, String accountType, String accountName, Pageable pageable);
+    CustomPage<TransactionPage> findTransactionHistoryFactory(String start, String end, String accountType, String accountName, Pageable pageable);
 }

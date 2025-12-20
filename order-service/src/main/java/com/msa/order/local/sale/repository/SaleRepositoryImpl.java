@@ -6,7 +6,7 @@ import com.msa.order.local.sale.entity.dto.QSaleDto_SaleDetailDto;
 import com.msa.order.local.sale.entity.dto.QSaleItemResponse;
 import com.msa.order.local.sale.entity.dto.SaleDto;
 import com.msa.order.local.sale.entity.dto.SaleItemResponse;
-import com.msa.order.local.sale.sale_enum.SaleStatus;
+import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.dsl.*;

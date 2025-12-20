@@ -3,7 +3,6 @@ package com.msa.account.local.transaction_history.repository;
 import com.msa.account.local.transaction_history.domain.dto.QTransactionPage;
 import com.msa.account.local.transaction_history.domain.dto.TransactionPage;
 import com.msa.common.global.util.CustomPage;
-import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Coalesce;
 import com.querydsl.jpa.impl.JPAQuery;
@@ -33,8 +32,6 @@ public class TransactionHistoryRepositoryImpl implements CustomTransactionHistor
     @Override
     public CustomPage<TransactionPage> findTransactionHistory(String start, String end, String accountType, String accountName, Pageable pageable) {
 
-        BooleanBuilder builder = new BooleanBuilder();
-
         List<TransactionPage> content = query
                 .select(new QTransactionPage(
                         transactionHistory.eventId,
@@ -49,6 +46,43 @@ public class TransactionHistoryRepositoryImpl implements CustomTransactionHistor
                 ))
                 .from(transactionHistory)
                 .leftJoin(transactionHistory.store, store)
+                .leftJoin(transactionHistory.factory, factory)
+                .where(
+                        transactionHistory.transactionDeleted.isFalse(),
+                        dateBetween(start, end),
+                        accountTypeEq(accountType),
+                        accountNameEq(accountName)
+                )
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .orderBy(transactionHistory.transactionId.desc())
+                .fetch();
+
+        JPAQuery<Long> countQuery = query
+                .select(transactionHistory.count())
+                .from(transactionHistory)
+                .where(
+                        transactionHistory.transactionDeleted.isFalse(),
+                        dateBetween(start, end),
+                        accountTypeEq(accountType),
+                        accountNameEq(accountName)
+                );
+
+        return new CustomPage<>(content, pageable, countQuery.fetchOne());
+    }
+
+    @Override
+    public CustomPage<TransactionPage> findTransactionHistoryFactory(String start, String end, String accountType, String accountName, Pageable pageable) {
+        List<TransactionPage> content = query
+                .select(new QTransactionPage(
+                        transactionHistory.eventId,
+                        transactionHistory.factory.factoryName,
+                        transactionHistory.transactionDate.stringValue(),
+                        transactionHistory.goldAmount.stringValue(),
+                        transactionHistory.moneyAmount.stringValue(),
+                        transactionHistory.transactionType.stringValue()
+                ))
+                .from(transactionHistory)
                 .leftJoin(transactionHistory.factory, factory)
                 .where(
                         transactionHistory.transactionDeleted.isFalse(),

@@ -26,7 +26,7 @@ import com.msa.order.local.sale.repository.CustomSaleRepository;
 import com.msa.order.local.sale.repository.SaleItemRepository;
 import com.msa.order.local.sale.repository.SalePaymentRepository;
 import com.msa.order.local.sale.repository.SaleRepository;
-import com.msa.order.local.sale.sale_enum.SaleStatus;
+import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import com.msa.order.local.stock.dto.StockDto;
 import com.msa.order.local.stock.entity.ProductSnapshot;
 import com.msa.order.local.stock.entity.Stock;
@@ -286,7 +286,8 @@ public class SaleService {
 
             BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(saleDto.getGoldWeight(), saleDto.getMaterial().toUpperCase(), harry);
 
-            publishBalanceChange(eventId, tenantId, saleDto.getOrderStatus(), "STORE", storeId, storeName, pureGoldWeight.negate(), saleDto.getPayAmount() * -1);
+            SaleStatus saleStatus = SaleStatus.valueOf(saleDto.getOrderStatus());
+            publishBalanceChange(eventId, tenantId, saleStatus.name(), "STORE", storeId, storeName, pureGoldWeight.negate(), saleDto.getPayAmount() * -1);
         } catch (DataIntegrityViolationException e) {
             log.warn("멱등성 키 중복: 이미 처리된 요청입니다. eventId={}", eventId);
         }

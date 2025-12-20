@@ -45,5 +45,17 @@ public class TransactionHistoryController {
         return ResponseEntity.ok(ApiResponse.success(accountPurchasePage));
     }
 
+    @GetMapping("/account/purchase/factory")
+    public ResponseEntity<ApiResponse<CustomPage<TransactionPage>>> getFactoryPurchase(
+            @RequestParam("start") String start,
+            @RequestParam("end") String end,
+            @RequestParam(value = "accountType", required = false) String accountType,
+            @RequestParam(value = "accountName", required = false) String accountName,
+            @PageableDefault(size = 20) Pageable pageable) {
+        CustomPage<TransactionPage> accountPurchasePage = transactionHistoryService.findFactoryPurchase(start, end, accountType, accountName, pageable);
+
+        return ResponseEntity.ok(ApiResponse.success(accountPurchasePage));
+    }
+
 
 }

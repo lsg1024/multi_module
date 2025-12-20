@@ -8,6 +8,7 @@ import com.msa.account.global.excel.dto.AccountExcelDto;
 import com.msa.account.global.excel.dto.QAccountExcelDto;
 import com.msa.account.local.store.domain.dto.QStoreDto_StoreResponse;
 import com.msa.account.local.store.domain.dto.StoreDto;
+import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import com.msa.common.global.util.CustomPage;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
@@ -182,7 +183,8 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                 .select(latestTransactionDateString)
                 .from(transactionHistory)
                 .where(transactionHistory.store.eq(store)
-                        .and(transactionHistory.transactionDeleted.isFalse()));
+                        .and(transactionHistory.transactionDeleted.isFalse())
+                        .and(transactionHistory.transactionType.eq(SaleStatus.PAYMENT.name())));
 
         return query
                 .select(new QAccountDto_accountResponse(
