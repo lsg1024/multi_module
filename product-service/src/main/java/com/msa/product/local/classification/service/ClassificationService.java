@@ -64,8 +64,8 @@ public class ClassificationService {
         Classification classification = classificationRepository.findById(classificationId)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        boolean existsByClassificationName = classificationRepository.existsByClassificationName(classificationDto.getName());
-        if (existsByClassificationName) {
+        if (!classification.getClassificationName().equals(classificationDto.getName())
+                && classificationRepository.existsByClassificationName(classificationDto.getName())) {
             throw new IllegalArgumentException(IS_EXIST);
         }
 
