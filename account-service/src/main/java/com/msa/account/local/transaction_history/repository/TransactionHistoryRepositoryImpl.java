@@ -83,7 +83,7 @@ public class TransactionHistoryRepositoryImpl implements CustomTransactionHistor
                         transactionHistory.transactionType.stringValue()
                 ))
                 .from(transactionHistory)
-                .leftJoin(transactionHistory.factory, factory)
+                .join(transactionHistory.factory, factory)
                 .where(
                         transactionHistory.transactionDeleted.isFalse(),
                         dateBetween(start, end),
