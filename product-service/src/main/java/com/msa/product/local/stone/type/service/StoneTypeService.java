@@ -63,7 +63,7 @@ public class StoneTypeService {
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         boolean existsByTypeName = stoneTypeRepository.existsByStoneTypeName(stoneTypeDto.getName());
-        if (existsByTypeName) {
+        if (!stoneType.getStoneTypeName().equals(stoneTypeDto.getName()) && existsByTypeName) {
             throw new IllegalArgumentException(IS_EXIST);
         }
 

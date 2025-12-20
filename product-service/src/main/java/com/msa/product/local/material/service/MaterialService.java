@@ -67,7 +67,7 @@ public class MaterialService {
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         boolean existsByMaterialName = materialRepository.existsByMaterialName(materialDto.getName());
-        if (existsByMaterialName) {
+        if (!material.getMaterialName().equals(materialDto.getName()) && existsByMaterialName) {
             throw new IllegalArgumentException(IS_EXIST);
         }
 

@@ -105,6 +105,7 @@ public class ProductDto {
         private String productNote;
         private String productPurchaseCost;
         private String productLaborCost;
+        private Integer productGoldPrice;
         private ProductImageDto.Response image;
         private List<ProductStoneDto.PageResponse> productStones;
 
@@ -124,6 +125,10 @@ public class ProductDto {
             this.factoryName = factoryName;
             this.image = image;
             this.productStones = new ArrayList<>();
+        }
+
+        public void updateGoldPrice(Integer goldPrice) {
+            this.productGoldPrice = goldPrice;
         }
     }
 

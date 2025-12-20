@@ -1,7 +1,7 @@
 package com.msa.product.local.product.repository.image;
 
 import com.msa.product.local.product.dto.ProductImageDto;
-import com.msa.product.local.product.dto.QProductImageDto_ApiResponse;
+import com.msa.product.local.product.dto.QProductImageDto_ProductImageResponse;
 import com.msa.product.local.product.dto.QProductImageDto_Response;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -37,9 +37,9 @@ public class ProductImageRepositoryImpl implements CustomProductImageRepository 
     }
 
     @Override
-    public Map<Long, ProductImageDto.ApiResponse> findMainImagesByProductIds(List<Long> productIds) {
-        List<ProductImageDto.ApiResponse> imageDtos = query
-                .select(new QProductImageDto_ApiResponse(
+    public Map<Long, ProductImageDto.ProductImageResponse> findMainImagesByProductIds(List<Long> productIds) {
+        List<ProductImageDto.ProductImageResponse> imageDtos = query
+                .select(new QProductImageDto_ProductImageResponse(
                         productImage.product.productId,
                         productImage.imagePath
                 ))
@@ -52,7 +52,7 @@ public class ProductImageRepositoryImpl implements CustomProductImageRepository 
 
         return imageDtos.stream()
                 .collect(Collectors.toMap(
-                        ProductImageDto.ApiResponse::getProductId,
+                        ProductImageDto.ProductImageResponse::getProductId,
                         dto -> dto
                 ));
     }

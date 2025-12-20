@@ -7,6 +7,8 @@ import com.msa.product.local.classification.entity.Classification;
 import com.msa.product.local.classification.repository.ClassificationRepository;
 import com.msa.product.local.color.entity.Color;
 import com.msa.product.local.color.repository.ColorRepository;
+import com.msa.product.local.goldPrice.entity.Gold;
+import com.msa.product.local.goldPrice.repository.GoldRepository;
 import com.msa.product.local.grade.WorkGrade;
 import com.msa.product.local.material.entity.Material;
 import com.msa.product.local.material.repository.MaterialRepository;
@@ -49,12 +51,13 @@ public class ProductService {
     private final ColorRepository colorRepository;
     private final StoneRepository stoneRepository;
     private final ProductRepository productRepository;
+    private final GoldRepository goldRepository;
     private final ProductStoneRepository productStoneRepository;
     private final ProductImageRepository productImageRepository;
     private final ProductWorkGradePolicyGroupRepository productWorkGradePolicyGroupRepository;
     private final CustomProductWorkGradePolicyGroup customProductWorkGradePolicyGroupRepository;
 
-    public ProductService(JwtUtil jwtUtil, FactoryClient factoryClient, SetTypeRepository setTypeRepository, MaterialRepository materialRepository, ClassificationRepository classificationRepository, ColorRepository colorRepository, StoneRepository stoneRepository, ProductRepository productRepository, ProductStoneRepository productStoneRepository, ProductImageRepository productImageRepository, ProductWorkGradePolicyGroupRepository productWorkGradePolicyGroupRepository, CustomProductWorkGradePolicyGroup customProductWorkGradePolicyGroupRepository) {
+    public ProductService(JwtUtil jwtUtil, FactoryClient factoryClient, SetTypeRepository setTypeRepository, MaterialRepository materialRepository, ClassificationRepository classificationRepository, ColorRepository colorRepository, StoneRepository stoneRepository, ProductRepository productRepository, GoldRepository goldRepository, ProductStoneRepository productStoneRepository, ProductImageRepository productImageRepository, ProductWorkGradePolicyGroupRepository productWorkGradePolicyGroupRepository, CustomProductWorkGradePolicyGroup customProductWorkGradePolicyGroupRepository) {
         this.jwtUtil = jwtUtil;
         this.factoryClient = factoryClient;
         this.setTypeRepository = setTypeRepository;
@@ -63,6 +66,7 @@ public class ProductService {
         this.colorRepository = colorRepository;
         this.stoneRepository = stoneRepository;
         this.productRepository = productRepository;
+        this.goldRepository = goldRepository;
         this.productStoneRepository = productStoneRepository;
         this.productImageRepository = productImageRepository;
         this.productWorkGradePolicyGroupRepository = productWorkGradePolicyGroupRepository;
@@ -186,7 +190,16 @@ public class ProductService {
     //복수 조회
     @Transactional(readOnly = true)
     public CustomPage<ProductDto.Page> getProducts(String productName, String factoryName, String classificationId, String setTypeId, Pageable pageable, String sortField, String sort, String level) {
-        return productRepository.findByAllProductName(productName, factoryName, classificationId, setTypeId, level, sortField, sort, pageable);
+
+        CustomPage<ProductDto.Page> productList = productRepository.findByAllProductName(productName, factoryName, classificationId, setTypeId, level, sortField, sort, pageable);
+
+        Integer latestGoldPrice = goldRepository.findTopByOrderByGoldIdDesc()
+                .map(Gold::getGoldPrice)
+                .orElse(0);
+
+        productList.getContent().forEach(dto -> dto.updateGoldPrice(latestGoldPrice));
+
+        return productList;
     }
 
     //수정 - 이미지 수정은 별도

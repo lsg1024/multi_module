@@ -63,7 +63,7 @@ public class StoneShapeService {
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         boolean existsByShapeName = stoneShapeRepository.existsByStoneShapeName(stoneShapeDto.getStoneShapeName());
-        if (existsByShapeName) {
+        if (stoneShape.getStoneShapeName().equals(stoneShapeDto.getStoneShapeName()) && existsByShapeName) {
             throw new IllegalArgumentException(IS_EXIST);
         }
 

@@ -95,9 +95,9 @@ public class ProductImageController {
     }
 
     @GetMapping("/api/products/images")
-    public ResponseEntity<ApiResponse<Map<Long, ProductImageDto.ApiResponse>>> getProductImages(
+    public ResponseEntity<ApiResponse<Map<Long, ProductImageDto.ProductImageResponse>>> getProductImages(
             @RequestParam("ids") List<Long> productIds) {
-        Map<Long, ProductImageDto.ApiResponse> imagesByProductIds = productImageService.getImagesByProductIds(productIds);
+        Map<Long, ProductImageDto.ProductImageResponse> imagesByProductIds = productImageService.getImagesByProductIds(productIds);
         return ResponseEntity.ok(ApiResponse.success(imagesByProductIds));
     }
 

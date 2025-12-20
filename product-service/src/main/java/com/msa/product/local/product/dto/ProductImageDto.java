@@ -38,13 +38,13 @@ public class ProductImageDto {
 
     @Getter
     @NoArgsConstructor
-    public static class ApiResponse {
+    public static class ProductImageResponse {
         private Long productId;
         private String imagePath;
 
         @Builder
         @QueryProjection
-        public ApiResponse(Long productId, String imagePath) {
+        public ProductImageResponse(Long productId, String imagePath) {
             this.productId = productId;
             this.imagePath = imagePath;
         }

@@ -64,7 +64,7 @@ public class SetTypeService {
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         boolean existsBySetTypeName = setTypeRepository.existsBySetTypeName(setTypeDto.getName());
-        if (existsBySetTypeName) {
+        if (!setType.getSetTypeName().equals(setTypeDto.getName()) && existsBySetTypeName) {
             throw new IllegalArgumentException(IS_EXIST);
         }
 

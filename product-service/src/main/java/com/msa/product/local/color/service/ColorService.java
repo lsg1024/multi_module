@@ -65,7 +65,7 @@ public class ColorService {
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         boolean existsByColorName = colorRepository.existsByColorName(colorDto.getName());
-        if (existsByColorName) {
+        if (!color.getColorName().equals(colorDto.getName()) && existsByColorName) {
             throw new IllegalArgumentException(IS_EXIST);
         }
 
