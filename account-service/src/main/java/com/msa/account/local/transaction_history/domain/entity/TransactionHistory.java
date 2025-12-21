@@ -36,7 +36,11 @@ public class TransactionHistory {
     private boolean transactionDeleted = false;
 
     @Column(name = "EVENT_ID", nullable = false, unique = true)
-    private String eventId;
+    private String eventId; // 멱등성 id 이자 판매 시 동시 등록되는 연결되는 값
+
+    @Column(name = "ACCOUNT_SALE_CODE")
+    private Long accountSaleCode; // 판매 주문장 id
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "STORE_ID")
     @OnDelete(action = OnDeleteAction.CASCADE)
@@ -47,18 +51,28 @@ public class TransactionHistory {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Factory factory;
 
+    @Column(name = "TRANSACTION_HISTORY_NOTE")
+    private String transactionHistoryNote;
+
+
     @PrePersist
     void onCreate() {
         transactionDate = LocalDateTime.now();
     }
 
     @Builder
-    public TransactionHistory(String transactionType, BigDecimal goldAmount, Long moneyAmount, String eventId, Store store, Factory factory) {
+    public TransactionHistory(String transactionType, BigDecimal goldAmount, Long moneyAmount, String eventId, Long accountSaleCode, Store store, Factory factory, String transactionHistoryNote) {
         this.transactionType = transactionType;
         this.goldAmount = goldAmount;
         this.moneyAmount = moneyAmount;
         this.eventId = eventId;
+        this.accountSaleCode = accountSaleCode;
         this.store = store;
         this.factory = factory;
+        this.transactionHistoryNote = transactionHistoryNote;
+    }
+
+    public void updateTransactionDate(LocalDateTime newTransactionDate) {
+        this.transactionDate = newTransactionDate;
     }
 }

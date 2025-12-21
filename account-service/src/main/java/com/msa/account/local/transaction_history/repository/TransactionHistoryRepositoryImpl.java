@@ -34,15 +34,21 @@ public class TransactionHistoryRepositoryImpl implements CustomTransactionHistor
 
         List<TransactionPage> content = query
                 .select(new QTransactionPage(
+                        transactionHistory.accountSaleCode.stringValue(),
                         transactionHistory.eventId,
                         new Coalesce<>(String.class)
                                 .add(store.storeName)
                                 .add(factory.factoryName)
                                 .as("accountName"),
+                        new Coalesce<>(String.class)
+                                .add(store.commonOption.goldHarry.goldHarryLoss.stringValue())
+                                .add(factory.commonOption.goldHarry.goldHarryLoss.stringValue())
+                                .as("accountHarry"),
                         transactionHistory.transactionDate.stringValue(),
                         transactionHistory.goldAmount.stringValue(),
                         transactionHistory.moneyAmount.stringValue(),
-                        transactionHistory.transactionType.stringValue()
+                        transactionHistory.transactionType.stringValue(),
+                        transactionHistory.transactionHistoryNote
                 ))
                 .from(transactionHistory)
                 .leftJoin(transactionHistory.store, store)
@@ -71,16 +77,28 @@ public class TransactionHistoryRepositoryImpl implements CustomTransactionHistor
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
     }
 
+    /**
+     * 공장 미수금 조회
+     * @param start 시작 날짜
+     * @param end 마지막 날짜
+     * @param accountType 검색 조건 타입
+     * @param accountName 공장 이름
+     * @param pageable 페이징
+     * @return 공장 미수금 반환
+     */
     @Override
     public CustomPage<TransactionPage> findTransactionHistoryFactory(String start, String end, String accountType, String accountName, Pageable pageable) {
         List<TransactionPage> content = query
                 .select(new QTransactionPage(
+                        transactionHistory.accountSaleCode.stringValue(),
                         transactionHistory.eventId,
-                        transactionHistory.factory.factoryName,
+                        factory.factoryName,
+                        factory.commonOption.goldHarry.goldHarryLoss.stringValue(),
                         transactionHistory.transactionDate.stringValue(),
                         transactionHistory.goldAmount.stringValue(),
                         transactionHistory.moneyAmount.stringValue(),
-                        transactionHistory.transactionType.stringValue()
+                        transactionHistory.transactionType.stringValue(),
+                        transactionHistory.transactionHistoryNote
                 ))
                 .from(transactionHistory)
                 .join(transactionHistory.factory, factory)
