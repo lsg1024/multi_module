@@ -12,6 +12,7 @@ public class AccountDto {
     @NoArgsConstructor
     public static class updateCurrentBalance {
         private String eventId;
+        private String saleCode;
         private String tenantId;
         private String saleType; // sale or 결제...
         private String type; // store or factory
@@ -21,8 +22,9 @@ public class AccountDto {
         private Integer moneyBalance;
 
         @Builder
-        public updateCurrentBalance(String eventId, String tenantId, String saleType, String type, Long id, String name, BigDecimal pureGoldBalance, Integer moneyBalance) {
+        public updateCurrentBalance(String eventId, String saleCode, String tenantId, String saleType, String type, Long id, String name, BigDecimal pureGoldBalance, Integer moneyBalance) {
             this.eventId = eventId;
+            this.saleCode = saleCode;
             this.tenantId = tenantId;
             this.saleType = saleType;
             this.type = type;
