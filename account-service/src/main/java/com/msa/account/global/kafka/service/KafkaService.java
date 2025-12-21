@@ -34,6 +34,7 @@ public class KafkaService {
     // 상점 or 공장 잔액 업데이트
     public void updateCurrentBalance(KafkaEventDto.updateCurrentBalance dto) {
         String type = dto.getType();
+        String saleCode = dto.getSaleCode();
         Long entityId = dto.getId();
         String eventId = dto.getEventId();
         String saleType = dto.getSaleType();
@@ -61,11 +62,13 @@ public class KafkaService {
 
         TransactionHistory history = TransactionHistory.builder()
                 .eventId(eventId)
+                .accountSaleCode(Long.parseLong(saleCode))
                 .transactionType(saleType)
                 .goldAmount(pureGoldAmount)
                 .moneyAmount(moneyAmount)
                 .store(store)
                 .factory(factory)
+                .transactionHistoryNote("")
                 .build();
 
         transactionHistoryRepository.save(history);
