@@ -3,7 +3,6 @@ package com.msa.common.global.common_enum.sale_enum;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 import java.util.Arrays;
-import java.util.Optional;
 
 public enum SaleStatus {
     SALE("판매"),
@@ -20,12 +19,13 @@ public enum SaleStatus {
     }
 
     @JsonValue
-    public String getDisplayName() {return displayName; }
+    public String getDisplayName() { return displayName; }
 
-    public static Optional<SaleStatus> fromDisplayName(String displayName) {
+    public static SaleStatus fromDisplayName(String displayName) {
         return Arrays.stream(values())
-                .filter(s -> s.getDisplayName().equals(displayName))
-                .findFirst();
+                .filter(status -> status.displayName.equals(displayName))
+                .findFirst()
+                .orElse(null);
     }
 
 }

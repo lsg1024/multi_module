@@ -130,22 +130,22 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                 .from(transactionHistory)
                 .where(transactionHistory.store.eq(store)
                         .and(transactionHistory.transactionDeleted.isFalse())
-                        .and(transactionHistory.transactionType.eq(SaleStatus.PAYMENT.name())));
+                        .and(transactionHistory.transactionType.eq(SaleStatus.PAYMENT)));
 
         JPQLQuery<String> lastSaleDateQuery = JPAExpressions
                 .select(latestTransactionDateString)
                 .from(transactionHistory)
                 .where(transactionHistory.store.eq(store)
                         .and(transactionHistory.transactionDeleted.isFalse())
-                        .and(transactionHistory.transactionType.eq(SaleStatus.SALE.name())));
+                        .and(transactionHistory.transactionType.eq(SaleStatus.SALE)));
 
         BooleanExpression hasHistory = JPAExpressions
                 .selectOne()
                 .from(transactionHistory)
                 .where(transactionHistory.store.eq(store)
                         .and(transactionHistory.transactionDeleted.isFalse())
-                        .or(transactionHistory.transactionType.eq(SaleStatus.PAYMENT.name()))
-                        .or(transactionHistory.transactionType.eq(SaleStatus.SALE.name())))
+                        .or(transactionHistory.transactionType.eq(SaleStatus.PAYMENT))
+                        .or(transactionHistory.transactionType.eq(SaleStatus.SALE)))
                 .exists();
 
         List<AccountDto.accountResponse> content = query
@@ -208,14 +208,14 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                 .from(transactionHistory)
                 .where(transactionHistory.store.eq(store)
                         .and(transactionHistory.transactionDeleted.isFalse())
-                        .and(transactionHistory.transactionType.eq(SaleStatus.PAYMENT.name())));
+                        .and(transactionHistory.transactionType.eq(SaleStatus.PAYMENT)));
 
         JPQLQuery<String> lastSaleDateQuery = JPAExpressions
                 .select(latestTransactionDateString)
                 .from(transactionHistory)
                 .where(transactionHistory.store.eq(store)
                         .and(transactionHistory.transactionDeleted.isFalse())
-                        .and(transactionHistory.transactionType.eq(SaleStatus.SALE.name())));
+                        .and(transactionHistory.transactionType.eq(SaleStatus.SALE)));
 
 
         return query

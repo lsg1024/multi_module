@@ -7,6 +7,7 @@ import com.msa.account.local.store.domain.entity.Store;
 import com.msa.account.local.store.repository.StoreRepository;
 import com.msa.account.local.transaction_history.domain.entity.TransactionHistory;
 import com.msa.account.local.transaction_history.repository.TransactionHistoryRepository;
+import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,7 +64,7 @@ public class KafkaService {
         TransactionHistory history = TransactionHistory.builder()
                 .eventId(eventId)
                 .accountSaleCode(Long.parseLong(saleCode))
-                .transactionType(saleType)
+                .transactionType(SaleStatus.fromDisplayName(saleType))
                 .goldAmount(pureGoldAmount)
                 .moneyAmount(moneyAmount)
                 .store(store)

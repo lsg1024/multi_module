@@ -2,6 +2,7 @@ package com.msa.account.local.transaction_history.repository;
 
 import com.msa.account.local.transaction_history.domain.dto.QTransactionPage;
 import com.msa.account.local.transaction_history.domain.dto.TransactionPage;
+import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import com.msa.common.global.util.CustomPage;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Coalesce;
@@ -47,7 +48,7 @@ public class TransactionHistoryRepositoryImpl implements CustomTransactionHistor
                         transactionHistory.transactionDate.stringValue(),
                         transactionHistory.goldAmount.stringValue(),
                         transactionHistory.moneyAmount.stringValue(),
-                        transactionHistory.transactionType.stringValue(),
+                        transactionHistory.transactionType,
                         transactionHistory.transactionHistoryNote
                 ))
                 .from(transactionHistory)
@@ -97,7 +98,7 @@ public class TransactionHistoryRepositoryImpl implements CustomTransactionHistor
                         transactionHistory.transactionDate.stringValue(),
                         transactionHistory.goldAmount.stringValue(),
                         transactionHistory.moneyAmount.stringValue(),
-                        transactionHistory.transactionType.stringValue(),
+                        transactionHistory.transactionType,
                         transactionHistory.transactionHistoryNote
                 ))
                 .from(transactionHistory)
@@ -157,7 +158,8 @@ public class TransactionHistoryRepositoryImpl implements CustomTransactionHistor
     }
 
     private BooleanExpression accountTypeEq(String accountType) {
-        return StringUtils.hasText(accountType) ? transactionHistory.transactionType.eq(accountType) : null;
+        SaleStatus status = SaleStatus.fromDisplayName(accountType);
+        return StringUtils.hasText(accountType) ? transactionHistory.transactionType.eq(status) : null;
     }
 
     private BooleanExpression accountNameEq(String accountName) {

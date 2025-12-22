@@ -2,6 +2,7 @@ package com.msa.account.local.transaction_history.domain.entity;
 
 import com.msa.account.local.factory.domain.entity.Factory;
 import com.msa.account.local.store.domain.entity.Store;
+import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -23,11 +24,11 @@ public class TransactionHistory {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "TRANSACTION_ID")
     private Long transactionId;
-
     @Column(name = "TRANSACTION_DATE", nullable = false)
     private LocalDateTime transactionDate;
+    @Enumerated(EnumType.STRING)
     @Column(name = "TRANSACTION_TYPE")
-    private String transactionType;
+    private SaleStatus transactionType;
     @Column(name = "GOLD_AMOUNT", precision = 10, scale = 3)
     private BigDecimal goldAmount;
     @Column(name = "MONEY_AMOUNT")
@@ -61,7 +62,7 @@ public class TransactionHistory {
     }
 
     @Builder
-    public TransactionHistory(String transactionType, BigDecimal goldAmount, Long moneyAmount, String eventId, Long accountSaleCode, Store store, Factory factory, String transactionHistoryNote) {
+    public TransactionHistory(SaleStatus transactionType, BigDecimal goldAmount, Long moneyAmount, String eventId, Long accountSaleCode, Store store, Factory factory, String transactionHistoryNote) {
         this.transactionType = transactionType;
         this.goldAmount = goldAmount;
         this.moneyAmount = moneyAmount;

@@ -582,8 +582,7 @@ public class SaleService {
         try {
             saleStatus = SaleStatus.valueOf(saleDto.getOrderStatus().toUpperCase());
         } catch (IllegalArgumentException e) {
-            saleStatus = SaleStatus.fromDisplayName(saleDto.getOrderStatus())
-                    .orElseThrow(() -> new IllegalArgumentException("Unknown payment type: " + saleDto.getOrderStatus()));
+            saleStatus = SaleStatus.fromDisplayName(saleDto.getOrderStatus());
         }
 
         return SalePayment.builder()

@@ -53,7 +53,7 @@ public class TransactionHistoryService {
 
     public void savePurchase(PurchaseDto purchaseDto) {
         TransactionHistory transactionHistory = TransactionHistory.builder()
-                .transactionType(SaleStatus.valueOf(purchaseDto.getTransactionType()).name())
+                .transactionType(SaleStatus.valueOf(purchaseDto.getTransactionType()))
                 .goldAmount(purchaseDto.getGoldAmount())
                 .moneyAmount(purchaseDto.getMoneyAmount())
                 .accountSaleCode(Long.parseLong(purchaseDto.getSaleCode()))

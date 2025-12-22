@@ -1,5 +1,6 @@
 package com.msa.account.local.transaction_history.domain.dto;
 
+import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import com.querydsl.core.annotations.QueryProjection;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -8,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class TransactionPage {
     private String saleCode;
-    private String accountId; // eventId;
+    private String accountId;
     private String accountName;
     private String accountHarry;
     private String createDate;
@@ -18,15 +19,15 @@ public class TransactionPage {
     private String transactionNote;
 
     @QueryProjection
-    public TransactionPage(String saleCode, String accountId, String accountName, String accountHarry, String createDate, String goldAmount, String moneyAmount, String tradeType, String transactionNote) {
+    public TransactionPage(String saleCode, String accountId, String accountName, String accountHarry, String createDate, String goldAmount, String moneyAmount, SaleStatus tradeType, String transactionNote) {
         this.saleCode = saleCode;
         this.accountId = accountId;
         this.accountName = accountName;
         this.accountHarry = accountHarry;
-        this.createDate = createDate;
+        this.createDate = createDate.substring(0, 10);
         this.goldAmount = goldAmount;
         this.moneyAmount = moneyAmount;
-        this.tradeType = tradeType;
+        this.tradeType = tradeType.getDisplayName();
         this.transactionNote = transactionNote;
     }
 }
