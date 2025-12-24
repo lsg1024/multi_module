@@ -239,6 +239,7 @@ public class KafkaOrderService {
                     materialName,
                     colorName,
                     updateRequest.isAssistantStone(),
+                    updateRequest.getAssistantStoneId(),
                     assistantStoneInfo != null ? assistantStoneInfo.getAssistantStoneName() : null,
                     updateRequest.getAssistantStoneCreateAt()
             );

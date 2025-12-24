@@ -145,7 +145,7 @@ public class OrderProduct {
         this.productSize = productSize;
     }
 
-    public void updateDetails(String productName, Integer productPurchaseCost, Integer laborCost, String classificationName, String setTypeName, String materialName, String colorName, Boolean isAssistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt) {
+    public void updateDetails(String productName, Integer productPurchaseCost, Integer laborCost, String classificationName, String setTypeName, String materialName, String colorName, Boolean isAssistantStone, Long assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt) {
         if (productName != null) {
             this.productName = productName;
         }
@@ -173,6 +173,9 @@ public class OrderProduct {
                 this.assistantStoneName = null;
                 this.assistantStoneCreateAt = null;
             }
+        }
+        if (assistantStoneId != null) {
+            this.assistantStoneId = assistantStoneId;
         }
         if (assistantStoneName != null) {
             this.assistantStoneName = assistantStoneName;
