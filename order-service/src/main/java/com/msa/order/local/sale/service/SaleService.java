@@ -2,12 +2,12 @@ package com.msa.order.local.sale.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.util.CustomPage;
 import com.msa.order.global.dto.OutboxCreatedEvent;
 import com.msa.order.global.dto.StoneDto;
 import com.msa.order.global.kafka.dto.AccountDto;
-import com.msa.order.global.util.DateConversionUtil;
 import com.msa.order.global.util.GoldUtils;
 import com.msa.order.local.order.entity.OrderStone;
 import com.msa.order.local.order.entity.StatusHistory;
@@ -26,7 +26,6 @@ import com.msa.order.local.sale.repository.CustomSaleRepository;
 import com.msa.order.local.sale.repository.SaleItemRepository;
 import com.msa.order.local.sale.repository.SalePaymentRepository;
 import com.msa.order.local.sale.repository.SaleRepository;
-import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import com.msa.order.local.stock.dto.StockDto;
 import com.msa.order.local.stock.entity.ProductSnapshot;
 import com.msa.order.local.stock.entity.Stock;
@@ -44,12 +43,15 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.msa.order.global.exception.ExceptionMessage.NOT_ACCESS;
 import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND;
+import static com.msa.order.global.util.DateConversionUtil.StringToOffsetDateTime;
 import static com.msa.order.local.order.util.StoneUtil.countStoneCost;
 import static com.msa.order.local.order.util.StoneUtil.updateStockStoneInfo;
 
@@ -452,13 +454,8 @@ public class SaleService {
         stock.updateStoneCost(countStoneCost[0], countStoneCost[1], countStoneCost[2], countStoneCost[3], updateDto.getStoneAddLaborCost());
 
         Long assistantId = Long.valueOf(updateDto.getAssistantStoneId());
-        if (!stock.getProduct().getAssistantStoneId().equals(assistantId)) {
-            OffsetDateTime assistantStoneCreateAt = null;
-            if (StringUtils.hasText(updateDto.getAssistantStoneCreateAt())) {
-                assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(updateDto.getAssistantStoneCreateAt());
-            }
-            stock.getProduct().updateAssistantStone(updateDto.isAssistantStone(), assistantId, updateDto.getAssistantStoneName(), assistantStoneCreateAt);
-        }
+        stock.getProduct().updateAssistantStone(updateDto.isAssistantStone(), assistantId,
+                updateDto.getAssistantStoneName(), updateDto.isAssistantStone() ? StringToOffsetDateTime(updateDto.getAssistantStoneCreateAt()) : null);
 
         product.updateProductAddCost(updateDto.getProductAddLaborCost());
         product.updateProductWeightAndSize(updateDto.getProductSize(), new BigDecimal(updateDto.getGoldWeight()), new BigDecimal(updateDto.getStoneWeight()));

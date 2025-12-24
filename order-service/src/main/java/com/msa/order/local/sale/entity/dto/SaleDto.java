@@ -6,7 +6,11 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
+
+import static com.msa.order.global.util.DateConversionUtil.OffsetDateTimeToLocalDate;
 
 public class SaleDto {
     @Getter
@@ -141,11 +145,11 @@ public class SaleDto {
         private Integer addStoneLaborCost;
         private Boolean assistantStone;
         private String assistantStoneName;
-        private String assistantStoneCreateAt;
+        private LocalDate assistantStoneCreateAt;
         private String storeName;
 
         @QueryProjection
-        public SaleDetailDto(Long flowCode, String saleCreateAt, String productName, String productMaterial, String productColor, String stockMainStoneNote, String stockAssistanceStoneNote, String productSize, String stockNote, BigDecimal goldWeight, BigDecimal stoneWeight, Integer mainStoneQuantity, Integer assistanceStoneQuantity, Integer productLaborCost, Integer productAddLaborCost, Integer mainStoneLaborCost, Integer assistanceStoneLaborCost, Integer addStoneLaborCost, Boolean assistantStone, String assistantStoneName, String assistantStoneCreateAt, String storeName) {
+        public SaleDetailDto(Long flowCode, String saleCreateAt, String productName, String productMaterial, String productColor, String stockMainStoneNote, String stockAssistanceStoneNote, String productSize, String stockNote, BigDecimal goldWeight, BigDecimal stoneWeight, Integer mainStoneQuantity, Integer assistanceStoneQuantity, Integer productLaborCost, Integer productAddLaborCost, Integer mainStoneLaborCost, Integer assistanceStoneLaborCost, Integer addStoneLaborCost, Boolean assistantStone, String assistantStoneName, OffsetDateTime assistantStoneCreateAt, String storeName) {
             this.flowCode = flowCode;
             this.saleCreateAt = saleCreateAt;
             this.productName = productName;
@@ -166,7 +170,7 @@ public class SaleDto {
             this.addStoneLaborCost = addStoneLaborCost;
             this.assistantStone = assistantStone;
             this.assistantStoneName = assistantStoneName;
-            this.assistantStoneCreateAt = assistantStoneCreateAt;
+            this.assistantStoneCreateAt = OffsetDateTimeToLocalDate(assistantStoneCreateAt);
             this.storeName = storeName;
         }
     }

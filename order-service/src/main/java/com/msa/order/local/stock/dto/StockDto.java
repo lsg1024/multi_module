@@ -13,7 +13,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
+
+import static com.msa.order.global.util.DateConversionUtil.OffsetDateTimeToLocalDate;
 
 public class StockDto {
 
@@ -172,12 +176,12 @@ public class StockDto {
         private boolean assistantStone;
         private String assistantStoneId;
         private String assistantStoneName;
-        private String assistantStoneCreateAt;
+        private LocalDate assistantStoneCreateAt;
         private List<StoneDto.StoneInfo> stoneInfos;
         private Integer stoneAddLaborCost;
 
         @Builder
-        public ResponseDetail(String flowCode, String createAt, String originalProductStatus, String storeId, String productName, String storeName, String storeGrade, String storeHarry, String factoryId, String factoryName, String colorId, String materialId, String materialName, String colorName, String productId, String mainStoneNote, String assistanceStoneNote, String productSize, String note, boolean isProductWeightSale, Integer productLaborCost, Integer productAddLaborCost, String assistantStoneId, boolean assistantStone, String assistantStoneCreateAt, Integer stoneAddLaborCost, String goldWeight, String stoneWeight, Integer productPurchaseCost, String assistantStoneName, List<StoneDto.StoneInfo> stoneInfos) {
+        public ResponseDetail(String flowCode, String createAt, String originalProductStatus, String storeId, String productName, String storeName, String storeGrade, String storeHarry, String factoryId, String factoryName, String colorId, String materialId, String materialName, String colorName, String productId, String mainStoneNote, String assistanceStoneNote, String productSize, String note, boolean isProductWeightSale, Integer productLaborCost, Integer productAddLaborCost, String assistantStoneId, boolean assistantStone, OffsetDateTime assistantStoneCreateAt, Integer stoneAddLaborCost, String goldWeight, String stoneWeight, Integer productPurchaseCost, String assistantStoneName, List<StoneDto.StoneInfo> stoneInfos) {
             this.flowCode = flowCode;
             this.createAt = createAt;
             this.originalProductStatus = originalProductStatus;
@@ -202,7 +206,7 @@ public class StockDto {
             this.productAddLaborCost = productAddLaborCost;
             this.assistantStoneId = assistantStoneId;
             this.assistantStone = assistantStone;
-            this.assistantStoneCreateAt = assistantStoneCreateAt;
+            this.assistantStoneCreateAt = OffsetDateTimeToLocalDate(assistantStoneCreateAt);
             this.stoneAddLaborCost = stoneAddLaborCost;
             this.goldWeight = goldWeight;
             this.stoneWeight = stoneWeight;

@@ -83,7 +83,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                     stock.stoneAddLaborCost,
                     stock.product.assistantStone,
                     stock.product.assistantStoneName,
-                    stock.product.assistantStoneCreateAt.stringValue(),
+                    stock.product.assistantStoneCreateAt,
                     sale.accountName
                 ))
                 .from(sale)

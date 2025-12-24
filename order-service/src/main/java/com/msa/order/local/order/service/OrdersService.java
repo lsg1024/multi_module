@@ -175,6 +175,7 @@ public class OrdersService {
         Long materialId = Long.valueOf(orderDto.getMaterialId());
         Long colorId = Long.valueOf(orderDto.getColorId());
         Long assistantId = Long.valueOf(orderDto.getAssistantStoneId());
+        boolean assistantStone = orderDto.isAssistantStone();
 
         // priority 추가
         Priority priority = priorityRepository.findByPriorityName(orderDto.getPriorityName())
@@ -271,14 +272,14 @@ public class OrdersService {
                 .colorId(colorId)
                 .nickname(nickname)
                 .stoneIds(stoneIds)
-                .assistantStone(false)
+                .assistantStone(assistantStone)
                 .assistantStoneId(assistantId)
                 .orderStatus(orderStatus);
 
         if (orderDto.isAssistantStone()) {
             OffsetDateTime assistantStoneCreateAt = StringToOffsetDateTime(orderDto.getAssistantStoneCreateAt());
             orderAsyncRequestedBuilder
-                    .assistantStone(orderDto.isAssistantStone())
+                    .assistantStone(assistantStone)
                     .assistantStoneId(assistantId)
                     .assistantStoneCreateAt(assistantStoneCreateAt);
         }
@@ -318,8 +319,6 @@ public class OrdersService {
         updateOrderStoneInfo(orderDto.getStoneInfos(), order, orderStones);
 
         Long productId = Long.valueOf(orderDto.getProductId());
-        Long orderId = order.getOrderId();
-
         OrderUpdateRequest.OrderUpdateRequestBuilder updateRequestBuilder = OrderUpdateRequest.builder()
                 .eventId(UUID.randomUUID().toString())
                 .tenantId(tenantId)
@@ -329,8 +328,9 @@ public class OrdersService {
                 .nickname(nickname);
 
         // orderProduct 추가
+        Long newProductId = Long.parseLong(orderDto.getProductId());
         OrderProduct orderProduct = order.getOrderProduct();
-        if (orderId.equals(productId)) {
+        if (newProductId.equals(productId)) {
             orderProduct.updateOrderProductInfo(
                     orderDto.getStoneWeight(),
                     orderDto.getProductAddLaborCost(),
@@ -385,15 +385,18 @@ public class OrdersService {
             updateRequestBuilder.colorId(colorId);
         }
 
-        if (orderDto.isAssistantStone()) {
+        boolean assistantStone = orderDto.isAssistantStone();
+        if (assistantStone) {
             OffsetDateTime assistantStoneCreateAt = StringToOffsetDateTime(orderDto.getAssistantStoneCreateAt());
              updateRequestBuilder
-                    .assistantStone(orderDto.isAssistantStone())
+                    .assistantStone(true)
                     .assistantStoneId(assistantId)
                     .assistantStoneCreateAt(assistantStoneCreateAt);
         } else {
            updateRequestBuilder
-                    .assistantStone(false);
+                .assistantStone(false)
+                .assistantStoneId(assistantId)
+                .assistantStoneCreateAt(null);
         }
 
         OrderUpdateRequest orderUpdateRequest = updateRequestBuilder.build();
@@ -704,7 +707,7 @@ public class OrdersService {
                     .assistantStone(orderProduct.isAssistantStone())
                     .assistantStoneId(String.valueOf(orderProduct.getAssistantStoneId()))
                     .assistantStoneName(orderProduct.getAssistantStoneName())
-                    .assistantStoneCreateAt(String.valueOf(orderProduct.getAssistantStoneCreateAt()))
+                    .assistantStoneCreateAt(orderProduct.getAssistantStoneCreateAt())
                     .stoneInfos(stonesDtos)
                     .stoneAddLaborCost(order.getOrderProduct().getStoneAddLaborCost())
                     .build();

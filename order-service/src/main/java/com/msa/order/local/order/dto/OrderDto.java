@@ -12,9 +12,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
+
+import static com.msa.order.global.util.DateConversionUtil.OffsetDateTimeToLocalDate;
 
 @Getter
 @NoArgsConstructor
@@ -169,7 +172,7 @@ public class OrderDto {
         private boolean assistantStone;
         private String assistantStoneId;
         private String assistantStoneName;
-        private OffsetDateTime assistantStoneCreateAt;
+        private LocalDate assistantStoneCreateAt;
         private List<StoneDto.StoneInfo> stoneInfos;
         private String stoneAddLaborCost;
 
@@ -209,7 +212,7 @@ public class OrderDto {
             this.assistantStone = assistantStone;
             this.assistantStoneId = assistantStoneId;
             this.assistantStoneName = assistantStoneName;
-            this.assistantStoneCreateAt = assistantStoneCreateAt;
+            this.assistantStoneCreateAt = OffsetDateTimeToLocalDate(assistantStoneCreateAt);
             this.stoneInfos = stoneInfos;
             this.stoneAddLaborCost = stoneAddLaborCost;
         }
