@@ -26,6 +26,7 @@ public class KafkaEventDto {
     @NoArgsConstructor
     public static class updateCurrentBalance {
         private String eventId;
+        private String saleCode;
         private String tenantId;
         private String saleType; // sale or 결제...
         private String type; // store or factory

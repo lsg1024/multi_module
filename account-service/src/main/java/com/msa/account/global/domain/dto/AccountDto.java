@@ -26,6 +26,7 @@ public class AccountDto {
         private String goldHarryLoss;
         private String goldWeight;
         private String moneyAmount;
+        private String lastSaleDate;
         private String lastPaymentDate;
         private String businessOwnerName;
         private String businessOwnerNumber;
@@ -37,11 +38,12 @@ public class AccountDto {
 
         @Builder
         @QueryProjection
-        public accountResponse(Long accountId, String accountName, String goldWeight, String moneyAmount, String businessOwnerName, String businessOwnerNumber, String businessNumber1, String businessNumber2, String faxNumber, String note, String grade, String tradeType, String goldHarryLoss, String lastPaymentDate, String address) {
+        public accountResponse(Long accountId, String accountName, String goldWeight, String moneyAmount, String lastSaleDate, String businessOwnerName, String businessOwnerNumber, String businessNumber1, String businessNumber2, String faxNumber, String note, String grade, String tradeType, String goldHarryLoss, String lastPaymentDate, String address) {
             this.accountId = accountId;
             this.accountName = accountName;
             this.goldWeight = goldWeight;
             this.moneyAmount = moneyAmount;
+            this.lastSaleDate = lastSaleDate;
             this.businessOwnerName = businessOwnerName;
             this.businessOwnerNumber = businessOwnerNumber;
             this.businessNumber1 = businessNumber1;

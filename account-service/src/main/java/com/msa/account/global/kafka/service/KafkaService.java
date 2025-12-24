@@ -7,6 +7,7 @@ import com.msa.account.local.store.domain.entity.Store;
 import com.msa.account.local.store.repository.StoreRepository;
 import com.msa.account.local.transaction_history.domain.entity.TransactionHistory;
 import com.msa.account.local.transaction_history.repository.TransactionHistoryRepository;
+import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +35,7 @@ public class KafkaService {
     // 상점 or 공장 잔액 업데이트
     public void updateCurrentBalance(KafkaEventDto.updateCurrentBalance dto) {
         String type = dto.getType();
+        String saleCode = dto.getSaleCode();
         Long entityId = dto.getId();
         String eventId = dto.getEventId();
         String saleType = dto.getSaleType();
@@ -61,11 +63,13 @@ public class KafkaService {
 
         TransactionHistory history = TransactionHistory.builder()
                 .eventId(eventId)
-                .transactionType(saleType)
+                .accountSaleCode(Long.parseLong(saleCode))
+                .transactionType(SaleStatus.fromDisplayName(saleType))
                 .goldAmount(pureGoldAmount)
                 .moneyAmount(moneyAmount)
                 .store(store)
                 .factory(factory)
+                .transactionHistoryNote("")
                 .build();
 
         transactionHistoryRepository.save(history);

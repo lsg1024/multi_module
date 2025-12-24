@@ -129,7 +129,24 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                 .select(latestTransactionDateString)
                 .from(transactionHistory)
                 .where(transactionHistory.store.eq(store)
-                        .and(transactionHistory.transactionDeleted.isFalse()));
+                        .and(transactionHistory.transactionDeleted.isFalse())
+                        .and(transactionHistory.transactionType.eq(SaleStatus.PAYMENT)));
+
+        JPQLQuery<String> lastSaleDateQuery = JPAExpressions
+                .select(latestTransactionDateString)
+                .from(transactionHistory)
+                .where(transactionHistory.store.eq(store)
+                        .and(transactionHistory.transactionDeleted.isFalse())
+                        .and(transactionHistory.transactionType.eq(SaleStatus.SALE)));
+
+        BooleanExpression hasHistory = JPAExpressions
+                .selectOne()
+                .from(transactionHistory)
+                .where(transactionHistory.store.eq(store)
+                        .and(transactionHistory.transactionDeleted.isFalse())
+                        .or(transactionHistory.transactionType.eq(SaleStatus.PAYMENT))
+                        .or(transactionHistory.transactionType.eq(SaleStatus.SALE)))
+                .exists();
 
         List<AccountDto.accountResponse> content = query
                 .select(new QAccountDto_accountResponse(
@@ -137,6 +154,7 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                         store.storeName,
                         store.currentGoldBalance.stringValue(),
                         store.currentMoneyBalance.stringValue(),
+                        lastSaleDateQuery,
                         store.storeOwnerName,
                         store.storePhoneNumber,
                         store.storeContactNumber1,
@@ -156,7 +174,10 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                 .from(store)
                 .leftJoin(store.address, address)
                 .leftJoin(store.commonOption, commonOption)
-                .where(store.storeDeleted.isFalse().and(storeName))
+                .where(
+                        store.storeDeleted.isFalse().and(storeName),
+                        hasHistory
+                )
                 .orderBy(store.storeName.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -165,7 +186,10 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
         JPAQuery<Long> countQuery = query
                 .select(store.count())
                 .from(store)
-                .where(store.storeDeleted.isFalse().and(storeName));
+                .where(
+                        store.storeDeleted.isFalse().and(storeName),
+                        hasHistory
+                );
 
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
     }
@@ -184,7 +208,15 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                 .from(transactionHistory)
                 .where(transactionHistory.store.eq(store)
                         .and(transactionHistory.transactionDeleted.isFalse())
-                        .and(transactionHistory.transactionType.eq(SaleStatus.PAYMENT.name())));
+                        .and(transactionHistory.transactionType.eq(SaleStatus.PAYMENT)));
+
+        JPQLQuery<String> lastSaleDateQuery = JPAExpressions
+                .select(latestTransactionDateString)
+                .from(transactionHistory)
+                .where(transactionHistory.store.eq(store)
+                        .and(transactionHistory.transactionDeleted.isFalse())
+                        .and(transactionHistory.transactionType.eq(SaleStatus.SALE)));
+
 
         return query
                 .select(new QAccountDto_accountResponse(
@@ -192,6 +224,7 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                         store.storeName,
                         store.currentGoldBalance.stringValue(),
                         store.currentMoneyBalance.stringValue(),
+                        lastSaleDateQuery,
                         store.storeOwnerName,
                         store.storePhoneNumber,
                         store.storeContactNumber1,

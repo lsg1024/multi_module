@@ -2,15 +2,14 @@ package com.msa.account.local.transaction_history.controller;
 
 import com.msa.account.local.transaction_history.domain.dto.TransactionDto;
 import com.msa.account.local.transaction_history.domain.dto.TransactionPage;
+import com.msa.account.local.transaction_history.dto.PurchaseDto;
 import com.msa.account.local.transaction_history.service.TransactionHistoryService;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.util.CustomPage;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 public class TransactionHistoryController {
@@ -55,6 +54,13 @@ public class TransactionHistoryController {
         CustomPage<TransactionPage> accountPurchasePage = transactionHistoryService.findFactoryPurchase(start, end, accountType, accountName, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(accountPurchasePage));
+    }
+
+    @PostMapping("/purchase/factory")
+    public ResponseEntity<ApiResponse<String>> createFactoryPurchase(
+            @RequestBody PurchaseDto purchaseDto) {
+        transactionHistoryService.savePurchase(purchaseDto);
+        return ResponseEntity.ok(ApiResponse.success("생성 완료"));
     }
 
 

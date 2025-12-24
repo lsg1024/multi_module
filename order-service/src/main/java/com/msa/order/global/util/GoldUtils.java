@@ -37,20 +37,6 @@ public class GoldUtils {
         return PURITY_MAP.getOrDefault(material.toUpperCase(), BigDecimal.ZERO);
     }
 
-    public static BigDecimal calculatePureGoldWeight(BigDecimal totalWeight, String material) {
-        if (totalWeight == null || totalWeight.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
-        }
-
-        BigDecimal purity = getGoldPurity(material);
-        if (purity.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
-        }
-
-        // 계산: 순금무게 = 총무게 * 순도
-        return totalWeight.multiply(purity).setScale(DEFAULT_SCALE, DEFAULT_ROUNDING);
-    }
-
     public static BigDecimal calculatePureGoldWeightAndHarry(BigDecimal totalWeight, String material, BigDecimal harry) {
         if (totalWeight == null || totalWeight.compareTo(BigDecimal.ZERO) == 0) {
             return BigDecimal.ZERO;
@@ -64,16 +50,16 @@ public class GoldUtils {
         return totalWeight.multiply(purity).multiply(harry).setScale(DEFAULT_SCALE, DEFAULT_ROUNDING);
     }
 
-    public static BigDecimal calculatePureGoldWeight(String weightStr, String material) {
-        return calculatePureGoldWeight(parseBigDecimal(weightStr), material);
-    }
-
     public static BigDecimal calculatePureGoldWeightWithHarry(String weight, String material, BigDecimal harry) {
         BigDecimal totalWeight = parseBigDecimal(weight);
         if (totalWeight == null || totalWeight.compareTo(BigDecimal.ZERO) == 0) {
             return BigDecimal.ZERO;
         }
         if (harry == null) {
+            harry = BigDecimal.ONE;
+        }
+
+        if ("24K".equalsIgnoreCase(material)) {
             harry = BigDecimal.ONE;
         }
 
@@ -85,19 +71,6 @@ public class GoldUtils {
         BigDecimal result = totalWeight.multiply(purity).multiply(harry);
 
         return result.setScale(DEFAULT_SCALE, DEFAULT_ROUNDING);
-    }
-
-    public static BigDecimal calculateAddHarryToPureGoldWeight(BigDecimal pureGoldWeight, BigDecimal harry) {
-        if (pureGoldWeight == null || harry == null) return BigDecimal.ZERO;
-        return pureGoldWeight.multiply(harry).setScale(DEFAULT_SCALE, DEFAULT_ROUNDING);
-    }
-
-    public static BigDecimal calculateMinusHarryToPureGoldWeight(BigDecimal pureGoldWeight, BigDecimal harry) {
-        if (pureGoldWeight == null || harry == null || harry.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
-        }
-
-        return pureGoldWeight.divide(harry, DEFAULT_SCALE, DEFAULT_ROUNDING);
     }
 
     public static Map<String, BigDecimal> getPurityMap() {

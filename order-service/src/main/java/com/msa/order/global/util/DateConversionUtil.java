@@ -40,4 +40,12 @@ public class DateConversionUtil {
         return localDateTime.atZone(KST).toOffsetDateTime();
     }
 
+    public static LocalDate OffsetDateTimeToLocalDate(OffsetDateTime dateAt) {
+        if (dateAt == null) {
+            return null;
+        }
+
+        return dateAt.atZoneSameInstant(ZoneId.of("Asia/Seoul")).toLocalDate();
+    }
+
 }

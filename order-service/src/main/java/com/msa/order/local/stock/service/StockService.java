@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.msa.order.global.exception.ExceptionMessage.*;
+import static com.msa.order.global.util.DateConversionUtil.StringToOffsetDateTime;
 import static com.msa.order.local.order.util.StoneUtil.*;
 
 @Slf4j
@@ -121,7 +122,7 @@ public class StockService {
                     .assistantStone(stock.getProduct().isAssistantStone())
                     .assistantStoneId(String.valueOf(stock.getProduct().getAssistantStoneId()))
                     .assistantStoneName(stock.getProduct().getAssistantStoneName())
-                    .assistantStoneCreateAt(String.valueOf(stock.getProduct().getAssistantStoneCreateAt()))
+                    .assistantStoneCreateAt(stock.getProduct().getAssistantStoneCreateAt())
                     .stoneInfos(stonesDtos)
                     .stoneAddLaborCost(stock.getStoneAddLaborCost())
                     .build();
@@ -214,11 +215,6 @@ public class StockService {
 
         AssistantStoneDto.Response assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(accessToken, Long.valueOf(stockDto.getAssistantStoneId()));
 
-        OffsetDateTime assistantStoneCreateAt = null;
-        if (StringUtils.hasText(stockDto.getAssistantStoneCreateAt())) {
-            assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(stockDto.getAssistantStoneCreateAt());
-        }
-
         BigDecimal goldWeight = new BigDecimal(stockDto.getGoldWeight());
         BigDecimal stoneWeight = new BigDecimal(stockDto.getStoneWeight());
 
@@ -243,7 +239,7 @@ public class StockService {
                 .assistantStone(stockDto.isAssistantStone())
                 .assistantStoneId(assistantStoneInfo.getAssistantStoneId())
                 .assistantStoneName(assistantStoneInfo.getAssistantStoneName())
-                .assistantStoneCreateAt(assistantStoneCreateAt)
+                .assistantStoneCreateAt(stockDto.isAssistantStone() ? StringToOffsetDateTime(stockDto.getAssistantStoneCreateAt()) : null)
                 .goldWeight(goldWeight)
                 .stoneWeight(stoneWeight)
                 .build();
