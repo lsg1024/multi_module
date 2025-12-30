@@ -451,19 +451,17 @@ public class StockService {
             associatedOrder.updateOrderStatus(OrderStatus.ORDER);
         }
 
-        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(beforeFlowCode)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-
         stock.removeOrder();
         stock.updateOrderStatus(OrderStatus.DELETED);
 
-//        List<StatusHistory> allByFlowCode = statusHistoryRepository.findAllByFlowCode(beforeFlowCode);
-//        for (StatusHistory statusHistory : allByFlowCode) {
-//            statusHistory.updateFlowCode(stock.getFlowCode());
-//        }
+        long newFlowCode = Long.parseLong(UUID.randomUUID().toString());
+        stock.updateFlowCode(newFlowCode);
+
+        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(beforeFlowCode)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         StatusHistory deleteStockHistory = StatusHistory.phaseChange(
-                associatedOrder.getFlowCode(),
+                stock.getFlowCode(),
                 lastHistory.getSourceType(),
                 BusinessPhase.valueOf(lastHistory.getToValue()),
                 BusinessPhase.DELETED,
@@ -471,10 +469,6 @@ public class StockService {
         );
 
         statusHistoryRepository.save(deleteStockHistory);
-
-//        allByFlowCode.add(deleteStockHistory);
-//
-//        statusHistoryRepository.saveAll(allByFlowCode);
     }
 
     // 대여 -> 반납
