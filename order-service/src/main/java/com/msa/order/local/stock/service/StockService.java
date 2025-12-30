@@ -13,10 +13,7 @@ import com.msa.order.local.order.entity.OrderProduct;
 import com.msa.order.local.order.entity.OrderStone;
 import com.msa.order.local.order.entity.Orders;
 import com.msa.order.local.order.entity.StatusHistory;
-import com.msa.order.local.order.entity.order_enum.BusinessPhase;
-import com.msa.order.local.order.entity.order_enum.Kind;
-import com.msa.order.local.order.entity.order_enum.OrderStatus;
-import com.msa.order.local.order.entity.order_enum.SourceType;
+import com.msa.order.local.order.entity.order_enum.*;
 import com.msa.order.local.order.repository.OrdersRepository;
 import com.msa.order.local.order.repository.StatusHistoryRepository;
 import com.msa.order.local.stock.dto.StockDto;
@@ -447,13 +444,16 @@ public class StockService {
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         Long beforeFlowCode = stock.getFlowCode();
-        // 일반인 경우 그냥 삭제
-        // 주문인 경우 연관관계 제거 후 주문 상태는 WAIT로 변경
-        // -> orderStone, history들은 스냅샷 후 별도 저장
+
+        Orders associatedOrder = stock.getOrder();
+        if (associatedOrder != null) {
+            associatedOrder.updateProductStatus(ProductStatus.WAITING);
+        }
+
         StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(beforeFlowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        stock.removeOrder(); // order, orderProduct 연관성 제거
+        stock.removeOrder();
         stock.updateOrderStatus(OrderStatus.DELETED);
 
         List<StatusHistory> allByFlowCode = statusHistoryRepository.findAllByFlowCode(beforeFlowCode);
