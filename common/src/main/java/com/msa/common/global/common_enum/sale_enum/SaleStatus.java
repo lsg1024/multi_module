@@ -17,7 +17,6 @@ public enum SaleStatus {
     SaleStatus(String displayName) {
         this.displayName = displayName;
     }
-
     @JsonValue
     public String getDisplayName() { return displayName; }
 
