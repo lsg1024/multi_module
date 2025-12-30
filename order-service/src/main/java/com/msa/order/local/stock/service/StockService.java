@@ -454,8 +454,7 @@ public class StockService {
         stock.removeOrder();
         stock.updateOrderStatus(OrderStatus.DELETED);
 
-        long newFlowCode = Long.parseLong(UUID.randomUUID().toString());
-        stock.updateFlowCode(newFlowCode);
+        stock.updateFlowCode();
 
         StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(beforeFlowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
