@@ -448,6 +448,7 @@ public class StockService {
         Orders associatedOrder = stock.getOrder();
         if (associatedOrder != null) {
             associatedOrder.updateProductStatus(ProductStatus.WAITING);
+            associatedOrder.updateOrderStatus(OrderStatus.ORDER);
         }
 
         StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(beforeFlowCode)
