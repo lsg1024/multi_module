@@ -344,13 +344,9 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression createdBetween =
                 orders.createAt.between(startDateTime, endDateTime);
 
-        if (StringUtils.hasText(orderCondition.getOrderStatus())) {
-            BusinessPhase statusEnum = BusinessPhase.valueOf(orderCondition.getOrderStatus().toUpperCase());
-            BooleanExpression status = hasStatusHistory(statusEnum);
-            createdBetween = createdBetween.and(status);
-        }
+        BooleanExpression status = orders.orderStatus.eq(OrderStatus.valueOf(orderCondition.getOrderStatus()));
 
-        return createdBetween;
+        return status.and(createdBetween);
     }
 
     private static BooleanExpression getDeleteBuilder(OrderDto.OrderCondition orderCondition) {
@@ -387,8 +383,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression statusIsReceiptOrWaiting =
                 orders.productStatus.eq(ProductStatus.RECEIPT);
 
-        BusinessPhase statusEnum = BusinessPhase.valueOf(orderCondition.getOrderStatus().toUpperCase());
-        BooleanExpression status = hasStatusHistory(statusEnum);
+        BooleanExpression status = orders.orderStatus.eq(OrderStatus.valueOf(orderCondition.getOrderStatus()));
 
         return statusIsReceiptOrWaiting.and(status).and(createdBetween);
     }
