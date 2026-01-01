@@ -42,8 +42,8 @@ public class GoldHarryService {
         GoldHarry goldHarry = goldHarryRepository.findById(goldHarryId)
                 .orElseThrow(() -> new NotFoundException(WRONG_HARRY));
 
-        if (!String.valueOf(goldHarry.getGoldHarryLoss()).equals(request.getGoldHarryLoss())) {
-            goldHarry.updateLoss(request.getGoldHarryLoss());
+        if (!String.valueOf(goldHarry.getGoldHarryLoss()).equals(request.getGoldHarry())) {
+            goldHarry.updateLoss(request.getGoldHarry());
             goldHarryRepository.save(goldHarry);
 
             KafkaEventDto.UpdateLossDto kafkaEventDto = KafkaEventDto.UpdateLossDto.builder()
@@ -52,7 +52,7 @@ public class GoldHarryService {
                     .goldHarryDto(request)
                     .build();
 
-            kafkaProducer.sendGoldHarryLossUpdated(kafkaEventDto.getTenantId(), kafkaEventDto.getGoldHarryId(), kafkaEventDto.getGoldHarryDto().getGoldHarryLoss());
+            kafkaProducer.sendGoldHarryLossUpdated(kafkaEventDto.getTenantId(), kafkaEventDto.getGoldHarryId(), kafkaEventDto.getGoldHarryDto().getGoldHarry());
         }
     }
 
@@ -89,7 +89,7 @@ public class GoldHarryService {
     public void createHarry(String accessToken, GoldHarryDto.Request goldHarryDto) {
         if (authorityUserRoleUtil.verification(accessToken)) {
             GoldHarry goldHarry = GoldHarry.builder()
-                    .goldHarryLoss(goldHarryDto.getGoldHarryLoss())
+                    .goldHarryLoss(goldHarryDto.getGoldHarry())
                     .build();
             goldHarryRepository.save(goldHarry);
             return;
