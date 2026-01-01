@@ -194,7 +194,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 .from(stock)
                 .where(
                         stock.stockDeleted.isFalse(),
-                        stock.orderStatus.between(OrderStatus.NORMAL, OrderStatus.STOCK),
+                        stock.orderStatus.in(OrderStatus.NORMAL, OrderStatus.STOCK),
                         stock.storeId.eq(DEFAULT_STORE_STOCK_ID),
                         stock.product.productName.eq(orderProduct.productName),
                         stock.product.materialName.eq(orderProduct.materialName),
@@ -367,7 +367,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression createdBetween =
                 orders.createAt.between(startDateTime, endDateTime);
 
-        BooleanExpression status = orders.orderStatus.between(OrderStatus.valueOf(orderCondition.getOrderStatus()), OrderStatus.STOCK);
+        BooleanExpression status = orders.orderStatus.in(OrderStatus.valueOf(orderCondition.getOrderStatus()), OrderStatus.STOCK);
 
         return status.and(createdBetween);
     }
@@ -385,7 +385,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression createdBetween =
                 orders.createAt.between(startDateTime, endDateTime);
 
-        BooleanExpression status = orders.orderStatus.between(OrderStatus.ORDER, OrderStatus.FIX);
+        BooleanExpression status = orders.orderStatus.in(OrderStatus.ORDER, OrderStatus.FIX);
 
         return status.and(createdBetween);
     }
