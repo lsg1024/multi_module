@@ -171,7 +171,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 .from(stock)
                 .where(
                         stock.stockDeleted.isFalse(),
-                        stock.orderStatus.eq(OrderStatus.NORMAL),
+                        stock.orderStatus.between(OrderStatus.NORMAL, OrderStatus.STOCK),
                         stock.storeId.eq(DEFAULT_STORE_STOCK_ID),
                         stock.product.productName.eq(orderProduct.productName),
                         stock.product.materialName.eq(orderProduct.materialName),

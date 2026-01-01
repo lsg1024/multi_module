@@ -13,7 +13,7 @@ public class GoldHarryDto {
     @AllArgsConstructor
     public static class Response {
         private String goldHarryId;
-        private String goldHarryLoss;
+        private String goldHarry;
     }
 
     @Getter
@@ -21,12 +21,12 @@ public class GoldHarryDto {
     public static class Request {
         @NotBlank(message = "필수 입력값 입니다.")
         @DecimalMin(value = "0.0", message = "0.0 이상이어야 합니다.")
-        private BigDecimal goldHarryLoss;
+        private BigDecimal goldHarry;
     }
 
     @Getter
     @AllArgsConstructor
     public static class Update {
-        private String goldHarryLoss;
+        private String goldHarry;
     }
 }
