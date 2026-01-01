@@ -454,6 +454,7 @@ public class StockService {
         stock.removeOrder();
         stock.updateOrderStatus(OrderStatus.DELETED);
 
+        // 추후 예상되는 문제 다른 flowCode로 저장하기에 흐름이 끊김 flowCode와 stockCode 분리된 점을 이용하면 해결가능할지도?
         stock.updateFlowCode();
 
         StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(beforeFlowCode)
