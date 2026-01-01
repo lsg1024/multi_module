@@ -177,4 +177,10 @@ public class Stock extends BaseTimeEntity {
     public void returnToStock() {
         this.orderStatus = OrderStatus.STOCK;
     }
+
+    public void updateFlowCode() {
+        long newFlowCode = TsidCreator.getTsid().toLong();
+        this.flowCode = newFlowCode;
+        this.stockCode = newFlowCode;
+    }
 }

@@ -351,13 +351,10 @@ public class StockRepositoryImpl implements CustomStockRepository {
                 case "color" -> orderSpecifiers.add(new OrderSpecifier<>(direction, stock.product.colorName));
 
                 default -> {
-                    orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, stock.createDate));
                     orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, stock.flowCode));
                 }
             }
         } else {
-            // 정렬 조건이 없을 경우 기본 정렬
-            orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, stock.createDate));
             orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, stock.flowCode));
         }
 
