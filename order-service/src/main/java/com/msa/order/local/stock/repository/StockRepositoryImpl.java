@@ -321,7 +321,8 @@ public class StockRepositoryImpl implements CustomStockRepository {
                 OrderStatus.STOCK,
                 OrderStatus.NORMAL,
                 OrderStatus.RENTAL,
-                OrderStatus.FIX
+                OrderStatus.FIX,
+                OrderStatus.SALE
         );
     }
 
