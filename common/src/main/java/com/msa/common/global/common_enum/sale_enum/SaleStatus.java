@@ -10,7 +10,8 @@ public enum SaleStatus {
     PAYMENT("결제"),
     DISCOUNT("DC"),
     PAYMENT_TO_BANK("통장"),
-    WG("WG");
+    WG("WG"),
+    PURCHASE("매입");
 
     private final String displayName;
 
