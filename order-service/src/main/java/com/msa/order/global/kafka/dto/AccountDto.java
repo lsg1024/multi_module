@@ -18,11 +18,12 @@ public class AccountDto {
         private String type; // store or factory
         private Long id;
         private String name;
+        private String material;
         private BigDecimal pureGoldBalance;
         private Integer moneyBalance;
 
         @Builder
-        public updateCurrentBalance(String eventId, String saleCode, String tenantId, String saleType, String type, Long id, String name, BigDecimal pureGoldBalance, Integer moneyBalance) {
+        public updateCurrentBalance(String eventId, String saleCode, String tenantId, String saleType, String type, Long id, String name, String material, BigDecimal pureGoldBalance, Integer moneyBalance) {
             this.eventId = eventId;
             this.saleCode = saleCode;
             this.tenantId = tenantId;
@@ -30,6 +31,7 @@ public class AccountDto {
             this.type = type;
             this.id = id;
             this.name = name;
+            this.material = material.toUpperCase();
             this.pureGoldBalance = pureGoldBalance;
             this.moneyBalance = moneyBalance;
         }

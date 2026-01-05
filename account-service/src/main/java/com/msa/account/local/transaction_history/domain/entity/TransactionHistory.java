@@ -29,6 +29,8 @@ public class TransactionHistory {
     @Enumerated(EnumType.STRING)
     @Column(name = "TRANSACTION_TYPE")
     private SaleStatus transactionType;
+    @Column(name = "MATERIAL")
+    private String material;
     @Column(name = "GOLD_AMOUNT", precision = 10, scale = 3)
     private BigDecimal goldAmount;
     @Column(name = "MONEY_AMOUNT")
@@ -62,8 +64,9 @@ public class TransactionHistory {
     }
 
     @Builder
-    public TransactionHistory(SaleStatus transactionType, BigDecimal goldAmount, Long moneyAmount, String eventId, Long accountSaleCode, Store store, Factory factory, String transactionHistoryNote) {
+    public TransactionHistory(SaleStatus transactionType, String material, BigDecimal goldAmount, Long moneyAmount, String eventId, Long accountSaleCode, Store store, Factory factory, String transactionHistoryNote) {
         this.transactionType = transactionType;
+        this.material = material;
         this.goldAmount = goldAmount;
         this.moneyAmount = moneyAmount;
         this.eventId = eventId;

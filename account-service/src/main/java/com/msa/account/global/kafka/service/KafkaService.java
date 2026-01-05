@@ -39,11 +39,13 @@ public class KafkaService {
         Long entityId = dto.getId();
         String eventId = dto.getEventId();
         String saleType = dto.getSaleType();
+        String material = dto.getMaterial();
         BigDecimal pureGoldAmount = new BigDecimal(dto.getPureGoldBalance());
         Long moneyAmount = Long.valueOf(dto.getMoneyBalance());
 
-        Store store = null;
-        Factory factory = null;
+        Store store;
+        Factory factory;
+        TransactionHistory history;
         if ("STORE".equals(type)) {
 
             store = storeRepository.findById(entityId)
@@ -51,26 +53,44 @@ public class KafkaService {
 
             store.updateBalance(pureGoldAmount, moneyAmount);
 
+            history = TransactionHistory.builder()
+                    .eventId(eventId)
+                    .accountSaleCode(Long.parseLong(saleCode))
+                    .transactionType(SaleStatus.valueOf(saleType))
+                    .material(material)
+                    .goldAmount(pureGoldAmount)
+                    .moneyAmount(moneyAmount)
+                    .store(store)
+                    .transactionHistoryNote("")
+                    .build();
+
         } else if ("FACTORY".equals(type)) {
             factory = factoryRepository.findById(entityId)
                     .orElseThrow(() -> new IllegalArgumentException("TENANT ID: " + dto.getTenantId() + " FACTORY: " + NOT_FOUND));
 
             factory.updateBalance(pureGoldAmount, moneyAmount);
 
+            String saleStatus;
+            if (saleType.equals(SaleStatus.SALE.name())) {
+                saleStatus = SaleStatus.PURCHASE.name();
+            } else {
+                saleStatus = saleType;
+            }
+
+            history = TransactionHistory.builder()
+                    .eventId(eventId)
+                    .accountSaleCode(Long.parseLong(saleCode))
+                    .transactionType(SaleStatus.valueOf(saleStatus))
+                    .material(material)
+                    .goldAmount(pureGoldAmount)
+                    .moneyAmount(moneyAmount)
+                    .factory(factory)
+                    .transactionHistoryNote("")
+                    .build();
+
         } else {
             throw new IllegalArgumentException("Unknown balance type: " + type);
         }
-
-        TransactionHistory history = TransactionHistory.builder()
-                .eventId(eventId)
-                .accountSaleCode(Long.parseLong(saleCode))
-                .transactionType(SaleStatus.fromDisplayName(saleType))
-                .goldAmount(pureGoldAmount)
-                .moneyAmount(moneyAmount)
-                .store(store)
-                .factory(factory)
-                .transactionHistoryNote("")
-                .build();
 
         transactionHistoryRepository.save(history);
 

@@ -93,7 +93,12 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
     @Override
     public List<String> findByFilterFactories(OrderDto.OrderCondition condition) {
 
-        BooleanExpression ordersStatusBuilder = getOrdersStatusBuilder(condition);
+        BooleanExpression ordersStatusBuilder;
+        if (condition.getOrderStatus().equals("EXPECT")) {
+            ordersStatusBuilder = getExpectBuilder(condition);
+        } else {
+            ordersStatusBuilder = getOrdersStatusBuilder(condition);
+        }
 
         return query
                 .selectDistinct(orders.factoryName)
@@ -104,7 +109,13 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
     @Override
     public List<String> findByFilterStores(OrderDto.OrderCondition condition) {
-        BooleanExpression ordersStatusBuilder = getOrdersStatusBuilder(condition);
+
+        BooleanExpression ordersStatusBuilder;
+        if (condition.getOrderStatus().equals("EXPECT")) {
+            ordersStatusBuilder = getExpectBuilder(condition);
+        } else {
+            ordersStatusBuilder = getOrdersStatusBuilder(condition);
+        }
 
         return query
                 .selectDistinct(orders.storeName)
@@ -115,7 +126,13 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
     @Override
     public List<String> findByFilterSetType(OrderDto.OrderCondition condition) {
-        BooleanExpression ordersStatusBuilder = getOrdersStatusBuilder(condition);
+
+        BooleanExpression ordersStatusBuilder;
+        if (condition.getOrderStatus().equals("EXPECT")) {
+            ordersStatusBuilder = getExpectBuilder(condition);
+        } else {
+            ordersStatusBuilder = getOrdersStatusBuilder(condition);
+        }
 
         return query
                 .selectDistinct(orders.orderProduct.setTypeName)
@@ -127,7 +144,13 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
     @Override
     public List<String> findByFilterColor(OrderDto.OrderCondition condition) {
-        BooleanExpression ordersStatusBuilder = getOrdersStatusBuilder(condition);
+
+        BooleanExpression ordersStatusBuilder;
+        if (condition.getOrderStatus().equals("EXPECT")) {
+            ordersStatusBuilder = getExpectBuilder(condition);
+        } else {
+            ordersStatusBuilder = getOrdersStatusBuilder(condition);
+        }
         return query
                 .selectDistinct(orders.orderProduct.colorName)
                 .from(orders)
@@ -171,7 +194,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 .from(stock)
                 .where(
                         stock.stockDeleted.isFalse(),
-                        stock.orderStatus.between(OrderStatus.NORMAL, OrderStatus.STOCK),
+                        stock.orderStatus.in(OrderStatus.NORMAL, OrderStatus.STOCK),
                         stock.storeId.eq(DEFAULT_STORE_STOCK_ID),
                         stock.product.productName.eq(orderProduct.productName),
                         stock.product.materialName.eq(orderProduct.materialName),
@@ -344,7 +367,25 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression createdBetween =
                 orders.createAt.between(startDateTime, endDateTime);
 
-        BooleanExpression status = orders.orderStatus.eq(OrderStatus.valueOf(orderCondition.getOrderStatus()));
+        BooleanExpression status = orders.orderStatus.in(OrderStatus.valueOf(orderCondition.getOrderStatus()), OrderStatus.STOCK);
+
+        return status.and(createdBetween);
+    }
+
+    private static BooleanExpression getExpectBuilder(OrderDto.OrderCondition orderCondition) {
+        String startAt = orderCondition.getStartAt();
+        String endAt = orderCondition.getEndAt();
+
+        LocalDateTime start = LocalDate.parse(startAt).atStartOfDay(); // 예: 2025-08-04 00:00:00
+        LocalDateTime end = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
+
+        OffsetDateTime startDateTime = start.atOffset(ZoneOffset.of("+09:00"));
+        OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
+
+        BooleanExpression createdBetween =
+                orders.createAt.between(startDateTime, endDateTime);
+
+        BooleanExpression status = orders.orderStatus.in(OrderStatus.ORDER, OrderStatus.FIX);
 
         return status.and(createdBetween);
     }
