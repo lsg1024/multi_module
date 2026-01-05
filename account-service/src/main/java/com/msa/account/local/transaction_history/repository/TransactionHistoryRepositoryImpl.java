@@ -36,7 +36,9 @@ public class TransactionHistoryRepositoryImpl implements CustomTransactionHistor
         List<TransactionPage> content = query
                 .select(new QTransactionPage(
                         transactionHistory.accountSaleCode.stringValue(),
-                        transactionHistory.eventId,
+                        new Coalesce<>(String.class)
+                                .add(store.storeId.stringValue())
+                                .add(factory.factoryId.stringValue()),
                         new Coalesce<>(String.class)
                                 .add(store.storeName)
                                 .add(factory.factoryName)
@@ -94,7 +96,7 @@ public class TransactionHistoryRepositoryImpl implements CustomTransactionHistor
         List<TransactionPage> content = query
                 .select(new QTransactionPage(
                         transactionHistory.accountSaleCode.stringValue(),
-                        transactionHistory.eventId,
+                        factory.factoryId.stringValue(),
                         factory.factoryName,
                         factory.commonOption.goldHarry.goldHarryLoss.stringValue(),
                         transactionHistory.transactionDate.stringValue(),
