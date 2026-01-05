@@ -32,9 +32,9 @@ public class OrdersController {
             @RequestParam(name = "order_type") String orderType,
             @Valid @RequestBody OrderDto.Request orderDto) {
 
-        Long flowCode = ordersService.saveOrder(accessToken, orderType, orderDto);
+        ordersService.saveOrder(accessToken, orderType, orderDto);
 
-        return ResponseEntity.ok(ApiResponse.success("생성 완료", String.valueOf(flowCode)));
+        return ResponseEntity.ok(ApiResponse.success("생성 완료"));
     }
 
     //단일 값 -> 상세 조회

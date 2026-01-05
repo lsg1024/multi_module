@@ -72,8 +72,10 @@ public class StoreController {
     @GetMapping("/stores/attempt")
     public ResponseEntity<ApiResponse<CustomPage<AccountDto.accountResponse>>> getStoreAttempt(
             @RequestParam(name = "search", required = false) String name,
+            @RequestParam(name = "sortField", required = false) String field,
+            @RequestParam(name = "sortOrder", required = false) String sort,
             @PageableDefault(size = 12) Pageable pageable) {
-        CustomPage<AccountDto.accountResponse> storeAttemptList = storeService.getStoreAttempt(name, pageable);
+        CustomPage<AccountDto.accountResponse> storeAttemptList = storeService.getStoreAttempt(name, field, sort, pageable);
         return ResponseEntity.ok(ApiResponse.success(storeAttemptList));
     }
 

@@ -10,6 +10,8 @@ import com.msa.account.local.store.domain.dto.QStoreDto_StoreResponse;
 import com.msa.account.local.store.domain.dto.StoreDto;
 import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import com.msa.common.global.util.CustomPage;
+import com.querydsl.core.types.Order;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.StringExpression;
@@ -19,7 +21,10 @@ import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Pageable;
+import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -117,7 +122,7 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
     }
 
     @Override
-    public CustomPage<AccountDto.accountResponse> findAllStoreAndAttempt(String name, Pageable pageable) {
+    public CustomPage<AccountDto.accountResponse> findAllStoreAndAttempt(String name, String field, String sort, Pageable pageable) {
         BooleanExpression storeName = name != null ? store.storeName.contains(name) : null;
 
         StringExpression latestTransactionDateString = Expressions.stringTemplate(
@@ -148,6 +153,8 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                         .or(transactionHistory.transactionType.eq(SaleStatus.SALE)))
                 .exists();
 
+        OrderSpecifier<?>[] specifiers = specifiers(field, sort);
+
         List<AccountDto.accountResponse> content = query
                 .select(new QAccountDto_accountResponse(
                         store.storeId,
@@ -176,9 +183,10 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                 .leftJoin(store.commonOption, commonOption)
                 .where(
                         store.storeDeleted.isFalse().and(storeName),
+                        store.currentGoldBalance.ne(BigDecimal.ZERO).or(store.currentMoneyBalance.ne(0L)),
                         hasHistory
                 )
-                .orderBy(store.storeName.desc())
+                .orderBy(specifiers)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
@@ -279,5 +287,28 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                 .fetch();
     }
 
+    private OrderSpecifier<?>[] specifiers(String sortField, String sortType) {
+        List<OrderSpecifier<?>> orderSpecifiers = new ArrayList<>();
+
+        if (StringUtils.hasText(sortField)) {
+            Order direction = "ASC".equalsIgnoreCase(sortType) ? Order.ASC : Order.DESC;
+
+            switch (sortField) {
+                case "accountName" -> orderSpecifiers.add(new OrderSpecifier<>(direction, store.storeName));
+                case "accountOwnerName" -> orderSpecifiers.add(new OrderSpecifier<>(direction, store.storeOwnerName));
+                case "grade" -> orderSpecifiers.add(new OrderSpecifier<>(direction, store.commonOption.optionLevel));
+                case "gold" -> orderSpecifiers.add(new OrderSpecifier<>(direction, store.currentGoldBalance));
+                case "money" -> orderSpecifiers.add(new OrderSpecifier<>(direction, store.currentMoneyBalance));
+
+                default -> {
+                    orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, store.storeName));
+                }
+            }
+        } else {
+            orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, store.storeName));
+        }
+
+        return orderSpecifiers.toArray(new OrderSpecifier[0]);
+    }
 
 }

@@ -8,6 +8,7 @@ import com.msa.common.global.util.CustomPage;
 import com.msa.order.global.dto.OutboxCreatedEvent;
 import com.msa.order.global.dto.StoneDto;
 import com.msa.order.global.kafka.dto.AccountDto;
+import com.msa.order.global.util.DateConversionUtil;
 import com.msa.order.global.util.GoldUtils;
 import com.msa.order.local.order.entity.OrderStone;
 import com.msa.order.local.order.entity.StatusHistory;
@@ -43,6 +44,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -242,6 +244,16 @@ public class SaleService {
         ProductSnapshot product = stock.getProduct();
         stock.updateOrderStatus(OrderStatus.SALE);
         stock.updateStockNote(stockDto.getMainStoneNote(), stockDto.getAssistanceStoneNote(), stockDto.getStockNote());
+
+        Long assistantId = Long.valueOf(stockDto.getAssistantStoneId());
+        if (!stock.getProduct().getAssistantStoneId().equals(assistantId)) {
+            OffsetDateTime assistantStoneCreateAt = null;
+            if (StringUtils.hasText(stockDto.getAssistantStoneCreateAt())) {
+                assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(stockDto.getAssistantStoneCreateAt());
+            }
+            stock.getProduct().updateAssistantStone(stockDto.isAssistantStone(), assistantId, stockDto.getAssistantStoneName(), assistantStoneCreateAt);
+        }
+
         product.updateProductAddCost(stockDto.getAddProductLaborCost());
         product.updateProductWeightAndSize(stockDto.getProductSize(), new BigDecimal(stockDto.getGoldWeight()), new BigDecimal(stockDto.getStoneWeight()));
 
@@ -346,14 +358,14 @@ public class SaleService {
             updateNewHistory(newFlowCode, nickname, BusinessPhase.RETURN);
 
             // 미수액 변경
-            publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, sale.getSaleStatus().name(), "STORE", storeId, storeName, materialName, pureGoldWeight.negate(), totalLaborCost * -1);
-            publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, sale.getSaleStatus().name(), "FACTORY", factoryId, factoryName, materialName, pureGoldWeight.negate(), totalLaborCost * -1);
+            publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.RETURN.name(), "STORE", storeId, storeName, materialName, pureGoldWeight.negate(), totalLaborCost * -1);
+            publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.RETURN.name(), "FACTORY", factoryId, factoryName, materialName, pureGoldWeight.negate(), totalLaborCost * -1);
         } else if (PAYMENT_STATUSES.contains(SaleStatus.valueOf(type))) {
             SalePayment payment = salePaymentRepository.findByFlowCode(newFlowCode)
                     .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
             Sale sale = payment.getSale();
-            publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, sale.getSaleStatus().name(), "STORE", sale.getAccountId(), sale.getAccountName(), payment.getMaterial(), payment.getPureGoldWeight().negate(), payment.getCashAmount() * -1);
+            publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.RETURN.name(), "STORE", sale.getAccountId(), sale.getAccountName(), payment.getMaterial(), payment.getPureGoldWeight().negate(), payment.getCashAmount() * -1);
             salePaymentRepository.delete(payment);
         } else {
             throw new IllegalArgumentException("처리할 수 없는 취소 타입입니다: " + type);

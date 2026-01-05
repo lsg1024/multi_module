@@ -50,8 +50,8 @@ public class StoreService {
     }
 
     @Transactional(readOnly = true)
-    public CustomPage<AccountDto.accountResponse> getStoreAttempt(String name, Pageable pageable) {
-        return storeRepository.findAllStoreAndAttempt(name, pageable);
+    public CustomPage<AccountDto.accountResponse> getStoreAttempt(String name, String field, String sort, Pageable pageable) {
+        return storeRepository.findAllStoreAndAttempt(name, field, sort, pageable);
     }
 
     @Transactional(readOnly = true)

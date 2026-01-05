@@ -165,7 +165,7 @@ public class OrdersService {
     }
 
     //주문
-    public Long saveOrder(String accessToken, String orderStatus, OrderDto.Request orderDto) {
+    public void saveOrder(String accessToken, String orderStatus, OrderDto.Request orderDto) {
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = jwtUtil.getTenantId(accessToken);
 
@@ -291,7 +291,6 @@ public class OrdersService {
             }
         });
 
-        return order.getFlowCode();
     }
 
     //주문 수정
