@@ -46,6 +46,7 @@ public class TransactionHistoryRepositoryImpl implements CustomTransactionHistor
                                 .add(factory.commonOption.goldHarry.goldHarryLoss.stringValue())
                                 .as("accountHarry"),
                         transactionHistory.transactionDate.stringValue(),
+                        transactionHistory.material,
                         transactionHistory.goldAmount.stringValue(),
                         transactionHistory.moneyAmount.stringValue(),
                         transactionHistory.transactionType,
@@ -58,7 +59,8 @@ public class TransactionHistoryRepositoryImpl implements CustomTransactionHistor
                         transactionHistory.transactionDeleted.isFalse(),
                         dateBetween(start, end),
                         accountTypeEq(accountType),
-                        accountNameEq(accountName)
+                        storeNameEq(accountName),
+                        factoryNameEq(accountName)
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -72,7 +74,7 @@ public class TransactionHistoryRepositoryImpl implements CustomTransactionHistor
                         transactionHistory.transactionDeleted.isFalse(),
                         dateBetween(start, end),
                         accountTypeEq(accountType),
-                        accountNameEq(accountName)
+                        storeNameEq(accountName)
                 );
 
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
@@ -96,6 +98,7 @@ public class TransactionHistoryRepositoryImpl implements CustomTransactionHistor
                         factory.factoryName,
                         factory.commonOption.goldHarry.goldHarryLoss.stringValue(),
                         transactionHistory.transactionDate.stringValue(),
+                        transactionHistory.material,
                         transactionHistory.goldAmount.stringValue(),
                         transactionHistory.moneyAmount.stringValue(),
                         transactionHistory.transactionType,
@@ -107,7 +110,7 @@ public class TransactionHistoryRepositoryImpl implements CustomTransactionHistor
                         transactionHistory.transactionDeleted.isFalse(),
                         dateBetween(start, end),
                         accountTypeEq(accountType),
-                        accountNameEq(accountName)
+                        factoryNameEq(accountName)
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -121,7 +124,7 @@ public class TransactionHistoryRepositoryImpl implements CustomTransactionHistor
                         transactionHistory.transactionDeleted.isFalse(),
                         dateBetween(start, end),
                         accountTypeEq(accountType),
-                        accountNameEq(accountName)
+                        storeNameEq(accountName)
                 );
 
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
@@ -158,15 +161,29 @@ public class TransactionHistoryRepositoryImpl implements CustomTransactionHistor
     }
 
     private BooleanExpression accountTypeEq(String accountType) {
+        if (!StringUtils.hasText(accountType)) {
+            return null;
+        }
         SaleStatus status = SaleStatus.fromDisplayName(accountType);
-        return StringUtils.hasText(accountType) ? transactionHistory.transactionType.eq(status) : null;
+        if (status == null) {
+            return null;
+        }
+
+        return transactionHistory.transactionType.eq(status);
     }
 
-    private BooleanExpression accountNameEq(String accountName) {
+    private BooleanExpression storeNameEq(String accountName) {
         if (!StringUtils.hasText(accountName)) {
             return null;
         }
-        return store.storeName.eq(accountName).or(factory.factoryName.contains(accountName));
+        return store.storeName.eq(accountName);
+    }
+
+    private BooleanExpression factoryNameEq(String accountName) {
+        if (!StringUtils.hasText(accountName)) {
+            return null;
+        }
+        return factory.factoryName.contains(accountName);
     }
 
 }
