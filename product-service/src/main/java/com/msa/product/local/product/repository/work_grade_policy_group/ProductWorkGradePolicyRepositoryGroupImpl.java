@@ -81,7 +81,7 @@ public class ProductWorkGradePolicyRepositoryGroupImpl implements CustomProductW
                         .colorId(group.getColorId())
                         .colorName(group.getColorName())
                         .defaultProductPolicy(group.isDefaultProductPolicy())
-                        .gradePolicyDtos(policyMap.getOrDefault(Long.parseLong(group.getProductGroupId()), List.of()))
+                        .policyDtos(policyMap.getOrDefault(Long.parseLong(group.getProductGroupId()), List.of()))
                         .note(group.getNote())
                         .build())
                 .toList();

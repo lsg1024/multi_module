@@ -31,18 +31,18 @@ public class ProductWorkGradePolicyGroupDto {
         private String colorId;
         private String colorName;
         private boolean defaultProductPolicy;
-        private List<ProductWorkGradePolicyDto.Response> gradePolicyDtos;
+        private List<ProductWorkGradePolicyDto.Response> policyDtos;
         private String note;
 
         @Builder
         @QueryProjection
-        public Response(String productGroupId, Integer productPurchasePrice, String colorId, String colorName, boolean defaultProductPolicy, List<ProductWorkGradePolicyDto.Response> gradePolicyDtos, String note) {
+        public Response(String productGroupId, Integer productPurchasePrice, String colorId, String colorName, boolean defaultProductPolicy, List<ProductWorkGradePolicyDto.Response> policyDtos, String note) {
             this.productGroupId = productGroupId;
             this.productPurchasePrice = productPurchasePrice;
             this.colorId = colorId;
             this.colorName = colorName;
             this.defaultProductPolicy = defaultProductPolicy;
-            this.gradePolicyDtos = gradePolicyDtos;
+            this.policyDtos = policyDtos;
             this.note = note;
         }
     }
