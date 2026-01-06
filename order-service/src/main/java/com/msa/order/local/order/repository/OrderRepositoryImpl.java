@@ -7,9 +7,9 @@ import com.msa.order.local.order.dto.OrderDto;
 import com.msa.order.local.order.dto.OrderQueryDto;
 import com.msa.order.local.order.dto.QOrderQueryDto;
 import com.msa.order.local.order.dto.StockCondition;
-import com.msa.order.local.order.entity.order_enum.BusinessPhase;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.order.entity.order_enum.ProductStatus;
+import com.msa.order.local.order.entity.order_enum.SourceType;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Order;
@@ -367,9 +367,11 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression createdBetween =
                 orders.createAt.between(startDateTime, endDateTime);
 
+        BooleanExpression sourceHistoryStatus = hasStatusHistory(SourceType.valueOf(orderCondition.getOrderStatus()));
+
         BooleanExpression status = orders.orderStatus.in(OrderStatus.valueOf(orderCondition.getOrderStatus()), OrderStatus.STOCK);
 
-        return status.and(createdBetween);
+        return sourceHistoryStatus.and(status.and(createdBetween));
     }
 
     private static BooleanExpression getExpectBuilder(OrderDto.OrderCondition orderCondition) {
@@ -468,8 +470,8 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         return orderSpecifiers.toArray(new OrderSpecifier[0]);
     }
 
-    private static BooleanExpression hasStatusHistory(BusinessPhase businessPhase) {
-        if (businessPhase == null) {
+    private static BooleanExpression hasStatusHistory(SourceType sourceType) {
+        if (sourceType == null) {
             return null;
         }
 
@@ -477,7 +479,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 JPAExpressions
                         .selectDistinct(statusHistory.flowCode)
                         .from(statusHistory)
-                        .where(statusHistory.phase.eq(businessPhase))
+                        .where(statusHistory.sourceType.eq(sourceType))
         );
     }
 
