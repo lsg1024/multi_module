@@ -37,15 +37,24 @@ public class SaleController {
 
     //판매 관리 데이터 목록들
     @GetMapping("/sales")
-    public ResponseEntity<ApiResponse<CustomPage<SaleItemResponse>>> getSales(
+    public ResponseEntity<ApiResponse<CustomPage<SaleItemResponse.SaleItem>>> getSales(
             @RequestParam(name = "search", required = false) String input,
             @RequestParam(name = "start") String startAt,
             @RequestParam(name = "end") String endAt,
             @RequestParam(name = "type", required = false) String material,
             @PageableDefault(size = 20) Pageable pageable) {
 
-        CustomPage<SaleItemResponse> sale = saleService.getSale(input,startAt, endAt, material, pageable);
+        CustomPage<SaleItemResponse.SaleItem> sale = saleService.getSale(input,startAt, endAt, material, pageable);
         return ResponseEntity.ok(ApiResponse.success(sale));
+    }
+
+    // 주문장 인쇄
+    @GetMapping("/sale/print")
+    public ResponseEntity<ApiResponse<List<SaleItemResponse>>> getSalePrint(
+            @RequestParam(name = "saleCode") String saleCode) {
+        List<SaleItemResponse> salePrint = saleService.getSalePrint(saleCode);
+
+        return ResponseEntity.ok(ApiResponse.success(salePrint));
     }
 
     //오늘 판매 관리 데이터 목록 확인
@@ -102,7 +111,7 @@ public class SaleController {
             @RequestParam(name = "new") boolean newSheet,
             @Valid @RequestBody SaleDto.Request saleDto) {
 
-        saleService.createPayment(accessToken, eventId, saleDto, newSheet);
+        saleService.createStorePayment(accessToken, eventId, saleDto, newSheet);
         return ResponseEntity.ok(ApiResponse.success("등록 완료"));
     }
 

@@ -10,7 +10,7 @@ import java.util.List;
 
 @Repository
 public interface CustomSaleRepository {
-    CustomPage<SaleItemResponse> findSales(SaleDto.Condition condition, Pageable pageable);
-
+    CustomPage<SaleItemResponse.SaleItem> findSales(SaleDto.Condition condition, Pageable pageable);
+    List<SaleItemResponse> findPrintSales(String saleCode);
     List<SaleDto.SaleDetailDto> findSalePast(Long storeId, Long productId, String materialName);
 }

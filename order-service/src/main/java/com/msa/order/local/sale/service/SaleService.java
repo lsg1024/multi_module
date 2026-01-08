@@ -175,7 +175,7 @@ public class SaleService {
     }
 
     @Transactional(readOnly = true)
-    public CustomPage<SaleItemResponse> getSale(String input, String startAt, String endAt, String material, Pageable pageable) {
+    public CustomPage<SaleItemResponse.SaleItem> getSale(String input, String startAt, String endAt, String material, Pageable pageable) {
         SaleDto.Condition condition = new SaleDto.Condition(input, startAt, endAt, material);
         return customSaleRepository.findSales(condition, pageable);
     }
@@ -265,17 +265,17 @@ public class SaleService {
                 product.getProductLaborCost() + stockDto.getAddProductLaborCost();
 
         publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", storeId, storeName, product.getMaterialName(), pureGoldWeight, totalBalanceMoney);
-        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "FACTORY", factoryId, factoryName, product.getMaterialName(), pureGoldWeight, totalBalanceMoney);
+        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.PURCHASE.name(), "FACTORY", factoryId, factoryName, product.getMaterialName(), pureGoldWeight, totalBalanceMoney);
     }
 
     /**
-     * 상품 미수금 결제 처리
+     * 판매처 상품 미수금 결제 처리
      * @param accessToken 유저 유효성 체크
      * @param eventId 멱등성 체크
      * @param saleDto 상품 결제 정보
      * @param createNewSheet 주문창 추가 여부 (추가 true/신규 false)
      */
-    public void createPayment(String accessToken, String eventId, SaleDto.Request saleDto, boolean createNewSheet) {
+    public void createStorePayment(String accessToken, String eventId, SaleDto.Request saleDto, boolean createNewSheet) {
 
         if (!StringUtils.hasText(eventId)) {
             throw new IllegalStateException("멱등키 누락");
@@ -405,7 +405,7 @@ public class SaleService {
                 stock.getProduct().getProductLaborCost() + stockDto.getProductAddLaborCost();
 
         publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", storeId, storeName, stock.getProduct().getMaterialName(), pureGoldWeight, totalBalanceMoney);
-        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "FACTORY", factoryId, factoryName, stock.getProduct().getMaterialName(), pureGoldWeight, totalBalanceMoney);
+        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.PURCHASE.name(), "FACTORY", factoryId, factoryName, stock.getProduct().getMaterialName(), pureGoldWeight, totalBalanceMoney);
     }
 
     // 과거 판매 내역
@@ -443,7 +443,7 @@ public class SaleService {
         return saleDetailDtos;
     }
 
-    // 판매 수정
+    // 판매 수정 아직 활성화는 안되어 있음
     private void performUpdate(String eventId, Long flowCode, SaleDto.updateRequest updateDto, String tenantId, String nickname) {
 
         SaleItem saleItem = saleItemRepository.findByFlowCode(flowCode)
@@ -646,5 +646,15 @@ public class SaleService {
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         sale.updateAccountGoldPrice(accountGoldPrice);
+    }
+
+    /**
+     * 판매장 인쇄
+     * @param saleCode 주문장 고유 번호
+     * @return 주문장 필요 정보
+     */
+    @Transactional(readOnly = true)
+    public List<SaleItemResponse> getSalePrint(String saleCode) {
+        return customSaleRepository.findPrintSales(saleCode);
     }
 }
