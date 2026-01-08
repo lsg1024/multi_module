@@ -95,6 +95,7 @@ public class ProductService {
                 .productName(productDto.getProductName())
                 .standardWeight(weight)
                 .productNote(productDto.getProductNote())
+                .productRelatedNumber(productDto.getProductRelatedNumber())
                 .productDeleted(false)
                 .productStones(new ArrayList<>())
                 .productImages(new ArrayList<>())

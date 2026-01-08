@@ -32,6 +32,7 @@ public class ProductDto {
     private String material; // materialId
     private String standardWeight;
     private String productNote;
+    private String productRelatedNumber;
     @Valid
     private List<ProductWorkGradePolicyGroupDto> productWorkGradePolicyGroupDto;
     private List<ProductStoneDto> productStoneDtos; //상품용 <- stone 호출
@@ -46,6 +47,7 @@ public class ProductDto {
         private String productFactoryName;
         private String productName;
         private String standardWeight;
+        private String productRelatedNumber;
         private String productNote;
         private SetTypeDto.ResponseSingle setTypeDto;
         private ClassificationDto.ResponseSingle classificationDto;
@@ -56,13 +58,14 @@ public class ProductDto {
 
         @Builder
         @QueryProjection
-        public Detail(String productId, Long factoryId, String factoryName, String productFactoryName, String productName, String standardWeight, String productNote, SetTypeDto.ResponseSingle setTypeDto, ClassificationDto.ResponseSingle classificationDto, MaterialDto.ResponseSingle materialDto, List<ProductWorkGradePolicyGroupDto.Response> productWorkGradePolicyGroupDto, List<ProductStoneDto.Response> productStoneDtos, List<ProductImageDto.Response> productImageDtos) {
+        public Detail(String productId, Long factoryId, String factoryName, String productFactoryName, String productName, String standardWeight, String productRelatedNumber, String productNote, SetTypeDto.ResponseSingle setTypeDto, ClassificationDto.ResponseSingle classificationDto, MaterialDto.ResponseSingle materialDto, List<ProductWorkGradePolicyGroupDto.Response> productWorkGradePolicyGroupDto, List<ProductStoneDto.Response> productStoneDtos, List<ProductImageDto.Response> productImageDtos) {
             this.productId = productId;
             this.factoryId = factoryId;
             this.factoryName = factoryName;
             this.productFactoryName = productFactoryName;
             this.productName = productName;
             this.standardWeight = standardWeight;
+            this.productRelatedNumber = productRelatedNumber;
             this.productNote = productNote;
             this.setTypeDto = setTypeDto;
             this.classificationDto = classificationDto;
@@ -85,6 +88,7 @@ public class ProductDto {
         private String classification; // classificationId
         private String material; // materialId
         private String standardWeight;
+        private String productRelatedNumber;
         private String productNote;
         private List<ProductWorkGradePolicyGroupDto.Request> productWorkGradePolicyGroupDto; // 상품 판매 공임
         private List<ProductStoneDto.Request> productStoneDtos; //상품용 <- stone 호출

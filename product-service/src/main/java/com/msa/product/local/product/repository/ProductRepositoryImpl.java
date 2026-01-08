@@ -49,6 +49,7 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                         product.productFactoryName,
                         product.productName,
                         product.standardWeight.stringValue(),
+                        product.productRelatedNumber,
                         product.productNote,
                         new QSetTypeDto_ResponseSingle(
                                 setType.setTypeId.stringValue(),
