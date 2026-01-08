@@ -70,17 +70,10 @@ public class KafkaService {
 
             factory.updateBalance(pureGoldAmount, moneyAmount);
 
-            String saleStatus;
-            if (saleType.equals(SaleStatus.SALE.name())) {
-                saleStatus = SaleStatus.PURCHASE.name();
-            } else {
-                saleStatus = saleType;
-            }
-
             history = TransactionHistory.builder()
                     .eventId(eventId)
                     .accountSaleCode(Long.parseLong(saleCode))
-                    .transactionType(SaleStatus.valueOf(saleStatus))
+                    .transactionType(SaleStatus.valueOf(saleType))
                     .material(material)
                     .goldAmount(pureGoldAmount)
                     .moneyAmount(moneyAmount)
