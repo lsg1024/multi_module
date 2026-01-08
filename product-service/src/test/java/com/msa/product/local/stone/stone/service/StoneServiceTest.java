@@ -114,9 +114,13 @@ class StoneServiceTest {
     @Test
     void getStones_success() {
         CustomPage<StoneDto.PageDto> mockPage = mock(CustomPage.class);
-        given(stoneRepository.findByAllOrderByAsc(null, Pageable.unpaged())).willReturn(mockPage);
+        String stoneShape = null;
+        String stoneType = null;
+        String sortField = null;
+        String sort = null;
+        given(stoneRepository.findAllStones(null, stoneShape, stoneType, sortField, sort, Pageable.unpaged())).willReturn(mockPage);
 
-        CustomPage<StoneDto.PageDto> result = stoneService.getStones(null, Pageable.unpaged());
+        CustomPage<StoneDto.PageDto> result = stoneService.getStones(null, stoneShape, stoneType, sortField, sort, Pageable.unpaged());
         assertThat(result).isNotNull();
     }
 

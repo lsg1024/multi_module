@@ -91,8 +91,8 @@ public class StoneService {
     }
 
     //복수조회 + 검색 + page
-    public CustomPage<StoneDto.PageDto> getStones(String stoneName, Pageable pageable) {
-        return stoneRepository.findByAllOrderByAsc(stoneName, pageable);
+    public CustomPage<StoneDto.PageDto> getStones(String stoneName, String stoneShape, String stoneType, String sortField, String sort, Pageable pageable) {
+        return stoneRepository.findAllStones(stoneName, stoneShape, stoneType, sortField, sort, pageable);
     }
 
     //수정
