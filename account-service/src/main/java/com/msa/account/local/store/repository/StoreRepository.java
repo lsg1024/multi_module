@@ -4,7 +4,9 @@ package com.msa.account.local.store.repository;
 import com.msa.account.global.domain.entity.OptionLevel;
 import com.msa.account.local.store.domain.entity.Store;
 import com.msa.account.local.transaction_history.domain.dto.TransactionDto;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -35,4 +37,9 @@ public interface StoreRepository extends JpaRepository<Store, Long>, CustomStore
             "where s.storeId= :storeId " +
             "and s.storeName= :storeName")
     TransactionDto findByStoreIdAndStoreName(@Param("storeId") Long storeId, @Param("storeName") String storeName);
+
+    // 비관적 락 (동시성 제어)
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select s from Store s where s.storeId = :id")
+    Optional<Store> findByIdWithLock(@Param("id") Long id);
 }

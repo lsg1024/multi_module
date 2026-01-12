@@ -14,7 +14,8 @@ public interface CustomStoreRepository {
     Optional<AccountDto.AccountSingleResponse> findByStoreId(Long storeId);
     CustomPage<StoreDto.StoreResponse> findAllStore(String name, Pageable pageable);
 
-    CustomPage<AccountDto.accountResponse> findAllStoreAndAttempt(String name, String field, String sort, Pageable pageable);
-    AccountDto.accountResponse findByStoreIdAndAttempt(Long storeId);
+    CustomPage<AccountDto.accountResponse> findAllStoreAndReceivable(String name, String field, String sort, Pageable pageable);
+    AccountDto.accountResponse findByStoreIdAndReceivable(Long storeId);
+    AccountDto.AccountSaleLogResponse findByStoreIdAndReceivableByLog(Long storeId);
     List<AccountExcelDto> findAllStoreExcel();
 }
