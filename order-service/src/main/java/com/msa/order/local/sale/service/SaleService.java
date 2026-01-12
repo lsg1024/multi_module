@@ -7,9 +7,13 @@ import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.util.CustomPage;
 import com.msa.order.global.dto.OutboxCreatedEvent;
 import com.msa.order.global.dto.StoneDto;
+import com.msa.order.global.feign_client.client.ProductClient;
+import com.msa.order.global.feign_client.client.StoreClient;
+import com.msa.order.global.feign_client.dto.ProductImageDto;
 import com.msa.order.global.kafka.dto.AccountDto;
 import com.msa.order.global.util.DateConversionUtil;
 import com.msa.order.global.util.GoldUtils;
+import com.msa.order.local.order.dto.StoreDto;
 import com.msa.order.local.order.entity.OrderStone;
 import com.msa.order.local.order.entity.StatusHistory;
 import com.msa.order.local.order.entity.order_enum.BusinessPhase;
@@ -23,6 +27,7 @@ import com.msa.order.local.sale.entity.SaleItem;
 import com.msa.order.local.sale.entity.SalePayment;
 import com.msa.order.local.sale.entity.dto.SaleDto;
 import com.msa.order.local.sale.entity.dto.SaleItemResponse;
+import com.msa.order.local.sale.entity.dto.SalePrintResponse;
 import com.msa.order.local.sale.repository.CustomSaleRepository;
 import com.msa.order.local.sale.repository.SaleItemRepository;
 import com.msa.order.local.sale.repository.SalePaymentRepository;
@@ -72,6 +77,8 @@ public class SaleService {
     private final SalePaymentRepository salePaymentRepository;
     private final CustomSaleRepository customSaleRepository;
     private final StatusHistoryRepository statusHistoryRepository;
+    private final StoreClient storeClient;
+    private final ProductClient productClient;
 
     private static final EnumSet<SaleStatus> PAYMENT_STATUSES = EnumSet.of(
             SaleStatus.PAYMENT,
@@ -80,7 +87,7 @@ public class SaleService {
             SaleStatus.PAYMENT_TO_BANK
     );
 
-    public SaleService(JwtUtil jwtUtil, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, OutboxEventRepository outboxEventRepository, StockRepository stockRepository, SaleRepository saleRepository, CustomOrderStoneRepository customOrderStoneRepository, SaleItemRepository saleItemRepository, SalePaymentRepository salePaymentRepository, CustomSaleRepository customSaleRepository, StatusHistoryRepository statusHistoryRepository) {
+    public SaleService(JwtUtil jwtUtil, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, OutboxEventRepository outboxEventRepository, StockRepository stockRepository, SaleRepository saleRepository, CustomOrderStoneRepository customOrderStoneRepository, SaleItemRepository saleItemRepository, SalePaymentRepository salePaymentRepository, CustomSaleRepository customSaleRepository, StatusHistoryRepository statusHistoryRepository, StoreClient storeClient, ProductClient productClient) {
         this.jwtUtil = jwtUtil;
         this.objectMapper = objectMapper;
         this.eventPublisher = eventPublisher;
@@ -92,6 +99,8 @@ public class SaleService {
         this.salePaymentRepository = salePaymentRepository;
         this.customSaleRepository = customSaleRepository;
         this.statusHistoryRepository = statusHistoryRepository;
+        this.storeClient = storeClient;
+        this.productClient = productClient;
     }
 
     @Transactional(readOnly = true)
@@ -175,7 +184,7 @@ public class SaleService {
     }
 
     @Transactional(readOnly = true)
-    public CustomPage<SaleItemResponse> getSale(String input, String startAt, String endAt, String material, Pageable pageable) {
+    public CustomPage<SaleItemResponse.SaleItem> getSale(String input, String startAt, String endAt, String material, Pageable pageable) {
         SaleDto.Condition condition = new SaleDto.Condition(input, startAt, endAt, material);
         return customSaleRepository.findSales(condition, pageable);
     }
@@ -265,17 +274,17 @@ public class SaleService {
                 product.getProductLaborCost() + stockDto.getAddProductLaborCost();
 
         publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", storeId, storeName, product.getMaterialName(), pureGoldWeight, totalBalanceMoney);
-        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "FACTORY", factoryId, factoryName, product.getMaterialName(), pureGoldWeight, totalBalanceMoney);
+        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.PURCHASE.name(), "FACTORY", factoryId, factoryName, product.getMaterialName(), pureGoldWeight, totalBalanceMoney);
     }
 
     /**
-     * 상품 미수금 결제 처리
+     * 판매처 상품 미수금 결제 처리
      * @param accessToken 유저 유효성 체크
      * @param eventId 멱등성 체크
      * @param saleDto 상품 결제 정보
      * @param createNewSheet 주문창 추가 여부 (추가 true/신규 false)
      */
-    public void createPayment(String accessToken, String eventId, SaleDto.Request saleDto, boolean createNewSheet) {
+    public void createStorePayment(String accessToken, String eventId, SaleDto.Request saleDto, boolean createNewSheet) {
 
         if (!StringUtils.hasText(eventId)) {
             throw new IllegalStateException("멱등키 누락");
@@ -301,7 +310,7 @@ public class SaleService {
 
             BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(saleDto.getGoldWeight(), material.toUpperCase(), harry);
 
-            SaleStatus saleStatus = SaleStatus.valueOf(saleDto.getOrderStatus());
+            SaleStatus saleStatus = SaleStatus.fromDisplayName(saleDto.getOrderStatus());
             publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, saleStatus.name(), "STORE", storeId, storeName, material, pureGoldWeight.negate(), saleDto.getPayAmount() * -1);
         } catch (DataIntegrityViolationException e) {
             log.warn("멱등성 키 중복: 이미 처리된 요청입니다. eventId={}", eventId);
@@ -319,6 +328,8 @@ public class SaleService {
         }
 
         Long newFlowCode = Long.valueOf(flowCode);
+
+        log.info("type = {} flowCode = {}", type, flowCode);
 
         if (type.equals(SaleStatus.SALE.name())) {
             SaleItem saleItem = saleItemRepository.findByFlowCode(newFlowCode)
@@ -359,7 +370,6 @@ public class SaleService {
 
             // 미수액 변경
             publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.RETURN.name(), "STORE", storeId, storeName, materialName, pureGoldWeight.negate(), totalLaborCost * -1);
-            publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.RETURN.name(), "FACTORY", factoryId, factoryName, materialName, pureGoldWeight.negate(), totalLaborCost * -1);
         } else if (PAYMENT_STATUSES.contains(SaleStatus.valueOf(type))) {
             SalePayment payment = salePaymentRepository.findByFlowCode(newFlowCode)
                     .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
@@ -405,7 +415,7 @@ public class SaleService {
                 stock.getProduct().getProductLaborCost() + stockDto.getProductAddLaborCost();
 
         publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", storeId, storeName, stock.getProduct().getMaterialName(), pureGoldWeight, totalBalanceMoney);
-        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "FACTORY", factoryId, factoryName, stock.getProduct().getMaterialName(), pureGoldWeight, totalBalanceMoney);
+        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.PURCHASE.name(), "FACTORY", factoryId, factoryName, stock.getProduct().getMaterialName(), pureGoldWeight, totalBalanceMoney);
     }
 
     // 과거 판매 내역
@@ -443,7 +453,7 @@ public class SaleService {
         return saleDetailDtos;
     }
 
-    // 판매 수정
+    // 판매 수정 아직 활성화는 안되어 있음
     private void performUpdate(String eventId, Long flowCode, SaleDto.updateRequest updateDto, String tenantId, String nickname) {
 
         SaleItem saleItem = saleItemRepository.findByFlowCode(flowCode)
@@ -646,5 +656,67 @@ public class SaleService {
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         sale.updateAccountGoldPrice(accountGoldPrice);
+    }
+
+    /**
+     * 거래 명세서 출력
+     * @param token 인증 토큰
+     * @param saleCode 판매 코드
+     * @return 거래 명세서 데이터
+     */
+    @Transactional(readOnly = true)
+    public SalePrintResponse getSalePrint(String token, String saleCode) {
+        List<SaleItemResponse> printSales = customSaleRepository.findPrintSales(saleCode);
+
+        SaleItemResponse saleItemResponse = printSales.get(0);
+
+        List<Long> productIds = new ArrayList<>();
+        for (SaleItemResponse printSale : printSales) {
+            List<SaleItemResponse.SaleItem> saleItems = printSale.getSaleItems();
+            List<Long> ids = saleItems.stream()
+                    .map(SaleItemResponse.SaleItem::getStoreId)
+                    .filter(id -> id != null && !id.isEmpty())
+                    .map(Long::parseLong)
+                    .distinct()
+                    .toList();
+
+            productIds.addAll(ids);
+        }
+
+        Map<Long, ProductImageDto> productImages = productClient.getProductImages(token, productIds);
+
+        for (SaleItemResponse printSale : printSales) {
+            for (SaleItemResponse.SaleItem item : printSale.getSaleItems()) {
+                if (StringUtils.hasText(item.getStoreId())) {
+                    Long key = Long.parseLong(item.getStoreId());
+
+                    if (productImages.containsKey(key)) {
+                        item.updateImagePath(productImages.get(key).getImagePath());
+                    }
+                }
+            }
+        }
+
+        //미수금액 조회
+        if (StringUtils.hasText(saleItemResponse.getStoreName())) {
+            StoreDto.accountResponse storeAttemptDetail = storeClient.getStoreReceivableDetailLog(token, saleItemResponse.getStoreId(), saleCode);
+
+            log.info("StoreDto.accountResponse storeAttemptDetail = {}", storeAttemptDetail.toString());
+
+            return SalePrintResponse.builder()
+                    .lastPaymentDate(storeAttemptDetail.getLastSaleDate())
+                    .businessOwnerNumber(storeAttemptDetail.getBusinessOwnerNumber())
+                    .faxNumber(storeAttemptDetail.getFaxNumber())
+                    .previousMoneyBalance(storeAttemptDetail.getPreviousMoneyBalance())
+                    .previousGoldBalance(storeAttemptDetail.getPreviousGoldBalance())
+                    .afterMoneyBalance(storeAttemptDetail.getAfterMoneyBalance())
+                    .afterGoldBalance(storeAttemptDetail.getAfterGoldBalance())
+                    .saleItemResponses(printSales)
+                    .build();
+        }
+
+        return SalePrintResponse.builder()
+                .saleItemResponses(printSales)
+                .build();
     }
 }

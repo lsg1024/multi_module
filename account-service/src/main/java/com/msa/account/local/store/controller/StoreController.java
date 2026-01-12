@@ -69,24 +69,35 @@ public class StoreController {
     }
 
     //상점 미수 금액 조회
-    @GetMapping("/stores/attempt")
+    @GetMapping("/stores/receivable")
     public ResponseEntity<ApiResponse<CustomPage<AccountDto.accountResponse>>> getStoreAttempt(
             @RequestParam(name = "search", required = false) String name,
             @RequestParam(name = "sortField", required = false) String field,
             @RequestParam(name = "sortOrder", required = false) String sort,
             @PageableDefault(size = 12) Pageable pageable) {
-        CustomPage<AccountDto.accountResponse> storeAttemptList = storeService.getStoreAttempt(name, field, sort, pageable);
+        CustomPage<AccountDto.accountResponse> storeAttemptList = storeService.getStoreReceivable(name, field, sort, pageable);
         return ResponseEntity.ok(ApiResponse.success(storeAttemptList));
     }
 
-    //상점 미수 금액 상세조회
-    @GetMapping("/stores/attempt/{id}")
+    //상점 미수 금액 상세조회 - 현재 미수 값 조회
+    @GetMapping("/stores/receivable/{id}")
     public ResponseEntity<ApiResponse<AccountDto.accountResponse>> getStoreAttemptDetail(
             @PathVariable(name = "id") String storeId) {
 
-        AccountDto.accountResponse storeAttemptDetail = storeService.getStoreAttemptDetail(storeId);
+        AccountDto.accountResponse storeAttemptDetail = storeService.getStoreReceivableDetail(storeId);
         return ResponseEntity.ok(ApiResponse.success(storeAttemptDetail));
     }
+
+    //상점 미수 금액 상세조회 - 현재 미수 값 조회
+    @GetMapping("/stores/receivable/sale-log/{id}")
+    public ResponseEntity<ApiResponse<AccountDto.AccountSaleLogResponse>> getStoreAttemptLogDetail(
+            @PathVariable(name = "id") String storeId,
+            @RequestParam(name = "saleCode") String saleCode) {
+
+        AccountDto.AccountSaleLogResponse storeAttemptDetail = storeService.getStoreReceivableLogDetail(storeId, saleCode);
+        return ResponseEntity.ok(ApiResponse.success(storeAttemptDetail));
+    }
+
 
     //상점 생성
     @PostMapping("/store")

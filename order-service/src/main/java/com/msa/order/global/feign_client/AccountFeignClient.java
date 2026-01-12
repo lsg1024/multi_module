@@ -8,22 +8,29 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Map;
 
-@FeignClient(name = "account", path = "/api", fallbackFactory = AccountFeignClientFallbackFactory.class)
+@FeignClient(name = "account", fallbackFactory = AccountFeignClientFallbackFactory.class)
 public interface AccountFeignClient {
 
-    @GetMapping("/factory/{factoryId}")
+    @GetMapping("/api/factory/{factoryId}")
     ResponseEntity<ApiResponse<FactoryDto.Response>> getFactoryInfo(
             @RequestHeader Map<String, Object> headers,
             @PathVariable("factoryId") Long factoryId
     );
 
-    @GetMapping("/store/{storeId}")
+    @GetMapping("/api/store/{storeId}")
     ResponseEntity<ApiResponse<StoreDto.Response>> getStoreInfo(
             @RequestHeader Map<String, Object> headers,
             @PathVariable("storeId") Long storeId
     );
+
+    @GetMapping("/stores/receivable/sale-log/{id}")
+    ResponseEntity<ApiResponse<StoreDto.accountResponse>> getStoreReceivableDetailLog(
+            @RequestHeader Map<String, Object> header,
+            @PathVariable(name = "id") String storeId,
+            @RequestParam(name = "saleCode") String saleCode);
 
 }

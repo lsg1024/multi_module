@@ -84,8 +84,12 @@ public class StoneController {
     @GetMapping("/stones")
     public ResponseEntity<ApiResponse<CustomPage<StoneDto.PageDto>>> getStones(
             @RequestParam(name = "search", required = false) String stoneName,
+            @RequestParam(name = "shape", required = false) String stoneShape,
+            @RequestParam(name = "type", required = false) String stoneType,
+            @RequestParam(name = "sortField", required = false) String sortField,
+            @RequestParam(name = "sortOrder", required = false) String sort,
             @PageableDefault(size = 12) Pageable pageable) {
-        CustomPage<StoneDto.PageDto> result = stoneService.getStones(stoneName, pageable);
+        CustomPage<StoneDto.PageDto> result = stoneService.getStones(stoneName, stoneShape, stoneType, sortField, sort, pageable);
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 

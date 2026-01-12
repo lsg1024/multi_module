@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SQLDelete(sql = "UPDATE TransactionHistory SET TRANSACTION_DELETED = TRUE WHERE TRANSACTION_ID = ?")
 public class TransactionHistory {
+
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "TRANSACTION_ID")
     private Long transactionId;
@@ -56,7 +57,6 @@ public class TransactionHistory {
 
     @Column(name = "TRANSACTION_HISTORY_NOTE")
     private String transactionHistoryNote;
-
 
     @PrePersist
     void onCreate() {

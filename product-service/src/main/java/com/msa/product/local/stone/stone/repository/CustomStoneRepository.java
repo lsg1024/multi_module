@@ -9,5 +9,5 @@ import java.util.Optional;
 
 public interface CustomStoneRepository {
     Optional<Stone> findFetchJoinById(Long stoneId);
-    CustomPage<StoneDto.PageDto> findByAllOrderByAsc(String stoneName, Pageable pageable);
+    CustomPage<StoneDto.PageDto> findAllStones(String stoneName, String stoneShape, String stoneType, String sortField, String sort, Pageable pageable);
 }

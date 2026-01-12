@@ -9,6 +9,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 import static com.msa.account.global.util.ExchangeEnumUtil.getLevelTypeTitle;
 import static com.msa.account.global.util.ExchangeEnumUtil.getTradeTypeTitle;
 
@@ -55,6 +57,54 @@ public class AccountDto {
             this.goldHarryLoss = goldHarryLoss;
             this.lastPaymentDate = lastPaymentDate;
             this.address = address;
+        }
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class AccountSaleLogResponse {
+        private Long accountId;
+        private String accountName;
+        private String tradeType;
+        private String grade;
+        private String goldHarryLoss;
+        private String previousGoldBalance;
+        private String previousMoneyBalance;
+        private String afterGoldBalance;
+        private String afterMoneyBalance;
+        private String lastSaleDate;
+        private String lastPaymentDate;
+        private String businessOwnerName;
+        private String businessOwnerNumber;
+        private String businessNumber1;
+        private String businessNumber2;
+        private String faxNumber;
+        private String address;
+        private String note;
+
+        @QueryProjection
+        public AccountSaleLogResponse(Long accountId, String accountName, String tradeType, String grade, String goldHarryLoss, String lastSaleDate, String lastPaymentDate, String businessOwnerName, String businessOwnerNumber, String businessNumber1, String businessNumber2, String faxNumber, String address, String note) {
+            this.accountId = accountId;
+            this.accountName = accountName;
+            this.tradeType = tradeType;
+            this.grade = grade;
+            this.goldHarryLoss = goldHarryLoss;
+            this.lastSaleDate = lastSaleDate;
+            this.lastPaymentDate = lastPaymentDate;
+            this.businessOwnerName = businessOwnerName;
+            this.businessOwnerNumber = businessOwnerNumber;
+            this.businessNumber1 = businessNumber1;
+            this.businessNumber2 = businessNumber2;
+            this.faxNumber = faxNumber;
+            this.address = address;
+            this.note = note;
+        }
+
+        public void updateBalance(BigDecimal previousGoldBalance, Long previousMoneyBalance, BigDecimal afterGoldBalance, Long afterMoneyBalance) {
+            this.previousGoldBalance = previousGoldBalance.toPlainString();
+            this.previousMoneyBalance = previousMoneyBalance.toString();
+            this.afterGoldBalance = afterGoldBalance.toPlainString();
+            this.afterMoneyBalance = afterMoneyBalance.toString();
         }
     }
 

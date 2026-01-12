@@ -115,6 +115,7 @@ public class Product extends BaseEntity {
         this.productFactoryName = productDto.getProductFactoryName();
         this.productName = productDto.getProductName();
         this.standardWeight = new BigDecimal(productDto.getStandardWeight());
+        this.productRelatedNumber = productDto.getProductRelatedNumber();
         this.productNote = productDto.getProductNote();
     }
 

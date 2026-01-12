@@ -1,12 +1,10 @@
 package com.msa.order.local.sale.repository;
 
+import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import com.msa.common.global.util.CustomPage;
 import com.msa.order.global.util.GoldUtils;
-import com.msa.order.local.sale.entity.dto.QSaleDto_SaleDetailDto;
-import com.msa.order.local.sale.entity.dto.QSaleItemResponse;
-import com.msa.order.local.sale.entity.dto.SaleDto;
-import com.msa.order.local.sale.entity.dto.SaleItemResponse;
-import com.msa.common.global.common_enum.sale_enum.SaleStatus;
+import com.msa.order.local.sale.entity.Sale;
+import com.msa.order.local.sale.entity.dto.*;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.dsl.*;
@@ -43,22 +41,54 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
     }
 
     @Override
-    public CustomPage<SaleItemResponse> findSales(SaleDto.Condition condition, Pageable pageable) {
+    public CustomPage<SaleItemResponse.SaleItem> findSales(SaleDto.Condition condition, Pageable pageable) {
 
-        List<SaleItemResponse> items = fetchItems(condition);
-        List<SaleItemResponse> payments = fetchPayment(condition);
+        List<SaleItemResponse.SaleItem> items = fetchItems(condition);
+        List<SaleItemResponse.SaleItem> payments = fetchPayment(condition);
 
-        List<SaleItemResponse> mergedSales = Stream.concat(items.stream(), payments.stream())
-                .sorted(Comparator.comparing(SaleItemResponse::getCreateAt,
+        List<SaleItemResponse.SaleItem> mergedSales = Stream.concat(items.stream(), payments.stream())
+                .sorted(Comparator.comparing(SaleItemResponse.SaleItem::getCreateAt,
                         Comparator.nullsLast(Comparator.naturalOrder())).reversed())
                 .toList();
 
         long total = mergedSales.size();
         int from = (int) pageable.getOffset();
         int to = (int) Math.min(from + pageable.getPageSize(), total);
-        List<SaleItemResponse> content = from >= to ? Collections.emptyList() : mergedSales.subList(from, to);
+        List<SaleItemResponse.SaleItem> content = from >= to ? Collections.emptyList() : mergedSales.subList(from, to);
 
         return new CustomPage<>(content, pageable, total);
+    }
+
+    @Override
+    public List<SaleItemResponse> findPrintSales(String saleCode) {
+
+        List<SaleItemResponse.SaleItem> saleItems = printFetchItems(saleCode);
+        List<SaleItemResponse.SaleItem> salePayment = printFetchPayment(saleCode);
+
+        List<SaleItemResponse.SaleItem> totalSaleItems = Stream.concat(saleItems.stream(), salePayment.stream())
+                .sorted(Comparator.comparing(SaleItemResponse.SaleItem::getCreateAt,
+                        Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+                .toList();
+
+        Sale saleEntity = query
+                .selectFrom(sale)
+                .where(sale.saleCode.stringValue().eq(saleCode))
+                .fetchOne();
+
+        if (saleEntity == null) {
+            return Collections.emptyList();
+        }
+
+        return List.of(SaleItemResponse.builder()
+                .createAt(String.valueOf(saleEntity.getCreateDate()))
+                .createBy(saleEntity.getCreatedBy())
+                .storeId(String.valueOf(saleEntity.getAccountId()))
+                .storeName(saleEntity.getAccountName())
+                .storeHarry(saleEntity.getAccountHarry().toPlainString())
+                .storeCode(String.valueOf(saleEntity.getSaleCode()))
+                .accountGoldPrice(saleEntity.getAccountGoldPrice() != null ? String.valueOf(saleEntity.getAccountGoldPrice()) : "0")
+                .saleItems(totalSaleItems)
+                .build());
     }
 
     public List<SaleDto.SaleDetailDto> findSalePast(Long storeId, Long productId, String materialName) {
@@ -99,7 +129,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                 .fetch();
     }
 
-    private List<SaleItemResponse> fetchItems(SaleDto.Condition condition) {
+    private List<SaleItemResponse.SaleItem> fetchItems(SaleDto.Condition condition) {
 
         BooleanBuilder searchBuilder = getSearchBuilder(condition.getInput());
         BooleanExpression createAtAndEndAt = getCreateAtAndEndAt(condition.getStartAt(), condition.getEndAt());
@@ -146,7 +176,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                 .when(saleItem.itemStatus.eq(SaleStatus.WG)).then("WG")
                 .otherwise("기타");
 
-        return query.select(new QSaleItemResponse(
+        return query.select(new QSaleItemResponse_SaleItem(
                     sale.createDate.stringValue(),
                     saleItem.createdBy,
                     saleTypeTitle,
@@ -186,7 +216,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                 .fetch();
     }
 
-    private List<SaleItemResponse> fetchPayment(SaleDto.Condition condition) {
+    private List<SaleItemResponse.SaleItem> fetchPayment(SaleDto.Condition condition) {
         BooleanBuilder searchBuilder = getSearchBuilder(condition.getInput());
         BooleanExpression createAtAndEndAt = getCreateAtAndEndAt(condition.getStartAt(), condition.getEndAt());
         BooleanBuilder materialBuilder = new BooleanBuilder();
@@ -229,7 +259,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                 .otherwise("기타");
 
         return query
-                .select(new QSaleItemResponse(
+                .select(new QSaleItemResponse_SaleItem(
                         sale.createDate.stringValue(),
                         salePayment.createdBy,
                         saleTypeTitle,
@@ -285,4 +315,156 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
 
         return sale.createDate.between(start, end);
     }
+
+    private List<SaleItemResponse.SaleItem> printFetchItems(String saleCode) {
+
+        Expression<Long> subMainQty = JPAExpressions
+                .select(orderStone.stoneQuantity.sum().coalesce(0).castToNum(Long.class))
+                .from(orderStone)
+                .where(orderStone.stock.eq(stock)
+                        .and(orderStone.includeStone.isTrue())
+                        .and(orderStone.mainStone.isTrue()));
+
+        Expression<Long> subAsstQty = JPAExpressions
+                .select(orderStone.stoneQuantity.sum().coalesce(0).castToNum(Long.class))
+                .from(orderStone)
+                .where(orderStone.stock.eq(stock)
+                        .and(orderStone.includeStone.isTrue())
+                        .and(orderStone.mainStone.isFalse()));
+
+        Expression<Long> subMainLabor = JPAExpressions
+                .select(orderStone.stoneLaborCost.multiply(orderStone.stoneQuantity).sum().coalesce(0).castToNum(Long.class))
+                .from(orderStone)
+                .where(orderStone.stock.eq(stock)
+                        .and(orderStone.includeStone.isTrue())
+                        .and(orderStone.mainStone.isTrue()));
+
+        Expression<Long> subAsstLabor = JPAExpressions
+                .select(orderStone.stoneLaborCost.multiply(orderStone.stoneQuantity).sum().coalesce(0).castToNum(Long.class))
+                .from(orderStone)
+                .where(orderStone.stock.eq(stock)
+                        .and(orderStone.includeStone.isTrue())
+                        .and(orderStone.mainStone.isFalse()));
+
+        StringExpression saleTypeTitle = new CaseBuilder()
+                .when(saleItem.itemStatus.eq(SaleStatus.SALE)).then("판매")
+                .when(saleItem.itemStatus.eq(SaleStatus.RETURN)).then("반품")
+                .when(saleItem.itemStatus.eq(SaleStatus.PAYMENT)).then("결제")
+                .when(saleItem.itemStatus.eq(SaleStatus.DISCOUNT)).then("DC")
+                .when(saleItem.itemStatus.eq(SaleStatus.PAYMENT_TO_BANK)).then("통장")
+                .when(saleItem.itemStatus.eq(SaleStatus.WG)).then("WG")
+                .otherwise("기타");
+
+        return query.select(new QSaleItemResponse_SaleItem(
+                        sale.createDate.stringValue(),
+                        saleItem.createdBy,
+                        saleTypeTitle,
+                        sale.accountId.stringValue(),
+                        sale.accountName,
+                        sale.saleCode.stringValue(),
+                        saleItem.flowCode.stringValue(),
+                        stock.product.productName,
+                        stock.product.materialName,
+                        stock.product.colorName,
+                        stock.stockNote,
+                        stock.stockMainStoneNote,
+                        stock.stockAssistanceStoneNote,
+                        stock.product.assistantStone,
+                        stock.product.assistantStoneName,
+                        stock.product.goldWeight,
+                        stock.product.stoneWeight,
+                        sale.accountHarry,
+                        stock.product.productLaborCost,
+                        stock.product.productAddLaborCost,
+                        stock.product.assistantStoneCreateAt.stringValue(),
+                        subMainLabor,
+                        subAsstLabor,
+                        stock.stoneAddLaborCost,
+                        subMainQty,
+                        subAsstQty
+                ))
+                .from(saleItem)
+                .join(saleItem.sale, sale)
+                .join(saleItem.stock, stock)
+                .where(
+                        sale.saleCode.eq(Long.valueOf(saleCode))
+                )
+                .orderBy(sale.createDate.desc())
+                .fetch();
+    }
+
+    private List<SaleItemResponse.SaleItem> printFetchPayment(String saleCode) {
+        
+        NumberExpression<BigDecimal> baseGoldWeight = salePayment.goldWeight.coalesce(BigDecimal.ZERO);
+        NumberExpression<BigDecimal> harryFactor = sale.accountHarry.coalesce(BigDecimal.ONE); // 해리가 없으면 1
+
+        CaseBuilder.Cases<BigDecimal, NumberExpression<BigDecimal>> caseBuilder = new CaseBuilder()
+                .when(salePayment.material.isNull())
+                .then(BigDecimal.ZERO);
+
+        for (Map.Entry<String, BigDecimal> entry : GoldUtils.getPurityMap().entrySet()) {
+            String material = entry.getKey();
+            BigDecimal purity = entry.getValue();
+
+            caseBuilder = caseBuilder
+                    .when(salePayment.material.equalsIgnoreCase(material))
+                    .then(baseGoldWeight.multiply(purity));
+        }
+
+        NumberExpression<BigDecimal> pureGoldWeight = caseBuilder.otherwise(BigDecimal.ZERO)
+                .multiply(harryFactor);
+
+        NumberExpression<BigDecimal> finalPureGoldWeight = Expressions.numberTemplate(
+                BigDecimal.class,
+                "ROUND({0}, {1})",
+                pureGoldWeight,
+                3
+        );
+
+        StringExpression saleTypeTitle = new CaseBuilder()
+                .when(salePayment.saleStatus.eq(SaleStatus.RETURN)).then("반품")
+                .when(salePayment.saleStatus.eq(SaleStatus.PAYMENT)).then("결제")
+                .when(salePayment.saleStatus.eq(SaleStatus.DISCOUNT)).then("DC")
+                .when(salePayment.saleStatus.eq(SaleStatus.PAYMENT_TO_BANK)).then("통장")
+                .when(salePayment.saleStatus.eq(SaleStatus.WG)).then("WG")
+                .otherwise("기타");
+
+        return query
+                .select(new QSaleItemResponse_SaleItem(
+                        sale.createDate.stringValue(),
+                        salePayment.createdBy,
+                        saleTypeTitle,
+                        sale.accountId.stringValue(),
+                        sale.accountName,
+                        sale.saleCode.stringValue(),
+                        salePayment.flowCode.stringValue(),
+                        saleTypeTitle,
+                        salePayment.material,
+                        Expressions.nullExpression(String.class), // colorName
+                        salePayment.paymentNote, // note
+                        Expressions.nullExpression(String.class),
+                        Expressions.nullExpression(String.class),
+                        Expressions.nullExpression(Boolean.class),
+                        Expressions.nullExpression(String.class),
+                        finalPureGoldWeight,
+                        Expressions.nullExpression(BigDecimal.class),
+                        Expressions.constant(BigDecimal.ONE),
+                        salePayment.cashAmount.intValue(),
+                        Expressions.nullExpression(Integer.class),
+                        Expressions.nullExpression(String.class),
+                        Expressions.nullExpression(Long.class),
+                        Expressions.nullExpression(Long.class),
+                        Expressions.nullExpression(Integer.class),
+                        Expressions.nullExpression(Long.class),
+                        Expressions.nullExpression(Long.class)
+                ))
+                .from(salePayment)
+                .join(salePayment.sale, sale)
+                .where(
+                        sale.saleCode.eq(Long.valueOf(saleCode))
+                )
+                .orderBy(sale.createDate.desc())
+                .fetch();
+    }
+
 }
