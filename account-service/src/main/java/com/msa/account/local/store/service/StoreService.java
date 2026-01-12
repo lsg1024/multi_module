@@ -1,7 +1,6 @@
 package com.msa.account.local.store.service;
 
 import com.msa.account.global.domain.dto.AccountDto;
-import com.msa.common.global.util.AuthorityUserRoleUtil;
 import com.msa.account.global.domain.entity.GoldHarry;
 import com.msa.account.global.domain.entity.OptionLevel;
 import com.msa.account.global.domain.repository.GoldHarryRepository;
@@ -12,6 +11,9 @@ import com.msa.account.global.exception.NotFoundException;
 import com.msa.account.local.store.domain.dto.StoreDto;
 import com.msa.account.local.store.domain.entity.Store;
 import com.msa.account.local.store.repository.StoreRepository;
+import com.msa.account.local.transaction_history.domain.entity.SaleLog;
+import com.msa.account.local.transaction_history.repository.SaleLogRepository;
+import com.msa.common.global.util.AuthorityUserRoleUtil;
 import com.msa.common.global.util.CustomPage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -29,11 +31,13 @@ public class StoreService {
 
     private final AuthorityUserRoleUtil authorityUserRoleUtil;
     private final StoreRepository storeRepository;
+    private final SaleLogRepository saleLogRepository;
     private final GoldHarryRepository goldHarryRepository;
 
-    public StoreService(AuthorityUserRoleUtil authorityUserRoleUtil, StoreRepository storeRepository, GoldHarryRepository goldHarryRepository) {
+    public StoreService(AuthorityUserRoleUtil authorityUserRoleUtil, StoreRepository storeRepository, SaleLogRepository saleLogRepository, GoldHarryRepository goldHarryRepository) {
         this.authorityUserRoleUtil = authorityUserRoleUtil;
         this.storeRepository = storeRepository;
+        this.saleLogRepository = saleLogRepository;
         this.goldHarryRepository = goldHarryRepository;
     }
 
@@ -50,13 +54,25 @@ public class StoreService {
     }
 
     @Transactional(readOnly = true)
-    public CustomPage<AccountDto.accountResponse> getStoreAttempt(String name, String field, String sort, Pageable pageable) {
-        return storeRepository.findAllStoreAndAttempt(name, field, sort, pageable);
+    public CustomPage<AccountDto.accountResponse> getStoreReceivable(String name, String field, String sort, Pageable pageable) {
+        return storeRepository.findAllStoreAndReceivable(name, field, sort, pageable);
     }
 
     @Transactional(readOnly = true)
-    public AccountDto.accountResponse getStoreAttemptDetail(String storeId) {
-        return storeRepository.findByStoreIdAndAttempt(Long.valueOf(storeId));
+    public AccountDto.accountResponse getStoreReceivableDetail(String storeId) {
+        return storeRepository.findByStoreIdAndReceivable(Long.valueOf(storeId));
+    }
+
+    @Transactional(readOnly = true)
+    public AccountDto.AccountSaleLogResponse getStoreReceivableLogDetail(String storeId, String saleCode) {
+        AccountDto.AccountSaleLogResponse storeAttempt = storeRepository.findByStoreIdAndReceivableByLog(Long.valueOf(storeId));
+
+        SaleLog saleLog = saleLogRepository.findByAccountSaleCodeAndStore_StoreId(Long.valueOf(saleCode), Long.valueOf(storeId))
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND + " " + saleCode));
+
+        storeAttempt.updateBalance(saleLog.getPreviousGoldBalance(), saleLog.getPreviousMoneyBalance(), saleLog.getAfterGoldBalance(), saleLog.getAfterMoneyBalance());
+
+        return storeAttempt;
     }
 
     //상점 추가
