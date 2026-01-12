@@ -20,17 +20,19 @@ public class SaleItemResponse {
     private String createBy;
     private String storeId;
     private String storeName;
+    private String storeHarry;
     private String storeCode;
     private String accountGoldPrice;
     private List<SaleItem> saleItems;
 
     @Builder
     @QueryProjection
-    public SaleItemResponse(String createAt, String createBy, String storeId, String storeName, String storeCode, String accountGoldPrice, List<SaleItem> saleItems) {
+    public SaleItemResponse(String createAt, String createBy, String storeId, String storeName, String storeHarry, String storeCode, String accountGoldPrice, List<SaleItem> saleItems) {
         this.createAt = createAt;
         this.createBy = createBy;
         this.storeId = storeId;
         this.storeName = storeName;
+        this.storeHarry = storeHarry;
         this.storeCode = storeCode;
         this.accountGoldPrice = accountGoldPrice;
         this.saleItems = saleItems;
@@ -46,6 +48,7 @@ public class SaleItemResponse {
         private String storeName;
         private String saleCode;
         private String flowCode;
+        private String imagePath = "";
         private String productName;
         private String materialName;
         private String colorName;
@@ -94,6 +97,10 @@ public class SaleItemResponse {
             this.stoneAddLaborCost = (stoneAddLabor == null) ? 0 : stoneAddLabor;
             this.mainStoneQuantity = (mainQty == null) ? 0 : mainQty;
             this.assistanceStoneQuantity = (asstQty == null) ? 0 : asstQty;
+        }
+
+        public void updateImagePath(String imagePath) {
+            this.imagePath = imagePath;
         }
     }
 

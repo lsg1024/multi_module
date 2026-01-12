@@ -84,6 +84,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                 .createBy(saleEntity.getCreatedBy())
                 .storeId(String.valueOf(saleEntity.getAccountId()))
                 .storeName(saleEntity.getAccountName())
+                .storeHarry(saleEntity.getAccountHarry().toPlainString())
                 .storeCode(String.valueOf(saleEntity.getSaleCode()))
                 .accountGoldPrice(saleEntity.getAccountGoldPrice() != null ? String.valueOf(saleEntity.getAccountGoldPrice()) : "0")
                 .saleItems(totalSaleItems)
