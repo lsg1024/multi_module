@@ -19,6 +19,7 @@ import java.util.List;
 
 import static com.msa.account.local.factory.domain.entity.QFactory.factory;
 import static com.msa.account.local.store.domain.entity.QStore.store;
+import static com.msa.account.local.transaction_history.domain.entity.QSaleLog.saleLog;
 import static com.msa.account.local.transaction_history.domain.entity.QTransactionHistory.transactionHistory;
 
 public class TransactionHistoryRepositoryImpl implements CustomTransactionHistoryRepository{
@@ -57,6 +58,7 @@ public class TransactionHistoryRepositoryImpl implements CustomTransactionHistor
                 .from(transactionHistory)
                 .leftJoin(transactionHistory.store, store)
                 .leftJoin(transactionHistory.factory, factory)
+                .leftJoin(saleLog).on(transactionHistory.accountSaleCode.eq(saleLog.accountSaleCode))
                 .where(
                         transactionHistory.transactionDeleted.isFalse(),
                         dateBetween(start, end),
