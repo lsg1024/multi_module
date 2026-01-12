@@ -98,6 +98,9 @@ public class OrderDto {
         private Integer stockQuantity;
         private String mainStoneNote;
         private String assistanceStoneNote;
+        private boolean assistantStone;
+        private String assistantStoneName;
+        private String assistantStoneCreateAt;
         private List<String> stockFlowCodes;
         private String orderNote;
         private String factoryName;
@@ -121,6 +124,9 @@ public class OrderDto {
             response.stockQuantity = queryDto.getStockQuantity();
             response.mainStoneNote = queryDto.getMainStoneNote();
             response.assistanceStoneNote = queryDto.getAssistanceStoneNote();
+            response.assistantStone = queryDto.isAssistantStone();
+            response.assistantStoneName = queryDto.getAssistantStoneName();
+            response.assistantStoneCreateAt = queryDto.getAssistantStoneCreateAt();
             response.orderNote = queryDto.getOrderNote();
             response.factoryName = queryDto.getFactoryName();
             response.priority = queryDto.getPriority();

@@ -30,4 +30,51 @@ public class StoreDto {
         }
 
     }
+
+    @Getter
+    @NoArgsConstructor
+    public static class accountResponse {
+        private Long accountId;
+        private String accountName;
+        private String tradeType;
+        private String grade;
+        private String goldHarryLoss;
+        private String previousGoldBalance;
+        private String previousMoneyBalance;
+        private String afterGoldBalance;
+        private String afterMoneyBalance;
+        private String lastSaleDate;
+        private String lastPaymentDate;
+        private String businessOwnerName;
+        private String businessOwnerNumber;
+        private String businessNumber1;
+        private String businessNumber2;
+        private String faxNumber;
+        private String address;
+        private String note;
+
+        @Override
+        public String toString() {
+            return "accountResponse{" +
+                    "accountId=" + accountId +
+                    ", accountName='" + accountName + '\'' +
+                    ", tradeType='" + tradeType + '\'' +
+                    ", grade='" + grade + '\'' +
+                    ", goldHarryLoss='" + goldHarryLoss + '\'' +
+                    ", previousGoldBalance='" + previousGoldBalance + '\'' +
+                    ", previousMoneyBalance='" + previousMoneyBalance + '\'' +
+                    ", afterGoldBalance='" + afterGoldBalance + '\'' +
+                    ", afterMoneyBalance='" + afterMoneyBalance + '\'' +
+                    ", lastSaleDate='" + lastSaleDate + '\'' +
+                    ", lastPaymentDate='" + lastPaymentDate + '\'' +
+                    ", businessOwnerName='" + businessOwnerName + '\'' +
+                    ", businessOwnerNumber='" + businessOwnerNumber + '\'' +
+                    ", businessNumber1='" + businessNumber1 + '\'' +
+                    ", businessNumber2='" + businessNumber2 + '\'' +
+                    ", faxNumber='" + faxNumber + '\'' +
+                    ", address='" + address + '\'' +
+                    ", note='" + note + '\'' +
+                    '}';
+        }
+    }
 }
