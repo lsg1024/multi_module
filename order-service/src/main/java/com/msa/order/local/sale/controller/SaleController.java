@@ -5,6 +5,7 @@ import com.msa.common.global.jwt.AccessToken;
 import com.msa.common.global.util.CustomPage;
 import com.msa.order.local.sale.entity.dto.SaleDto;
 import com.msa.order.local.sale.entity.dto.SaleItemResponse;
+import com.msa.order.local.sale.entity.dto.SalePrintResponse;
 import com.msa.order.local.sale.service.SaleService;
 import com.msa.order.local.stock.dto.StockDto;
 import com.msa.order.local.stock.service.StockService;
@@ -50,9 +51,10 @@ public class SaleController {
 
     // 주문장 인쇄
     @GetMapping("/sale/print")
-    public ResponseEntity<ApiResponse<List<SaleItemResponse>>> getSalePrint(
+    public ResponseEntity<ApiResponse<SalePrintResponse>> getSalePrint(
+            @AccessToken String accessToken,
             @RequestParam(name = "saleCode") String saleCode) {
-        List<SaleItemResponse> salePrint = saleService.getSalePrint(saleCode);
+        SalePrintResponse salePrint = saleService.getSalePrint(accessToken, saleCode);
 
         return ResponseEntity.ok(ApiResponse.success(salePrint));
     }
