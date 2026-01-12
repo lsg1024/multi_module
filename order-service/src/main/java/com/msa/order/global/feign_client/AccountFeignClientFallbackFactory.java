@@ -39,6 +39,14 @@ public class AccountFeignClientFallbackFactory implements FallbackFactory<Accoun
 
                 return ResponseEntity.ok(ApiResponse.error(errorResult.message));
             }
+
+            @Override
+            public ResponseEntity<ApiResponse<StoreDto.accountResponse>> getStoreReceivableDetailLog(Map<String, Object> headers, String storeId, String saleCode) {
+                ErrorResult errorResult = resolveError(cause, "상점 미수 정보를 불러오는 중 오류가 발생했습니다.");
+
+                log.error("[Fallback] getStoreAttemptDetail ID: {}, Status: {}, Msg: {}", storeId, errorResult.status, cause.getMessage());
+                return ResponseEntity.ok(ApiResponse.error(errorResult.message));
+            }
         };
     }
 
