@@ -70,27 +70,27 @@ public class StoreController {
 
     //상점 미수 금액 조회
     @GetMapping("/stores/receivable")
-    public ResponseEntity<ApiResponse<CustomPage<AccountDto.accountResponse>>> getStoreAttempt(
+    public ResponseEntity<ApiResponse<CustomPage<AccountDto.AccountResponse>>> getStoreReceivable(
             @RequestParam(name = "search", required = false) String name,
             @RequestParam(name = "sortField", required = false) String field,
             @RequestParam(name = "sortOrder", required = false) String sort,
             @PageableDefault(size = 12) Pageable pageable) {
-        CustomPage<AccountDto.accountResponse> storeAttemptList = storeService.getStoreReceivable(name, field, sort, pageable);
+        CustomPage<AccountDto.AccountResponse> storeAttemptList = storeService.getStoreReceivable(name, field, sort, pageable);
         return ResponseEntity.ok(ApiResponse.success(storeAttemptList));
     }
 
     //상점 미수 금액 상세조회 - 현재 미수 값 조회
     @GetMapping("/stores/receivable/{id}")
-    public ResponseEntity<ApiResponse<AccountDto.accountResponse>> getStoreAttemptDetail(
+    public ResponseEntity<ApiResponse<AccountDto.AccountResponse>> getStoreReceivableDetail(
             @PathVariable(name = "id") String storeId) {
 
-        AccountDto.accountResponse storeAttemptDetail = storeService.getStoreReceivableDetail(storeId);
+        AccountDto.AccountResponse storeAttemptDetail = storeService.getStoreReceivableDetail(storeId);
         return ResponseEntity.ok(ApiResponse.success(storeAttemptDetail));
     }
 
-    //상점 미수 금액 상세조회 - 현재 미수 값 조회
+    //판매 로그 기반 상점 미수 금액 상세조회 - 현재 미수 값 조회
     @GetMapping("/stores/receivable/sale-log/{id}")
-    public ResponseEntity<ApiResponse<AccountDto.AccountSaleLogResponse>> getStoreAttemptLogDetail(
+    public ResponseEntity<ApiResponse<AccountDto.AccountSaleLogResponse>> getStoreReceivableLogDetail(
             @PathVariable(name = "id") String storeId,
             @RequestParam(name = "saleCode") String saleCode) {
 

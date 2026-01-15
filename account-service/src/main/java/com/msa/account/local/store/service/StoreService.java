@@ -54,23 +54,32 @@ public class StoreService {
     }
 
     @Transactional(readOnly = true)
-    public CustomPage<AccountDto.accountResponse> getStoreReceivable(String name, String field, String sort, Pageable pageable) {
+    public CustomPage<AccountDto.AccountResponse> getStoreReceivable(String name, String field, String sort, Pageable pageable) {
         return storeRepository.findAllStoreAndReceivable(name, field, sort, pageable);
     }
 
     @Transactional(readOnly = true)
-    public AccountDto.accountResponse getStoreReceivableDetail(String storeId) {
+    public AccountDto.AccountResponse getStoreReceivableDetail(String storeId) {
         return storeRepository.findByStoreIdAndReceivable(Long.valueOf(storeId));
     }
 
     @Transactional(readOnly = true)
     public AccountDto.AccountSaleLogResponse getStoreReceivableLogDetail(String storeId, String saleCode) {
-        AccountDto.AccountSaleLogResponse storeAttempt = storeRepository.findByStoreIdAndReceivableByLog(Long.valueOf(storeId));
+        Long transformStoreId = Long.valueOf(storeId);
+        Long transformSaleCode = Long.valueOf(saleCode);
+        AccountDto.AccountSaleLogResponse storeAttempt = storeRepository.findByStoreIdAndReceivableByLog(transformStoreId);
 
-        SaleLog saleLog = saleLogRepository.findByAccountSaleCodeAndStore_StoreId(Long.valueOf(saleCode), Long.valueOf(storeId))
+        SaleLog firstLog = saleLogRepository.findTopByAccountSaleCodeAndStore_StoreIdOrderBySaleDateAsc(transformSaleCode, transformStoreId)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND + " Start Log " + saleCode));
+
+        SaleLog lastLog = saleLogRepository.findTopByAccountSaleCodeAndStore_StoreIdOrderBySaleDateDesc(transformSaleCode, transformStoreId)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND + " " + saleCode));
 
-        storeAttempt.updateBalance(saleLog.getPreviousGoldBalance(), saleLog.getPreviousMoneyBalance(), saleLog.getAfterGoldBalance(), saleLog.getAfterMoneyBalance());
+        storeAttempt.updateBalance(
+                firstLog.getPreviousGoldBalance(),
+                firstLog.getPreviousMoneyBalance(),
+                lastLog.getAfterGoldBalance(),
+                lastLog.getAfterMoneyBalance());
 
         return storeAttempt;
     }

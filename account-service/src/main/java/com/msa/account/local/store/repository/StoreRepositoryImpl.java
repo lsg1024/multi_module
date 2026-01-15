@@ -2,9 +2,9 @@ package com.msa.account.local.store.repository;
 
 
 import com.msa.account.global.domain.dto.AccountDto;
+import com.msa.account.global.domain.dto.QAccountDto_AccountResponse;
 import com.msa.account.global.domain.dto.QAccountDto_AccountSaleLogResponse;
 import com.msa.account.global.domain.dto.QAccountDto_AccountSingleResponse;
-import com.msa.account.global.domain.dto.QAccountDto_accountResponse;
 import com.msa.account.global.excel.dto.AccountExcelDto;
 import com.msa.account.global.excel.dto.QAccountExcelDto;
 import com.msa.account.local.store.domain.dto.QStoreDto_StoreResponse;
@@ -123,7 +123,7 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
     }
 
     @Override
-    public CustomPage<AccountDto.accountResponse> findAllStoreAndReceivable(String name, String field, String sort, Pageable pageable) {
+    public CustomPage<AccountDto.AccountResponse> findAllStoreAndReceivable(String name, String field, String sort, Pageable pageable) {
         BooleanExpression storeName = name != null ? store.storeName.contains(name) : null;
 
         StringExpression latestTransactionDateString = Expressions.stringTemplate(
@@ -156,8 +156,8 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
 
         OrderSpecifier<?>[] specifiers = specifiers(field, sort);
 
-        List<AccountDto.accountResponse> content = query
-                .select(new QAccountDto_accountResponse(
+        List<AccountDto.AccountResponse> content = query
+                .select(new QAccountDto_AccountResponse(
                         store.storeId,
                         store.storeName,
                         store.currentGoldBalance.stringValue(),
@@ -205,7 +205,7 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
     }
 
     @Override
-    public AccountDto.accountResponse findByStoreIdAndReceivable(Long storeId) {
+    public AccountDto.AccountResponse findByStoreIdAndReceivable(Long storeId) {
         BooleanExpression isStore = storeId != null ? store.storeId.eq(storeId) : null;
 
         StringExpression latestTransactionDateString = Expressions.stringTemplate(
@@ -229,7 +229,7 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
 
 
         return query
-                .select(new QAccountDto_accountResponse(
+                .select(new QAccountDto_AccountResponse(
                         store.storeId,
                         store.storeName,
                         store.currentGoldBalance.stringValue(),
