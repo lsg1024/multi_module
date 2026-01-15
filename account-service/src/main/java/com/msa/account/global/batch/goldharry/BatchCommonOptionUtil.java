@@ -1,10 +1,10 @@
-package com.msa.account.global.batch;
+package com.msa.account.global.batch.goldharry;
 
 import com.msa.account.global.domain.entity.CommonOption;
 import com.msa.account.global.domain.entity.GoldHarry;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
 import org.springframework.batch.item.database.Order;
-import org.springframework.batch.item.database.support.MySqlPagingQueryProvider;
+import org.springframework.batch.item.database.support.PostgresPagingQueryProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -37,7 +37,7 @@ public class BatchCommonOptionUtil {
             );
         });
 
-        MySqlPagingQueryProvider provider = new MySqlPagingQueryProvider();
+        PostgresPagingQueryProvider provider = new PostgresPagingQueryProvider();
         provider.setSelectClause("SELECT co.*");
         provider.setFromClause(tenantId + ".COMMON_OPTION co " +
                 "JOIN " + tenantId + ".GOLD_HARRY gh ON gh.GOLD_HARRY_ID = co.GOLD_HARRY_ID");
