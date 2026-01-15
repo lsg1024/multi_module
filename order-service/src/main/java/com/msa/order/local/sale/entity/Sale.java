@@ -70,7 +70,7 @@ public class Sale extends BaseEntity {
     }
 
     public void updateAccountGoldPrice(Integer newPrice) {
-        if (this.accountGoldPrice != null && this.accountGoldPrice > 0) {
+        if (!this.accountGoldPrice.equals(newPrice) && this.accountGoldPrice > 0) {
             throw new IllegalArgumentException("금 시세가 이미 설정되어 있어 변경할 수 없습니다.");
         }
         this.accountGoldPrice = newPrice;
@@ -84,5 +84,9 @@ public class Sale extends BaseEntity {
     public void addPayment(SalePayment salePayment) {
         this.salePayments.add(salePayment);
         salePayment.setSale(this);
+    }
+
+    public boolean isAccountGoldPrice() {
+        return this.accountGoldPrice != null;
     }
 }

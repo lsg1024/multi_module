@@ -52,29 +52,5 @@ public class StoreDto {
         private String faxNumber;
         private String address;
         private String note;
-
-        @Override
-        public String toString() {
-            return "accountResponse{" +
-                    "accountId=" + accountId +
-                    ", accountName='" + accountName + '\'' +
-                    ", tradeType='" + tradeType + '\'' +
-                    ", grade='" + grade + '\'' +
-                    ", goldHarryLoss='" + goldHarryLoss + '\'' +
-                    ", previousGoldBalance='" + previousGoldBalance + '\'' +
-                    ", previousMoneyBalance='" + previousMoneyBalance + '\'' +
-                    ", afterGoldBalance='" + afterGoldBalance + '\'' +
-                    ", afterMoneyBalance='" + afterMoneyBalance + '\'' +
-                    ", lastSaleDate='" + lastSaleDate + '\'' +
-                    ", lastPaymentDate='" + lastPaymentDate + '\'' +
-                    ", businessOwnerName='" + businessOwnerName + '\'' +
-                    ", businessOwnerNumber='" + businessOwnerNumber + '\'' +
-                    ", businessNumber1='" + businessNumber1 + '\'' +
-                    ", businessNumber2='" + businessNumber2 + '\'' +
-                    ", faxNumber='" + faxNumber + '\'' +
-                    ", address='" + address + '\'' +
-                    ", note='" + note + '\'' +
-                    '}';
-        }
     }
 }

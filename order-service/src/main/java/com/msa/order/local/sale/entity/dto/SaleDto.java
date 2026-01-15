@@ -91,6 +91,7 @@ public class SaleDto {
     @Getter
     @NoArgsConstructor
     public static class updateRequest {
+        private String createAt;
         private String productSize;
         private boolean isProductWeightSale;
         private Integer productPurchaseCost;
@@ -187,6 +188,24 @@ public class SaleDto {
             this.flowCode = flowCode;
             this.mainStone = mainStone;
             this.totalQuantity = totalQuantity;
+        }
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class GoldPriceRequest {
+        private Integer accountGoldPrice;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class PastSaleRequest {
+        private String saleCode;
+        private Integer accountGoldPrice;
+
+        public PastSaleRequest(String saleCode, Integer accountGoldPrice) {
+            this.saleCode = saleCode;
+            this.accountGoldPrice = accountGoldPrice;
         }
     }
 

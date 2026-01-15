@@ -11,15 +11,19 @@ import java.util.Optional;
 public interface SaleRepository extends JpaRepository<Sale, Long> {
     Optional<Sale> findBySaleCode(Long saleCode);
     @Query("select s from Sale s " +
+            "left join fetch s.salePayments " +
+            "where s.saleCode= :saleCode")
+    Optional<Sale> findBySaleCodeAndSalePayments(Long saleCode);
+    @Query("select s from Sale s " +
             "where s.accountId= :accountId " +
             "and s.createDate between :start and :end " +
             "order by s.createDate desc " +
             "limit 1")
     Optional<Sale> findLatestSaleByAccountIdAndDate(@Param("accountId") Long accountId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
-    @Query("select s.saleCode from Sale s " +
+    @Query("select s from Sale s " +
             "where s.accountId = :accountId " +
             "and s.createDate between :start and :end " +
             "order by s.createDate desc " +
             "limit 1")
-    Optional<Long> findSaleCodeByAccountIdAndDate(@Param("accountId") Long accountId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    Optional<Sale> findSaleCodeByAccountIdAndDate(@Param("accountId") Long accountId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 }
