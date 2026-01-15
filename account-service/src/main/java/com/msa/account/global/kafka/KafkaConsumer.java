@@ -5,6 +5,8 @@ import com.msa.account.global.kafka.dto.GoldHarryDeletedEvent;
 import com.msa.account.global.kafka.dto.GoldHarryLossUpdatedEvent;
 import com.msa.account.global.kafka.dto.KafkaEventDto;
 import com.msa.account.global.kafka.service.KafkaService;
+import com.msa.account.local.transaction_history.domain.entity.SaleLog;
+import com.msa.account.local.transaction_history.repository.SaleLogRepository;
 import com.msa.common.global.exception.KafkaProcessingException;
 import com.msa.common.global.tenant.TenantContext;
 import com.msa.common.global.util.AuditorHolder;
@@ -28,14 +30,18 @@ public class KafkaConsumer {
     private final JobLauncher jobLauncher;
     private final Job updateStoreGoldHarryLossJob;
     private final Job deleteGoldHarryJob;
+    private final Job saleLogRebalanceJob;
     private final KafkaService kafkaService;
+    private final SaleLogRepository saleLogRepository;
 
-    public KafkaConsumer(ObjectMapper objectMapper, JobLauncher jobLauncher, Job updateStoreGoldHarryLossJob, Job deleteGoldHarryJob, KafkaService kafkaService) {
+    public KafkaConsumer(ObjectMapper objectMapper, JobLauncher jobLauncher, Job updateStoreGoldHarryLossJob, Job deleteGoldHarryJob, Job saleLogRebalanceJob, KafkaService kafkaService, SaleLogRepository saleLogRepository) {
         this.objectMapper = objectMapper;
         this.jobLauncher = jobLauncher;
         this.updateStoreGoldHarryLossJob = updateStoreGoldHarryLossJob;
         this.deleteGoldHarryJob = deleteGoldHarryJob;
+        this.saleLogRebalanceJob = saleLogRebalanceJob;
         this.kafkaService = kafkaService;
+        this.saleLogRepository = saleLogRepository;
     }
     @KafkaListener(topics = "goldHarryLoss.update", groupId = "goldHarry-group", concurrency = "3")
     public void handleGoldHarryLossUpdate(String message) {
@@ -90,7 +96,29 @@ public class KafkaConsumer {
             TenantContext.setTenant(dto.getTenantId());
             AuditorHolder.setAuditor(dto.getTenantId());
 
-            kafkaService.updateCurrentBalance(dto);
+            SaleLog savedLog = kafkaService.updateCurrentBalance(dto);
+
+            boolean isInsertedInMiddle = saleLogRepository.existsFutureLog(
+                    dto.getId(),
+                    savedLog.getSaleDate(),
+                    savedLog.getId()
+            );
+
+            if (isInsertedInMiddle) {
+                log.info("[Rebalance Triggered] 과거/중간 삽입 감지. StoreId={}, Date={}, ID={}",
+                        dto.getId(), savedLog.getSaleDate(), savedLog.getId());
+
+                JobParameters jobParameters = new JobParametersBuilder()
+                        .addString("tenantId", dto.getTenantId())
+                        .addLong("storeId", dto.getId())
+                        .addLong("triggerLogId", savedLog.getId())
+                        .addLong("timestamp", System.currentTimeMillis())
+                        .toJobParameters();
+
+                jobLauncher.run(saleLogRebalanceJob, jobParameters);
+            } else {
+                log.info("[Skip Rebalance] 최신 거래 등록. StoreId={}, ID={}", dto.getId(), savedLog.getId());
+            }
 
             ack.acknowledge();
 
