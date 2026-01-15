@@ -1,6 +1,7 @@
 package com.msa.account.local.factory.repository;
 
 import com.msa.account.global.domain.dto.AccountDto;
+import com.msa.account.global.domain.dto.QAccountDto_AccountResponse;
 import com.msa.account.global.domain.dto.QAccountDto_AccountSingleResponse;
 import com.msa.account.global.excel.dto.AccountExcelDto;
 import com.msa.account.global.excel.dto.QAccountExcelDto;
@@ -8,13 +9,21 @@ import com.msa.account.local.factory.domain.dto.FactoryDto;
 import com.msa.account.local.factory.domain.dto.QFactoryDto_ApiFactoryInfo;
 import com.msa.account.local.factory.domain.dto.QFactoryDto_FactoryResponse;
 import com.msa.common.global.util.CustomPage;
+import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.JPAExpressions;
+import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,6 +31,7 @@ import static com.msa.account.global.domain.entity.QAddress.address;
 import static com.msa.account.global.domain.entity.QCommonOption.commonOption;
 import static com.msa.account.global.domain.entity.QGoldHarry.goldHarry;
 import static com.msa.account.local.factory.domain.entity.QFactory.factory;
+import static com.msa.account.local.transaction_history.domain.entity.QSaleLog.saleLog;
 
 public class FactoryRepositoryImpl implements CustomFactoryRepository {
 
@@ -149,4 +159,60 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
                 .from(factory)
                 .fetch();
     }
+
+    @Override
+    public CustomPage<AccountDto.AccountResponse> findAllFactoryAndPurchase(String endAt, Pageable pageable) {
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDateTime endDateTime = LocalDate.parse(endAt, formatter).atTime(23, 59, 59);
+
+        JPQLQuery<Long> maxIdSubQuery = JPAExpressions
+                .select(saleLog.id.max())
+                .from(saleLog)
+                .where(saleLog.factory.eq(factory)
+                        .and(saleLog.saleDate.loe(endDateTime)));
+
+        Expression<String> goldBalanceSubQuery = ExpressionUtils.as(
+                JPAExpressions.select(saleLog.afterGoldBalance.coalesce(BigDecimal.ZERO).stringValue())
+                        .from(saleLog)
+                        .where(saleLog.id.eq(maxIdSubQuery))
+                        .orderBy(saleLog.saleDate.desc(), saleLog.id.desc()),
+                "currentGoldBalance"
+        );
+
+        Expression<String> moneyBalanceSubQuery = ExpressionUtils.as(
+                JPAExpressions.select(saleLog.afterMoneyBalance.coalesce(0L).stringValue())
+                        .from(saleLog)
+                        .where(saleLog.id.eq(maxIdSubQuery))
+                        .orderBy(saleLog.saleDate.desc(), saleLog.id.desc()),
+                "currentMoneyBalance"
+        );
+
+        List<AccountDto.AccountResponse> content = query
+                .select(new QAccountDto_AccountResponse(
+                        factory.factoryId,
+                        factory.factoryName,
+                        goldBalanceSubQuery,
+                        moneyBalanceSubQuery
+                ))
+                .from(factory)
+                .where(
+                        factory.factoryDeleted.isFalse(),
+                        factory.currentGoldBalance.ne(BigDecimal.ZERO).or(factory.currentMoneyBalance.ne(0L))
+                )
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        JPAQuery<Long> countQuery = query
+                .select(factory.count())
+                .from(factory)
+                .where(
+                        factory.factoryDeleted.isFalse(),
+                        factory.currentGoldBalance.ne(BigDecimal.ZERO).or(factory.currentMoneyBalance.ne(0L))
+                );
+
+        return new CustomPage<>(content, pageable, countQuery.fetchOne());
+    }
+
 }
