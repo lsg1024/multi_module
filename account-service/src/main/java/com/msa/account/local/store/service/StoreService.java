@@ -154,12 +154,12 @@ public class StoreService {
         Store store = storeRepository.findByStoreInfo(id)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        return new StoreDto.ApiStoreInfo(store.getStoreId(), store.getStoreName(), store.getCommonOption().getOptionLevel().getLevel(), store.getCommonOption().getGoldHarryLoss());
+        return new StoreDto.ApiStoreInfo(store.getStoreId(), store.getStoreName(), store.getCommonOption().getOptionLevel().getGrade(), store.getCommonOption().getGoldHarryLoss());
     }
 
     public String getStoreGrade(String storeId) {
         OptionLevel grade = storeRepository.findByCommonOptionOptionLevel(Long.valueOf(storeId));
-        return grade.getLevel();
+        return grade.getGrade();
     }
 
     public void updateStoreHarry(String accessToken, String storeId, String harryId) {

@@ -52,7 +52,7 @@ public class CommonOption {
 
     public void updateTradeTypeAndOptionLevel(CommonOptionDto.CommonOptionInfo commonOptionInfo) {
         this.optionTradeType = OptionTradeType.valueOf(commonOptionInfo.getTradeType());
-        this.optionLevel = OptionLevel.valueOf(commonOptionInfo.getLevel());
+        this.optionLevel = OptionLevel.valueOf(commonOptionInfo.getGrade());
     }
 
     public void updateOptionLevel(String level) {

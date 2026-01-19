@@ -15,21 +15,21 @@ public class CommonOptionDto {
     @NoArgsConstructor
     public static class CommonOptionInfo {
         private String tradeType;
-        private String level;
+        private String grade;
         private String goldHarryId;
 
         @Builder
         @QueryProjection
-        public CommonOptionInfo(String tradeType, String level, String goldHarryId) {
+        public CommonOptionInfo(String tradeType, String grade, String goldHarryId) {
             this.tradeType = tradeType;
-            this.level = level;
+            this.grade = grade;
             this.goldHarryId = goldHarryId;
         }
 
         public CommonOption toEntity(GoldHarry goldHarry) {
             return CommonOption.builder()
                     .optionTradeType(OptionTradeType.valueOf(this.tradeType))
-                    .optionLevel(OptionLevel.valueOf(this.level))
+                    .optionLevel(OptionLevel.valueOf(this.grade))
                     .goldHarry(goldHarry)
                     .goldHarryLoss(goldHarry.getGoldHarryLoss().toString())
                     .build();

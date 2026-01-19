@@ -62,8 +62,9 @@ public class StoneShapeService {
         StoneShape stoneShape = stoneShapeRepository.findById(stoneShapeId)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        boolean existsByShapeName = stoneShapeRepository.existsByStoneShapeName(stoneShapeDto.getStoneShapeName());
-        if (stoneShape.getStoneShapeName().equals(stoneShapeDto.getStoneShapeName()) && existsByShapeName) {
+        boolean isNameChanged = !stoneShape.getStoneShapeName().equals(stoneShapeDto.getStoneShapeName());
+
+        if (isNameChanged && stoneShapeRepository.existsByStoneShapeName(stoneShapeDto.getStoneShapeName())) {
             throw new IllegalArgumentException(IS_EXIST);
         }
 

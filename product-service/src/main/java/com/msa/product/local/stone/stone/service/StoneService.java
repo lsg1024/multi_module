@@ -112,6 +112,7 @@ public class StoneService {
                         .build();
                 stone.addGradePolicy(policy);
             }
+            return;
         }
         throw new IllegalArgumentException(IS_EXIST);
     }
