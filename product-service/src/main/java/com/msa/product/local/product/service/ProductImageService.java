@@ -129,8 +129,8 @@ public class ProductImageService {
             Path targetPath = Paths.get(absoluteDirPath, fileName);
 
             Thumbnails.of(file.getInputStream())
-                    .size(300, 300)
-                    .outputQuality(1)
+                    .scale(1.0)
+                    .outputQuality(1.0f)
                     .toFile(targetPath.toFile());
 
             boolean existsMain = productImageRepository.existsByProduct_ProductId(product.getProductId());
