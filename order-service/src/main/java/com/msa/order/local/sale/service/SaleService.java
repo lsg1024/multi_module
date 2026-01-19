@@ -525,7 +525,8 @@ public class SaleService {
             OutboxEvent outboxEvent = new OutboxEvent(
                     "current-balance-update",
                     accountId.toString(),
-                    payload
+                    payload,
+                    "STOCK_CREATED"
             );
 
             outboxEventRepository.save(outboxEvent);

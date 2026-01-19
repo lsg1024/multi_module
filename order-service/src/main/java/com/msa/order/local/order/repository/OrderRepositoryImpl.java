@@ -201,6 +201,9 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                         stock.product.colorName.eq(orderProduct.colorName)
                 );
 
+//        JPQLQuery<List<String>> statusHistories = JPAExpressions
+//                .select(statusHistory.)
+
         OrderSpecifier<?>[] orderSpecifiers = createOrderSpecifiers(sortCondition);
 
         List<OrderQueryDto> content = query

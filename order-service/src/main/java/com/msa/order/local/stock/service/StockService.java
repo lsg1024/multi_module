@@ -1,11 +1,12 @@
 package com.msa.order.local.stock.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.util.CustomPage;
+import com.msa.order.global.dto.OutboxCreatedEvent;
 import com.msa.order.global.dto.StoneDto;
 import com.msa.order.global.feign_client.client.AssistantStoneClient;
 import com.msa.order.global.feign_client.dto.AssistantStoneDto;
-import com.msa.order.global.kafka.KafkaProducer;
 import com.msa.order.global.kafka.dto.KafkaStockRequest;
 import com.msa.order.global.util.DateConversionUtil;
 import com.msa.order.local.order.dto.OrderDto;
@@ -16,17 +17,18 @@ import com.msa.order.local.order.entity.StatusHistory;
 import com.msa.order.local.order.entity.order_enum.*;
 import com.msa.order.local.order.repository.OrdersRepository;
 import com.msa.order.local.order.repository.StatusHistoryRepository;
+import com.msa.order.local.outbox.domain.entity.OutboxEvent;
+import com.msa.order.local.outbox.repository.OutboxEventRepository;
 import com.msa.order.local.stock.dto.StockDto;
 import com.msa.order.local.stock.entity.ProductSnapshot;
 import com.msa.order.local.stock.entity.Stock;
 import com.msa.order.local.stock.repository.CustomStockRepository;
 import com.msa.order.local.stock.repository.StockRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
@@ -44,21 +46,25 @@ import static com.msa.order.local.order.util.StoneUtil.*;
 @Transactional
 public class StockService {
     private final JwtUtil jwtUtil;
-    private final KafkaProducer kafkaProducer;
+    private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
     private final AssistantStoneClient assistantStoneClient;
     private final StockRepository stockRepository;
     private final OrdersRepository ordersRepository;
     private final CustomStockRepository customStockRepository;
     private final StatusHistoryRepository statusHistoryRepository;
+    private final OutboxEventRepository outboxEventRepository;
 
-    public StockService(JwtUtil jwtUtil, KafkaProducer kafkaProducer, AssistantStoneClient assistantStoneClient, StockRepository stockRepository, OrdersRepository ordersRepository, CustomStockRepository customStockRepository, StatusHistoryRepository statusHistoryRepository) {
+    public StockService(JwtUtil jwtUtil, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, AssistantStoneClient assistantStoneClient, StockRepository stockRepository, OrdersRepository ordersRepository, CustomStockRepository customStockRepository, StatusHistoryRepository statusHistoryRepository, OutboxEventRepository outboxEventRepository) {
         this.jwtUtil = jwtUtil;
-        this.kafkaProducer = kafkaProducer;
+        this.objectMapper = objectMapper;
+        this.eventPublisher = eventPublisher;
         this.assistantStoneClient = assistantStoneClient;
         this.stockRepository = stockRepository;
         this.ordersRepository = ordersRepository;
         this.customStockRepository = customStockRepository;
         this.statusHistoryRepository = statusHistoryRepository;
+        this.outboxEventRepository = outboxEventRepository;
     }
 
     // 재고 상세 조회
@@ -398,12 +404,25 @@ public class StockService {
                 .assistantStoneCreateAt(assistantStoneCreateAt)
                 .build();
 
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                kafkaProducer.stockSave(stockRequest);
-            }
-        });
+        try {
+            OutboxEvent outboxEvent = new OutboxEvent(
+                    "stock.async.requested",
+                    stock.getStockCode().toString(),
+                    objectMapper.writeValueAsString(stockRequest),
+                    "STOCK_CREATED"
+            );
+
+            outboxEventRepository.save(outboxEvent);
+
+            log.info("재고 생성 및 Outbox 저장 완료. StockCode: {}, EventID: {}",
+                    stock.getStockCode(), outboxEvent.getId());
+
+            eventPublisher.publishEvent(new OutboxCreatedEvent(tenantId));
+
+        } catch (Exception e) {
+            log.error("Outbox 저장 실패. StockCode: {}", stock.getStockCode(), e);
+            throw new IllegalStateException("재고 생성 이벤트 저장 실패", e);
+        }
     }
 
     //재고 -> 대여

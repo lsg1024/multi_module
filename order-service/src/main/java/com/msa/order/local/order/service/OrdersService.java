@@ -1,8 +1,10 @@
 package com.msa.order.local.order.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.tenant.TenantContext;
 import com.msa.common.global.util.CustomPage;
+import com.msa.order.global.dto.OutboxCreatedEvent;
 import com.msa.order.global.dto.StoneDto;
 import com.msa.order.global.excel.dto.OrderExcelQueryDto;
 import com.msa.order.global.feign_client.client.FactoryClient;
@@ -21,15 +23,16 @@ import com.msa.order.local.order.entity.order_enum.*;
 import com.msa.order.local.order.repository.CustomOrderRepository;
 import com.msa.order.local.order.repository.OrdersRepository;
 import com.msa.order.local.order.repository.StatusHistoryRepository;
+import com.msa.order.local.outbox.domain.entity.OutboxEvent;
+import com.msa.order.local.outbox.repository.OutboxEventRepository;
 import com.msa.order.local.priority.entitiy.Priority;
 import com.msa.order.local.priority.repository.PriorityRepository;
 import com.msa.order.local.stock.dto.StockDto;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -51,17 +54,23 @@ public class OrdersService {
     private final StoreClient storeClient;
     private final ProductClient productClient;
     private final KafkaProducer kafkaProducer;
+    private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
+    private final OutboxEventRepository outboxEventRepository;
     private final OrdersRepository ordersRepository;
     private final CustomOrderRepository customOrderRepository;
     private final StatusHistoryRepository statusHistoryRepository;
     private final PriorityRepository priorityRepository;
 
-    public OrdersService(JwtUtil jwtUtil, FactoryClient factoryClient, StoreClient storeClient, ProductClient productClient, KafkaProducer kafkaProducer, OrdersRepository ordersRepository, CustomOrderRepository customOrderRepository, StatusHistoryRepository statusHistoryRepository, PriorityRepository priorityRepository) {
+    public OrdersService(JwtUtil jwtUtil, FactoryClient factoryClient, StoreClient storeClient, ProductClient productClient, KafkaProducer kafkaProducer, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, OutboxEventRepository outboxEventRepository, OrdersRepository ordersRepository, CustomOrderRepository customOrderRepository, StatusHistoryRepository statusHistoryRepository, PriorityRepository priorityRepository) {
         this.jwtUtil = jwtUtil;
         this.factoryClient = factoryClient;
         this.storeClient = storeClient;
         this.productClient = productClient;
         this.kafkaProducer = kafkaProducer;
+        this.objectMapper = objectMapper;
+        this.eventPublisher = eventPublisher;
+        this.outboxEventRepository = outboxEventRepository;
         this.ordersRepository = ordersRepository;
         this.customOrderRepository = customOrderRepository;
         this.statusHistoryRepository = statusHistoryRepository;
@@ -284,13 +293,25 @@ public class OrdersService {
                     .assistantStoneCreateAt(assistantStoneCreateAt);
         }
 
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                kafkaProducer.orderSave(orderAsyncRequestedBuilder.build());
-            }
-        });
+        try {
+            OutboxEvent outboxEvent = new OutboxEvent(
+                    "order.create.requested",
+                    order.getFlowCode().toString(),
+                    objectMapper.writeValueAsString(orderAsyncRequestedBuilder),
+                    "STOCK_CREATED"
+            );
 
+            outboxEventRepository.save(outboxEvent);
+
+            log.info("주문 생성 및 Outbox 저장 완료. OrderFlowCode: {}, EventID: {}",
+                    order.getFlowCode(), outboxEvent.getId());
+
+            eventPublisher.publishEvent(new OutboxCreatedEvent(tenantId));
+
+        } catch (Exception e) {
+            log.error("Outbox 저장 실패. StockCode: {}", order.getFlowCode(), e);
+            throw new IllegalStateException("주문 생성 이벤트 저장 실패", e);
+        }
     }
 
     //주문 수정
@@ -400,12 +421,26 @@ public class OrdersService {
 
         OrderUpdateRequest orderUpdateRequest = updateRequestBuilder.build();
 
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                kafkaProducer.orderUpdate(orderUpdateRequest);
-            }
-        });
+        try {
+            OutboxEvent outboxEvent = new OutboxEvent(
+                    "order.update.requested",
+                    order.getFlowCode().toString(),
+                    objectMapper.writeValueAsString(orderUpdateRequest),
+                    "STOCK_UPDATE"
+            );
+
+            outboxEventRepository.save(outboxEvent);
+
+            log.info("주문 생성 및 Outbox 저장 완료. OrderFlowCode: {}, EventID: {}",
+                    order.getFlowCode(), outboxEvent.getId());
+
+            eventPublisher.publishEvent(new OutboxCreatedEvent(tenantId));
+
+        } catch (Exception e) {
+            log.error("Outbox 저장 실패. StockCode: {}", order.getFlowCode(), e);
+            throw new IllegalStateException("재고 생성 이벤트 저장 실패", e);
+        }
+
     }
 
     //주문 상태 조회 (주문, 취소)

@@ -108,6 +108,7 @@ public class OrderDto {
         private ProductStatus productStatus;
         private OrderStatus orderStatus;
         private String imagePath;
+        private List<String> statusHistory;
 
         public static Response from(OrderQueryDto queryDto, String imagePath) {
             Response response = new Response();
@@ -138,6 +139,10 @@ public class OrderDto {
                     : Collections.emptyList();
 
             return response;
+        }
+
+        public void updateStatusHistory(List<String> statusHistory) {
+            this.statusHistory = statusHistory;
         }
     }
 
