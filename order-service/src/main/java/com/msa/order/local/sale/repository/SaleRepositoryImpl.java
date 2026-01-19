@@ -2,9 +2,11 @@ package com.msa.order.local.sale.repository;
 
 import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import com.msa.common.global.util.CustomPage;
-import com.msa.order.global.util.GoldUtils;
 import com.msa.order.local.sale.entity.Sale;
-import com.msa.order.local.sale.entity.dto.*;
+import com.msa.order.local.sale.entity.dto.QSaleDto_SaleDetailDto;
+import com.msa.order.local.sale.entity.dto.QSaleItemResponse_SaleItem;
+import com.msa.order.local.sale.entity.dto.SaleDto;
+import com.msa.order.local.sale.entity.dto.SaleItemResponse;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.dsl.*;
@@ -22,7 +24,6 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import static com.msa.order.local.order.entity.QOrderStone.orderStone;
@@ -219,36 +220,21 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
     private List<SaleItemResponse.SaleItem> fetchPayment(SaleDto.Condition condition) {
         BooleanBuilder searchBuilder = getSearchBuilder(condition.getInput());
         BooleanExpression createAtAndEndAt = getCreateAtAndEndAt(condition.getStartAt(), condition.getEndAt());
+
         BooleanBuilder materialBuilder = new BooleanBuilder();
         if (StringUtils.hasText(condition.getMaterial())) {
             materialBuilder.and(salePayment.material.containsIgnoreCase(condition.getMaterial()));
         }
 
-        NumberExpression<BigDecimal> baseGoldWeight = salePayment.goldWeight.coalesce(BigDecimal.ZERO);
-        NumberExpression<BigDecimal> harryFactor = sale.accountHarry.coalesce(BigDecimal.ONE); // 해리가 없으면 1
+        NumberExpression<BigDecimal> weightArg = new CaseBuilder()
+                .when(salePayment.saleStatus.eq(SaleStatus.WG))
+                .then(salePayment.pureGoldWeight)
+                .otherwise(salePayment.goldWeight);
 
-        CaseBuilder.Cases<BigDecimal, NumberExpression<BigDecimal>> caseBuilder = new CaseBuilder()
-                .when(salePayment.material.isNull())
-                .then(BigDecimal.ZERO);
-
-        for (Map.Entry<String, BigDecimal> entry : GoldUtils.getPurityMap().entrySet()) {
-            String material = entry.getKey();
-            BigDecimal purity = entry.getValue();
-
-            caseBuilder = caseBuilder
-                    .when(salePayment.material.equalsIgnoreCase(material))
-                    .then(baseGoldWeight.multiply(purity));
-        }
-
-        NumberExpression<BigDecimal> pureGoldWeight = caseBuilder.otherwise(BigDecimal.ZERO)
-                .multiply(harryFactor);
-
-        NumberExpression<BigDecimal> finalPureGoldWeight = Expressions.numberTemplate(
-                BigDecimal.class,
-                "ROUND({0}, {1})",
-                pureGoldWeight,
-                3
-        );
+        NumberExpression<BigDecimal> harryArg = new CaseBuilder()
+                .when(salePayment.saleStatus.eq(SaleStatus.WG))
+                .then(BigDecimal.ONE)
+                .otherwise(sale.accountHarry);
 
         StringExpression saleTypeTitle = new CaseBuilder()
                 .when(salePayment.saleStatus.eq(SaleStatus.RETURN)).then("반품")
@@ -275,9 +261,9 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                         Expressions.nullExpression(String.class),
                         Expressions.nullExpression(Boolean.class),
                         Expressions.nullExpression(String.class),
-                        finalPureGoldWeight,
+                        weightArg,
                         Expressions.nullExpression(BigDecimal.class),
-                        Expressions.constant(BigDecimal.ONE),
+                        harryArg,
                         salePayment.cashAmount.intValue(),
                         Expressions.nullExpression(Integer.class),
                         Expressions.nullExpression(String.class),
@@ -394,32 +380,16 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
     }
 
     private List<SaleItemResponse.SaleItem> printFetchPayment(String saleCode) {
-        
-        NumberExpression<BigDecimal> baseGoldWeight = salePayment.goldWeight.coalesce(BigDecimal.ZERO);
-        NumberExpression<BigDecimal> harryFactor = sale.accountHarry.coalesce(BigDecimal.ONE); // 해리가 없으면 1
 
-        CaseBuilder.Cases<BigDecimal, NumberExpression<BigDecimal>> caseBuilder = new CaseBuilder()
-                .when(salePayment.material.isNull())
-                .then(BigDecimal.ZERO);
+        NumberExpression<BigDecimal> weightArg = new CaseBuilder()
+                .when(salePayment.saleStatus.eq(SaleStatus.WG))
+                .then(salePayment.pureGoldWeight)
+                .otherwise(salePayment.goldWeight);
 
-        for (Map.Entry<String, BigDecimal> entry : GoldUtils.getPurityMap().entrySet()) {
-            String material = entry.getKey();
-            BigDecimal purity = entry.getValue();
-
-            caseBuilder = caseBuilder
-                    .when(salePayment.material.equalsIgnoreCase(material))
-                    .then(baseGoldWeight.multiply(purity));
-        }
-
-        NumberExpression<BigDecimal> pureGoldWeight = caseBuilder.otherwise(BigDecimal.ZERO)
-                .multiply(harryFactor);
-
-        NumberExpression<BigDecimal> finalPureGoldWeight = Expressions.numberTemplate(
-                BigDecimal.class,
-                "ROUND({0}, {1})",
-                pureGoldWeight,
-                3
-        );
+        NumberExpression<BigDecimal> harryArg = new CaseBuilder()
+                .when(salePayment.saleStatus.eq(SaleStatus.WG))
+                .then(BigDecimal.ONE)
+                .otherwise(sale.accountHarry);
 
         StringExpression saleTypeTitle = new CaseBuilder()
                 .when(salePayment.saleStatus.eq(SaleStatus.RETURN)).then("반품")
@@ -446,9 +416,9 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                         Expressions.nullExpression(String.class),
                         Expressions.nullExpression(Boolean.class),
                         Expressions.nullExpression(String.class),
-                        finalPureGoldWeight,
+                        weightArg,
                         Expressions.nullExpression(BigDecimal.class),
-                        Expressions.constant(BigDecimal.ONE),
+                        harryArg,
                         salePayment.cashAmount.intValue(),
                         Expressions.nullExpression(Integer.class),
                         Expressions.nullExpression(String.class),

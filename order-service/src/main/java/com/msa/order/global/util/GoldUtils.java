@@ -42,12 +42,22 @@ public class GoldUtils {
             return BigDecimal.ZERO;
         }
 
-        BigDecimal purity = getGoldPurity(material);
-        if (purity.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
+        if (harry == null) {
+            harry = BigDecimal.ONE;
         }
 
-        return totalWeight.multiply(purity).multiply(harry).setScale(DEFAULT_SCALE, DEFAULT_ROUNDING);
+        if ("24K".equalsIgnoreCase(material)) {
+            harry = BigDecimal.ONE;
+        }
+
+        BigDecimal purity = getGoldPurity(material);
+        if (purity.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.valueOf(1.1);
+        }
+
+        BigDecimal result = totalWeight.multiply(purity).multiply(harry);
+
+        return result.setScale(DEFAULT_SCALE, DEFAULT_ROUNDING);
     }
 
     public static BigDecimal calculatePureGoldWeightWithHarry(String weight, String material, BigDecimal harry) {
@@ -73,8 +83,15 @@ public class GoldUtils {
         return result.setScale(DEFAULT_SCALE, DEFAULT_ROUNDING);
     }
 
-    public static Map<String, BigDecimal> getPurityMap() {
-        return Map.copyOf(PURITY_MAP);
+    public static BigDecimal calculateWeightFromPrice(Integer cashAmount, Integer marketPrice) {
+        if (cashAmount == null || marketPrice == null || marketPrice == 0) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal amount = new BigDecimal(cashAmount);
+        BigDecimal price = new BigDecimal(marketPrice);
+
+        return amount.divide(price, DEFAULT_SCALE, DEFAULT_ROUNDING);
     }
 
 }

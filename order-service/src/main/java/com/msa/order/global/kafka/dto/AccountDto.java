@@ -1,10 +1,12 @@
 package com.msa.order.global.kafka.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 public class AccountDto {
 
@@ -21,9 +23,11 @@ public class AccountDto {
         private String material;
         private BigDecimal pureGoldBalance;
         private Integer moneyBalance;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS")
+        private LocalDateTime SaleDate;
 
         @Builder
-        public updateCurrentBalance(String eventId, String saleCode, String tenantId, String saleType, String type, Long id, String name, String material, BigDecimal pureGoldBalance, Integer moneyBalance) {
+        public updateCurrentBalance(String eventId, String saleCode, String tenantId, String saleType, String type, Long id, String name, String material, BigDecimal pureGoldBalance, Integer moneyBalance, LocalDateTime saleDate) {
             this.eventId = eventId;
             this.saleCode = saleCode;
             this.tenantId = tenantId;
@@ -34,6 +38,7 @@ public class AccountDto {
             this.material = material.toUpperCase();
             this.pureGoldBalance = pureGoldBalance;
             this.moneyBalance = moneyBalance;
+            this.SaleDate = saleDate;
         }
     }
 }

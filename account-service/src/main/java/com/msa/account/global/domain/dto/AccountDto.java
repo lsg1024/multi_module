@@ -20,7 +20,7 @@ public class AccountDto {
 
     @Getter
     @NoArgsConstructor
-    public static class accountResponse {
+    public static class AccountResponse {
         private Long accountId;
         private String accountName;
         private String tradeType;
@@ -40,7 +40,7 @@ public class AccountDto {
 
         @Builder
         @QueryProjection
-        public accountResponse(Long accountId, String accountName, String goldWeight, String moneyAmount, String lastSaleDate, String businessOwnerName, String businessOwnerNumber, String businessNumber1, String businessNumber2, String faxNumber, String note, String grade, String tradeType, String goldHarryLoss, String lastPaymentDate, String address) {
+        public AccountResponse(Long accountId, String accountName, String goldWeight, String moneyAmount, String lastSaleDate, String businessOwnerName, String businessOwnerNumber, String businessNumber1, String businessNumber2, String faxNumber, String note, String grade, String tradeType, String goldHarryLoss, String lastPaymentDate, String address) {
             this.accountId = accountId;
             this.accountName = accountName;
             this.goldWeight = goldWeight;
@@ -57,6 +57,14 @@ public class AccountDto {
             this.goldHarryLoss = goldHarryLoss;
             this.lastPaymentDate = lastPaymentDate;
             this.address = address;
+        }
+
+        @QueryProjection
+        public AccountResponse(Long accountId, String accountName, String goldWeight, String moneyAmount) {
+            this.accountId = accountId;
+            this.accountName = accountName;
+            this.goldWeight = goldWeight;
+            this.moneyAmount = moneyAmount;
         }
     }
 

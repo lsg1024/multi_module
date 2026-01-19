@@ -21,7 +21,7 @@ import java.math.BigDecimal;
         uniqueConstraints = { @UniqueConstraint(name = "UK_PAYMENT_IDEVT", columnNames = {"EVENT_ID"})}
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE SALE_PAYMENT SET PAYMENT_DELETED = TRUE, DELETED_AT = CURRENT_TIMESTAMP WHERE SALE_PAYMENT_ID = ?")
+@SQLDelete(sql = "UPDATE SALE_PAYMENT SET PAYMENT_DELETED = TRUE WHERE SALE_PAYMENT_ID = ?")
 @SQLRestriction("PAYMENT_DELETED = FALSE")
 public class SalePayment extends BaseEntity {
 

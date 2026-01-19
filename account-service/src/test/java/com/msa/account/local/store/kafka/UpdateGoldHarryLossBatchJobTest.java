@@ -1,6 +1,6 @@
 package com.msa.account.local.store.kafka;
 
-import com.msa.account.global.batch.UpdateGoldHarryLossBatchJob;
+import com.msa.account.global.batch.goldharry.UpdateGoldHarryLossBatchJob;
 import com.msa.account.global.domain.entity.CommonOption;
 import com.msa.account.global.domain.entity.GoldHarry;
 import com.msa.account.global.domain.repository.CommonOptionRepository;

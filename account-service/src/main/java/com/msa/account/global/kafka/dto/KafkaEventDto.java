@@ -1,9 +1,12 @@
 package com.msa.account.global.kafka.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.msa.account.global.domain.dto.GoldHarryDto;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 public class KafkaEventDto {
 
@@ -35,5 +38,7 @@ public class KafkaEventDto {
         private String material;
         private String pureGoldBalance;
         private Integer moneyBalance;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS")
+        private LocalDateTime SaleDate;
     }
 }

@@ -61,11 +61,11 @@ public class SaleController {
 
     //오늘 판매 관리 데이터 목록 확인
     @GetMapping("/sale/check")
-    public ResponseEntity<ApiResponse<String>> checkBeforeSale(
+    public ResponseEntity<ApiResponse<SaleDto.PastSaleRequest>> checkBeforeSale(
             @RequestParam(name = "id") Long accountId) {
 
-        String saleCode = saleService.checkBeforeSale(accountId);
-        return ResponseEntity.ok(ApiResponse.success(saleCode));
+        SaleDto.PastSaleRequest pastSaleRequest = saleService.checkBeforeSale(accountId);
+        return ResponseEntity.ok(ApiResponse.success(pastSaleRequest));
     }
 
     // 판매 상품 수정
@@ -138,12 +138,20 @@ public class SaleController {
         return ResponseEntity.ok(ApiResponse.success(saleDetailDtos));
     }
 
+    // 주문장 시세 체크
+    @GetMapping("/sale/gold-price")
+    public ResponseEntity<ApiResponse<Integer>> getCheckAccountGoldPrice(
+            @RequestParam("id") String saleCode) {
+        Integer isAccountGoldPrice = saleService.checkAccountGoldPrice(saleCode);
+        return ResponseEntity.ok(ApiResponse.success(isAccountGoldPrice));
+    }
+
     // 주문장 시세 추가
-    @PatchMapping("/sales/update/gold-price")
+    @PatchMapping("/sale/gold-price")
     public ResponseEntity<ApiResponse<String>> updateAccountGoldPrice(
             @RequestParam("id") String saleCode,
-            @RequestBody Integer accountGoldPrice) {
-        saleService.updateAccountGoldPrice(saleCode, accountGoldPrice);
+            @RequestBody SaleDto.GoldPriceRequest goldPriceRequest) {
+        saleService.updateAccountGoldPrice(saleCode, goldPriceRequest);
         return ResponseEntity.ok(ApiResponse.success("추가 완료"));
     }
 

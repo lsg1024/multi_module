@@ -148,4 +148,18 @@ public class FactoryService {
     public List<FactoryDto.ApiFactoryInfo> findAllFactory() {
         return factoryRepository.findAllFactory();
     }
+
+    @Transactional(readOnly = true)
+    public CustomPage<AccountDto.AccountResponse> getFactoryPurchase(String endAt, Pageable pageable) {
+        return factoryRepository.findAllFactoryAndPurchase(endAt, pageable);
+    }
+
+//    @Transactional(readOnly = true)
+//    public AccountDto.AccountResponse getFactoryPurchaseDetail(String factoryId) {
+//        return factoryRepository.findByFactoryIdAndPurchase(Long.valueOf(factoryId));
+//    }
+//
+//    @Transactional(readOnly = true)
+//    public void getFactoryPurchaseLogDetail(String factoryId, String saleCode) {
+//    }
 }

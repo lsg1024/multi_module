@@ -73,4 +73,11 @@ public class SaleLog {
         this.factory = factory;
         this.ownerType = ownerType;
     }
+
+    public void updateBalance(BigDecimal prevGold, Long prevMoney, BigDecimal afterGold, Long afterMoney) {
+        this.previousGoldBalance = prevGold;
+        this.previousMoneyBalance = prevMoney;
+        this.afterGoldBalance = afterGold;
+        this.afterMoneyBalance = afterMoney;
+    }
 }

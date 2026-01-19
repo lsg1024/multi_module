@@ -73,6 +73,31 @@ public class FactoryController {
         return ResponseEntity.ok(ApiResponse.success(factoryList));
     }
 
+    //공장 미수 금액 조회
+    @GetMapping("/factories/purchase")
+    public ResponseEntity<ApiResponse<CustomPage<AccountDto.AccountResponse>>> getFactoryPurchase(
+            @RequestParam(name = "endAt", required = false) String endAt,
+            @PageableDefault(size = 12) Pageable pageable) {
+        CustomPage<AccountDto.AccountResponse> factoryPurchase = factoryService.getFactoryPurchase(endAt, pageable);
+        return ResponseEntity.ok(ApiResponse.success(factoryPurchase));
+    }
+
+//    //공장 미수 금액 상세 조회 - 현재 매입 값 조회
+//    @GetMapping("/factories/purchase/{id}")
+//    public ResponseEntity<ApiResponse<AccountDto.AccountResponse>> getFactoryPurchaseDetail(
+//            @PathVariable(name = "id") String factoryId) {
+//        factoryService.getFactoryPurchaseDetail(factoryId);
+//        return null;
+//    }
+//
+//    @GetMapping("/factories/purchase/{id}")
+//    public ResponseEntity<ApiResponse<AccountDto.AccountSaleLogResponse>> getFactoryPurchaseLogDetail(
+//            @PathVariable(name = "id") String factoryId,
+//            @RequestParam(name = "saleCode") String saleCode) {
+//        factoryService.getFactoryPurchaseLogDetail(factoryId, saleCode);
+//        return null;
+//    }
+
     //생성
     @PostMapping("/factory")
     public ResponseEntity<ApiResponse<String>> createFactory(

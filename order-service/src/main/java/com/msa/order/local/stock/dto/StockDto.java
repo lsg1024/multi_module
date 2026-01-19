@@ -120,7 +120,6 @@ public class StockDto {
     @Getter
     @NoArgsConstructor
     public static class StockRegisterRequest {
-        private String createAt;
         private String flowCode;
         private String materialId;
         private String materialName;

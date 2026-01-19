@@ -1,7 +1,11 @@
-package com.msa.account.global.batch;
+package com.msa.account.global.batch.goldharry;
 
-
+import com.msa.account.global.batch.goldharry.BatchCommonOptionUtil;
 import com.msa.account.global.domain.entity.CommonOption;
+import com.msa.account.global.domain.entity.GoldHarry;
+import com.msa.account.global.domain.repository.GoldHarryRepository;
+import com.msa.account.global.exception.ExceptionMessage;
+import com.msa.account.global.exception.NotFoundException;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -20,28 +24,31 @@ import org.springframework.transaction.PlatformTransactionManager;
 import javax.sql.DataSource;
 
 @Configuration
-public class UpdateGoldHarryLossBatchJob {
+public class DeleteGoldHarryBatchJob {
 
     private final BatchCommonOptionUtil batchCommonOptionUtil;
+    private final GoldHarryRepository goldHarryRepository;
 
-    public UpdateGoldHarryLossBatchJob(BatchCommonOptionUtil batchCommonOptionUtil) {
+    public DeleteGoldHarryBatchJob(BatchCommonOptionUtil batchCommonOptionUtil, GoldHarryRepository goldHarryRepository) {
         this.batchCommonOptionUtil = batchCommonOptionUtil;
+        this.goldHarryRepository = goldHarryRepository;
     }
 
     @Bean
-    public Job updateStoreGoldHarryLossJob(JobRepository jobRepository, Step updateGoldHarryLossStep) {
-        return new JobBuilder("updateGoldHarryLossJob", jobRepository)
-                .start(updateGoldHarryLossStep)
+    public Job deleteGoldHarryJob(JobRepository jobRepository, Step deleteGoldHarryStep) {
+        return new JobBuilder("deleteGoldHarryJob", jobRepository)
+                .start(deleteGoldHarryStep)
                 .build();
     }
 
     @Bean
-    public Step updateGoldHarryLossStep(JobRepository jobRepository,
-                                        PlatformTransactionManager transactionManager,
-                                        @Qualifier("updateCommonOptionReader") JdbcPagingItemReader<CommonOption> reader,
-                                        @Qualifier("updateGoldHarryLossProcessor") ItemProcessor<CommonOption, CommonOption> processor,
-                                        @Qualifier("updateCommonOptionWriter") JdbcBatchItemWriter<CommonOption> writer) {
-        return new StepBuilder("updateGoldHarryLossStep", jobRepository)
+    public Step deleteGoldHarryStep(JobRepository jobRepository,
+                                    PlatformTransactionManager transactionManager,
+                                    @Qualifier("deleteCommonOptionReader") JdbcPagingItemReader<CommonOption> reader,
+                                    @Qualifier("deleteGoldHarryDefaultProcessor") ItemProcessor<CommonOption, CommonOption> processor,
+                                    @Qualifier("deleteCommonOptionWriter") JdbcBatchItemWriter<CommonOption> writer) {
+
+        return new StepBuilder("deleteGoldHarryStep", jobRepository)
                 .<CommonOption, CommonOption>chunk(100, transactionManager)
                 .reader(reader)
                 .processor(processor)
@@ -52,43 +59,41 @@ public class UpdateGoldHarryLossBatchJob {
 
     @Bean
     @StepScope
-    public JdbcPagingItemReader<CommonOption> updateCommonOptionReader(
+    public JdbcPagingItemReader<CommonOption> deleteCommonOptionReader(
             @Value("#{jobParameters['tenantId']}") String tenantId,
             @Value("#{jobParameters['goldHarryId']}") Long goldHarryId,
             @Qualifier("defaultDataSource") DataSource dataSource) {
         return batchCommonOptionUtil.createReader(tenantId, goldHarryId, dataSource);
     }
-
     @Bean
-    @StepScope
-    public ItemProcessor<CommonOption, CommonOption> updateGoldHarryLossProcessor(
-            @Value("#{jobParameters['updatedGoldHarryLoss']}") String updatedGoldHarryLoss) {
+    @StepScope //구동 시 빈 등록 시 스키마 미보유 오류 발생
+    public ItemProcessor<CommonOption, CommonOption> deleteGoldHarryDefaultProcessor() {
+        GoldHarry defaultGoldHarry = goldHarryRepository.findById(1L)
+                .orElseThrow(() -> new NotFoundException(ExceptionMessage.NOT_FOUND));
 
         return commonOption -> {
-            commonOption.updateGoldHarryLoss(updatedGoldHarryLoss);
+            commonOption.updateGoldHarry(defaultGoldHarry);
             return commonOption;
         };
     }
 
     @Bean
     @StepScope
-    public JdbcBatchItemWriter<CommonOption> updateCommonOptionWriter(
+    public JdbcBatchItemWriter<CommonOption> deleteCommonOptionWriter(
             @Value("#{jobParameters['tenantId']}") String tenantId,
             @Qualifier("defaultDataSource") DataSource dataSource) {
         JdbcBatchItemWriter<CommonOption> writer = new JdbcBatchItemWriter<>();
         writer.setDataSource(dataSource);
 
-        //변경된 헤리 값을 수정
-        String sql = "UPDATE " + tenantId + ".COMMON_OPTION SET GOLD_HARRY_LOSS = ? WHERE COMMON_OPTION_ID = ?";
+        String sql = "UPDATE " + tenantId + ".COMMON_OPTION SET GOLD_HARRY_ID = ?, GOLD_HARRY_LOSS = ? WHERE COMMON_OPTION_ID = ?";
 
         writer.setSql(sql);
         writer.setItemPreparedStatementSetter((item, ps) -> {
-            ps.setString(1, item.getGoldHarryLoss());
-            ps.setLong(2, item.getCommonOptionId());
+            ps.setLong(1, 1L);
+            ps.setString(2, item.getGoldHarryLoss());
+            ps.setLong(3, item.getCommonOptionId());
         });
 
         return writer;
     }
-
-
 }

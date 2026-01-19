@@ -1,5 +1,6 @@
 package com.msa.product.local.goldPrice.entity;
 
+import com.msa.common.global.domain.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -10,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "GOLD")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Gold {
+public class Gold extends BaseTimeEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "GOLD_ID")

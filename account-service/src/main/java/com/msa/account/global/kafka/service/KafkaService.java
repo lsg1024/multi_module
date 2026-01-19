@@ -16,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -36,9 +38,8 @@ public class KafkaService {
 
 
     // 상점 or 공장 잔액 업데이트
-    public void updateCurrentBalance(KafkaEventDto.updateCurrentBalance dto) {
+    public SaleLog updateCurrentBalance(KafkaEventDto.updateCurrentBalance dto) {
 
-        // 1. DTO 파싱
         String type = dto.getType();
         Long saleCode = Long.parseLong(dto.getSaleCode());
         Long entityId = dto.getId();
@@ -47,6 +48,29 @@ public class KafkaService {
         String material = dto.getMaterial();
         BigDecimal pureGoldAmount = new BigDecimal(dto.getPureGoldBalance());
         Long moneyAmount = Long.valueOf(dto.getMoneyBalance());
+        LocalDateTime transactionDate;
+
+        log.info("updateCurrentBalance = {}", dto.toString());
+
+        if (SaleStatus.RETURN.name().equals(saleType)) {
+            Optional<SaleLog> originalLog = Optional.empty();
+
+            if ("STORE".equals(type)) {
+                originalLog = saleLogRepository.findTopByAccountSaleCodeAndStore_StoreIdOrderBySaleDateDesc(saleCode, entityId);
+            } else if ("FACTORY".equals(type)) {
+                originalLog = saleLogRepository.findTopByAccountSaleCodeAndFactory_FactoryIdOrderBySaleDateDesc(saleCode, entityId);
+            }
+
+            transactionDate = originalLog.map(saleLog -> saleLog.getSaleDate().plus(1, ChronoUnit.MICROS)).orElseGet(() -> dto.getSaleDate() != null ? dto.getSaleDate() : LocalDateTime.now());
+        } else {
+            transactionDate = dto.getSaleDate() != null ? dto.getSaleDate() : LocalDateTime.now();
+        }
+
+        if (SaleStatus.WG.name().equals(saleType)) {
+            moneyAmount = 0L;
+        }
+
+        transactionDate = transactionDate.truncatedTo(ChronoUnit.MICROS);
 
         Store store = null;
         Factory factory = null;
@@ -59,7 +83,7 @@ public class KafkaService {
 
             if (transactionHistoryRepository.existsByEventIdAndStore_StoreId(eventId, entityId)) {
                 log.info("이미 처리된 상점 잔액 업데이트입니다. eventId={}, storeId={}", eventId, entityId);
-                return;
+                throw new IllegalArgumentException("이미 처리된 상점 잔액 업데이트입니다.");
             }
 
             store = storeRepository.findByIdWithLock(entityId)
@@ -76,7 +100,7 @@ public class KafkaService {
 
             if (transactionHistoryRepository.existsByEventIdAndFactory_FactoryId(eventId, entityId)) {
                 log.info("이미 처리된 공장 잔액 업데이트입니다. eventId={}, factoryId={}", eventId, entityId);
-                return;
+                throw new IllegalArgumentException("이미 처리된 공장 잔액 업데이트입니다");
             }
 
             factory = factoryRepository.findByIdWithLock(entityId)
@@ -108,12 +132,12 @@ public class KafkaService {
                 .previousMoneyBalance(prevMoney)
                 .afterGoldBalance(afterGold)
                 .afterMoneyBalance(afterMoney)
-                .saleDate(LocalDateTime.now())
+                .saleDate(transactionDate)
                 .store(store)
                 .factory(factory)
                 .build();
 
-        saleLogRepository.save(newLog);
+        SaleLog saleLog = saleLogRepository.save(newLog);
 
         if (store != null) {
             store.updateBalance(pureGoldAmount, moneyAmount);
@@ -134,5 +158,7 @@ public class KafkaService {
                 .build();
 
         transactionHistoryRepository.save(history);
+
+        return saleLog;
     }
 }
