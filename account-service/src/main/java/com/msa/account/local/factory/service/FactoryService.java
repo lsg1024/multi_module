@@ -107,7 +107,7 @@ public class FactoryService {
 
     public String getFactoryGrade(String storeId) {
         OptionLevel grade = factoryRepository.findByCommonOptionOptionLevel(Long.valueOf(storeId));
-        return grade.getLevel();
+        return grade.getGrade();
     }
 
     public void updateFactoryHarry(String accessToken, String factoryId, String harryId) {

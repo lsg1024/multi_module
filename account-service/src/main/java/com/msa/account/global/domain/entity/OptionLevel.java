@@ -11,18 +11,18 @@ public enum OptionLevel {
     FOUR("FOUR", "4");
 
     private final String key;
-    private final String level;
+    private final String grade;
 
     public static String getLevelByKey(String key) {
         for (OptionLevel type : OptionLevel.values()) {
             if (type.key.equals(key)) {
-                return type.level;
+                return type.grade;
             }
         }
         return null;
     }
 
-    public String getLevel() {
-        return this.level;
+    public String getGrade() {
+        return this.grade;
     }
 }
