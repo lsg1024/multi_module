@@ -15,7 +15,10 @@ public class TraceAspect {
     @Pointcut("execution(* com.msa..*(..))")
     private void allMsa() {}
 
-    @Pointcut("allMsa() && !@within(com.msa.common.global.aop.NoTrace) && !@annotation(com.msa.common.global.aop.NoTrace)")
+    @Pointcut("execution(* com.msa..*.repository..*(..))")
+    private void repositoryPackage() {}
+
+    @Pointcut("allMsa() && !@within(com.msa.common.global.aop.NoTrace) && !@annotation(com.msa.common.global.aop.NoTrace) && !repositoryPackage")
     private void traceLogTarget() {}
 
     @Around("traceLogTarget()")

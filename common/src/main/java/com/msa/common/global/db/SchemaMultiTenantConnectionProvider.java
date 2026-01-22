@@ -1,5 +1,6 @@
 package com.msa.common.global.db;
 
+import com.msa.common.global.aop.NoTrace;
 import org.flywaydb.core.Flyway;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -12,6 +13,7 @@ import java.sql.*;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+@NoTrace
 @Profile("dev")
 @Component
 @ManagedResource(objectName="com.msa:type=MultiTenant,bean=SchemaProvider")
