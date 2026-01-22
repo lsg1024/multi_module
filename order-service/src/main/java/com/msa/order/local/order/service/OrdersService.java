@@ -5,13 +5,13 @@ import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.tenant.TenantContext;
 import com.msa.common.global.util.CustomPage;
 import com.msa.order.global.dto.OutboxCreatedEvent;
+import com.msa.order.global.dto.StatusHistoryDto;
 import com.msa.order.global.dto.StoneDto;
 import com.msa.order.global.excel.dto.OrderExcelQueryDto;
 import com.msa.order.global.feign_client.client.FactoryClient;
 import com.msa.order.global.feign_client.client.ProductClient;
 import com.msa.order.global.feign_client.client.StoreClient;
 import com.msa.order.global.feign_client.dto.ProductImageDto;
-import com.msa.order.global.kafka.KafkaProducer;
 import com.msa.order.global.kafka.dto.OrderAsyncRequested;
 import com.msa.order.global.kafka.dto.OrderUpdateRequest;
 import com.msa.order.local.order.dto.*;
@@ -53,7 +53,6 @@ public class OrdersService {
     private final FactoryClient factoryClient;
     private final StoreClient storeClient;
     private final ProductClient productClient;
-    private final KafkaProducer kafkaProducer;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
     private final OutboxEventRepository outboxEventRepository;
@@ -62,12 +61,11 @@ public class OrdersService {
     private final StatusHistoryRepository statusHistoryRepository;
     private final PriorityRepository priorityRepository;
 
-    public OrdersService(JwtUtil jwtUtil, FactoryClient factoryClient, StoreClient storeClient, ProductClient productClient, KafkaProducer kafkaProducer, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, OutboxEventRepository outboxEventRepository, OrdersRepository ordersRepository, CustomOrderRepository customOrderRepository, StatusHistoryRepository statusHistoryRepository, PriorityRepository priorityRepository) {
+    public OrdersService(JwtUtil jwtUtil, FactoryClient factoryClient, StoreClient storeClient, ProductClient productClient, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, OutboxEventRepository outboxEventRepository, OrdersRepository ordersRepository, CustomOrderRepository customOrderRepository, StatusHistoryRepository statusHistoryRepository, PriorityRepository priorityRepository) {
         this.jwtUtil = jwtUtil;
         this.factoryClient = factoryClient;
         this.storeClient = storeClient;
         this.productClient = productClient;
-        this.kafkaProducer = kafkaProducer;
         this.objectMapper = objectMapper;
         this.eventPublisher = eventPublisher;
         this.outboxEventRepository = outboxEventRepository;
@@ -166,8 +164,17 @@ public class OrdersService {
                     ProductImageDto image = productImages.get(queryDto.getProductId());
                     String imagePath = (image != null) ? image.getImagePath() : null;
 
-                    return OrderDto.Response.from(queryDto, imagePath);
+                    List<StatusHistory> statusHistories = statusHistoryRepository.findAllByFlowCodeOrderByCreateAtAsc(Long.valueOf(queryDto.getFlowCode()));
+
+                    List<StatusHistoryDto> statusHistoryDtos = new ArrayList<>();
+                    for (StatusHistory statusHistory : statusHistories) {
+                        StatusHistoryDto statusHistoryDto = new StatusHistoryDto(statusHistory.getPhase().getDisplayName(), statusHistory.getKind().getDisplayName(), statusHistory.getCreateAt(), statusHistory.getUserName());
+                        statusHistoryDtos.add(statusHistoryDto);
+                    }
+
+                    return OrderDto.Response.from(queryDto, imagePath, statusHistoryDtos);
                 })
+
                 .toList();
 
         return new CustomPage<>(finalResponse, pageable, queryDtoPage.getTotalElements());
@@ -297,8 +304,8 @@ public class OrdersService {
             OutboxEvent outboxEvent = new OutboxEvent(
                     "order.create.requested",
                     order.getFlowCode().toString(),
-                    objectMapper.writeValueAsString(orderAsyncRequestedBuilder),
-                    "STOCK_CREATED"
+                    objectMapper.writeValueAsString(orderAsyncRequestedBuilder.build()),
+                    "ORDER_CREATE"
             );
 
             outboxEventRepository.save(outboxEvent);
@@ -328,6 +335,9 @@ public class OrdersService {
 
         Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException("주문 수정: " + NOT_FOUND));
+
+        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         order.updateOrderNote(order.getOrderNote());
         order.updateCreateDate(createAt);
@@ -373,11 +383,11 @@ public class OrdersService {
         ordersRepository.save(order);
 
         // statusHistory 추가
-        StatusHistory statusHistory = StatusHistory.create(
+        StatusHistory statusHistory = StatusHistory.phaseChange(
                 order.getFlowCode(),
-                SourceType.valueOf(orderStatus),
-                BusinessPhase.WAITING,
-                Kind.CREATE,
+                lastHistory.getSourceType(),
+                BusinessPhase.valueOf(lastHistory.getToValue()),
+                BusinessPhase.UPDATE,
                 nickname
         );
 
@@ -419,14 +429,12 @@ public class OrdersService {
                 .assistantStoneCreateAt(null);
         }
 
-        OrderUpdateRequest orderUpdateRequest = updateRequestBuilder.build();
-
         try {
             OutboxEvent outboxEvent = new OutboxEvent(
                     "order.update.requested",
                     order.getFlowCode().toString(),
-                    objectMapper.writeValueAsString(orderUpdateRequest),
-                    "STOCK_UPDATE"
+                    objectMapper.writeValueAsString(updateRequestBuilder.build()),
+                    "ORDER_UPDATE"
             );
 
             outboxEventRepository.save(outboxEvent);
@@ -461,7 +469,7 @@ public class OrdersService {
     }
 
     //주문 상태 변경
-    public void updateOrderStatus(String id, String status) {
+    public void updateOrderStatus(String accessToken, String id, String status) {
         List<String> allowed = Arrays.asList(
                 ProductStatus.RECEIPT.name(),
                 ProductStatus.WAITING.name());
@@ -472,6 +480,9 @@ public class OrdersService {
 
         long flowCode = Long.parseLong(id);
         Orders order = ordersRepository.findByFlowCode(flowCode)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         OrderStatus currentOrderStatus = order.getOrderStatus();
@@ -489,6 +500,17 @@ public class OrdersService {
         order.updateProductStatus(newStatus);
 
         ordersRepository.save(order);
+
+        // statusHistory 추가
+        StatusHistory statusHistory = StatusHistory.phaseChange(
+                order.getFlowCode(),
+                lastHistory.getSourceType(),
+                BusinessPhase.valueOf(lastHistory.getToValue()),
+                BusinessPhase.UPDATE,
+                jwtUtil.getNickname(accessToken)
+        );
+
+        statusHistoryRepository.save(statusHistory);
     }
 
     //판매처 변경 -> account -> store 리스트 호출 /store/list
@@ -497,9 +519,23 @@ public class OrdersService {
         Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
+        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
         StoreDto.Response storeInfo = storeClient.getStoreInfo(accessToken, storeDto.getStoreId());
 
         order.updateStore(storeInfo);
+
+        // statusHistory 추가
+        StatusHistory statusHistory = StatusHistory.phaseChange(
+                order.getFlowCode(),
+                lastHistory.getSourceType(),
+                BusinessPhase.valueOf(lastHistory.getToValue()),
+                BusinessPhase.UPDATE,
+                jwtUtil.getNickname(accessToken)
+        );
+
+        statusHistoryRepository.save(statusHistory);
     }
 
     //제조사 변경 ->
@@ -508,22 +544,48 @@ public class OrdersService {
         Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
+        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
         FactoryDto.Response factoryInfo = factoryClient.getFactoryInfo(accessToken, factoryDto.getFactoryId());
 
         order.updateFactory(factoryInfo.getFactoryId(), factoryInfo.getFactoryName());
+
+        // statusHistory 추가
+        StatusHistory statusHistory = StatusHistory.phaseChange(
+                order.getFlowCode(),
+                lastHistory.getSourceType(),
+                BusinessPhase.valueOf(lastHistory.getToValue()),
+                BusinessPhase.UPDATE,
+                jwtUtil.getNickname(accessToken)
+        );
+
+        statusHistoryRepository.save(statusHistory);
     }
 
     //출고일 변경
-    public void updateOrderDeliveryDate(String id, DateDto newDate) {
+    public void updateOrderDeliveryDate(String accessToken, String id, DateDto newDate) {
 
         long flowCode = Long.parseLong(id);
         Orders order = ordersRepository.findByFlowCode(flowCode)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         OffsetDateTime received = newDate.getDeliveryDate();
         OffsetDateTime receivedKst  = received.withOffsetSameInstant(ZoneOffset.ofHours(9));
 
         order.updateShippingDate(receivedKst);
+
+        // statusHistory 추가
+        StatusHistory statusHistory = StatusHistory.phaseChange(
+                order.getFlowCode(),
+                lastHistory.getSourceType(),
+                BusinessPhase.valueOf(lastHistory.getToValue()),
+                BusinessPhase.UPDATE,
+                jwtUtil.getNickname(accessToken)
+        );
     }
 
     //기성 대체 -> 재고에 있는 제품 (이름, 색상, 재질 동일)
@@ -564,7 +626,8 @@ public class OrdersService {
     public CustomPage<OrderDto.Response> getFixProducts(String accessToken, String input, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort, String orderStatus, Pageable pageable) {
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
         OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
-        OrderDto.OrderCondition fixCondition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
+        OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
+        OrderDto.OrderCondition fixCondition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, sortCondition, orderStatus);
 
         CustomPage<OrderQueryDto> fixOrders = customOrderRepository.findByFixOrders(inputCondition, fixCondition, pageable);
 
@@ -580,7 +643,15 @@ public class OrdersService {
                     ProductImageDto imageDto = productImages.get(queryDto.getProductId());
                     String imagePath = (imageDto != null) ? imageDto.getImagePath() : null;
 
-                    return OrderDto.Response.from(queryDto, imagePath);
+                    List<StatusHistory> statusHistories = statusHistoryRepository.findAllByFlowCodeOrderByCreateAtAsc(Long.valueOf(queryDto.getFlowCode()));
+
+                    List<StatusHistoryDto> statusHistoryDtos = new ArrayList<>();
+                    for (StatusHistory statusHistory : statusHistories) {
+                        StatusHistoryDto statusHistoryDto = new StatusHistoryDto(statusHistory.getPhase().getDisplayName(), statusHistory.getKind().getDisplayName(), statusHistory.getCreateAt(), statusHistory.getUserName());
+                        statusHistoryDtos.add(statusHistoryDto);
+                    }
+
+                    return OrderDto.Response.from(queryDto, imagePath, statusHistoryDtos);
                 })
                 .toList();
 
@@ -609,7 +680,15 @@ public class OrdersService {
                     ProductImageDto imageDto = productImages.get(queryDto.getProductId());
                     String imagePath = (imageDto != null) ? imageDto.getImagePath() : null;
 
-                    return OrderDto.Response.from(queryDto, imagePath);
+                    List<StatusHistory> statusHistories = statusHistoryRepository.findAllByFlowCodeOrderByCreateAtAsc(Long.valueOf(queryDto.getFlowCode()));
+
+                    List<StatusHistoryDto> statusHistoryDtos = new ArrayList<>();
+                    for (StatusHistory statusHistory : statusHistories) {
+                        StatusHistoryDto statusHistoryDto = new StatusHistoryDto(statusHistory.getPhase().getDisplayName(), statusHistory.getKind().getDisplayName(), statusHistory.getCreateAt(), statusHistory.getUserName());
+                        statusHistoryDtos.add(statusHistoryDto);
+                    }
+
+                    return OrderDto.Response.from(queryDto, imagePath, statusHistoryDtos);
                 })
                 .toList();
 
@@ -638,7 +717,15 @@ public class OrdersService {
                     ProductImageDto imageDto = productImages.get(queryDto.getProductId());
                     String imagePath = (imageDto != null) ? imageDto.getImagePath() : null;
 
-                    return OrderDto.Response.from(queryDto, imagePath);
+                    List<StatusHistory> statusHistories = statusHistoryRepository.findAllByFlowCodeOrderByCreateAtAsc(Long.valueOf(queryDto.getFlowCode()));
+
+                    List<StatusHistoryDto> statusHistoryDtos = new ArrayList<>();
+                    for (StatusHistory statusHistory : statusHistories) {
+                        StatusHistoryDto statusHistoryDto = new StatusHistoryDto(statusHistory.getPhase().getDisplayName(), statusHistory.getKind().getDisplayName(), statusHistory.getCreateAt(), statusHistory.getUserName());
+                        statusHistoryDtos.add(statusHistoryDto);
+                    }
+
+                    return OrderDto.Response.from(queryDto, imagePath, statusHistoryDtos);
                 })
                 .toList();
 

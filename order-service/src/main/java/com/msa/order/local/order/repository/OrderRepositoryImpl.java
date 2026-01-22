@@ -96,6 +96,8 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression ordersStatusBuilder;
         if (condition.getOrderStatus().equals("EXPECT")) {
             ordersStatusBuilder = getExpectBuilder(condition);
+        } else if(condition.getOrderStatus().equals("DELETED")) {
+            ordersStatusBuilder = getDeleteBuilder((condition));
         } else {
             ordersStatusBuilder = getOrdersStatusBuilder(condition);
         }
@@ -113,6 +115,8 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression ordersStatusBuilder;
         if (condition.getOrderStatus().equals("EXPECT")) {
             ordersStatusBuilder = getExpectBuilder(condition);
+        } else if(condition.getOrderStatus().equals("DELETED")) {
+            ordersStatusBuilder = getDeleteBuilder((condition));
         } else {
             ordersStatusBuilder = getOrdersStatusBuilder(condition);
         }
@@ -130,6 +134,8 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression ordersStatusBuilder;
         if (condition.getOrderStatus().equals("EXPECT")) {
             ordersStatusBuilder = getExpectBuilder(condition);
+        } else if(condition.getOrderStatus().equals("DELETED")) {
+            ordersStatusBuilder = getDeleteBuilder((condition));
         } else {
             ordersStatusBuilder = getOrdersStatusBuilder(condition);
         }
@@ -148,6 +154,8 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression ordersStatusBuilder;
         if (condition.getOrderStatus().equals("EXPECT")) {
             ordersStatusBuilder = getExpectBuilder(condition);
+        } else if(condition.getOrderStatus().equals("DELETED")) {
+            ordersStatusBuilder = getDeleteBuilder((condition));
         } else {
             ordersStatusBuilder = getOrdersStatusBuilder(condition);
         }
@@ -381,21 +389,18 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
     }
 
     private static BooleanExpression getExpectBuilder(OrderDto.OrderCondition orderCondition) {
-        String startAt = orderCondition.getStartAt();
         String endAt = orderCondition.getEndAt();
 
-        LocalDateTime start = LocalDate.parse(startAt).atStartOfDay(); // 예: 2025-08-04 00:00:00
         LocalDateTime end = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
 
-        OffsetDateTime startDateTime = start.atOffset(ZoneOffset.of("+09:00"));
         OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
 
-        BooleanExpression createdBetween =
-                orders.createAt.between(startDateTime, endDateTime);
+        BooleanExpression shippingAt =
+                orders.shippingAt.loe(endDateTime);
 
-        BooleanExpression status = orders.orderStatus.in(OrderStatus.ORDER, OrderStatus.FIX);
+        BooleanExpression status = orders.orderStatus.notIn(OrderStatus.STOCK);
 
-        return status.and(createdBetween);
+        return status.and(shippingAt);
     }
 
     private static BooleanExpression getDeleteBuilder(OrderDto.OrderCondition orderCondition) {

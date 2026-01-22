@@ -28,7 +28,6 @@ public class OutboxEvent extends BaseTimeEntity {
     @Column(nullable = false, name = "MESSAGE_KEY")
     private String messageKey;
 
-    @Lob
     @Column(nullable = false, columnDefinition = "TEXT", name = "PAYLOAD")
     private String payload;
 
@@ -81,5 +80,20 @@ public class OutboxEvent extends BaseTimeEntity {
     public boolean canRetry() {
         return this.status == EventStatus.PENDING
                 && (this.nextRetryAt == null || OffsetDateTime.now().isAfter(this.nextRetryAt));
+    }
+
+    @Override
+    public String toString() {
+        return "OutboxEvent{" +
+                "id=" + id +
+                ", topic='" + topic + '\'' +
+                ", messageKey='" + messageKey + '\'' +
+                ", payload='" + payload + '\'' +
+                ", status=" + status +
+                ", retryCount=" + retryCount +
+                ", lastErrorMessage='" + lastErrorMessage + '\'' +
+                ", nextRetryAt=" + nextRetryAt +
+                ", eventType='" + eventType + '\'' +
+                '}';
     }
 }

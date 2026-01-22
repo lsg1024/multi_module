@@ -13,13 +13,13 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, Long> 
     @Query("""
         SELECT e FROM OutboxEvent e 
         WHERE e.status = :status 
-        AND e.eventType = :eventType
+        AND e.eventType IN :eventTypes
         AND (e.nextRetryAt IS NULL OR e.nextRetryAt < CURRENT_TIMESTAMP)
         ORDER BY e.createDate ASC
         """)
     List<OutboxEvent> findPendingEventsByType(
             @Param("status") EventStatus status,
-            @Param("eventType") String eventType,
+            @Param("eventTypes") List<String> eventTypes,
             Pageable pageable
     );
 

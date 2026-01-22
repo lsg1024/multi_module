@@ -15,8 +15,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-@Service
 @Slf4j
+@Service
 public class OutboxRelayService {
 
     private final KafkaProducer kafkaProducer;
@@ -29,8 +29,10 @@ public class OutboxRelayService {
 
     @Transactional
     public void relayPaymentEventsSequentially() throws ExecutionException, InterruptedException {
+
+        List<String> types = List.of("PAYMENT_SETTLED");
         List<OutboxEvent> events = outboxEventRepository
-                .findPendingEventsByType(EventStatus.PENDING, "PAYMENT_SETTLED", PageRequest.of(0, 100));
+                .findPendingEventsByType(EventStatus.PENDING, types, PageRequest.of(0, 100));
 
         if (events.isEmpty()) return;
 
@@ -49,24 +51,26 @@ public class OutboxRelayService {
     }
 
 
-    @Transactional(propagation = Propagation.NEVER)
+    @Transactional
     public void relayStockEventsIndependently() {
+        List<String> types = List.of("ORDER_CREATE", "ORDER_UPDATE", "STOCK_CREATED", "STOCK_UPDATE");
         List<OutboxEvent> events = outboxEventRepository
-                .findPendingEventsByType(EventStatus.PENDING, "STOCK_CREATED", PageRequest.of(0, 100));
+                .findPendingEventsByType(EventStatus.PENDING, types, PageRequest.of(0, 100));
 
         if (events.isEmpty()) return;
 
         log.info("재고 이벤트 독립 처리: {} 건", events.size());
 
-        events.parallelStream().forEach(this::processEventInSeparateTransaction);
+        events.forEach(this::processEventInSeparateTransaction);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW) // 각각 독립 트랜잭션
     public void processEventInSeparateTransaction(OutboxEvent event) {
         try {
             kafkaProducer.send(event.getTopic(), event.getMessageKey(), event.getPayload());
+
             event.markAsSent();
-            outboxEventRepository.save(event);
+            outboxEventRepository.saveAndFlush(event);
 
             log.info("재고 이벤트 전송 성공. EventID: {}, Key: {}",
                     event.getId(), event.getMessageKey());
@@ -97,7 +101,7 @@ public class OutboxRelayService {
             if ("PAYMENT_SETTLED".equals(eventType)) {
                 eventList.forEach(this::processEventSequentially);
             } else {
-                eventList.parallelStream().forEach(this::processEventInSeparateTransaction);
+                eventList.forEach(this::processEventInSeparateTransaction);
             }
         });
     }

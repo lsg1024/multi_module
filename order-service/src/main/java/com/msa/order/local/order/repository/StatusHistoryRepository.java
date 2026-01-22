@@ -15,5 +15,5 @@ public interface StatusHistoryRepository extends JpaRepository<StatusHistory, Lo
      where s.flowCode in :ids
     """)
     List<StatusHistory> findTopByFlowCodeOrderByIdDescIn(@Param("ids") List<Long> flowCodes);
-    List<StatusHistory> findAllByFlowCode(Long flowCode);
+    List<StatusHistory> findAllByFlowCodeOrderByCreateAtAsc(Long flowCode);
 }

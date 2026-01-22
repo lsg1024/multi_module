@@ -48,4 +48,12 @@ public class DateConversionUtil {
         return dateAt.atZoneSameInstant(ZoneId.of("Asia/Seoul")).toLocalDate();
     }
 
+    public static String OffsetDateTimeToString(OffsetDateTime dateAt) {
+        DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        return dateAt
+                .atZoneSameInstant(KST)
+                .format(FORMATTER);
+    }
+
 }

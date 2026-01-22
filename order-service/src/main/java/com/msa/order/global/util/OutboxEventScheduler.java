@@ -54,7 +54,7 @@ public class OutboxEventScheduler {
     /**
      * 정산 이벤트 - 5초마다
      */
-    @Scheduled(fixedDelay = 5000)
+    @Scheduled(fixedDelay = 1000)
     public void relayPaymentEvents() {
         try {
             outboxRelayService.relayPaymentEventsSequentially();
