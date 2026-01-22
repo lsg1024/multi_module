@@ -77,6 +77,7 @@ public class Factory extends BaseEntity {
     public void updateFactoryInfo(AccountDto.AccountInfo factoryInfo) {
         this.factoryName = factoryInfo.getAccountName();
         this.factoryOwnerName = factoryInfo.getAccountOwnerName();
+        this.factoryPhoneNumber = factoryInfo.getAccountPhoneNumber();
         this.factoryContactNumber1 = factoryInfo.getAccountContactNumber1();
         this.factoryContactNumber2 = factoryInfo.getAccountContactNumber2();
         this.factoryFaxNumber = factoryInfo.getAccountFaxNumber();
