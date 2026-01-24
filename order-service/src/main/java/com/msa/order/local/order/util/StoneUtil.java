@@ -192,4 +192,31 @@ public class StoneUtil {
                 os.getOriginStoneId() != null && !keepIds.contains(os.getOriginStoneId()));
     }
 
+    /**
+     * OrderStone 리스트를 StoneDto.StoneInfo 리스트로 변환합니다.
+     * 중복 코드 제거를 위한 유틸리티 메서드입니다.
+     *
+     * @param orderStones 변환할 OrderStone 리스트
+     * @return StoneDto.StoneInfo 리스트
+     */
+    public static List<StoneDto.StoneInfo> toStoneDtoList(List<OrderStone> orderStones) {
+        if (orderStones == null || orderStones.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return orderStones.stream()
+                .map(orderStone -> new StoneDto.StoneInfo(
+                        orderStone.getOriginStoneId().toString(),
+                        orderStone.getOriginStoneName(),
+                        orderStone.getOriginStoneWeight().toPlainString(),
+                        orderStone.getStonePurchaseCost(),
+                        orderStone.getStoneLaborCost(),
+                        orderStone.getStoneAddLaborCost(),
+                        orderStone.getStoneQuantity(),
+                        orderStone.getMainStone(),
+                        orderStone.getIncludeStone()
+                ))
+                .collect(Collectors.toList());
+    }
+
 }

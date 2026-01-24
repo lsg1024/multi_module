@@ -4,28 +4,29 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.tenant.TenantContext;
 import com.msa.common.global.util.CustomPage;
-import com.msa.order.global.dto.OutboxCreatedEvent;
 import com.msa.order.global.dto.StatusHistoryDto;
 import com.msa.order.global.dto.StoneDto;
 import com.msa.order.global.excel.dto.OrderExcelQueryDto;
+import com.msa.order.global.exception.InvalidOrderStatusException;
+import com.msa.order.global.exception.OrderNotFoundException;
 import com.msa.order.global.feign_client.client.FactoryClient;
 import com.msa.order.global.feign_client.client.ProductClient;
 import com.msa.order.global.feign_client.client.StoreClient;
 import com.msa.order.global.feign_client.dto.ProductImageDto;
-import com.msa.order.global.kafka.dto.OrderAsyncRequested;
-import com.msa.order.global.kafka.dto.OrderUpdateRequest;
 import com.msa.order.local.order.dto.*;
 import com.msa.order.local.order.entity.OrderProduct;
 import com.msa.order.local.order.entity.OrderStone;
 import com.msa.order.local.order.entity.Orders;
 import com.msa.order.local.order.entity.StatusHistory;
-import com.msa.order.local.order.entity.order_enum.*;
+import com.msa.order.local.order.entity.order_enum.BusinessPhase;
+import com.msa.order.local.order.entity.order_enum.OrderStatus;
+import com.msa.order.local.order.entity.order_enum.ProductStatus;
+import com.msa.order.local.order.entity.order_enum.SourceType;
 import com.msa.order.local.order.repository.CustomOrderRepository;
 import com.msa.order.local.order.repository.OrdersRepository;
 import com.msa.order.local.order.repository.StatusHistoryRepository;
-import com.msa.order.local.outbox.domain.entity.OutboxEvent;
+import com.msa.order.local.order.util.StatusHistoryHelper;
 import com.msa.order.local.outbox.repository.OutboxEventRepository;
-import com.msa.order.local.priority.entitiy.Priority;
 import com.msa.order.local.priority.repository.PriorityRepository;
 import com.msa.order.local.stock.dto.StockDto;
 import lombok.extern.slf4j.Slf4j;
@@ -34,16 +35,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-import static com.msa.order.global.exception.ExceptionMessage.NOT_ACCESS;
-import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND;
-import static com.msa.order.global.util.DateConversionUtil.StringToOffsetDateTime;
-import static com.msa.order.local.order.util.StoneUtil.updateOrderStoneInfo;
+import static com.msa.order.local.order.util.StoneUtil.toStoneDtoList;
 
 @Slf4j
 @Service
@@ -60,8 +60,10 @@ public class OrdersService {
     private final CustomOrderRepository customOrderRepository;
     private final StatusHistoryRepository statusHistoryRepository;
     private final PriorityRepository priorityRepository;
+    private final StatusHistoryHelper statusHistoryHelper;
+    private final OrderCommandService orderCommandService;
 
-    public OrdersService(JwtUtil jwtUtil, FactoryClient factoryClient, StoreClient storeClient, ProductClient productClient, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, OutboxEventRepository outboxEventRepository, OrdersRepository ordersRepository, CustomOrderRepository customOrderRepository, StatusHistoryRepository statusHistoryRepository, PriorityRepository priorityRepository) {
+    public OrdersService(JwtUtil jwtUtil, FactoryClient factoryClient, StoreClient storeClient, ProductClient productClient, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, OutboxEventRepository outboxEventRepository, OrdersRepository ordersRepository, CustomOrderRepository customOrderRepository, StatusHistoryRepository statusHistoryRepository, PriorityRepository priorityRepository, StatusHistoryHelper statusHistoryHelper, OrderCommandService orderCommandService) {
         this.jwtUtil = jwtUtil;
         this.factoryClient = factoryClient;
         this.storeClient = storeClient;
@@ -73,31 +75,18 @@ public class OrdersService {
         this.customOrderRepository = customOrderRepository;
         this.statusHistoryRepository = statusHistoryRepository;
         this.priorityRepository = priorityRepository;
+        this.statusHistoryHelper = statusHistoryHelper;
+        this.orderCommandService = orderCommandService;
     }
 
     // 주문 단건 조회
     @Transactional(readOnly = true)
     public OrderDto.ResponseDetail getOrder(Long flowCode) {
         Orders order = ordersRepository.findByFlowCode(flowCode)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+                .orElseThrow(() -> new OrderNotFoundException(flowCode));
 
         List<OrderStone> orderStones = order.getOrderStones();
-
-        List<StoneDto.StoneInfo> stonesDtos = new ArrayList<>();
-        for (OrderStone orderStone : orderStones) {
-            StoneDto.StoneInfo stoneDto = new StoneDto.StoneInfo(
-                orderStone.getOriginStoneId().toString(),
-                orderStone.getOriginStoneName(),
-                orderStone.getOriginStoneWeight().toPlainString(),
-                orderStone.getStonePurchaseCost(),
-                orderStone.getStoneLaborCost(),
-                orderStone.getStoneAddLaborCost(),
-                orderStone.getStoneQuantity(),
-                orderStone.getMainStone(),
-                orderStone.getIncludeStone()
-            );
-            stonesDtos.add(stoneDto);
-        }
+        List<StoneDto.StoneInfo> stonesDtos = toStoneDtoList(orderStones);
 
         OrderProduct orderProduct = order.getOrderProduct();
 
@@ -159,22 +148,31 @@ public class OrdersService {
 
         Map<Long, ProductImageDto> productImages = productClient.getProductImages(accessToken, productIds);
 
+        // N+1 문제 해결: 모든 flowCode에 대한 StatusHistory를 한 번에 조회
+        List<Long> flowCodes = queryDtos.stream()
+                .map(dto -> Long.valueOf(dto.getFlowCode()))
+                .toList();
+
+        List<StatusHistory> allHistories = statusHistoryRepository.findAllByFlowCodeInOrderByCreateAtAsc(flowCodes);
+
+        // flowCode별로 그룹핑
+        Map<Long, List<StatusHistory>> historyMap = allHistories.stream()
+                .collect(Collectors.groupingBy(StatusHistory::getFlowCode));
+
         List<OrderDto.Response> finalResponse = queryDtos.stream()
                 .map(queryDto -> {
                     ProductImageDto image = productImages.get(queryDto.getProductId());
                     String imagePath = (image != null) ? image.getImagePath() : null;
 
-                    List<StatusHistory> statusHistories = statusHistoryRepository.findAllByFlowCodeOrderByCreateAtAsc(Long.valueOf(queryDto.getFlowCode()));
+                    Long flowCode = Long.valueOf(queryDto.getFlowCode());
+                    List<StatusHistory> statusHistories = historyMap.getOrDefault(flowCode, new ArrayList<>());
 
-                    List<StatusHistoryDto> statusHistoryDtos = new ArrayList<>();
-                    for (StatusHistory statusHistory : statusHistories) {
-                        StatusHistoryDto statusHistoryDto = new StatusHistoryDto(statusHistory.getPhase().getDisplayName(), statusHistory.getKind().getDisplayName(), statusHistory.getCreateAt(), statusHistory.getUserName());
-                        statusHistoryDtos.add(statusHistoryDto);
-                    }
+                    List<StatusHistoryDto> statusHistoryDtos = statusHistories.stream()
+                            .map(StatusHistory::toDto)
+                            .toList();
 
                     return OrderDto.Response.from(queryDto, imagePath, statusHistoryDtos);
                 })
-
                 .toList();
 
         return new CustomPage<>(finalResponse, pageable, queryDtoPage.getTotalElements());
@@ -185,140 +183,16 @@ public class OrdersService {
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = jwtUtil.getTenantId(accessToken);
 
-        Long storeId = Long.valueOf(orderDto.getStoreId());
-        Long factoryId = Long.valueOf(orderDto.getFactoryId());
-        Long productId = Long.valueOf(orderDto.getProductId());
-        Long materialId = Long.valueOf(orderDto.getMaterialId());
-        Long colorId = Long.valueOf(orderDto.getColorId());
-        Long assistantId = Long.valueOf(orderDto.getAssistantStoneId());
-        boolean assistantStone = orderDto.isAssistantStone();
-
-        // priority 추가
-        Priority priority = priorityRepository.findByPriorityName(orderDto.getPriorityName())
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-
-        OffsetDateTime createAt = StringToOffsetDateTime(orderDto.getCreateAt());
-        OffsetDateTime shippingAt = StringToOffsetDateTime(orderDto.getShippingAt());
-
-        Orders order = Orders.builder()
-                .storeId(Long.parseLong(orderDto.getStoreId()))
-                .storeName(orderDto.getStoreName())
-                .storeGrade(orderDto.getStoreGrade())
-                .storeHarry(new BigDecimal(orderDto.getStoreHarry()))
-                .factoryId(Long.parseLong(orderDto.getFactoryId()))
-                .factoryName(orderDto.getFactoryName())
-                .orderNote(orderDto.getOrderNote())
-                .productStatus(ProductStatus.RECEIPT)
-                .orderStatus(OrderStatus.WAIT)
-                .createAt(createAt)
-                .shippingAt(shippingAt)
-                .build();
-
-        // orderStone 추가
-        List<Long> stoneIds = new ArrayList<>();
-        List<StoneDto.StoneInfo> storeInfos = orderDto.getStoneInfos();
-        for (StoneDto.StoneInfo stoneInfo : storeInfos) {
-            OrderStone orderStone = OrderStone.builder()
-                    .originStoneId(Long.valueOf(stoneInfo.getStoneId()))
-                    .originStoneName(stoneInfo.getStoneName())
-                    .originStoneWeight(new BigDecimal(stoneInfo.getStoneWeight()))
-                    .stonePurchaseCost(stoneInfo.getPurchaseCost())
-                    .stoneLaborCost(stoneInfo.getLaborCost())
-                    .stoneAddLaborCost(stoneInfo.getAddLaborCost())
-                    .stoneQuantity(stoneInfo.getQuantity())
-                    .mainStone(stoneInfo.isMainStone())
-                    .includeStone(stoneInfo.isIncludeStone())
-                    .build();
-
-            stoneIds.add(Long.valueOf(stoneInfo.getStoneId()));
-            order.addOrderStone(orderStone);
-        }
-
-        // orderProduct 추가
-        OrderProduct orderProduct = OrderProduct.builder()
-                .productId(productId)
-                .productName(orderDto.getProductName())
-                .productSize(orderDto.getProductSize())
-                .productFactoryName(orderDto.getProductFactoryName())
-                .classificationId(Long.valueOf(orderDto.getClassificationId()))
-                .classificationName(orderDto.getClassificationName())
-                .setTypeId(Long.valueOf(orderDto.getSetTypeId()))
-                .setTypeName(orderDto.getSetTypeName())
-                .colorId(colorId)
-                .colorName(orderDto.getColorName())
-                .materialId(materialId)
-                .materialName(orderDto.getMaterialName())
-                .isProductWeightSale(orderDto.getIsProductWeightSale())
-                .productPurchaseCost(orderDto.getProductPurchaseCost())
-                .productLaborCost(orderDto.getProductLaborCost())
-                .productAddLaborCost(orderDto.getProductAddLaborCost())
-                .goldWeight(new BigDecimal(BigInteger.ZERO))
-                .stoneWeight(orderDto.getStoneWeight())
-                .orderMainStoneNote(orderDto.getMainStoneNote())
-                .orderAssistanceStoneNote(orderDto.getAssistanceStoneNote())
-                .assistantStoneId(assistantId)
-                .stoneAddLaborCost(orderDto.getStoneAddLaborCost())
-                .build();
-
-        order.addOrderProduct(orderProduct);
-        order.addPriority(priority);
-
-        ordersRepository.save(order);
+        // OrderCommandService로 위임
+        Orders order = orderCommandService.createOrder(tenantId, accessToken, orderStatus, orderDto, nickname);
 
         // statusHistory 추가
-        StatusHistory statusHistory = StatusHistory.create(
+        statusHistoryHelper.saveCreate(
                 order.getFlowCode(),
                 SourceType.valueOf(orderStatus),
                 BusinessPhase.WAITING,
-                Kind.CREATE,
                 nickname
         );
-
-        statusHistoryRepository.save(statusHistory);
-
-        OrderAsyncRequested.OrderAsyncRequestedBuilder orderAsyncRequestedBuilder = OrderAsyncRequested.builder()
-                .eventId(UUID.randomUUID().toString())
-                .flowCode(order.getFlowCode())
-                .tenantId(tenantId)
-                .token(accessToken)
-                .storeId(storeId)
-                .factoryId(factoryId)
-                .productId(productId)
-                .materialId(materialId)
-                .colorId(colorId)
-                .nickname(nickname)
-                .stoneIds(stoneIds)
-                .assistantStone(assistantStone)
-                .assistantStoneId(assistantId)
-                .orderStatus(orderStatus);
-
-        if (orderDto.isAssistantStone()) {
-            OffsetDateTime assistantStoneCreateAt = StringToOffsetDateTime(orderDto.getAssistantStoneCreateAt());
-            orderAsyncRequestedBuilder
-                    .assistantStone(assistantStone)
-                    .assistantStoneId(assistantId)
-                    .assistantStoneCreateAt(assistantStoneCreateAt);
-        }
-
-        try {
-            OutboxEvent outboxEvent = new OutboxEvent(
-                    "order.create.requested",
-                    order.getFlowCode().toString(),
-                    objectMapper.writeValueAsString(orderAsyncRequestedBuilder.build()),
-                    "ORDER_CREATE"
-            );
-
-            outboxEventRepository.save(outboxEvent);
-
-            log.info("주문 생성 및 Outbox 저장 완료. OrderFlowCode: {}, EventID: {}",
-                    order.getFlowCode(), outboxEvent.getId());
-
-            eventPublisher.publishEvent(new OutboxCreatedEvent(tenantId));
-
-        } catch (Exception e) {
-            log.error("Outbox 저장 실패. StockCode: {}", order.getFlowCode(), e);
-            throw new IllegalStateException("주문 생성 이벤트 저장 실패", e);
-        }
     }
 
     //주문 수정
@@ -326,129 +200,15 @@ public class OrdersService {
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = TenantContext.getTenant();
 
-        // priority 추가
-        Priority priority = priorityRepository.findByPriorityName(orderDto.getPriorityName())
-                .orElseThrow(() -> new IllegalArgumentException("등급: " + NOT_FOUND));
-
-        OffsetDateTime createAt = StringToOffsetDateTime(orderDto.getCreateAt());
-        OffsetDateTime shippingAt = StringToOffsetDateTime(orderDto.getShippingAt());
-
-        Orders order = ordersRepository.findByFlowCode(flowCode)
-                .orElseThrow(() -> new IllegalArgumentException("주문 수정: " + NOT_FOUND));
-
-        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-
-        order.updateOrderNote(order.getOrderNote());
-        order.updateCreateDate(createAt);
-        order.updateShippingDate(shippingAt);
-        order.addPriority(priority);
-
-        // 스톤 값을 업데이트 (기존 그대로,추가,삭제)
-        List<OrderStone> orderStones = order.getOrderStones();
-        updateOrderStoneInfo(orderDto.getStoneInfos(), order, orderStones);
-
-        Long productId = Long.valueOf(orderDto.getProductId());
-        OrderUpdateRequest.OrderUpdateRequestBuilder updateRequestBuilder = OrderUpdateRequest.builder()
-                .eventId(UUID.randomUUID().toString())
-                .tenantId(tenantId)
-                .token(accessToken)
-                .orderStatus(orderStatus)
-                .flowCode(order.getFlowCode())
-                .nickname(nickname);
-
-        // orderProduct 추가
-        Long newProductId = Long.parseLong(orderDto.getProductId());
-        OrderProduct orderProduct = order.getOrderProduct();
-        if (newProductId.equals(productId)) {
-            orderProduct.updateOrderProductInfo(
-                    orderDto.getStoneWeight(),
-                    orderDto.getProductAddLaborCost(),
-                    orderDto.getMainStoneNote(),
-                    orderDto.getAssistanceStoneNote(),
-                    orderDto.getProductSize()
-            );
-        } else {
-            orderProduct.updateOrderProductInfo(
-                    productId,
-                    orderDto.getStoneWeight(),
-                    orderDto.getProductAddLaborCost(),
-                    orderDto.getMainStoneNote(),
-                    orderDto.getAssistanceStoneNote(),
-                    orderDto.getProductSize()
-            );
-            updateRequestBuilder.productId(productId);
-        }
-
-        ordersRepository.save(order);
+        // OrderCommandService로 위임
+        Orders order = orderCommandService.updateOrder(tenantId, accessToken, flowCode, orderStatus, orderDto, nickname);
 
         // statusHistory 추가
-        StatusHistory statusHistory = StatusHistory.phaseChange(
+        statusHistoryHelper.savePhaseChangeFromLast(
                 order.getFlowCode(),
-                lastHistory.getSourceType(),
-                BusinessPhase.valueOf(lastHistory.getToValue()),
                 BusinessPhase.UPDATE,
                 nickname
         );
-
-        statusHistoryRepository.save(statusHistory);
-
-        Long storeId = Long.valueOf(orderDto.getStoreId());
-        Long factoryId = Long.valueOf(orderDto.getFactoryId());
-        Long materialId = Long.valueOf(orderDto.getMaterialId());
-        Long colorId = Long.valueOf(orderDto.getColorId());
-        Long assistantId = Long.valueOf(orderDto.getAssistantStoneId());
-
-        if (!Objects.equals(storeId, order.getStoreId())) {
-            updateRequestBuilder.storeId(storeId);
-        }
-
-        if (!Objects.equals(factoryId, order.getFactoryId())) {
-            updateRequestBuilder.factoryId(factoryId);
-        }
-
-        if (!Objects.equals(materialId, orderProduct.getMaterialId())) {
-            updateRequestBuilder.materialId(materialId);
-        }
-
-        if (!Objects.equals(colorId, orderProduct.getColorId())) {
-            updateRequestBuilder.colorId(colorId);
-        }
-
-        boolean assistantStone = orderDto.isAssistantStone();
-        if (assistantStone) {
-            OffsetDateTime assistantStoneCreateAt = StringToOffsetDateTime(orderDto.getAssistantStoneCreateAt());
-             updateRequestBuilder
-                    .assistantStone(true)
-                    .assistantStoneId(assistantId)
-                    .assistantStoneCreateAt(assistantStoneCreateAt);
-        } else {
-           updateRequestBuilder
-                .assistantStone(false)
-                .assistantStoneId(assistantId)
-                .assistantStoneCreateAt(null);
-        }
-
-        try {
-            OutboxEvent outboxEvent = new OutboxEvent(
-                    "order.update.requested",
-                    order.getFlowCode().toString(),
-                    objectMapper.writeValueAsString(updateRequestBuilder.build()),
-                    "ORDER_UPDATE"
-            );
-
-            outboxEventRepository.save(outboxEvent);
-
-            log.info("주문 생성 및 Outbox 저장 완료. OrderFlowCode: {}, EventID: {}",
-                    order.getFlowCode(), outboxEvent.getId());
-
-            eventPublisher.publishEvent(new OutboxCreatedEvent(tenantId));
-
-        } catch (Exception e) {
-            log.error("Outbox 저장 실패. StockCode: {}", order.getFlowCode(), e);
-            throw new IllegalStateException("재고 생성 이벤트 저장 실패", e);
-        }
-
     }
 
     //주문 상태 조회 (주문, 취소)
@@ -465,7 +225,7 @@ public class OrdersService {
         if (existsByOrderIdAndOrderStatusIn) {
             return statusDtos;
         }
-        throw new IllegalArgumentException(NOT_FOUND);
+        throw new OrderNotFoundException(flowCode);
     }
 
     //주문 상태 변경
@@ -475,15 +235,15 @@ public class OrdersService {
                 ProductStatus.WAITING.name());
 
         if (!allowed.contains(status.toUpperCase())) {
-            throw new IllegalArgumentException("주문 상태를 변경할 수 없습니다.");
+            throw new InvalidOrderStatusException("주문 상태를 변경할 수 없습니다.");
         }
 
         long flowCode = Long.parseLong(id);
         Orders order = ordersRepository.findByFlowCode(flowCode)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+                .orElseThrow(() -> new OrderNotFoundException(flowCode));
 
         StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+                .orElseThrow(() -> new OrderNotFoundException(flowCode));
 
         OrderStatus currentOrderStatus = order.getOrderStatus();
         List<OrderStatus> allowedCurrentStatuses = Arrays.asList(
@@ -493,7 +253,7 @@ public class OrdersService {
         );
 
         if (!allowedCurrentStatuses.contains(currentOrderStatus)) {
-            throw new IllegalArgumentException("주문, 수리, 일반 주문만 변경할 수 있습니다.");
+            throw new InvalidOrderStatusException("주문, 수리, 일반 주문만 변경할 수 있습니다.");
         }
 
         ProductStatus newStatus = ProductStatus.valueOf(status.toUpperCase());
@@ -502,65 +262,53 @@ public class OrdersService {
         ordersRepository.save(order);
 
         // statusHistory 추가
-        StatusHistory statusHistory = StatusHistory.phaseChange(
+        statusHistoryHelper.savePhaseChangeFromLast(
                 order.getFlowCode(),
-                lastHistory.getSourceType(),
-                BusinessPhase.valueOf(lastHistory.getToValue()),
                 BusinessPhase.UPDATE,
                 jwtUtil.getNickname(accessToken)
         );
-
-        statusHistoryRepository.save(statusHistory);
     }
 
     //판매처 변경 -> account -> store 리스트 호출 /store/list
     public void updateOrderStore(String accessToken, String id, StoreDto.Request storeDto) {
         long flowCode = Long.parseLong(id);
         Orders order = ordersRepository.findByFlowCode(flowCode)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+                .orElseThrow(() -> new OrderNotFoundException(flowCode));
 
         StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+                .orElseThrow(() -> new OrderNotFoundException(flowCode));
 
         StoreDto.Response storeInfo = storeClient.getStoreInfo(accessToken, storeDto.getStoreId());
 
         order.updateStore(storeInfo);
 
         // statusHistory 추가
-        StatusHistory statusHistory = StatusHistory.phaseChange(
+        statusHistoryHelper.savePhaseChangeFromLast(
                 order.getFlowCode(),
-                lastHistory.getSourceType(),
-                BusinessPhase.valueOf(lastHistory.getToValue()),
                 BusinessPhase.UPDATE,
                 jwtUtil.getNickname(accessToken)
         );
-
-        statusHistoryRepository.save(statusHistory);
     }
 
     //제조사 변경 ->
     public void updateOrderFactory(String accessToken, String id, FactoryDto.Request factoryDto) {
         long flowCode = Long.parseLong(id);
         Orders order = ordersRepository.findByFlowCode(flowCode)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+                .orElseThrow(() -> new OrderNotFoundException(flowCode));
 
         StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+                .orElseThrow(() -> new OrderNotFoundException(flowCode));
 
         FactoryDto.Response factoryInfo = factoryClient.getFactoryInfo(accessToken, factoryDto.getFactoryId());
 
         order.updateFactory(factoryInfo.getFactoryId(), factoryInfo.getFactoryName());
 
         // statusHistory 추가
-        StatusHistory statusHistory = StatusHistory.phaseChange(
+        statusHistoryHelper.savePhaseChangeFromLast(
                 order.getFlowCode(),
-                lastHistory.getSourceType(),
-                BusinessPhase.valueOf(lastHistory.getToValue()),
                 BusinessPhase.UPDATE,
                 jwtUtil.getNickname(accessToken)
         );
-
-        statusHistoryRepository.save(statusHistory);
     }
 
     //출고일 변경
@@ -568,10 +316,10 @@ public class OrdersService {
 
         long flowCode = Long.parseLong(id);
         Orders order = ordersRepository.findByFlowCode(flowCode)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+                .orElseThrow(() -> new OrderNotFoundException(flowCode));
 
         StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+                .orElseThrow(() -> new OrderNotFoundException(flowCode));
 
         OffsetDateTime received = newDate.getDeliveryDate();
         OffsetDateTime receivedKst  = received.withOffsetSameInstant(ZoneOffset.ofHours(9));
@@ -579,10 +327,8 @@ public class OrdersService {
         order.updateShippingDate(receivedKst);
 
         // statusHistory 추가
-        StatusHistory statusHistory = StatusHistory.phaseChange(
+        statusHistoryHelper.savePhaseChangeFromLast(
                 order.getFlowCode(),
-                lastHistory.getSourceType(),
-                BusinessPhase.valueOf(lastHistory.getToValue()),
                 BusinessPhase.UPDATE,
                 jwtUtil.getNickname(accessToken)
         );
@@ -595,30 +341,17 @@ public class OrdersService {
         String nickname = jwtUtil.getNickname(accessToken);
         String role = jwtUtil.getRole(accessToken);
 
-        if (role.equals("ADMIN") || role.equals("USER")) {
-            Long flowCode = Long.valueOf(id);
-            Orders order = ordersRepository.findByFlowCode(flowCode)
-                    .orElseThrow(() -> new IllegalArgumentException("flowCode: " + NOT_FOUND));
+        Long flowCode = Long.valueOf(id);
 
-            order.updateOrderStatus(OrderStatus.DELETED);
+        // OrderCommandService로 위임 (권한 체크 포함)
+        orderCommandService.deleteOrder(flowCode, role);
 
-            StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
-                    .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-
-            StatusHistory statusHistory = StatusHistory.phaseChange(
-                    order.getFlowCode(),
-                    lastHistory.getSourceType(),
-                    BusinessPhase.valueOf(lastHistory.getToValue()),
-                    BusinessPhase.DELETED,
-                    nickname
-            );
-
-            order.deletedOrder(OffsetDateTime.now());
-            statusHistoryRepository.save(statusHistory);
-
-            return;
-        }
-        throw new IllegalArgumentException(NOT_ACCESS);
+        // statusHistory 추가
+        statusHistoryHelper.savePhaseChangeFromLast(
+                flowCode,
+                BusinessPhase.DELETED,
+                nickname
+        );
     }
 
     // 수리 예정 목록 출력
@@ -638,18 +371,28 @@ public class OrdersService {
 
         Map<Long, ProductImageDto> productImages = productClient.getProductImages(accessToken, productIds);
 
+        // N+1 문제 해결: 모든 flowCode에 대한 StatusHistory를 한 번에 조회
+        List<Long> flowCodes = fixOrders.stream()
+                .map(dto -> Long.valueOf(dto.getFlowCode()))
+                .toList();
+
+        List<StatusHistory> allHistories = statusHistoryRepository.findAllByFlowCodeInOrderByCreateAtAsc(flowCodes);
+
+        // flowCode별로 그룹핑
+        Map<Long, List<StatusHistory>> historyMap = allHistories.stream()
+                .collect(Collectors.groupingBy(StatusHistory::getFlowCode));
+
         List<OrderDto.Response> finalResponse = fixOrders.stream()
                 .map(queryDto -> {
                     ProductImageDto imageDto = productImages.get(queryDto.getProductId());
                     String imagePath = (imageDto != null) ? imageDto.getImagePath() : null;
 
-                    List<StatusHistory> statusHistories = statusHistoryRepository.findAllByFlowCodeOrderByCreateAtAsc(Long.valueOf(queryDto.getFlowCode()));
+                    Long flowCode = Long.valueOf(queryDto.getFlowCode());
+                    List<StatusHistory> statusHistories = historyMap.getOrDefault(flowCode, new ArrayList<>());
 
-                    List<StatusHistoryDto> statusHistoryDtos = new ArrayList<>();
-                    for (StatusHistory statusHistory : statusHistories) {
-                        StatusHistoryDto statusHistoryDto = new StatusHistoryDto(statusHistory.getPhase().getDisplayName(), statusHistory.getKind().getDisplayName(), statusHistory.getCreateAt(), statusHistory.getUserName());
-                        statusHistoryDtos.add(statusHistoryDto);
-                    }
+                    List<StatusHistoryDto> statusHistoryDtos = statusHistories.stream()
+                            .map(StatusHistory::toDto)
+                            .toList();
 
                     return OrderDto.Response.from(queryDto, imagePath, statusHistoryDtos);
                 })
@@ -675,18 +418,28 @@ public class OrdersService {
 
         Map<Long, ProductImageDto> productImages = productClient.getProductImages(accessToken, productIds);
 
+        // N+1 문제 해결: 모든 flowCode에 대한 StatusHistory를 한 번에 조회
+        List<Long> flowCodes = expectOrderPages.stream()
+                .map(dto -> Long.valueOf(dto.getFlowCode()))
+                .toList();
+
+        List<StatusHistory> allHistories = statusHistoryRepository.findAllByFlowCodeInOrderByCreateAtAsc(flowCodes);
+
+        // flowCode별로 그룹핑
+        Map<Long, List<StatusHistory>> historyMap = allHistories.stream()
+                .collect(Collectors.groupingBy(StatusHistory::getFlowCode));
+
         List<OrderDto.Response> finalResponse = expectOrderPages.stream()
                 .map(queryDto -> {
                     ProductImageDto imageDto = productImages.get(queryDto.getProductId());
                     String imagePath = (imageDto != null) ? imageDto.getImagePath() : null;
 
-                    List<StatusHistory> statusHistories = statusHistoryRepository.findAllByFlowCodeOrderByCreateAtAsc(Long.valueOf(queryDto.getFlowCode()));
+                    Long flowCode = Long.valueOf(queryDto.getFlowCode());
+                    List<StatusHistory> statusHistories = historyMap.getOrDefault(flowCode, new ArrayList<>());
 
-                    List<StatusHistoryDto> statusHistoryDtos = new ArrayList<>();
-                    for (StatusHistory statusHistory : statusHistories) {
-                        StatusHistoryDto statusHistoryDto = new StatusHistoryDto(statusHistory.getPhase().getDisplayName(), statusHistory.getKind().getDisplayName(), statusHistory.getCreateAt(), statusHistory.getUserName());
-                        statusHistoryDtos.add(statusHistoryDto);
-                    }
+                    List<StatusHistoryDto> statusHistoryDtos = statusHistories.stream()
+                            .map(StatusHistory::toDto)
+                            .toList();
 
                     return OrderDto.Response.from(queryDto, imagePath, statusHistoryDtos);
                 })
@@ -712,18 +465,28 @@ public class OrdersService {
 
         Map<Long, ProductImageDto> productImages = productClient.getProductImages(accessToken, productIds);
 
+        // N+1 문제 해결: 모든 flowCode에 대한 StatusHistory를 한 번에 조회
+        List<Long> flowCodes = expectOrderPages.stream()
+                .map(dto -> Long.valueOf(dto.getFlowCode()))
+                .toList();
+
+        List<StatusHistory> allHistories = statusHistoryRepository.findAllByFlowCodeInOrderByCreateAtAsc(flowCodes);
+
+        // flowCode별로 그룹핑
+        Map<Long, List<StatusHistory>> historyMap = allHistories.stream()
+                .collect(Collectors.groupingBy(StatusHistory::getFlowCode));
+
         List<OrderDto.Response> finalResponse = expectOrderPages.stream()
                 .map(queryDto -> {
                     ProductImageDto imageDto = productImages.get(queryDto.getProductId());
                     String imagePath = (imageDto != null) ? imageDto.getImagePath() : null;
 
-                    List<StatusHistory> statusHistories = statusHistoryRepository.findAllByFlowCodeOrderByCreateAtAsc(Long.valueOf(queryDto.getFlowCode()));
+                    Long flowCode = Long.valueOf(queryDto.getFlowCode());
+                    List<StatusHistory> statusHistories = historyMap.getOrDefault(flowCode, new ArrayList<>());
 
-                    List<StatusHistoryDto> statusHistoryDtos = new ArrayList<>();
-                    for (StatusHistory statusHistory : statusHistories) {
-                        StatusHistoryDto statusHistoryDto = new StatusHistoryDto(statusHistory.getPhase().getDisplayName(), statusHistory.getKind().getDisplayName(), statusHistory.getCreateAt(), statusHistory.getUserName());
-                        statusHistoryDtos.add(statusHistoryDto);
-                    }
+                    List<StatusHistoryDto> statusHistoryDtos = statusHistories.stream()
+                            .map(StatusHistory::toDto)
+                            .toList();
 
                     return OrderDto.Response.from(queryDto, imagePath, statusHistoryDtos);
                 })
@@ -782,22 +545,7 @@ public class OrdersService {
 
             OrderProduct orderProduct = order.getOrderProduct();
             List<OrderStone> orderStones = order.getOrderStones();
-
-            List<StoneDto.StoneInfo> stonesDtos = new ArrayList<>();
-            for (OrderStone orderStone : orderStones) {
-                StoneDto.StoneInfo stoneDto = new StoneDto.StoneInfo(
-                        orderStone.getOriginStoneId().toString(),
-                        orderStone.getOriginStoneName(),
-                        orderStone.getOriginStoneWeight().toPlainString(),
-                        orderStone.getStonePurchaseCost(),
-                        orderStone.getStoneLaborCost(),
-                        orderStone.getStoneAddLaborCost(),
-                        orderStone.getStoneQuantity(),
-                        orderStone.getMainStone(),
-                        orderStone.getIncludeStone()
-                );
-                stonesDtos.add(stoneDto);
-            }
+            List<StoneDto.StoneInfo> stonesDtos = toStoneDtoList(orderStones);
 
             StockDto.ResponseDetail orderDetail = StockDto.ResponseDetail.builder()
                     .createAt(order.getCreateAt().toString())

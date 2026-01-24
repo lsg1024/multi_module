@@ -1,5 +1,6 @@
 package com.msa.order.local.order.entity;
 
+import com.msa.order.global.dto.StatusHistoryDto;
 import com.msa.order.local.order.entity.order_enum.BusinessPhase;
 import com.msa.order.local.order.entity.order_enum.Kind;
 import com.msa.order.local.order.entity.order_enum.SourceType;
@@ -78,5 +79,20 @@ public class StatusHistory {
 
     public void updateFlowCode(Long newFlowCode) {
         this.flowCode = newFlowCode;
+    }
+
+    /**
+     * StatusHistory 엔티티를 StatusHistoryDto로 변환합니다.
+     * 중복 코드 제거를 위한 변환 메서드입니다.
+     *
+     * @return StatusHistoryDto 객체
+     */
+    public StatusHistoryDto toDto() {
+        return new StatusHistoryDto(
+                this.phase != null ? this.phase.getDisplayName() : null,
+                this.kind != null ? this.kind.getDisplayName() : null,
+                this.createAt,
+                this.userName
+        );
     }
 }
