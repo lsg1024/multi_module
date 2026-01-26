@@ -73,6 +73,7 @@ public class OrderDto {
         // 보조석
         private boolean assistantStone;
         private String assistantStoneId;
+        private String assistantStoneName;
         private String assistantStoneCreateAt;
 
         private String createAt;

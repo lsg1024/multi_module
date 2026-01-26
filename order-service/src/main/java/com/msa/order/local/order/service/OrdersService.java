@@ -25,6 +25,7 @@ import com.msa.order.local.order.entity.order_enum.SourceType;
 import com.msa.order.local.order.repository.CustomOrderRepository;
 import com.msa.order.local.order.repository.OrdersRepository;
 import com.msa.order.local.order.repository.StatusHistoryRepository;
+import com.msa.order.local.order.util.ChangeTracker;
 import com.msa.order.local.order.util.StatusHistoryHelper;
 import com.msa.order.local.outbox.repository.OutboxEventRepository;
 import com.msa.order.local.priority.repository.PriorityRepository;
@@ -41,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.msa.order.local.order.util.StoneUtil.toStoneDtoList;
@@ -146,12 +148,11 @@ public class OrdersService {
                 .distinct()
                 .toList();
 
-        Map<Long, ProductImageDto> productImages = productClient.getProductImages(accessToken, productIds);
-
-        // N+1 문제 해결: 모든 flowCode에 대한 StatusHistory를 한 번에 조회
         List<Long> flowCodes = queryDtos.stream()
                 .map(dto -> Long.valueOf(dto.getFlowCode()))
                 .toList();
+
+        Map<Long, ProductImageDto> productImages = productClient.getProductImages(accessToken, productIds);
 
         List<StatusHistory> allHistories = statusHistoryRepository.findAllByFlowCodeInOrderByCreateAtAsc(flowCodes);
 
@@ -180,6 +181,7 @@ public class OrdersService {
 
     //주문
     public void saveOrder(String accessToken, String orderStatus, OrderDto.Request orderDto) {
+        log.info("saveOrder = {}", orderStatus);
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = jwtUtil.getTenantId(accessToken);
 
@@ -191,6 +193,7 @@ public class OrdersService {
                 order.getFlowCode(),
                 SourceType.valueOf(orderStatus),
                 BusinessPhase.WAITING,
+                "주문 등록",
                 nickname
         );
     }
@@ -200,13 +203,41 @@ public class OrdersService {
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = TenantContext.getTenant();
 
-        // OrderCommandService로 위임
+        // 변경 전 값 저장
+        Orders beforeOrder = ordersRepository.findByFlowCode(flowCode)
+                .orElseThrow(() -> new OrderNotFoundException(flowCode));
+        OrderProduct beforeProduct = beforeOrder.getOrderProduct();
+
+        ChangeTracker tracker = new ChangeTracker("주문 수정");
+        tracker.track("주문일", beforeOrder.getCreateAt() != null ? beforeOrder.getCreateAt().toLocalDate().toString() : null,
+                      orderDto.getCreateAt() != null ? orderDto.getCreateAt().substring(0, 10) : null);
+        tracker.track("출고일", beforeOrder.getShippingAt() != null ? beforeOrder.getShippingAt().toLocalDate().toString() : null,
+                      orderDto.getShippingAt() != null ? orderDto.getShippingAt().substring(0, 10) : null);
+
+        tracker.track("사이즈", beforeProduct.getProductSize(), orderDto.getProductSize());
+        tracker.track("추가공임", beforeProduct.getProductAddLaborCost(), orderDto.getProductAddLaborCost());
+        tracker.track("스톤중량", beforeProduct.getStoneWeight(), orderDto.getStoneWeight());
+        tracker.track("메인스톤메모", beforeProduct.getOrderMainStoneNote(), orderDto.getMainStoneNote());
+        tracker.track("보조스톤메모", beforeProduct.getOrderAssistanceStoneNote(), orderDto.getAssistanceStoneNote());
+        tracker.track("등급", beforeOrder.getPriority() != null ? beforeOrder.getPriority().getPriorityName() : null, orderDto.getPriorityName());
+        tracker.track("주문메모", beforeOrder.getOrderNote(), orderDto.getOrderNote());
+        tracker.track("색상", beforeProduct.getColorName(), orderDto.getColorName());
+        tracker.track("재질", beforeProduct.getMaterialName(), orderDto.getMaterialName());
+
+        // 보조석 변경 추적
+        String beforeAssistantId = beforeProduct.getAssistantStoneId() != null ? beforeProduct.getAssistantStoneId().toString() : null;
+        if (!Objects.equals(beforeAssistantId, orderDto.getAssistantStoneId())) {
+            tracker.track("보조석", beforeProduct.getAssistantStoneName(), orderDto.getAssistantStoneName());
+        }
+
+        // OrderCommandService
         Orders order = orderCommandService.updateOrder(tenantId, accessToken, flowCode, orderStatus, orderDto, nickname);
 
-        // statusHistory 추가
+        // statusHistory
         statusHistoryHelper.savePhaseChangeFromLast(
                 order.getFlowCode(),
                 BusinessPhase.UPDATE,
+                tracker.buildContent(),
                 nickname
         );
     }
@@ -242,9 +273,6 @@ public class OrdersService {
         Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new OrderNotFoundException(flowCode));
 
-        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
-                .orElseThrow(() -> new OrderNotFoundException(flowCode));
-
         OrderStatus currentOrderStatus = order.getOrderStatus();
         List<OrderStatus> allowedCurrentStatuses = Arrays.asList(
                 OrderStatus.ORDER,
@@ -256,15 +284,20 @@ public class OrdersService {
             throw new InvalidOrderStatusException("주문, 수리, 일반 주문만 변경할 수 있습니다.");
         }
 
+        ProductStatus beforeStatus = order.getProductStatus();
         ProductStatus newStatus = ProductStatus.valueOf(status.toUpperCase());
         order.updateProductStatus(newStatus);
 
         ordersRepository.save(order);
 
-        // statusHistory 추가
+        // statusHistory 추가 (ChangeTracker 사용)
+        ChangeTracker tracker = new ChangeTracker("상태 변경");
+        tracker.track("상태", beforeStatus.getDisplayName(), newStatus.getDisplayName());
+
         statusHistoryHelper.savePhaseChangeFromLast(
                 order.getFlowCode(),
                 BusinessPhase.UPDATE,
+                tracker.buildContent(),
                 jwtUtil.getNickname(accessToken)
         );
     }
@@ -275,17 +308,20 @@ public class OrdersService {
         Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new OrderNotFoundException(flowCode));
 
-        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
-                .orElseThrow(() -> new OrderNotFoundException(flowCode));
+        String beforeStoreName = order.getStoreName();
 
         StoreDto.Response storeInfo = storeClient.getStoreInfo(accessToken, storeDto.getStoreId());
 
         order.updateStore(storeInfo);
 
-        // statusHistory 추가
+        // statusHistory 추가 (ChangeTracker 사용)
+        ChangeTracker tracker = new ChangeTracker("판매처 변경");
+        tracker.track("판매처", beforeStoreName, storeInfo.getStoreName());
+
         statusHistoryHelper.savePhaseChangeFromLast(
                 order.getFlowCode(),
                 BusinessPhase.UPDATE,
+                tracker.buildContent(),
                 jwtUtil.getNickname(accessToken)
         );
     }
@@ -296,17 +332,20 @@ public class OrdersService {
         Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new OrderNotFoundException(flowCode));
 
-        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
-                .orElseThrow(() -> new OrderNotFoundException(flowCode));
+        String beforeFactoryName = order.getFactoryName();
 
         FactoryDto.Response factoryInfo = factoryClient.getFactoryInfo(accessToken, factoryDto.getFactoryId());
 
         order.updateFactory(factoryInfo.getFactoryId(), factoryInfo.getFactoryName());
 
-        // statusHistory 추가
+        // statusHistory 추가 (ChangeTracker 사용)
+        ChangeTracker tracker = new ChangeTracker("제조사 변경");
+        tracker.track("제조사", beforeFactoryName, factoryInfo.getFactoryName());
+
         statusHistoryHelper.savePhaseChangeFromLast(
                 order.getFlowCode(),
                 BusinessPhase.UPDATE,
+                tracker.buildContent(),
                 jwtUtil.getNickname(accessToken)
         );
     }
@@ -318,18 +357,23 @@ public class OrdersService {
         Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new OrderNotFoundException(flowCode));
 
-        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(order.getFlowCode())
-                .orElseThrow(() -> new OrderNotFoundException(flowCode));
+        OffsetDateTime beforeShippingAt = order.getShippingAt();
 
         OffsetDateTime received = newDate.getDeliveryDate();
         OffsetDateTime receivedKst  = received.withOffsetSameInstant(ZoneOffset.ofHours(9));
 
         order.updateShippingDate(receivedKst);
 
-        // statusHistory 추가
+        // statusHistory 추가 (ChangeTracker 사용)
+        ChangeTracker tracker = new ChangeTracker("출고일 변경");
+        tracker.track("출고일",
+                beforeShippingAt != null ? beforeShippingAt.toLocalDate().toString() : null,
+                receivedKst.toLocalDate().toString());
+
         statusHistoryHelper.savePhaseChangeFromLast(
                 order.getFlowCode(),
                 BusinessPhase.UPDATE,
+                tracker.buildContent(),
                 jwtUtil.getNickname(accessToken)
         );
     }
@@ -350,6 +394,7 @@ public class OrdersService {
         statusHistoryHelper.savePhaseChangeFromLast(
                 flowCode,
                 BusinessPhase.DELETED,
+                "주문 삭제",
                 nickname
         );
     }

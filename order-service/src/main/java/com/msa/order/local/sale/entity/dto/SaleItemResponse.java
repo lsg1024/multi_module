@@ -1,5 +1,6 @@
 package com.msa.order.local.sale.entity.dto;
 
+import com.msa.order.global.dto.StatusHistoryDto;
 import com.msa.order.global.util.GoldUtils;
 import com.querydsl.core.annotations.QueryProjection;
 import lombok.Builder;
@@ -65,6 +66,7 @@ public class SaleItemResponse {
         private Integer stoneAddLaborCost;
         private Long mainStoneQuantity;
         private Long assistanceStoneQuantity;
+        private List<StatusHistoryDto> statusHistories;
 
         @QueryProjection
         public SaleItem(String createAt, String createBy, String saleType, String storeId, String storeName, String saleCode, String flowCode, String productName, String materialName, String colorName, String stockNote, String mainNote, String subNote, Boolean assistantStone, String assistantName, BigDecimal goldWeight, BigDecimal stoneWeight, BigDecimal harry, Integer productLabor, Integer productAddLabor, String assistantCreateAt, Long mainStoneLabor, Long asstStoneLabor, Integer stoneAddLabor, Long mainQty, Long asstQty) {
@@ -101,6 +103,10 @@ public class SaleItemResponse {
 
         public void updateImagePath(String imagePath) {
             this.imagePath = imagePath;
+        }
+
+        public void updateHistory(List<StatusHistoryDto> statusHistories) {
+            this.statusHistories = statusHistories;
         }
     }
 

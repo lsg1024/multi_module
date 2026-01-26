@@ -122,6 +122,14 @@ public class Stock extends BaseTimeEntity {
         this.order = null;
     }
 
+    /**
+     * Order 연결만 해제합니다. flowCode는 변경하지 않습니다.
+     * 삭제 시 statusHistory 분기를 위해 flowCode를 별도로 관리할 때 사용합니다.
+     */
+    public void unlinkOrder() {
+        this.order = null;
+    }
+
     public void addStockStone(OrderStone orderStone) {
         this.orderStones.add(orderStone);
         orderStone.setStock(this);

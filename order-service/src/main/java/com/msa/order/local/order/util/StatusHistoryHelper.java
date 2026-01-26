@@ -11,6 +11,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 import static com.msa.order.global.exception.ExceptionMessage.NOT_FOUND;
 
 /**
@@ -35,13 +37,14 @@ public class StatusHistoryHelper {
      * @return 저장된 StatusHistory
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public StatusHistory saveCreate(Long flowCode, SourceType sourceType, BusinessPhase phase, String nickname) {
+    public StatusHistory saveCreate(Long flowCode, SourceType sourceType, BusinessPhase phase, String content, String nickname) {
         StatusHistory statusHistory = StatusHistory.create(
                 flowCode,
                 sourceType,
                 phase,
                 Kind.CREATE,
-                nickname
+                nickname,
+                content
         );
 
         StatusHistory saved = statusHistoryRepository.save(statusHistory);
@@ -61,12 +64,13 @@ public class StatusHistoryHelper {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public StatusHistory savePhaseChange(Long flowCode, SourceType sourceType,
-                                        BusinessPhase fromPhase, BusinessPhase toPhase, String nickname) {
+                                        BusinessPhase fromPhase, BusinessPhase toPhase, String content, String nickname) {
         StatusHistory statusHistory = StatusHistory.phaseChange(
                 flowCode,
                 sourceType,
                 fromPhase,
                 toPhase,
+                content,
                 nickname
         );
 
@@ -85,7 +89,7 @@ public class StatusHistoryHelper {
      * @return 저장된 StatusHistory
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public StatusHistory savePhaseChangeFromLast(Long flowCode, BusinessPhase toPhase, String nickname) {
+    public StatusHistory savePhaseChangeFromLast(Long flowCode, BusinessPhase toPhase, String content, String nickname) {
         StatusHistory lastHistory = statusHistoryRepository
                 .findTopByFlowCodeOrderByIdDesc(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException("이전 상태 이력: " + NOT_FOUND));
@@ -95,7 +99,32 @@ public class StatusHistoryHelper {
                 lastHistory.getSourceType(),
                 BusinessPhase.valueOf(lastHistory.getToValue()),
                 toPhase,
+                content,
                 nickname
         );
+    }
+
+    /**
+     * 기존 flowCode의 모든 StatusHistory를 새로운 flowCode로 복사합니다.
+     * 삭제 시 분기점을 만들기 위해 사용됩니다.
+     *
+     * @param originalFlowCode 원본 flowCode
+     * @param newFlowCode      새로운 flowCode
+     * @return 복사된 StatusHistory 리스트
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public List<StatusHistory> copyAllHistories(Long originalFlowCode, Long newFlowCode) {
+        List<StatusHistory> originalHistories = statusHistoryRepository
+                .findAllByFlowCodeOrderByCreateAtAsc(originalFlowCode);
+
+        List<StatusHistory> copiedHistories = originalHistories.stream()
+                .map(history -> history.copyWithNewFlowCode(newFlowCode))
+                .toList();
+
+        List<StatusHistory> savedHistories = statusHistoryRepository.saveAll(copiedHistories);
+        log.debug("StatusHistory 복사 완료: originalFlowCode={}, newFlowCode={}, count={}",
+                originalFlowCode, newFlowCode, savedHistories.size());
+
+        return savedHistories;
     }
 }

@@ -40,6 +40,8 @@ public class StatusHistory {
     private String fromValue;
     @Column(name = "TO_VALUE")
     private String toValue;
+    @Column(name = "CONTENT", columnDefinition = "TEXT")
+    private String content;
     @Column(name = "CREATED_AT")
     private OffsetDateTime createAt;
     @Column(name = "USER_NAME")
@@ -51,7 +53,8 @@ public class StatusHistory {
     }
 
     public static StatusHistory create(Long flowCode, SourceType src,
-                                       BusinessPhase to, Kind kind, String userName) {
+                                       BusinessPhase to, Kind kind, String userName,
+                                       String content) {
         StatusHistory h = new StatusHistory();
         h.flowCode = flowCode;
         h.sourceType = src;
@@ -60,39 +63,53 @@ public class StatusHistory {
         h.toValue = to.name();
         h.kind = kind;
         h.userName = userName;
+        h.content = content;
         return h;
     }
     public static StatusHistory phaseChange(Long flowCode, SourceType src,
-                                            BusinessPhase from, BusinessPhase to, String userName) {
-        StatusHistory h = base(flowCode, src, Kind.UPDATE, userName);
+                                            BusinessPhase from, BusinessPhase to, String content, String userName) {
+        StatusHistory h = base(flowCode, src, Kind.UPDATE, content, userName);
         h.phase = to;
         h.fromValue = from != null ? from.name() : null;
         h.toValue = to.name();
         return h;
     }
 
-    protected static StatusHistory base(Long flow, SourceType src, Kind kind, String userName) {
+    protected static StatusHistory base(Long flow, SourceType src, Kind kind, String content, String userName) {
         StatusHistory h = new StatusHistory();
-        h.flowCode = flow; h.sourceType = src; h.kind = kind; h.userName = userName;
+        h.flowCode = flow; h.sourceType = src; h.kind = kind;
+        h.content = content;
+        h.userName = userName;
         return h;
     }
 
-    public void updateFlowCode(Long newFlowCode) {
-        this.flowCode = newFlowCode;
-    }
-
-    /**
-     * StatusHistory 엔티티를 StatusHistoryDto로 변환합니다.
-     * 중복 코드 제거를 위한 변환 메서드입니다.
-     *
-     * @return StatusHistoryDto 객체
-     */
     public StatusHistoryDto toDto() {
         return new StatusHistoryDto(
                 this.phase != null ? this.phase.getDisplayName() : null,
                 this.kind != null ? this.kind.getDisplayName() : null,
+                this.content,
                 this.createAt,
                 this.userName
         );
+    }
+
+    /**
+     * 새로운 flowCode로 StatusHistory를 복사합니다.
+     * 삭제 시 분기점을 만들기 위해 사용됩니다.
+     * @param newFlowCode 새로운 flowCode
+     * @return 복사된 StatusHistory (저장되지 않은 상태)
+     */
+    public StatusHistory copyWithNewFlowCode(Long newFlowCode) {
+        StatusHistory copy = new StatusHistory();
+        copy.flowCode = newFlowCode;
+        copy.sourceType = this.sourceType;
+        copy.phase = this.phase;
+        copy.kind = this.kind;
+        copy.fromValue = this.fromValue;
+        copy.toValue = this.toValue;
+        copy.content = this.content;
+        copy.createAt = this.createAt;
+        copy.userName = this.userName;
+        return copy;
     }
 }

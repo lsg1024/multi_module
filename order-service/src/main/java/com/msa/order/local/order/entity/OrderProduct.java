@@ -167,12 +167,9 @@ public class OrderProduct {
         if (colorName != null) {
             this.colorName = colorName;
         }
+        // 보조석 관련 - assistantStone 플래그와 관계없이 값이 있으면 설정
         if (isAssistantStone != null) {
             this.assistantStone = isAssistantStone;
-            if (!isAssistantStone) {
-                this.assistantStoneName = null;
-                this.assistantStoneCreateAt = null;
-            }
         }
         if (assistantStoneId != null) {
             this.assistantStoneId = assistantStoneId;

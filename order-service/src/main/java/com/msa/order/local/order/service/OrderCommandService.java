@@ -161,7 +161,7 @@ public class OrderCommandService {
         Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException("주문 수정: " + NOT_FOUND));
 
-        order.updateOrderNote(order.getOrderNote());
+        order.updateOrderNote(orderDto.getOrderNote());
         order.updateCreateDate(createAt);
         order.updateShippingDate(shippingAt);
         order.addPriority(priority);
@@ -241,12 +241,10 @@ public class OrderCommandService {
                 .assistantStoneId(assistantId)
                 .orderStatus(orderStatus);
 
-        if (orderDto.isAssistantStone()) {
+        // 보조석 관련 - assistantStone 플래그와 관계없이 값이 있으면 설정
+        if (orderDto.getAssistantStoneCreateAt() != null && !orderDto.getAssistantStoneCreateAt().isEmpty()) {
             OffsetDateTime assistantStoneCreateAt = StringToOffsetDateTime(orderDto.getAssistantStoneCreateAt());
-            orderAsyncRequestedBuilder
-                    .assistantStone(assistantStone)
-                    .assistantStoneId(assistantId)
-                    .assistantStoneCreateAt(assistantStoneCreateAt);
+            orderAsyncRequestedBuilder.assistantStoneCreateAt(assistantStoneCreateAt);
         }
 
         try {
@@ -318,19 +316,15 @@ public class OrderCommandService {
             updateRequestBuilder.colorId(colorId);
         }
 
-        // assistantStone 처리
+        // assistantStone 처리 - 플래그와 관계없이 값이 있으면 설정
         boolean assistantStone = orderDto.isAssistantStone();
-        if (assistantStone) {
+        updateRequestBuilder
+                .assistantStone(assistantStone)
+                .assistantStoneId(assistantId);
+
+        if (orderDto.getAssistantStoneCreateAt() != null && !orderDto.getAssistantStoneCreateAt().isEmpty()) {
             OffsetDateTime assistantStoneCreateAt = StringToOffsetDateTime(orderDto.getAssistantStoneCreateAt());
-            updateRequestBuilder
-                    .assistantStone(true)
-                    .assistantStoneId(assistantId)
-                    .assistantStoneCreateAt(assistantStoneCreateAt);
-        } else {
-            updateRequestBuilder
-                    .assistantStone(false)
-                    .assistantStoneId(assistantId)
-                    .assistantStoneCreateAt(null);
+            updateRequestBuilder.assistantStoneCreateAt(assistantStoneCreateAt);
         }
 
         try {

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.util.CustomPage;
 import com.msa.order.global.dto.OutboxCreatedEvent;
+import com.msa.order.global.dto.StatusHistoryDto;
 import com.msa.order.global.dto.StoneDto;
 import com.msa.order.global.feign_client.client.AssistantStoneClient;
 import com.msa.order.global.feign_client.dto.AssistantStoneDto;
@@ -20,6 +21,7 @@ import com.msa.order.local.order.entity.order_enum.ProductStatus;
 import com.msa.order.local.order.entity.order_enum.SourceType;
 import com.msa.order.local.order.repository.OrdersRepository;
 import com.msa.order.local.order.repository.StatusHistoryRepository;
+import com.msa.order.local.order.util.ChangeTracker;
 import com.msa.order.local.order.util.StatusHistoryHelper;
 import com.msa.order.local.outbox.domain.entity.OutboxEvent;
 import com.msa.order.local.outbox.repository.OutboxEventRepository;
@@ -40,9 +42,8 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.msa.order.global.exception.ExceptionMessage.*;
 import static com.msa.order.global.util.DateConversionUtil.StringToOffsetDateTime;
@@ -137,7 +138,32 @@ public class StockService {
         OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
         StockDto.StockCondition condition = new StockDto.StockCondition(startAt, endAt, optionCondition, sortCondition, orderStatus);
 
-        return customStockRepository.findByStockProducts(inputCondition, condition, pageable);
+        CustomPage<StockDto.Response> stockDtoPage = customStockRepository.findByStockProducts(inputCondition, condition, pageable);
+
+        List<StockDto.Response> content = stockDtoPage.getContent();
+
+        List<Long> flowCodes = content.stream()
+                .map(dto -> Long.valueOf(dto.getFlowCode()))
+                .toList();
+
+        List<StatusHistory> allHistories = statusHistoryRepository.findAllByFlowCodeInOrderByCreateAtAsc(flowCodes);
+
+        Map<Long, List<StatusHistory>> historyMap = allHistories.stream()
+                .collect(Collectors.groupingBy(StatusHistory::getFlowCode));
+
+        content
+                .forEach(dto -> {
+                    Long flowCode = Long.valueOf(dto.getFlowCode());
+                    List<StatusHistory> statusHistories = historyMap.getOrDefault(flowCode, new ArrayList<>());
+
+                    List<StatusHistoryDto> statusHistoryDtos = statusHistories.stream()
+                            .map(StatusHistory::toDto)
+                            .toList();
+
+                    dto.updateHistory(statusHistoryDtos);
+                });
+
+        return stockDtoPage;
     }
 
     @Transactional(readOnly = true)
@@ -164,28 +190,55 @@ public class StockService {
         Stock stock = stockRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new StockNotFoundException(flowCode));
 
+        // 변경 전 값 저장
+        ChangeTracker tracker = new ChangeTracker("재고 수정");
+        ProductSnapshot product = stock.getProduct();
+
+        // 사이즈/중량 변경 추적
+        tracker.track("사이즈", product.getSize(), updateStock.getProductSize());
+        tracker.track("금중량", product.getGoldWeight(), new BigDecimal(updateStock.getGoldWeight()));
+        tracker.track("스톤중량", product.getStoneWeight(), new BigDecimal(updateStock.getStoneWeight()));
+
+        // 비용 관련 변경 추적
+        tracker.track("매입비용", product.getProductPurchaseCost(), updateStock.getProductPurchaseCost());
+        tracker.track("공임비", product.getProductLaborCost(), updateStock.getProductLaborCost());
+        tracker.track("추가공임", product.getProductAddLaborCost(), updateStock.getProductAddLaborCost());
+        tracker.track("스톤추가공임", stock.getStoneAddLaborCost(), updateStock.getStoneAddLaborCost());
+
+        // 메모 관련 변경 추적
+        tracker.track("메인스톤메모", stock.getStockMainStoneNote(), updateStock.getMainStoneNote());
+        tracker.track("보조스톤메모", stock.getStockAssistanceStoneNote(), updateStock.getAssistanceStoneNote());
+        tracker.track("재고메모", stock.getStockNote(), updateStock.getStockNote());
+
+        // 보조석 변경 추적 (ID로 비교, 이름으로 표시)
+        Long assistantId = Long.valueOf(updateStock.getAssistantStoneId());
+        if (!product.getAssistantStoneId().equals(assistantId)) {
+            tracker.track("보조석", product.getAssistantStoneName(), updateStock.getAssistantStoneName());
+        }
+
+        // 실제 업데이트 수행
         stock.updateStockNote(updateStock.getMainStoneNote(), updateStock.getAssistanceStoneNote(), updateStock.getStockNote());
-        stock.getProduct().updateProductCost(updateStock.getProductPurchaseCost(), updateStock.getProductLaborCost(), updateStock.getProductAddLaborCost());
-        stock.getProduct().updateProductWeightAndSize(updateStock.getProductSize(), new BigDecimal(updateStock.getGoldWeight()), new BigDecimal(updateStock.getStoneWeight()));
+        product.updateProductCost(updateStock.getProductPurchaseCost(), updateStock.getProductLaborCost(), updateStock.getProductAddLaborCost());
+        product.updateProductWeightAndSize(updateStock.getProductSize(), new BigDecimal(updateStock.getGoldWeight()), new BigDecimal(updateStock.getStoneWeight()));
 
         int[] countStoneCost = countStoneCost(stock.getOrderStones());
         stock.updateStoneCost(countStoneCost[0], countStoneCost[1], countStoneCost[2], countStoneCost[3], updateStock.getStoneAddLaborCost());
 
-        Long assistantId = Long.valueOf(updateStock.getAssistantStoneId());
-        if (!stock.getProduct().getAssistantStoneId().equals(assistantId)) {
+        if (!product.getAssistantStoneId().equals(assistantId)) {
             OffsetDateTime assistantStoneCreateAt = null;
             if (StringUtils.hasText(updateStock.getAssistantStoneCreateAt())) {
                 assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(updateStock.getAssistantStoneCreateAt());
             }
-            stock.getProduct().updateAssistantStone(updateStock.isAssistantStone(), assistantId, updateStock.getAssistantStoneName(), assistantStoneCreateAt);
+            product.updateAssistantStone(updateStock.isAssistantStone(), assistantId, updateStock.getAssistantStoneName(), assistantStoneCreateAt);
         }
 
         updateStockStoneInfo(updateStock.getStoneInfos(), stock);
 
-        // statusHistory 추가
+        // statusHistory 추가 (변경 내용 포함)
         statusHistoryHelper.savePhaseChangeFromLast(
                 stock.getFlowCode(),
                 BusinessPhase.STOCK,
+                tracker.buildContent(),
                 nickname
         );
     }
@@ -273,6 +326,7 @@ public class StockService {
         statusHistoryHelper.savePhaseChangeFromLast(
                 order.getFlowCode(),
                 BusinessPhase.valueOf(orderType),
+                "재고 등록",
                 nickname
         );
     }
@@ -359,6 +413,7 @@ public class StockService {
                 stock.getStockCode(),
                 SourceType.valueOf(orderType),
                 BusinessPhase.WAITING,
+                "재고 등록",
                 nickname
         );
 
@@ -417,10 +472,6 @@ public class StockService {
             throw new IllegalArgumentException("일반 또는 재고 상태의 상품만 대여로 전환할 수 있습니다. (시리얼: " + stock.getFlowCode() + ")");
         }
 
-        StatusHistory beforeStatusHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(stock.getFlowCode())
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-
-
         updateStockStoneInfo(stockRentalDto.getStoneInfos(), stock);
 
         int[] countStoneCost = updateStoneCosts(stockRentalDto.getStoneInfos());
@@ -430,42 +481,50 @@ public class StockService {
         statusHistoryHelper.savePhaseChangeFromLast(
                 stock.getFlowCode(),
                 BusinessPhase.RENTAL,
+                "재고 대여",
                 nickname
         );
 
     }
 
     // 재고 -> 주문 (삭제)
+    // 삭제 시 statusHistory를 분기하여 삭제 재고와 주문 제품 모두 이력을 유지합니다.
     public void stockToDelete(String accessToken, Long flowCode) {
         String nickname = jwtUtil.getNickname(accessToken);
         Stock stock = stockRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new StockNotFoundException(flowCode));
 
-        Long beforeFlowCode = stock.getFlowCode();
+        Long originalFlowCode = stock.getFlowCode();
 
+        // 마지막 상태 이력 조회 (삭제 이력 추가를 위해)
+        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(originalFlowCode)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        // 삭제 재고용 신규 flowCode 생성
+        stock.updateFlowCode();
+        Long newDeletedFlowCode = stock.getFlowCode();
+
+        statusHistoryHelper.copyAllHistories(originalFlowCode, newDeletedFlowCode);
+
+        // 삭제 재고에 삭제 이력 추가
+        statusHistoryHelper.savePhaseChange(
+                newDeletedFlowCode,
+                lastHistory.getSourceType(),
+                BusinessPhase.valueOf(lastHistory.getToValue()),
+                BusinessPhase.DELETED,
+                "재고 삭제",
+                nickname
+        );
+
+        // Order 연결 해제 및 상태 업데이트 (Order는 기존 flowCode 유지)
         Orders associatedOrder = stock.getOrder();
         if (associatedOrder != null) {
             associatedOrder.updateProductStatus(ProductStatus.WAITING);
             associatedOrder.updateOrderStatus(OrderStatus.ORDER);
         }
 
-        stock.removeOrder();
+        stock.unlinkOrder();
         stock.updateOrderStatus(OrderStatus.DELETED);
-
-        // 추후 예상되는 문제 다른 flowCode로 저장하기에 흐름이 끊김 flowCode와 stockCode 분리된 점을 이용하면 해결가능할지도?
-        stock.updateFlowCode();
-
-        StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(beforeFlowCode)
-                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-
-        // statusHistory 추가 (flowCode가 변경되므로 savePhaseChange 사용)
-        statusHistoryHelper.savePhaseChange(
-                stock.getFlowCode(),
-                lastHistory.getSourceType(),
-                BusinessPhase.valueOf(lastHistory.getToValue()),
-                BusinessPhase.DELETED,
-                nickname
-        );
     }
 
     // 대여 -> 반납
@@ -485,6 +544,7 @@ public class StockService {
         statusHistoryHelper.savePhaseChangeFromLast(
                 stock.getFlowCode(),
                 BusinessPhase.RETURN,
+                "대여 반납",
                 nickname
         );
     }
@@ -507,6 +567,7 @@ public class StockService {
         statusHistoryHelper.savePhaseChangeFromLast(
                 stock.getFlowCode(),
                 BusinessPhase.STOCK,
+                "반납 재고",
                 nickname
         );
     }
