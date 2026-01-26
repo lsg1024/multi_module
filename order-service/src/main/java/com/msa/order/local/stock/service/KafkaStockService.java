@@ -145,22 +145,13 @@ public class KafkaStockService {
             stock.updateOrderStatus(OrderStatus.STOCK);
             stockRepository.save(stock);
 
-            statusHistory = StatusHistory.phaseChange(
-                    stock.getFlowCode(),
-                    lastHistory.getSourceType(),
-                    BusinessPhase.valueOf(lastHistory.getToValue()),
-                    BusinessPhase.STOCK,
-                    stockDto.getNickname()
-            );
-
-            statusHistoryRepository.save(statusHistory);
-
         } catch (Exception e) {
             statusHistory = StatusHistory.phaseChange(
                     stock.getFlowCode(),
                     lastHistory.getSourceType(),
                     BusinessPhase.valueOf(lastHistory.getToValue()),
                     BusinessPhase.FAIL,
+                    "재고 등록 실패",
                     stockDto.getNickname()
             );
 

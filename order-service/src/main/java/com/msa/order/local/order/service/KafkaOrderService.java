@@ -119,21 +119,14 @@ public class KafkaOrderService {
                         latestProductInfo.getSetTypeName());
             }
 
+            // 보조석 정보 업데이트 - assistantStone 플래그와 관계없이 값이 있으면 설정
             AssistantStoneDto.Response assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(token, evt.getAssistantStoneId());
-            if (evt.isAssistantStone()) {
-                orderProduct.updateOrderProductAssistantStone(
-                        true,
-                        assistantStoneInfo.getAssistantStoneId(),
-                        assistantStoneInfo.getAssistantStoneName(),
-                        evt.getAssistantStoneCreateAt()
-                );
-            } else {
-                orderProduct.updateOrderProductAssistantStoneFail(
-                        false,
-                        assistantStoneInfo.getAssistantStoneId(),
-                        assistantStoneInfo.getAssistantStoneName()
-                );
-            }
+            orderProduct.updateOrderProductAssistantStone(
+                    evt.isAssistantStone(),
+                    assistantStoneInfo.getAssistantStoneId(),
+                    assistantStoneInfo.getAssistantStoneName(),
+                    evt.getAssistantStoneCreateAt()
+            );
 
             List<Long> stoneIds = evt.getStoneIds();
             for (Long stoneId : stoneIds) {
@@ -145,21 +138,13 @@ public class KafkaOrderService {
             order.updateOrderStatus(OrderStatus.valueOf(evt.getOrderStatus()));
             ordersRepository.save(order);
 
-            statusHistory = StatusHistory.phaseChange(
-                    order.getFlowCode(),
-                    lastHistory.getSourceType(),
-                    BusinessPhase.valueOf(lastHistory.getToValue()),
-                    BusinessPhase.valueOf(evt.getOrderStatus()),
-                    evt.getNickname()
-            );
-            statusHistoryRepository.save(statusHistory);
-
         } catch (Exception e) {
             statusHistory = StatusHistory.phaseChange(
                     order.getFlowCode(),
                     lastHistory.getSourceType(),
                     BusinessPhase.valueOf(lastHistory.getToValue()),
                     BusinessPhase.valueOf(evt.getOrderStatus()),
+                    "재고 등록 실패",
                     evt.getNickname()
             );
             statusHistoryRepository.save(statusHistory);
@@ -224,8 +209,9 @@ public class KafkaOrderService {
                 productInfo = productClient.getProductInfo(token, targetProductId, targetGrade);
             }
 
+            // 보조석 정보 조회 - assistantStone 플래그와 관계없이 assistantStoneId가 있으면 조회
             AssistantStoneDto.Response assistantStoneInfo = null;
-            if (updateRequest.isAssistantStone() && updateRequest.getAssistantStoneId() != null) {
+            if (updateRequest.getAssistantStoneId() != null) {
                 assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(token, updateRequest.getAssistantStoneId());
             }
 
@@ -250,15 +236,6 @@ public class KafkaOrderService {
 
             ordersRepository.save(order);
 
-            statusHistory = StatusHistory.phaseChange(
-                    order.getFlowCode(),
-                    lastHistory.getSourceType(),
-                    BusinessPhase.valueOf(lastHistory.getToValue()),
-                    BusinessPhase.ORDER,
-                    updateRequest.getNickname()
-            );
-            statusHistoryRepository.save(statusHistory);
-
         } catch (Exception e) {
             log.error("Async failed. orderId={}, err={}", updateRequest.getFlowCode(), e.getMessage(), e);
             order.updateProductStatus(ProductStatus.CHANG_FAILED);
@@ -268,6 +245,7 @@ public class KafkaOrderService {
                     lastHistory.getSourceType(),
                     lastHistory.getPhase(),
                     BusinessPhase.FAIL,
+                    "주문 수정 실패",
                     updateRequest.getNickname()
             );
 

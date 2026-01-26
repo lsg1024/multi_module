@@ -24,4 +24,5 @@ public class OutboxEventListener {
             log.error("Redis 작업 알림 추가 실패: {}", event.tenantId(), e);
         }
     }
+
 }

@@ -1,9 +1,13 @@
 package com.msa.product.local.goldPrice.service;
 
+import com.msa.product.local.goldPrice.dto.GoldDto;
 import com.msa.product.local.goldPrice.entity.Gold;
 import com.msa.product.local.goldPrice.repository.GoldRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.msa.product.global.exception.ExceptionMessage.NOT_FOUND;
 
@@ -23,6 +27,19 @@ public class GoldService {
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         return gold.getGoldPrice();
+    }
+
+    @Transactional(readOnly = true)
+    public List<GoldDto> getGoldPrices() {
+        List<Gold> allByOrderByCreateDateDesc = goldRepository.findAllByOrderByCreateDateDesc();
+
+        List<GoldDto> goldDtos = new ArrayList<>();
+        for (Gold gold : allByOrderByCreateDateDesc) {
+            GoldDto goldDto = new GoldDto(gold.getGoldPrice(), gold.getCreateDate().toString());
+            goldDtos.add(goldDto);
+        }
+
+        return goldDtos;
     }
 
     public void createGoldPrice(Integer newGoldPrice) {

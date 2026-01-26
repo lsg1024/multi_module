@@ -46,12 +46,15 @@ spring:
 
 logging:
   level:
-    org.hibernate.SQL: debug
-    org.hibernate.orm.jdbc.bind: trace
+    org.hibernate.SQL: WARN
+    org.hibernate.orm.jdbc.bind: WARN
+    com.msa.common.global.db: WARN
     org.springframework.kafka.retrytopic: debug
     org.apache.kafka.clients.consumer: WARN
     org.apache.kafka.clients.NetworkClient: WARN
     org.springframework.kafka: WARN
+    com.msa.order.local.outbox.redis.OutboxRelayService: WARN
+    com.msa.order.global.util.OutboxEventScheduler: WARN
 
 management:
   endpoints:

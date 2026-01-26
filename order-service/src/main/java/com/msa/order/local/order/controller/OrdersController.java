@@ -97,18 +97,20 @@ public class OrdersController {
     // 주문 상태 변경
     @PatchMapping("/orders/status")
     public ResponseEntity<ApiResponse<String>> updateProductStatus(
+            @AccessToken String accessToken,
             @RequestParam String id,
             @RequestParam(name = "status") String productStatus) {
-        ordersService.updateOrderStatus(id, productStatus);
+        ordersService.updateOrderStatus(accessToken, id, productStatus);
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
 
     // 출고일 변경
     @PatchMapping("/orders/delivery-date")
     public ResponseEntity<ApiResponse<String>> updateOrderDeliveryDate(
+            @AccessToken String accessToken,
             @RequestParam String id,
             @RequestBody DateDto updateDate) {
-        ordersService.updateOrderDeliveryDate(id, updateDate);
+        ordersService.updateOrderDeliveryDate(accessToken, id, updateDate);
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
 

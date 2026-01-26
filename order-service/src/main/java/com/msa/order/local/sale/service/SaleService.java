@@ -6,6 +6,7 @@ import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.util.CustomPage;
 import com.msa.order.global.dto.OutboxCreatedEvent;
+import com.msa.order.global.dto.StatusHistoryDto;
 import com.msa.order.global.dto.StoneDto;
 import com.msa.order.global.feign_client.client.ProductClient;
 import com.msa.order.global.feign_client.client.StoreClient;
@@ -187,15 +188,40 @@ public class SaleService {
     @Transactional(readOnly = true)
     public CustomPage<SaleItemResponse.SaleItem> getSale(String input, String startAt, String endAt, String material, Pageable pageable) {
         SaleDto.Condition condition = new SaleDto.Condition(input, startAt, endAt, material);
-        return customSaleRepository.findSales(condition, pageable);
+        CustomPage<SaleItemResponse.SaleItem> sales = customSaleRepository.findSales(condition, pageable);
+
+        List<Long> flowCodes = sales.stream()
+                .map(dto -> Long.valueOf(dto.getFlowCode()))
+                .toList();
+
+        List<StatusHistory> allHistories = statusHistoryRepository.findAllByFlowCodeInOrderByCreateAtAsc(flowCodes);
+
+        Map<Long, List<StatusHistory>> historyMap = allHistories.stream()
+                .collect(Collectors.groupingBy(StatusHistory::getFlowCode));
+
+        List<SaleItemResponse.SaleItem> content = sales.getContent();
+
+        content
+                .forEach(dto -> {
+                    Long flowCode = Long.valueOf(dto.getFlowCode());
+                    List<StatusHistory> statusHistories = historyMap.getOrDefault(flowCode, new ArrayList<>());
+
+                    List<StatusHistoryDto> statusHistoryDtos = statusHistories.stream()
+                            .map(StatusHistory::toDto)
+                            .toList();
+
+                    dto.updateHistory(statusHistoryDtos);
+                });
+
+        return sales;
     }
 
     /**
      * 판매 상품 수정
      * @param accessToken
-     * @param eventId
-     * @param flowCode
-     * @param updateDto
+     * @param eventId 판매번호
+     * @param flowCode 생성번호
+     * @param updateDto 판매정보
      */
     public void updateSale(String accessToken, String eventId, Long flowCode, SaleDto.updateRequest updateDto) {
         String tenantId = jwtUtil.getTenantId(accessToken);
@@ -302,7 +328,7 @@ public class SaleService {
         product.updateProductAddCost(stockDto.getAddProductLaborCost());
         product.updateProductWeightAndSize(stockDto.getProductSize(), new BigDecimal(stockDto.getGoldWeight()), new BigDecimal(stockDto.getStoneWeight()));
 
-        updateNewHistory(stock.getFlowCode(), nickname, BusinessPhase.SALE);
+        updateNewHistory(stock.getFlowCode(), nickname, BusinessPhase.SALE, "판매 등록");
 
         BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), product.getMaterialName().toUpperCase(), storeHarry);
         Integer totalBalanceMoney = stock.getTotalStoneLaborCost() + stockDto.getStoneAddLaborCost() +
@@ -338,7 +364,7 @@ public class SaleService {
         Sale sale = createOrAddToSale(stock, transactionDate, storeId, storeName, storeHarry, grade, createNewSheet);
         stock.updateOrderStatus(OrderStatus.SALE);
 
-        updateNewHistory(stock.getFlowCode(), nickname, BusinessPhase.SALE);
+        updateNewHistory(stock.getFlowCode(), nickname, BusinessPhase.SALE, "판매 등록");
 
         BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), stockDto.getMaterialName().toUpperCase(), storeHarry);
         Integer totalBalanceMoney = stock.getTotalStoneLaborCost() + stockDto.getStoneAddLaborCost() +
@@ -399,7 +425,7 @@ public class SaleService {
 
             int totalLaborCost = productLaborCost + productAddLaborCost + totalStoneLaborCost + stoneAddLaborCost;
 
-            updateNewHistory(newFlowCode, nickname, BusinessPhase.RETURN);
+            updateNewHistory(newFlowCode, nickname, BusinessPhase.RETURN, "판매 취소");
             // 미수액 변경
             LocalDateTime lastModifiedDate = sale.getCreateDate();
             publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.RETURN.name(), "STORE", storeId, storeName, materialName, pureGoldWeight.negate(), totalLaborCost * -1, lastModifiedDate);
@@ -481,7 +507,7 @@ public class SaleService {
         product.updateProductAddCost(updateDto.getProductAddLaborCost());
         product.updateProductWeightAndSize(updateDto.getProductSize(), new BigDecimal(updateDto.getGoldWeight()), new BigDecimal(updateDto.getStoneWeight()));
 
-        updateNewHistory(flowCode, nickname, BusinessPhase.SALE);
+        updateNewHistory(flowCode, nickname, BusinessPhase.SALE, "판매 수정");
 
         int newTotalMoney = stock.getTotalStoneLaborCost() +
                 stock.getStoneAddLaborCost() +
@@ -525,7 +551,8 @@ public class SaleService {
             OutboxEvent outboxEvent = new OutboxEvent(
                     "current-balance-update",
                     accountId.toString(),
-                    payload
+                    payload,
+                    "STOCK_CREATED"
             );
 
             outboxEventRepository.save(outboxEvent);
@@ -631,7 +658,7 @@ public class SaleService {
                 .build();
     }
 
-    private void updateNewHistory(Long flowCode, String nickname, BusinessPhase businessPhase) {
+    private void updateNewHistory(Long flowCode, String nickname, BusinessPhase businessPhase, String content) {
         StatusHistory lastHistory = statusHistoryRepository.findTopByFlowCodeOrderByIdDesc(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
@@ -640,6 +667,7 @@ public class SaleService {
                 lastHistory.getSourceType(),
                 BusinessPhase.valueOf(lastHistory.getToValue()),
                 businessPhase,
+                content,
                 nickname
         );
 

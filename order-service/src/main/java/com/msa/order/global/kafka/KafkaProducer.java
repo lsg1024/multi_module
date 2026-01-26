@@ -2,9 +2,6 @@ package com.msa.order.global.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.msa.order.global.kafka.dto.KafkaStockRequest;
-import com.msa.order.global.kafka.dto.OrderAsyncRequested;
-import com.msa.order.global.kafka.dto.OrderUpdateRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
@@ -12,6 +9,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Slf4j
 @Service
@@ -25,75 +24,48 @@ public class KafkaProducer {
         this.objectMapper = objectMapper;
     }
 
-    public void orderSave(OrderAsyncRequested evt) {
-        String key = String.valueOf(evt.getFlowCode());
+    public void sendSync(String topic, String key, String payload) {
+        try {
+            kafkaTemplate.send(topic, key, payload)
+                    .get(5, TimeUnit.SECONDS);
 
+            log.debug("Kafka 동기 전송 성공. topic={}, key={}", topic, key);
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Kafka 전송 중단됨: " + e.getMessage(), e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException("Kafka 전송 실패: " + e.getCause().getMessage(), e.getCause());
+        } catch (TimeoutException e) {
+            throw new RuntimeException("Kafka 전송 타임아웃 (5초 초과)", e);
+        }
+    }
+
+    private void sendAsync(String topic, Object evt) {
         try {
             String payload = objectMapper.writeValueAsString(evt);
-            kafkaTemplate.send("order.async.requested", key, payload)
-                    .whenComplete((res, ex) -> {
+            String key = extractKey(evt);
+
+            kafkaTemplate.send(topic, key, payload)
+                    .whenComplete((result, ex) -> {
                         if (ex != null) {
-                            log.error("kafka send failed. topic= {}, key= {}, err= {}",
-                                    "order.enrichment.requested", key, ex.getMessage());
+                            log.error("Kafka 비동기 전송 실패. topic={}, key={}, err={}",
+                                    topic, key, ex.getMessage());
                         } else {
-                            log.info("Kafka sent. topic={}, key={}, partition={}, offset={}",
-                                    res.getRecordMetadata().topic(),
-                                    res.getProducerRecord().key(),
-                                    res.getRecordMetadata().partition(),
-                                    res.getRecordMetadata().offset());
+                            log.info("Kafka 비동기 전송 성공. topic={}, key={}, partition={}, offset={}",
+                                    result.getRecordMetadata().topic(),
+                                    result.getProducerRecord().key(),
+                                    result.getRecordMetadata().partition(),
+                                    result.getRecordMetadata().offset());
                         }
                     });
-
         } catch (JsonProcessingException e) {
-            throw new IllegalStateException("이벤트 직렬화 실패", e);
+            throw new IllegalStateException("이벤트 직렬화 실패: " + e.getMessage(), e);
         }
     }
 
-    public void orderUpdate(OrderUpdateRequest orderUpdateRequest) {
-        String key = String.valueOf(orderUpdateRequest.getFlowCode());
-
-        try {
-            String payload = objectMapper.writeValueAsString(orderUpdateRequest);
-            kafkaTemplate.send("order.update.requested", key, payload)
-                    .whenComplete((res, ex) -> {
-                        if (ex != null) {
-                            log.error("kafka send failed. topic= {}, key= {}, err= {}",
-                                    "order.enrichment.requested", key, ex.getMessage());
-                        } else {
-                            log.info("Kafka sent. topic={}, key={}, partition={}, offset={}",
-                                    res.getRecordMetadata().topic(),
-                                    res.getProducerRecord().key(),
-                                    res.getRecordMetadata().partition(),
-                                    res.getRecordMetadata().offset());
-                        }
-                    });
-
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("이벤트 직렬화 실패", e);
-        }
-    }
-
-    public void stockSave(KafkaStockRequest ksq) {
-        String key = String.valueOf(ksq.getFlowCode());
-
-        try {
-            String payload = objectMapper.writeValueAsString(ksq);
-            kafkaTemplate.send("stock.async.requested", key, payload)
-                    .whenComplete((res, ex) -> {
-                        if (ex != null) {
-                            log.error("kafka send failed. topic= {}, key= {}, err= {}",
-                                    "order.enrichment.requested", key, ex.getMessage());
-                        } else {
-                            log.info("Kafka sent. topic={}, key={}, partition={}, offset={}",
-                                    res.getRecordMetadata().topic(),
-                                    res.getProducerRecord().key(),
-                                    res.getRecordMetadata().partition(),
-                                    res.getRecordMetadata().offset());
-                        }
-                    });
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("이벤트 직렬화 실패", e);
-        }
+    private String extractKey(Object evt) throws JsonProcessingException {
+        return String.valueOf(evt.hashCode());
     }
 
     public void send(String topic, String key, String payload)

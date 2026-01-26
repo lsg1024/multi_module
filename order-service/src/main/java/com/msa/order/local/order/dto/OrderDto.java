@@ -1,5 +1,6 @@
 package com.msa.order.local.order.dto;
 
+import com.msa.order.global.dto.StatusHistoryDto;
 import com.msa.order.global.dto.StoneDto;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.order.entity.order_enum.ProductStatus;
@@ -72,6 +73,7 @@ public class OrderDto {
         // 보조석
         private boolean assistantStone;
         private String assistantStoneId;
+        private String assistantStoneName;
         private String assistantStoneCreateAt;
 
         private String createAt;
@@ -108,8 +110,9 @@ public class OrderDto {
         private ProductStatus productStatus;
         private OrderStatus orderStatus;
         private String imagePath;
+        private List<StatusHistoryDto> statusHistory;
 
-        public static Response from(OrderQueryDto queryDto, String imagePath) {
+        public static Response from(OrderQueryDto queryDto, String imagePath, List<StatusHistoryDto> statusHistoryDtos) {
             Response response = new Response();
             response.productId = queryDto.getProductId().toString();
             response.createAt = queryDto.getCreateAt();
@@ -136,7 +139,7 @@ public class OrderDto {
             response.stockFlowCodes = (queryDto.getStockFlowCodes() != null)
                     ? queryDto.getStockFlowCodes()
                     : Collections.emptyList();
-
+            response.statusHistory = statusHistoryDtos;
             return response;
         }
     }

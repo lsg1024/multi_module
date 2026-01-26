@@ -1,10 +1,12 @@
 package com.msa.common.global.db;
 
+import com.msa.common.global.aop.NoTrace;
 import com.msa.common.global.tenant.TenantContext;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+@NoTrace
 @Profile("dev")
 @Component
 public class CurrentTenantIdentifierResolverImpl implements CurrentTenantIdentifierResolver {

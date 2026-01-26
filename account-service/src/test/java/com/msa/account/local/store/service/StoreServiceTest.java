@@ -65,7 +65,7 @@ class StoreServiceTest {
                 .build();
 
         originCommonOptionInfo = CommonOptionDto.CommonOptionInfo.builder()
-                .level("ONE")
+                .grade("ONE")
                 .tradeType("WEIGHT")
                 .goldHarryId("1")
                 .build();

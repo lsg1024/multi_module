@@ -1,5 +1,6 @@
 package com.msa.order.local.stock.dto;
 
+import com.msa.order.global.dto.StatusHistoryDto;
 import com.msa.order.global.dto.StoneDto;
 import com.msa.order.local.order.dto.OrderDto;
 import com.msa.order.local.order.entity.order_enum.BusinessPhase;
@@ -272,7 +273,11 @@ public class StockDto {
         private String goldWeight;
         private String stoneWeight;
         private Integer stonePurchaseCost;
+        private List<StatusHistoryDto> statusHistory;
 
+        public void updateHistory(List<StatusHistoryDto> statusHistoryDtos) {
+            this.statusHistory = statusHistoryDtos;
+        }
         public void updateStatus(String originStatus, String currentStatus) {
             this.originStatus = originStatus;
             this.currentStatus = currentStatus;

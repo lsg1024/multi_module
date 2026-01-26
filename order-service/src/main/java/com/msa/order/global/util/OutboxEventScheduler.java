@@ -2,13 +2,15 @@ package com.msa.order.global.util;
 
 import com.msa.common.global.aop.NoTrace;
 import com.msa.common.global.tenant.TenantContext;
+import com.msa.common.global.util.AuditorHolder;
 import com.msa.order.local.outbox.redis.OutboxRelayService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
+
+import java.util.Set;
 
 @NoTrace
 @Slf4j
@@ -20,24 +22,56 @@ public class OutboxEventScheduler {
     private final RedisTemplate<String, String> redisTemplate;
     private static final String OUTBOX_TENANT_WORK_QUEUE_KEY = "outbox:work:tenants";
 
+    /**
+     * 실시간성이 중요한 재고 이벤트 - 1초마다
+     */
     @Scheduled(fixedDelay = 1000)
-    public void relayOutboxEvent() {
+    public void relayStockEvents() {
+        Set<String> tenants = redisTemplate.opsForSet().members(OUTBOX_TENANT_WORK_QUEUE_KEY);
 
-        String tenantId = redisTemplate.opsForSet().pop(OUTBOX_TENANT_WORK_QUEUE_KEY);
+        if (tenants == null || tenants.isEmpty()) {
+            return;
+        }
 
-        while (StringUtils.hasText(tenantId)) {
+        for (String tenantId : tenants) {
             try {
                 TenantContext.setTenant(tenantId);
+                AuditorHolder.setAuditor(tenantId);
 
-                outboxRelayService.relayEventsForCurrentTenant();
+                outboxRelayService.relayStockEventsIndependently();
+
+                redisTemplate.opsForSet().remove(OUTBOX_TENANT_WORK_QUEUE_KEY, tenantId);
 
             } catch (Exception e) {
-                log.error("[{}] 테넌트 작업 실패 (다음 주기에 재시도될 수 있음): {}", tenantId, e.getMessage(), e);
+                log.error("재고 Outbox 처리 실패. TenantID: {}", tenantId, e);
             } finally {
                 TenantContext.clear();
+                AuditorHolder.clear();
             }
+        }
+    }
 
-            tenantId = redisTemplate.opsForSet().pop(OUTBOX_TENANT_WORK_QUEUE_KEY);
+    /**
+     * 정산 이벤트 - 5초마다
+     */
+    @Scheduled(fixedDelay = 1000)
+    public void relayPaymentEvents() {
+        try {
+            outboxRelayService.relayPaymentEventsSequentially();
+        } catch (Exception e) {
+            log.error("정산 Outbox 처리 실패", e);
+        }
+    }
+
+    /**
+     * 실패한 이벤트 재시도 - 1분마다
+     */
+    @Scheduled(fixedDelay = 60000)
+    public void retryFailedEvents() {
+        try {
+            outboxRelayService.relayAllPendingEvents();
+        } catch (Exception e) {
+            log.error("Outbox 재시도 처리 실패", e);
         }
     }
 }
