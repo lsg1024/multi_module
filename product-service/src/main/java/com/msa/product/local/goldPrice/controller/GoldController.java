@@ -1,12 +1,15 @@
 package com.msa.product.local.goldPrice.controller;
 
 import com.msa.common.global.api.ApiResponse;
+import com.msa.product.local.goldPrice.dto.GoldDto;
 import com.msa.product.local.goldPrice.service.GoldService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 public class GoldController {
@@ -29,5 +32,12 @@ public class GoldController {
         goldService.createGoldPrice(price);
         return ResponseEntity.ok(ApiResponse.success("생성 완료"));
     }
+
+    @GetMapping("/gold-prices")
+    public ResponseEntity<ApiResponse<List<GoldDto>>> getGoldPrices() {
+        List<GoldDto> goldPrices = goldService.getGoldPrices();
+        return ResponseEntity.ok(ApiResponse.success(goldPrices));
+    }
+
 
 }
