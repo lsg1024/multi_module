@@ -123,4 +123,15 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.success(productInfo));
     }
 
+    /**
+     * 관련 상품 조회 (상품 상세보기용)
+     * 동일한 관련번호를 가진 상품들을 조회
+     */
+    @GetMapping("/products/{id}/related")
+    public ResponseEntity<ApiResponse<java.util.List<ProductDto.RelatedProduct>>> getRelatedProducts(
+            @PathVariable(name = "id") Long productId) {
+        java.util.List<ProductDto.RelatedProduct> relatedProducts = productService.getRelatedProducts(productId);
+        return ResponseEntity.ok(ApiResponse.success(relatedProducts));
+    }
+
 }

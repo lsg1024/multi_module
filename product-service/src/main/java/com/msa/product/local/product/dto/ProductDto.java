@@ -136,4 +136,20 @@ public class ProductDto {
         }
     }
 
+    @Getter
+    @NoArgsConstructor
+    public static class RelatedProduct {
+        private Long productId;
+        private String productName;
+        private String imagePath;
+
+        @Builder
+        @QueryProjection
+        public RelatedProduct(Long productId, String productName, String imagePath) {
+            this.productId = productId;
+            this.productName = productName;
+            this.imagePath = imagePath;
+        }
+    }
+
 }

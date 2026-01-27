@@ -300,4 +300,30 @@ public class ProductRepositoryImpl implements CustomProductRepository {
         }
         return orderSpecifiers.toArray(new OrderSpecifier[0]);
     }
+
+    @Override
+    public List<ProductDto.RelatedProduct> findRelatedProducts(Long productId, String relatedNumber) {
+        if (relatedNumber == null || relatedNumber.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        return query
+                .select(new QProductDto_RelatedProduct(
+                        product.productId,
+                        product.productName,
+                        productImage.imagePath.coalesce("")
+                ))
+                .from(product)
+                .leftJoin(productImage).on(
+                        productImage.product.eq(product)
+                                .and(productImage.imageMain.isTrue())
+                )
+                .where(
+                        product.productRelatedNumber.eq(relatedNumber),
+                        product.productId.ne(productId),
+                        product.productDeleted.isFalse()
+                )
+                .orderBy(product.productName.asc())
+                .fetch();
+    }
 }
