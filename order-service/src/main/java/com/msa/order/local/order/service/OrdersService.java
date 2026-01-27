@@ -416,7 +416,6 @@ public class OrdersService {
 
         Map<Long, ProductImageDto> productImages = productClient.getProductImages(accessToken, productIds);
 
-        // N+1 문제 해결: 모든 flowCode에 대한 StatusHistory를 한 번에 조회
         List<Long> flowCodes = fixOrders.stream()
                 .map(dto -> Long.valueOf(dto.getFlowCode()))
                 .toList();
@@ -463,7 +462,6 @@ public class OrdersService {
 
         Map<Long, ProductImageDto> productImages = productClient.getProductImages(accessToken, productIds);
 
-        // N+1 문제 해결: 모든 flowCode에 대한 StatusHistory를 한 번에 조회
         List<Long> flowCodes = expectOrderPages.stream()
                 .map(dto -> Long.valueOf(dto.getFlowCode()))
                 .toList();
@@ -510,7 +508,6 @@ public class OrdersService {
 
         Map<Long, ProductImageDto> productImages = productClient.getProductImages(accessToken, productIds);
 
-        // N+1 문제 해결: 모든 flowCode에 대한 StatusHistory를 한 번에 조회
         List<Long> flowCodes = expectOrderPages.stream()
                 .map(dto -> Long.valueOf(dto.getFlowCode()))
                 .toList();
