@@ -1,6 +1,5 @@
 package com.msa.product.local.product.dto;
 
-import com.msa.product.local.product.entity.ProductImage;
 import com.querydsl.core.annotations.QueryProjection;
 import jakarta.validation.Valid;
 import lombok.Builder;
@@ -20,6 +19,19 @@ public class ProductImageDto {
 
         private String imageId;
         private String imagePath;
+        private String imageName;
+        private String imageOriginName;
+        private Boolean imageMain;
+
+        @Builder
+        @QueryProjection
+        public Response(String imageId, String imagePath, String imageName, String imageOriginName, Boolean imageMain) {
+            this.imageId = imageId;
+            this.imagePath = imagePath;
+            this.imageName = imageName;
+            this.imageOriginName = imageOriginName;
+            this.imageMain = imageMain;
+        }
 
         @Builder
         @QueryProjection
@@ -28,12 +40,6 @@ public class ProductImageDto {
             this.imagePath = imagePath;
         }
 
-        public static Response fromEntity(ProductImage image) {
-            return Response
-                    .builder()
-                    .imagePath(image.getImagePath())
-                    .build();
-        }
     }
 
     @Getter
