@@ -52,7 +52,7 @@ public class OutboxEventScheduler {
     }
 
     /**
-     * 정산 이벤트 - 5초마다
+     * 정산 이벤트 - 1초마다
      */
     @Scheduled(fixedDelay = 1000)
     public void relayPaymentEvents() {
