@@ -191,4 +191,5 @@ public class DashboardController {
         DashboardDto.FactoryUnpaidSummary result = dashboardService.getFactoryUnpaidSummary();
         return ResponseEntity.ok(ApiResponse.success(result));
     }
+
 }
