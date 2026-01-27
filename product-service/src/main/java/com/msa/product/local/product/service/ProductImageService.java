@@ -63,6 +63,9 @@ public class ProductImageService {
         }
     }
 
+    /**
+     * 단일 이미지 업로드 (기존 이미지 교체)
+     */
     public void uploadProductImage(Long productId, MultipartFile image) {
         String tenant = TenantContext.getTenant();
 
@@ -82,6 +85,41 @@ public class ProductImageService {
         }
 
         saveImageFileAndEntity(image, product, tenant);
+    }
+
+    /**
+     * 다중 이미지 추가 (기존 이미지 유지)
+     */
+    public void addProductImages(Long productId, List<MultipartFile> images) {
+        String tenant = TenantContext.getTenant();
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        for (MultipartFile image : images) {
+            if (image != null && !image.isEmpty()) {
+                saveImageFileAndEntity(image, product, tenant);
+            }
+        }
+    }
+
+    /**
+     * 특정 상품의 모든 이미지 조회
+     */
+    @Transactional(readOnly = true)
+    public List<ProductImageDto.Response> getProductImageList(Long productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        return productImageRepository.findByProduct(product).stream()
+                .map(img -> ProductImageDto.Response.builder()
+                        .imageId(img.getImageId().toString())
+                        .imagePath(img.getImagePath())
+                        .imageName(img.getImageName())
+                        .imageOriginName(img.getImageOriginName())
+                        .imageMain(img.getImageMain())
+                        .build())
+                .toList();
     }
 
     public void deleteImage(Long imageId) {

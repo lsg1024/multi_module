@@ -52,14 +52,29 @@ public class OutboxEventScheduler {
     }
 
     /**
-     * 정산 이벤트 - 5초마다
+     * 정산 이벤트 - 1초마다
      */
     @Scheduled(fixedDelay = 1000)
     public void relayPaymentEvents() {
-        try {
-            outboxRelayService.relayPaymentEventsSequentially();
-        } catch (Exception e) {
-            log.error("정산 Outbox 처리 실패", e);
+        Set<String> tenants = redisTemplate.opsForSet().members(OUTBOX_TENANT_WORK_QUEUE_KEY);
+
+        if (tenants == null || tenants.isEmpty()) {
+            return;
+        }
+
+        for (String tenantId : tenants) {
+            try {
+                TenantContext.setTenant(tenantId);
+                AuditorHolder.setAuditor(tenantId);
+
+                outboxRelayService.relayPaymentEventsSequentially();
+
+            } catch (Exception e) {
+                log.error("정산 Outbox 처리 실패. TenantID: {}", tenantId, e);
+            } finally {
+                TenantContext.clear();
+                AuditorHolder.clear();
+            }
         }
     }
 
@@ -68,10 +83,25 @@ public class OutboxEventScheduler {
      */
     @Scheduled(fixedDelay = 60000)
     public void retryFailedEvents() {
-        try {
-            outboxRelayService.relayAllPendingEvents();
-        } catch (Exception e) {
-            log.error("Outbox 재시도 처리 실패", e);
+        Set<String> tenants = redisTemplate.opsForSet().members(OUTBOX_TENANT_WORK_QUEUE_KEY);
+
+        if (tenants == null || tenants.isEmpty()) {
+            return;
+        }
+
+        for (String tenantId : tenants) {
+            try {
+                TenantContext.setTenant(tenantId);
+                AuditorHolder.setAuditor(tenantId);
+
+                outboxRelayService.relayAllPendingEvents();
+
+            } catch (Exception e) {
+                log.error("Outbox 재시도 처리 실패. TenantID: {}", tenantId, e);
+            } finally {
+                TenantContext.clear();
+                AuditorHolder.clear();
+            }
         }
     }
 }

@@ -410,4 +410,20 @@ public class ProductService {
 
         return productRepository.findProductDetail(id, t_grade);
     }
+
+    /**
+     * 관련번호로 관련 상품 목록 조회
+     */
+    @Transactional(readOnly = true)
+    public List<ProductDto.RelatedProduct> getRelatedProducts(Long productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+
+        String relatedNumber = product.getProductRelatedNumber();
+        if (relatedNumber == null || relatedNumber.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        return productRepository.findRelatedProducts(productId, relatedNumber);
+    }
 }

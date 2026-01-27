@@ -76,13 +76,17 @@ public class KafkaProducer {
         CompletableFuture<SendResult<String, Object>> future =
                 kafkaTemplate.send(topic, key, payload);
 
-        SendResult<String, Object> res = future.get();
+        try {
+            SendResult<String, Object> res = future.get(10, TimeUnit.SECONDS);
 
-        log.info("Kafka 전송 성공. topic={}, key={}, partition={}, offset={}",
-                res.getRecordMetadata().topic(),
-                res.getProducerRecord().key(),
-                res.getRecordMetadata().partition(),
-                res.getRecordMetadata().offset());
+            log.info("Kafka 전송 성공. topic={}, key={}, partition={}, offset={}",
+                    res.getRecordMetadata().topic(),
+                    res.getProducerRecord().key(),
+                    res.getRecordMetadata().partition(),
+                    res.getRecordMetadata().offset());
+        } catch (TimeoutException e) {
+            throw new RuntimeException("Kafka 전송 타임아웃 (10초 초과)", e);
+        }
     }
 
 

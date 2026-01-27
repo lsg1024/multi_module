@@ -59,6 +59,7 @@ public class StatusHistoryHelper {
      * @param sourceType 소스 타입
      * @param fromPhase  변경 전 페이즈
      * @param toPhase    변경 후 페이즈
+     * @param content    변경 내용
      * @param nickname   변경자 닉네임
      * @return 저장된 StatusHistory
      */

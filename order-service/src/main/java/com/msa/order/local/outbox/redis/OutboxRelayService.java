@@ -7,7 +7,6 @@ import com.msa.order.local.outbox.repository.OutboxEventRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -21,10 +20,14 @@ public class OutboxRelayService {
 
     private final KafkaProducer kafkaProducer;
     private final OutboxEventRepository outboxEventRepository;
+    private final OutboxEventProcessor outboxEventProcessor;
 
-    public OutboxRelayService(KafkaProducer kafkaProducer, OutboxEventRepository outboxEventRepository) {
+    public OutboxRelayService(KafkaProducer kafkaProducer,
+                              OutboxEventRepository outboxEventRepository,
+                              OutboxEventProcessor outboxEventProcessor) {
         this.kafkaProducer = kafkaProducer;
         this.outboxEventRepository = outboxEventRepository;
+        this.outboxEventProcessor = outboxEventProcessor;
     }
 
     @Transactional
@@ -51,7 +54,10 @@ public class OutboxRelayService {
     }
 
 
-    @Transactional
+    /**
+     * 재고 이벤트 독립 처리
+     * 트랜잭션 없이 각 이벤트를 별도 Bean에서 독립적으로 처리
+     */
     public void relayStockEventsIndependently() {
         List<String> types = List.of("ORDER_CREATE", "ORDER_UPDATE", "STOCK_CREATED", "STOCK_UPDATE");
         List<OutboxEvent> events = outboxEventRepository
@@ -61,30 +67,13 @@ public class OutboxRelayService {
 
         log.info("재고 이벤트 독립 처리: {} 건", events.size());
 
-        events.forEach(this::processEventInSeparateTransaction);
+        events.forEach(outboxEventProcessor::processEventIndependently);
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW) // 각각 독립 트랜잭션
-    public void processEventInSeparateTransaction(OutboxEvent event) {
-        try {
-            kafkaProducer.send(event.getTopic(), event.getMessageKey(), event.getPayload());
-
-            event.markAsSent();
-            outboxEventRepository.saveAndFlush(event);
-
-            log.info("재고 이벤트 전송 성공. EventID: {}, Key: {}",
-                    event.getId(), event.getMessageKey());
-
-        } catch (Exception e) {
-            event.incrementRetryCount(e.getMessage());
-            outboxEventRepository.save(event);
-
-            log.warn("재고 이벤트 전송 실패 (재시도 예정). EventID: {}, Retry: {}, Error: {}",
-                    event.getId(), event.getRetryCount(), e.getMessage());
-        }
-    }
-
-    @Transactional(propagation = Propagation.NEVER)
+    /**
+     * 전체 대기 이벤트 재처리
+     * 트랜잭션 없이 각 이벤트를 별도 Bean에서 처리
+     */
     public void relayAllPendingEvents() {
         List<OutboxEvent> events = outboxEventRepository
                 .findRetryableEvents(EventStatus.PENDING, PageRequest.of(0, 200));
@@ -96,25 +85,12 @@ public class OutboxRelayService {
         Map<String, List<OutboxEvent>> eventsByType = events.stream()
                 .collect(Collectors.groupingBy(OutboxEvent::getEventType));
 
-        // 정산은 순차, 재고는 병렬
         eventsByType.forEach((eventType, eventList) -> {
             if ("PAYMENT_SETTLED".equals(eventType)) {
-                eventList.forEach(this::processEventSequentially);
+                eventList.forEach(outboxEventProcessor::processEventSequentially);
             } else {
-                eventList.forEach(this::processEventInSeparateTransaction);
+                eventList.forEach(outboxEventProcessor::processEventIndependently);
             }
         });
-    }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void processEventSequentially(OutboxEvent event) {
-        try {
-            kafkaProducer.send(event.getTopic(), event.getMessageKey(), event.getPayload());
-            event.markAsSent();
-        } catch (Exception e) {
-            log.error("순차 이벤트 처리 실패. EventID: {}, Error: {}",
-                    event.getId(), e.getMessage(), e);
-            throw new IllegalArgumentException("이벤트 처리 실패", e);
-        }
     }
 }

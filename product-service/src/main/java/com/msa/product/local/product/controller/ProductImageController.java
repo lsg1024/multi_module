@@ -101,6 +101,9 @@ public class ProductImageController {
         return ResponseEntity.ok(ApiResponse.success(imagesByProductIds));
     }
 
+    /**
+     * 단일 이미지 업로드 (기존 이미지 교체)
+     */
     @PostMapping("/products/{id}/image")
     public ResponseEntity<ApiResponse<String>> saveProductImage(
             @PathVariable(name = "id") Long productId,
@@ -109,6 +112,31 @@ public class ProductImageController {
         productImageService.uploadProductImage(productId, image);
 
         return ResponseEntity.ok(ApiResponse.success("이미지 저장 완료"));
+    }
+
+    /**
+     * 다중 이미지 추가 (기존 이미지 유지)
+     */
+    @PostMapping("/products/{id}/images")
+    public ResponseEntity<ApiResponse<String>> addProductImages(
+            @PathVariable(name = "id") Long productId,
+            @RequestParam("images") List<MultipartFile> images) {
+
+        productImageService.addProductImages(productId, images);
+
+        return ResponseEntity.ok(ApiResponse.success(images.size() + "개 이미지 추가 완료"));
+    }
+
+    /**
+     * 특정 상품의 모든 이미지 조회
+     */
+    @GetMapping("/products/{id}/images")
+    public ResponseEntity<ApiResponse<List<ProductImageDto.Response>>> getProductImages(
+            @PathVariable(name = "id") Long productId) {
+
+        List<ProductImageDto.Response> images = productImageService.getProductImageList(productId);
+
+        return ResponseEntity.ok(ApiResponse.success(images));
     }
 
     @PostMapping("/products/images/bulk-name")

@@ -11,4 +11,9 @@ public interface CustomProductRepository {
     CustomPage<ProductDto.Page> findByAllProductName(String productName, String factoryName, String classificationId, String setTypeId, String level, String sortField, String sort, Pageable pageable);
 
     ProductDetailDto findProductDetail(Long productId, WorkGrade grade);
+
+    /**
+     * 관련번호로 관련 상품 목록 조회 (본인 제외)
+     */
+    java.util.List<ProductDto.RelatedProduct> findRelatedProducts(Long productId, String relatedNumber);
 }
