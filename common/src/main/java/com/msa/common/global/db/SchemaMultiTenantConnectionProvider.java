@@ -40,25 +40,38 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
     @Override
     public Connection getConnection(Object tenantIdentifier) throws SQLException {
         Connection connection = getAnyConnection();
-        String tenant = tenantIdentifier.toString().toLowerCase();
+        try {
+            String tenant = tenantIdentifier.toString().toLowerCase();
 
-        if (!isValidTenantIdentifier(tenant)) {
-            throw new SQLException("Invalid tenant identifier: " + tenant);
-        }
-
-        if (!initializedTenants.contains(tenant)) {
-            try (Statement stmt = connection.createStatement()) {
-                stmt.execute("CREATE SCHEMA IF NOT EXISTS " + tenant);
+            if (!isValidTenantIdentifier(tenant)) {
+                throw new SQLException("Invalid tenant identifier: " + tenant);
             }
-            runMigration(tenant);
-            initializedTenants.add(tenant);
-        }
 
-        try (Statement stmt = connection.createStatement()) {
-            stmt.execute("SET search_path TO " + tenant);
-        }
+            if (!initializedTenants.contains(tenant)) {
+                try (Statement stmt = connection.createStatement()) {
+                    stmt.execute("CREATE SCHEMA IF NOT EXISTS " + tenant);
+                }
+                runMigration(tenant);
+                initializedTenants.add(tenant);
+            }
 
-        return connection;
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute("SET search_path TO " + tenant);
+            }
+
+            return connection;
+        } catch (Exception e) {
+            // 예외 발생 시 커넥션 반환하여 누수 방지
+            try {
+                connection.close();
+            } catch (SQLException closeEx) {
+                // 닫기 실패는 무시
+            }
+            if (e instanceof SQLException) {
+                throw (SQLException) e;
+            }
+            throw new SQLException("Failed to get connection for tenant", e);
+        }
     }
 
     @Override
