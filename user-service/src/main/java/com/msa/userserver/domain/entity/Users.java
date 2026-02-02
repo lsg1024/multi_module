@@ -36,16 +36,20 @@ public class Users extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @Column(name = "STORE_ID")
+    private Long storeId;  // 판매처 계정인 경우 연결된 Store ID
+
     @Column(name = "DELETED", nullable = false)
     private boolean deleted = false;
 
     @Builder
-    public Users(String userId, String password, String nickname, String tenantId, Role role) {
+    public Users(String userId, String password, String nickname, String tenantId, Role role, Long storeId) {
         this.userId = userId;
         this.password = password;
         this.nickname = nickname;
         this.tenantId = tenantId;
         this.role = role;
+        this.storeId = storeId;
     }
 
     public void updateInfo(UserDto.Update updateDto) {
