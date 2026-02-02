@@ -136,6 +136,22 @@ spring:
                 verifyDevice: true
                 verifyForwardedFor: true
 
+        - id: catalog
+          uri: lb://product
+          predicates:
+            - Path=/catalog/**
+          filters:
+            - StripPrefix=1
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - name: UserAgentHeaderFilter
+            - name: AuthorizationHeaderFilter
+              args:
+                require: true
+                verifyDevice: true
+                verifyForwardedFor: true
+
         - id: order
           uri: lb://order
           predicates:
