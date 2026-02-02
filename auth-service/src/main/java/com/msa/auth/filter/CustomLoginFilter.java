@@ -87,9 +87,10 @@ public class CustomLoginFilter extends UsernamePasswordAuthenticationFilter {
         String forward = request.getHeader("X-Forwarded-For").split(",")[0].trim();
         String userAgent = request.getHeader("User-Agent");
 
-        // 토큰 생성
-        String accessToken = jwtUtil.createJwt("access", userInfo.getUserId(), userInfo.getTenantId(), userInfo.getNickname(), forward, userAgent, role, accessTtl);
-        String refreshToken = jwtUtil.createJwt("refresh", userInfo.getUserId(), userInfo.getTenantId(), userInfo.getNickname(), forward, userAgent, role, refreshTtl);
+        // 토큰 생성 (STORE 역할인 경우 storeId 포함)
+        Long storeId = userInfo.getStoreId();
+        String accessToken = jwtUtil.createJwt("access", userInfo.getUserId(), userInfo.getTenantId(), userInfo.getNickname(), forward, userAgent, role, storeId, accessTtl);
+        String refreshToken = jwtUtil.createJwt("refresh", userInfo.getUserId(), userInfo.getTenantId(), userInfo.getNickname(), forward, userAgent, role, storeId, refreshTtl);
 
         // 리프레시 토큰 DB 저장
         redisRefreshTokenService.createNewToken(userInfo.getTenantId(), forward, userAgent, userInfo.getNickname(), refreshToken);
