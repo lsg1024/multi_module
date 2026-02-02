@@ -83,8 +83,12 @@ public class ProductRepositoryImpl implements CustomProductRepository {
 
         BooleanBuilder builder = new BooleanBuilder();
 
+        // 상품명(productName) 또는 공장번호(productFactoryName) 통합 검색
         if (productName != null && !productName.isBlank()) {
-            builder.and(product.productName.containsIgnoreCase(productName));
+            builder.and(
+                    product.productName.containsIgnoreCase(productName)
+                            .or(product.productFactoryName.containsIgnoreCase(productName))
+            );
         }
 
         if (factoryName != null && !factoryName.isBlank()) {

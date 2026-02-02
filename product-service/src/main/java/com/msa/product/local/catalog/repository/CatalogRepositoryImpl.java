@@ -48,12 +48,8 @@ public class CatalogRepositoryImpl implements CatalogRepository {
 
         BooleanBuilder builder = new BooleanBuilder();
 
-        // 상품명(productName) 또는 공장번호(productFactoryName) 통합 검색
         if (productName != null && !productName.isBlank()) {
-            builder.and(
-                    product.productName.containsIgnoreCase(productName)
-                            .or(product.productFactoryName.containsIgnoreCase(productName))
-            );
+            builder.and(product.productName.containsIgnoreCase(productName));
         }
 
         if (classificationId != null && !classificationId.isBlank()) {
