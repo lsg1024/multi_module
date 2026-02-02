@@ -330,12 +330,16 @@ public class SaleService {
 
         updateNewHistory(stock.getFlowCode(), nickname, BusinessPhase.SALE, "판매 등록");
 
-        BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), product.getMaterialName().toUpperCase(), storeHarry);
-        Integer totalBalanceMoney = stock.getTotalStoneLaborCost() + stockDto.getStoneAddLaborCost() +
+        BigDecimal storePureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), product.getMaterialName().toUpperCase(), storeHarry);
+        Integer storeTotalMoney = stock.getTotalStoneLaborCost() + stockDto.getStoneAddLaborCost() +
                 product.getProductLaborCost() + stockDto.getAddProductLaborCost();
 
-        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", storeId, storeName, product.getMaterialName(), pureGoldWeight, totalBalanceMoney, transactionDate);
-        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.PURCHASE.name(), "FACTORY", factoryId, factoryName, product.getMaterialName(), pureGoldWeight, totalBalanceMoney, transactionDate);
+        BigDecimal factoryHarry = new BigDecimal("1.10");
+        BigDecimal factoryPureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), product.getMaterialName().toUpperCase(), factoryHarry);
+        Integer factoryTotalMoney = stock.getTotalStonePurchaseCost() + product.getProductPurchaseCost();
+
+        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", storeId, storeName, product.getMaterialName(), storePureGoldWeight, storeTotalMoney, transactionDate);
+        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.PURCHASE.name(), "FACTORY", factoryId, factoryName, product.getMaterialName(), factoryPureGoldWeight, factoryTotalMoney, transactionDate);
     }
 
     public void orderToSale(String accessToken, String eventId, Long flowCode, StockDto.StockRegisterRequest stockDto, boolean createNewSheet) {
@@ -366,12 +370,18 @@ public class SaleService {
 
         updateNewHistory(stock.getFlowCode(), nickname, BusinessPhase.SALE, "판매 등록");
 
-        BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), stockDto.getMaterialName().toUpperCase(), storeHarry);
-        Integer totalBalanceMoney = stock.getTotalStoneLaborCost() + stockDto.getStoneAddLaborCost() +
+        // 판매처 정산 (판매가)
+        BigDecimal storePureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), stockDto.getMaterialName().toUpperCase(), storeHarry);
+        Integer storeTotalMoney = stock.getTotalStoneLaborCost() + stockDto.getStoneAddLaborCost() +
                 stock.getProduct().getProductLaborCost() + stockDto.getProductAddLaborCost();
 
-        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", storeId, storeName, stock.getProduct().getMaterialName(), pureGoldWeight, totalBalanceMoney, transactionDate);
-        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.PURCHASE.name(), "FACTORY", factoryId, factoryName, stock.getProduct().getMaterialName(), pureGoldWeight, totalBalanceMoney, transactionDate);
+        // 공장 정산 (매입가) - 공장 해리는 1.10 고정
+        BigDecimal factoryHarry = new BigDecimal("1.10");
+        BigDecimal factoryPureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), stockDto.getMaterialName().toUpperCase(), factoryHarry);
+        Integer factoryTotalMoney = stock.getTotalStonePurchaseCost() + stock.getProduct().getProductPurchaseCost();
+
+        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", storeId, storeName, stock.getProduct().getMaterialName(), storePureGoldWeight, storeTotalMoney, transactionDate);
+        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.PURCHASE.name(), "FACTORY", factoryId, factoryName, stock.getProduct().getMaterialName(), factoryPureGoldWeight, factoryTotalMoney, transactionDate);
     }
 
     //반품 로직 -> 제품은 다시 재고로, 결제는 다시 원복 -> 마지막 결제일의 경우?
@@ -495,6 +505,13 @@ public class SaleService {
 
         int oldTotalMoney = oldProductLaborCost + oldProductAddLaborCost + oldTotalStoneLaborCost + oldStoneAddLaborCost;
 
+        BigDecimal oldGoldWeight = product.getGoldWeight();
+        BigDecimal oldPureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(
+                oldGoldWeight.toPlainString(),
+                product.getMaterialName().toUpperCase(),
+                stock.getStoreHarry()
+        );
+
         updateStockStoneInfo(updateDto.getStoneInfos(), stock);
 
         int[] countStoneCost = countStoneCost(orderStones);
@@ -516,11 +533,16 @@ public class SaleService {
 
         int moneyBalanceDelta = newTotalMoney - oldTotalMoney;
 
-        BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(updateDto.getGoldWeight(), stock.getProduct().getMaterialName().toUpperCase(), stock.getStoreHarry());
+        BigDecimal newPureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(
+                updateDto.getGoldWeight(),
+                stock.getProduct().getMaterialName().toUpperCase(),
+                stock.getStoreHarry()
+        );
+        BigDecimal pureGoldWeightDelta = newPureGoldWeight.subtract(oldPureGoldWeight);
 
         Sale sale = saleItem.getSale();
         LocalDateTime lastModifiedDate = sale.getCreateDate();
-        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", stock.getStoreId(), stock.getStoreName(), product.getMaterialName(), pureGoldWeight, moneyBalanceDelta, lastModifiedDate);
+        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", stock.getStoreId(), stock.getStoreName(), product.getMaterialName(), pureGoldWeightDelta, moneyBalanceDelta, lastModifiedDate);
     }
 
     private void publishBalanceChange(String eventId, String saleCode, String tenantId, String saleType,
