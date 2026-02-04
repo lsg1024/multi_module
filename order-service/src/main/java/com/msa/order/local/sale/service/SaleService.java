@@ -8,6 +8,8 @@ import com.msa.common.global.util.CustomPage;
 import com.msa.order.global.dto.OutboxCreatedEvent;
 import com.msa.order.global.dto.StatusHistoryDto;
 import com.msa.order.global.dto.StoneDto;
+import com.msa.order.global.excel.dto.SaleExcelDto;
+import com.msa.order.global.excel.util.SaleExcelUtil;
 import com.msa.order.global.feign_client.client.ProductClient;
 import com.msa.order.global.feign_client.client.StoreClient;
 import com.msa.order.global.feign_client.dto.ProductImageDto;
@@ -46,6 +48,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -452,8 +455,13 @@ public class SaleService {
         }
     }
 
-    // 과거 판매 내역
-    public List<SaleDto.SaleDetailDto> findSaleProductNameAndMaterial(Long storeId, Long productId, String materialName) {
+    public List<SaleDto.SaleDetailDto> findSaleProductNameAndMaterial(String accessToken, Long storeId, Long productId, String materialName) {
+        StoreDto.Response storeInfo = storeClient.getStoreInfo(accessToken, storeId);
+
+        if (!storeInfo.isOptionApplyPastSales()) {
+            return List.of();
+        }
+
         List<SaleDto.SaleDetailDto> saleDetailDtos = customSaleRepository.findSalePast(storeId, productId, materialName);
 
         if (saleDetailDtos.isEmpty()) {
@@ -789,8 +797,6 @@ public class SaleService {
 
             return SalePrintResponse.builder()
                     .lastPaymentDate(storeAttemptDetail.getLastSaleDate())
-                    .businessOwnerNumber(storeAttemptDetail.getBusinessOwnerNumber())
-                    .faxNumber(storeAttemptDetail.getFaxNumber())
                     .previousMoneyBalance(storeAttemptDetail.getPreviousMoneyBalance())
                     .previousGoldBalance(storeAttemptDetail.getPreviousGoldBalance())
                     .afterMoneyBalance(storeAttemptDetail.getAfterMoneyBalance())
@@ -802,5 +808,20 @@ public class SaleService {
         return SalePrintResponse.builder()
                 .saleItemResponses(printSales)
                 .build();
+    }
+
+    /**
+     * 판매 내역 엑셀 다운로드
+     * @param input 검색어
+     * @param startAt 시작일
+     * @param endAt 종료일
+     * @param material 재질 필터
+     * @return 엑셀 파일 바이트 배열
+     */
+    @Transactional(readOnly = true)
+    public byte[] getSalesExcel(String input, String startAt, String endAt, String material) throws IOException {
+        SaleDto.Condition condition = new SaleDto.Condition(input, startAt, endAt, material);
+        List<SaleExcelDto> saleExcelDtos = customSaleRepository.findSalesForExcel(condition);
+        return SaleExcelUtil.createSaleWorkSheet(saleExcelDtos);
     }
 }

@@ -2,6 +2,8 @@ package com.msa.order.local.sale.repository;
 
 import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import com.msa.common.global.util.CustomPage;
+import com.msa.order.global.excel.dto.SaleExcelDto;
+import com.msa.order.global.util.GoldUtils;
 import com.msa.order.local.sale.entity.Sale;
 import com.msa.order.local.sale.entity.dto.QSaleDto_SaleDetailDto;
 import com.msa.order.local.sale.entity.dto.QSaleItemResponse_SaleItem;
@@ -11,6 +13,7 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.dsl.*;
 import com.querydsl.jpa.JPAExpressions;
+import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import jakarta.validation.constraints.NotNull;
@@ -432,6 +435,125 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                 .join(salePayment.sale, sale)
                 .where(
                         sale.saleCode.eq(Long.valueOf(saleCode))
+                )
+                .orderBy(sale.createDate.desc())
+                .fetch();
+    }
+
+    @Override
+    public List<SaleExcelDto> findSalesForExcel(SaleDto.Condition condition) {
+        List<SaleExcelDto> items = fetchExcelItems(condition);
+        List<SaleExcelDto> payments = fetchExcelPayments(condition);
+
+        return Stream.concat(items.stream(), payments.stream())
+                .sorted(Comparator.comparing(SaleExcelDto::getCreateAt,
+                        Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+                .toList();
+    }
+
+    private List<SaleExcelDto> fetchExcelItems(SaleDto.Condition condition) {
+        BooleanBuilder searchBuilder = getSearchBuilder(condition.getInput());
+        BooleanExpression createAtAndEndAt = getCreateAtAndEndAt(condition.getStartAt(), condition.getEndAt());
+
+        BooleanBuilder materialBuilder = new BooleanBuilder();
+        if (StringUtils.hasText(condition.getMaterial())) {
+            materialBuilder.and(stock.product.materialName.containsIgnoreCase(condition.getMaterial()));
+        }
+
+        StringExpression saleTypeTitle = new CaseBuilder()
+                .when(saleItem.itemStatus.eq(SaleStatus.SALE)).then("판매")
+                .when(saleItem.itemStatus.eq(SaleStatus.RETURN)).then("반품")
+                .otherwise("기타");
+
+        NumberExpression<Integer> totalLaborCost = stock.product.productLaborCost
+                .add(stock.product.productAddLaborCost)
+                .add(stock.stoneMainLaborCost.coalesce(0))
+                .add(stock.stoneAssistanceLaborCost.coalesce(0))
+                .add(stock.stoneAddLaborCost.coalesce(0));
+
+        // pureGoldWeight 계산을 위한 케이스 표현식 (재질에 따른 순도 적용)
+        NumberExpression<BigDecimal> purityMultiplier = new CaseBuilder()
+                .when(stock.product.materialName.equalsIgnoreCase("14K")).then(new BigDecimal("0.585"))
+                .when(stock.product.materialName.equalsIgnoreCase("18K")).then(new BigDecimal("0.750"))
+                .when(stock.product.materialName.equalsIgnoreCase("24K")).then(BigDecimal.ONE)
+                .otherwise(BigDecimal.ONE);
+
+        NumberExpression<BigDecimal> calculatedPureGoldWeight = stock.product.goldWeight
+                .multiply(purityMultiplier)
+                .multiply(sale.accountHarry);
+
+        return query.select(Projections.constructor(SaleExcelDto.class,
+                        sale.createDate.stringValue(),
+                        saleItem.createdBy,
+                        saleTypeTitle,
+                        sale.accountName,
+                        sale.saleCode.stringValue(),
+                        saleItem.flowCode.stringValue(),
+                        stock.product.productName,
+                        stock.product.materialName,
+                        stock.product.colorName,
+                        stock.product.goldWeight,
+                        stock.product.stoneWeight,
+                        calculatedPureGoldWeight,
+                        totalLaborCost,
+                        stock.stockNote
+                ))
+                .from(saleItem)
+                .join(saleItem.sale, sale)
+                .join(saleItem.stock, stock)
+                .where(
+                        searchBuilder,
+                        createAtAndEndAt,
+                        materialBuilder
+                )
+                .orderBy(sale.createDate.desc())
+                .fetch();
+    }
+
+    private List<SaleExcelDto> fetchExcelPayments(SaleDto.Condition condition) {
+        BooleanBuilder searchBuilder = getSearchBuilder(condition.getInput());
+        BooleanExpression createAtAndEndAt = getCreateAtAndEndAt(condition.getStartAt(), condition.getEndAt());
+
+        BooleanBuilder materialBuilder = new BooleanBuilder();
+        if (StringUtils.hasText(condition.getMaterial())) {
+            materialBuilder.and(salePayment.material.containsIgnoreCase(condition.getMaterial()));
+        }
+
+        StringExpression saleTypeTitle = new CaseBuilder()
+                .when(salePayment.saleStatus.eq(SaleStatus.RETURN)).then("반품")
+                .when(salePayment.saleStatus.eq(SaleStatus.PAYMENT)).then("결제")
+                .when(salePayment.saleStatus.eq(SaleStatus.DISCOUNT)).then("DC")
+                .when(salePayment.saleStatus.eq(SaleStatus.PAYMENT_TO_BANK)).then("통장")
+                .when(salePayment.saleStatus.eq(SaleStatus.WG)).then("WG")
+                .otherwise("기타");
+
+        NumberExpression<BigDecimal> goldWeightArg = new CaseBuilder()
+                .when(salePayment.saleStatus.eq(SaleStatus.WG))
+                .then(salePayment.pureGoldWeight)
+                .otherwise(salePayment.goldWeight);
+
+        return query.select(Projections.constructor(SaleExcelDto.class,
+                        sale.createDate.stringValue(),
+                        salePayment.createdBy,
+                        saleTypeTitle,
+                        sale.accountName,
+                        sale.saleCode.stringValue(),
+                        salePayment.flowCode.stringValue(),
+                        saleTypeTitle, // productName 대신 타입명 사용
+                        salePayment.material,
+                        Expressions.nullExpression(String.class), // colorName
+                        goldWeightArg,
+                        Expressions.nullExpression(BigDecimal.class), // stoneWeight
+                        salePayment.pureGoldWeight,
+                        salePayment.cashAmount,
+                        salePayment.paymentNote
+                ))
+                .from(salePayment)
+                .join(salePayment.sale, sale)
+                .where(
+                        searchBuilder,
+                        createAtAndEndAt,
+                        materialBuilder
                 )
                 .orderBy(sale.createDate.desc())
                 .fetch();
