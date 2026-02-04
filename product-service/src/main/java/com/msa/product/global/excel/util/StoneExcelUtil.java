@@ -1,0 +1,150 @@
+package com.msa.product.global.excel.util;
+
+import com.msa.product.global.excel.dto.StoneExcelDto;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbookType;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
+
+public class StoneExcelUtil {
+
+    public static byte[] createStoneWorkSheet(List<StoneExcelDto> stoneExcelDtos) throws IOException {
+
+        Workbook workbook = new XSSFWorkbook(XSSFWorkbookType.XLSX);
+        Sheet sheet = workbook.createSheet("스톤 목록");
+
+        List<String> headers = Arrays.asList(
+                "No", "스톤ID", "스톤명", "타입", "모양",
+                "사이즈", "중량", "매입가", "사용상품수", "비고"
+        );
+
+        // 타이틀 행 (Row 0)
+        Row titleRow = sheet.createRow(0);
+        Cell titleCell = titleRow.createCell(0);
+        titleCell.setCellValue("스톤 목록");
+        CellStyle titleStyle = workbook.createCellStyle();
+        applyTitleStyle(workbook, titleStyle, titleCell);
+
+        Cell dateCell = titleRow.createCell(5);
+        dateCell.setCellValue(LocalDate.now().toString());
+        CellStyle dateStyle = workbook.createCellStyle();
+        applyDateStyle(workbook, dateStyle, dateCell);
+
+        // 헤더 행 (Row 1)
+        Row headerRow = sheet.createRow(1);
+        CellStyle headerStyle = workbook.createCellStyle();
+        applyHeaderStyle(workbook, headerStyle);
+        setHeaders(headers, sheet, headerRow, headerStyle);
+
+        // 데이터 행 (Row 2 ~)
+        CellStyle dataStyle = workbook.createCellStyle();
+        applyDataStyle(workbook, dataStyle);
+        setDataRows(stoneExcelDtos, sheet, dataStyle, 2);
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        workbook.write(outputStream);
+        workbook.close();
+
+        return outputStream.toByteArray();
+    }
+
+    private static void setDataRows(List<StoneExcelDto> dtoList, Sheet sheet, CellStyle style, int startRowIdx) {
+        int index = 1;
+        for (StoneExcelDto dto : dtoList) {
+            Row row = sheet.createRow(startRowIdx++);
+            row.setHeightInPoints(25);
+
+            createCell(row, 0, index++, style);
+            createCell(row, 1, dto.getStoneId(), style);
+            createCell(row, 2, dto.getStoneName(), style);
+            createCell(row, 3, dto.getStoneType(), style);
+            createCell(row, 4, dto.getStoneShape(), style);
+            createCell(row, 5, dto.getStoneSize(), style);
+            createCell(row, 6, dto.getStoneWeight(), style);
+            createCell(row, 7, dto.getStonePurchasePrice(), style);
+            createCell(row, 8, dto.getProductCount(), style);
+            createCell(row, 9, dto.getStoneNote(), style);
+        }
+    }
+
+    private static void createCell(Row row, int index, Object value, CellStyle style) {
+        Cell cell = row.createCell(index);
+        if (value instanceof String) {
+            cell.setCellValue((String) value);
+        } else if (value instanceof Integer) {
+            cell.setCellValue((Integer) value);
+        } else if (value != null) {
+            cell.setCellValue(value.toString());
+        } else {
+            cell.setCellValue("");
+        }
+        cell.setCellStyle(style);
+    }
+
+    private static void setHeaders(List<String> headers, Sheet sheet, Row headerRow, CellStyle style) {
+        int[] widths = {
+                5 * 256, 10 * 256, 25 * 256, 12 * 256, 12 * 256,
+                10 * 256, 10 * 256, 12 * 256, 12 * 256, 30 * 256
+        };
+        for (int i = 0; i < headers.size(); i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers.get(i));
+            cell.setCellStyle(style);
+            sheet.setColumnWidth(i, widths[i]);
+        }
+        headerRow.setHeightInPoints(24);
+    }
+
+    private static void applyTitleStyle(Workbook workbook, CellStyle style, Cell cell) {
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontHeightInPoints((short) 16);
+        style.setFont(font);
+        style.setAlignment(HorizontalAlignment.LEFT);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        cell.setCellStyle(style);
+    }
+
+    private static void applyDateStyle(Workbook workbook, CellStyle style, Cell cell) {
+        Font font = workbook.createFont();
+        font.setFontHeightInPoints((short) 12);
+        style.setFont(font);
+        style.setAlignment(HorizontalAlignment.RIGHT);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        cell.setCellStyle(style);
+    }
+
+    private static void applyHeaderStyle(Workbook workbook, CellStyle style) {
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontHeightInPoints((short) 10);
+        style.setFont(font);
+        style.setWrapText(true);
+        style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+    }
+
+    private static void applyDataStyle(Workbook workbook, CellStyle style) {
+        Font font = workbook.createFont();
+        font.setFontHeightInPoints((short) 10);
+        style.setFont(font);
+        style.setWrapText(true);
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+    }
+}
