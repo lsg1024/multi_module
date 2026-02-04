@@ -47,22 +47,36 @@ public class JwtUtil {
         return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("role", String.class);
     }
 
+    public Long getStoreId(String token) {
+        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("storeId", Long.class);
+    }
+
     public void isExpired(String token) {
         Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().getExpiration().before(new Date());
     }
 
     public String createJwt(String category, String id, String tenantId, String nickName, String forward, String device,  String role, Long expireTime) {
+        return createJwt(category, id, tenantId, nickName, forward, device, role, null, expireTime);
+    }
 
+    public String createJwt(String category, String id, String tenantId, String nickName, String forward, String device, String role, Long storeId, Long expireTime) {
         Instant now = Instant.now();
         Instant expireAt = now.plusMillis(expireTime);
-        return Jwts.builder()
+
+        var builder = Jwts.builder()
                 .claim("category", category)
                 .claim("id", id)
                 .claim("tenantId", tenantId)
                 .claim("nickname", nickName)
                 .claim("forward", forward)
                 .claim("device", device)
-                .claim("role", role)
+                .claim("role", role);
+
+        if (storeId != null) {
+            builder.claim("storeId", storeId);
+        }
+
+        return builder
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expireAt))
                 .signWith(secretKey)

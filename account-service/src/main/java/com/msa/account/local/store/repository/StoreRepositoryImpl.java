@@ -7,6 +7,8 @@ import com.msa.account.global.domain.dto.QAccountDto_AccountSaleLogResponse;
 import com.msa.account.global.domain.dto.QAccountDto_AccountSingleResponse;
 import com.msa.account.global.excel.dto.AccountExcelDto;
 import com.msa.account.global.excel.dto.QAccountExcelDto;
+import com.msa.account.global.excel.dto.ReceivableExcelDto;
+import com.msa.account.global.excel.dto.QReceivableExcelDto;
 import com.msa.account.local.store.domain.dto.QStoreDto_StoreResponse;
 import com.msa.account.local.store.domain.dto.StoreDto;
 import com.msa.common.global.common_enum.sale_enum.SaleStatus;
@@ -337,6 +339,61 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                 .from(store)
                 .leftJoin(store.address, address)
                 .leftJoin(store.commonOption, commonOption)
+                .orderBy(store.storeName.desc())
+                .fetch();
+    }
+
+    @Override
+    public List<ReceivableExcelDto> findAllReceivableExcel(String name) {
+        BooleanExpression storeName = name != null ? store.storeName.contains(name) : null;
+
+        StringExpression latestTransactionDateString = Expressions.stringTemplate(
+                "TO_CHAR(MAX(transactionHistory.transactionDate), 'YYYY-MM-DD HH24:MI:SS')",
+                transactionHistory.transactionDate.max()
+        );
+
+        JPQLQuery<String> lastPaymentDateQuery = JPAExpressions
+                .select(latestTransactionDateString)
+                .from(transactionHistory)
+                .where(transactionHistory.store.eq(store)
+                        .and(transactionHistory.transactionDeleted.isFalse())
+                        .and(transactionHistory.transactionType.eq(SaleStatus.PAYMENT)));
+
+        JPQLQuery<String> lastSaleDateQuery = JPAExpressions
+                .select(latestTransactionDateString)
+                .from(transactionHistory)
+                .where(transactionHistory.store.eq(store)
+                        .and(transactionHistory.transactionDeleted.isFalse())
+                        .and(transactionHistory.transactionType.eq(SaleStatus.SALE)));
+
+        BooleanExpression hasHistory = JPAExpressions
+                .selectOne()
+                .from(transactionHistory)
+                .where(transactionHistory.store.eq(store)
+                        .and(transactionHistory.transactionDeleted.isFalse())
+                        .or(transactionHistory.transactionType.eq(SaleStatus.PAYMENT))
+                        .or(transactionHistory.transactionType.eq(SaleStatus.SALE)))
+                .exists();
+
+        return query
+                .select(new QReceivableExcelDto(
+                        store.storeId,
+                        store.storeName,
+                        store.commonOption.optionLevel.stringValue(),
+                        store.currentGoldBalance.stringValue(),
+                        store.currentMoneyBalance.stringValue(),
+                        lastSaleDateQuery,
+                        lastPaymentDateQuery,
+                        store.storeNote
+                ))
+                .from(store)
+                .leftJoin(store.address, address)
+                .leftJoin(store.commonOption, commonOption)
+                .where(
+                        store.storeDeleted.isFalse().and(storeName),
+                        store.currentGoldBalance.ne(BigDecimal.ZERO).or(store.currentMoneyBalance.ne(0L)),
+                        hasHistory
+                )
                 .orderBy(store.storeName.desc())
                 .fetch();
     }

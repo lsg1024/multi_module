@@ -3,6 +3,7 @@ package com.msa.order.local.stock.controller;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.AccessToken;
 import com.msa.common.global.util.CustomPage;
+import com.msa.order.local.stock.dto.InventoryDto;
 import com.msa.order.local.stock.dto.StockDto;
 import com.msa.order.local.stock.service.StockService;
 import jakarta.validation.Valid;
@@ -187,5 +188,50 @@ public class StockController {
         return ResponseEntity.ok(ApiResponse.success(filterColors));
     }
 
+    @GetMapping("/stocks/inventory")
+    public ResponseEntity<ApiResponse<CustomPage<InventoryDto.Response>>> getInventoryStocks(
+            @RequestParam(name = "searchField", required = false) String searchField,
+            @RequestParam(name = "searchValue", required = false) String searchValue,
+            @RequestParam(name = "sortField", required = false) String sortField,
+            @RequestParam(name = "sortOrder", required = false) String sortOrder,
+            @RequestParam(name = "stockChecked", required = false) String stockChecked,
+            @RequestParam(name = "orderStatus", required = false) String orderStatus,
+            @RequestParam(name = "materialName", required = false) String materialName,
+            @PageableDefault(size = 40) Pageable pageable) {
+
+        CustomPage<InventoryDto.Response> inventoryStocks = stockService.getInventoryStocks(
+                searchField, searchValue, sortField, sortOrder, stockChecked, orderStatus, materialName, pageable);
+
+        return ResponseEntity.ok(ApiResponse.success(inventoryStocks));
+    }
+
+    @GetMapping("/stocks/inventory/filters/material")
+    public ResponseEntity<ApiResponse<List<String>>> getInventoryMaterials() {
+        List<String> materials = stockService.getInventoryMaterials();
+        return ResponseEntity.ok(ApiResponse.success(materials));
+    }
+
+    @PostMapping("/stocks/inventory/prepare")
+    public ResponseEntity<ApiResponse<InventoryDto.ResetResponse>> prepareInventoryCheck(
+            @AccessToken String accessToken) {
+
+        InventoryDto.ResetResponse response = stockService.prepareInventoryCheck();
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("/stocks/inventory/check")
+    public ResponseEntity<ApiResponse<InventoryDto.CheckResponse>> checkStock(
+            @AccessToken String accessToken,
+            @RequestParam(name = "flowCode") Long flowCode) {
+
+        InventoryDto.CheckResponse response = stockService.checkStock(flowCode);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/stocks/inventory/statistics")
+    public ResponseEntity<ApiResponse<InventoryDto.StatisticsResponse>> getInventoryStatistics() {
+        InventoryDto.StatisticsResponse response = stockService.getInventoryStatistics();
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 
 }

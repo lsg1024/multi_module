@@ -6,6 +6,9 @@ import com.msa.order.local.order.entity.QStatusHistory;
 import com.msa.order.local.order.entity.order_enum.BusinessPhase;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.order.entity.order_enum.SourceType;
+import com.msa.order.local.stock.dto.InventoryDto;
+import com.msa.order.local.stock.dto.QInventoryDto_MaterialStatistics;
+import com.msa.order.local.stock.dto.QInventoryDto_Response;
 import com.msa.order.local.stock.dto.QStockDto_Response;
 import com.msa.order.local.stock.dto.StockDto;
 import com.querydsl.core.BooleanBuilder;
@@ -381,5 +384,201 @@ public class StockRepositoryImpl implements CustomStockRepository {
             }
         }
         return builder;
+    }
+
+    // ==================== 재고 조사 관련 메서드 ====================
+
+    @Override
+    public CustomPage<InventoryDto.Response> findInventoryStocks(InventoryDto.Condition condition, Pageable pageable) {
+        BooleanBuilder builder = new BooleanBuilder();
+
+        // 재고 조사 가능 상태만 조회 (STOCK, RENTAL, RETURN, NORMAL)
+        builder.and(stock.orderStatus.in(
+                OrderStatus.STOCK,
+                OrderStatus.RENTAL,
+                OrderStatus.RETURN,
+                OrderStatus.NORMAL
+        ));
+        builder.and(stock.stockDeleted.isFalse());
+
+        // 재고 조사 여부 필터
+        if (StringUtils.hasText(condition.getStockChecked())) {
+            if ("checked".equalsIgnoreCase(condition.getStockChecked())) {
+                builder.and(stock.stockChecked.isTrue());
+            } else if ("unchecked".equalsIgnoreCase(condition.getStockChecked())) {
+                builder.and(stock.stockChecked.isFalse().or(stock.stockChecked.isNull()));
+            }
+        }
+
+        // 재고 구분 필터 (STOCK, RENTAL, RETURN, NORMAL)
+        if (StringUtils.hasText(condition.getOrderStatus())) {
+            builder.and(stock.orderStatus.eq(OrderStatus.valueOf(condition.getOrderStatus())));
+        }
+
+        // 재질 필터
+        if (StringUtils.hasText(condition.getMaterialName())) {
+            builder.and(stock.product.materialName.eq(condition.getMaterialName()));
+        }
+
+        // 검색 필드 처리
+        if (StringUtils.hasText(condition.getSearchField()) && StringUtils.hasText(condition.getSearchValue())) {
+            String searchValue = condition.getSearchValue();
+            switch (condition.getSearchField()) {
+                case "productName" -> builder.and(stock.product.productName.containsIgnoreCase(searchValue));
+                case "materialName" -> builder.and(stock.product.materialName.containsIgnoreCase(searchValue));
+                case "colorName" -> builder.and(stock.product.colorName.containsIgnoreCase(searchValue));
+                default -> builder.and(stock.product.productName.containsIgnoreCase(searchValue));
+            }
+        }
+
+        // 정렬 처리
+        OrderSpecifier<?>[] orderSpecifiers = createInventorySpecifiers(condition.getSortField(), condition.getSortOrder());
+
+        // statusHistory 서브쿼리 - 최초 기록의 sourceType 조회
+        QStatusHistory subHistory = new QStatusHistory("subHistory");
+
+        List<InventoryDto.Response> content = query
+                .select(new QInventoryDto_Response(
+                        stock.flowCode.stringValue(),
+                        stock.createDate.stringValue(),
+                        stock.stockCheckedAt.stringValue(),
+                        stock.stockChecked,
+                        statusHistory.sourceType.stringValue(),
+                        stock.orderStatus.stringValue(),
+                        stock.product.productName,
+                        stock.product.materialName,
+                        stock.product.colorName,
+                        stock.product.goldWeight.stringValue(),
+                        stock.product.productPurchaseCost,
+                        stock.product.productLaborCost
+                ))
+                .from(stock)
+                .leftJoin(statusHistory)
+                    .on(statusHistory.flowCode.eq(stock.flowCode),
+                            statusHistory.createAt.eq(
+                                    JPAExpressions
+                                            .select(subHistory.createAt.min())
+                                            .from(subHistory)
+                                            .where(subHistory.flowCode.eq(stock.flowCode))
+                            ))
+                .where(builder)
+                .orderBy(orderSpecifiers)
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        // 상태 표시 변환: "일반-재고", "주문-재고" 형식으로 변환
+        for (InventoryDto.Response response : content) {
+            String originStatus = response.getOriginStatus() != null
+                    ? SourceType.valueOf(response.getOriginStatus()).getDisplayName()
+                    : "";
+            String currentStatus = response.getOrderStatus() != null
+                    ? OrderStatus.valueOf(response.getOrderStatus()).getDisplayName()
+                    : "";
+            response.updateStatus(originStatus, originStatus + "-" + currentStatus);
+        }
+
+        JPAQuery<Long> countQuery = query
+                .select(stock.stockId.count())
+                .from(stock)
+                .where(builder);
+
+        return new CustomPage<>(content, pageable, countQuery.fetchOne());
+    }
+
+    @Override
+    public List<String> findInventoryMaterials() {
+        return query
+                .selectDistinct(stock.product.materialName)
+                .from(stock)
+                .where(
+                        stock.orderStatus.in(
+                                OrderStatus.STOCK,
+                                OrderStatus.RENTAL,
+                                OrderStatus.RETURN,
+                                OrderStatus.NORMAL
+                        ),
+                        stock.stockDeleted.isFalse(),
+                        stock.product.materialName.isNotNull()
+                )
+                .orderBy(stock.product.materialName.asc())
+                .fetch();
+    }
+
+    @Override
+    public int resetAllStockChecks() {
+        long count = query
+                .update(stock)
+                .set(stock.stockChecked, false)
+                .setNull(stock.stockCheckedAt)
+                .where(
+                        stock.orderStatus.in(
+                                OrderStatus.STOCK,
+                                OrderStatus.RENTAL,
+                                OrderStatus.RETURN,
+                                OrderStatus.NORMAL
+                        ),
+                        stock.stockDeleted.isFalse()
+                )
+                .execute();
+
+        return (int) count;
+    }
+
+    private OrderSpecifier<?>[] createInventorySpecifiers(String sortField, String sortOrder) {
+        List<OrderSpecifier<?>> orderSpecifiers = new ArrayList<>();
+        Order direction = "ASC".equalsIgnoreCase(sortOrder) ? Order.ASC : Order.DESC;
+
+        if (StringUtils.hasText(sortField)) {
+            switch (sortField) {
+                case "stockCheckedAt" -> orderSpecifiers.add(new OrderSpecifier<>(direction, stock.stockCheckedAt));
+                case "createAt" -> orderSpecifiers.add(new OrderSpecifier<>(direction, stock.createDate));
+                case "productName" -> orderSpecifiers.add(new OrderSpecifier<>(direction, stock.product.productName));
+                case "colorName" -> orderSpecifiers.add(new OrderSpecifier<>(direction, stock.product.colorName));
+                case "materialName" -> orderSpecifiers.add(new OrderSpecifier<>(direction, stock.product.materialName));
+                case "goldWeight" -> orderSpecifiers.add(new OrderSpecifier<>(direction, stock.product.goldWeight));
+                case "productPurchaseCost" -> orderSpecifiers.add(new OrderSpecifier<>(direction, stock.product.productPurchaseCost));
+                case "productLaborCost" -> orderSpecifiers.add(new OrderSpecifier<>(direction, stock.product.productLaborCost));
+                default -> orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, stock.createDate));
+            }
+        } else {
+            orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, stock.createDate));
+        }
+
+        return orderSpecifiers.toArray(new OrderSpecifier[0]);
+    }
+
+    @Override
+    public List<InventoryDto.MaterialStatistics> findInventoryStatistics(boolean checked) {
+        BooleanBuilder builder = new BooleanBuilder();
+
+        // 재고 조사 가능 상태만 조회
+        builder.and(stock.orderStatus.in(
+                OrderStatus.STOCK,
+                OrderStatus.RENTAL,
+                OrderStatus.RETURN,
+                OrderStatus.NORMAL
+        ));
+        builder.and(stock.stockDeleted.isFalse());
+
+        // 재고 조사 여부 필터
+        if (checked) {
+            builder.and(stock.stockChecked.isTrue());
+        } else {
+            builder.and(stock.stockChecked.isFalse().or(stock.stockChecked.isNull()));
+        }
+
+        return query
+                .select(new QInventoryDto_MaterialStatistics(
+                        stock.product.materialName,
+                        stock.product.goldWeight.sum().stringValue(),
+                        stock.stockId.count().intValue(),
+                        stock.product.productPurchaseCost.sum().longValue()
+                ))
+                .from(stock)
+                .where(builder)
+                .groupBy(stock.product.materialName)
+                .orderBy(stock.product.materialName.asc())
+                .fetch();
     }
 }

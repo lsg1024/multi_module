@@ -167,6 +167,23 @@ public class FactoryController {
         return new ResponseEntity<>(formatDtoToExcel, headers, HttpStatus.OK);
     }
 
+    @GetMapping("/factories/purchase/excel")
+    public ResponseEntity<byte[]> getPurchaseExcel(
+            @AccessToken String accessToken,
+            @RequestParam(name = "endAt") String endAt) throws IOException {
+
+        byte[] excelBytes = factoryService.getPurchaseExcel(accessToken, endAt);
+
+        HttpHeaders headers = new HttpHeaders();
+        String fileName = "매입잔액_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodedFileName + "\"; filename*=UTF-8''");
+        headers.add(HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+        return new ResponseEntity<>(excelBytes, headers, HttpStatus.OK);
+    }
+
     @PatchMapping("/factories/harry/{id}/{harry}")
     public ResponseEntity<ApiResponse<String>> updateHarry(
             @AccessToken String accessToken,

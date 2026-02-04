@@ -85,15 +85,15 @@ public class ProductController {
 
     @GetMapping("/products")
     public ResponseEntity<ApiResponse<CustomPage<ProductDto.Page>>> getProducts(
-            @RequestParam(name = "name", required = false) String productName,
-            @RequestParam(name = "factory", required = false) String factoryName,
-            @RequestParam(name = "classification", required = false) String classificationId,
-            @RequestParam(name = "setType", required = false) String setTypeId,
+            @RequestParam(name = "search", required = false) String search,
+            @RequestParam(name = "searchField", required = false) String searchField,
+            @RequestParam(name = "searchMin", required = false) String searchMin,
+            @RequestParam(name = "searchMax", required = false) String searchMax,
             @RequestParam(name = "sortField", required = false) String sortField,
-            @RequestParam(name = "sort", required = false) String sort,
+            @RequestParam(name = "sortOrder", required = false) String sortOrder,
             @RequestParam(name = "grade", required = false) String grade,
             @PageableDefault(size = 12) Pageable pageable) {
-        CustomPage<ProductDto.Page> products = productService.getProducts(productName, factoryName, classificationId, setTypeId, pageable, sortField, sort, grade);
+        CustomPage<ProductDto.Page> products = productService.getProducts(search, searchField, searchMin, searchMax, sortField, sortOrder, grade, pageable);
         return ResponseEntity.ok(ApiResponse.success(products));
     }
 

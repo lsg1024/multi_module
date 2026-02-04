@@ -2,6 +2,7 @@ package com.msa.account.local.store.repository;
 
 import com.msa.account.global.domain.dto.AccountDto;
 import com.msa.account.global.excel.dto.AccountExcelDto;
+import com.msa.account.global.excel.dto.ReceivableExcelDto;
 import com.msa.account.local.store.domain.dto.StoreDto;
 import com.msa.common.global.util.CustomPage;
 import org.springframework.data.domain.Pageable;
@@ -18,4 +19,5 @@ public interface CustomStoreRepository {
     AccountDto.AccountResponse findByStoreIdAndReceivable(Long storeId);
     AccountDto.AccountSaleLogResponse findByStoreIdAndReceivableByLog(Long storeId);
     List<AccountExcelDto> findAllStoreExcel();
+    List<ReceivableExcelDto> findAllReceivableExcel(String name);
 }

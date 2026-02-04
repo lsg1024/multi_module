@@ -48,12 +48,22 @@ public class UsersService {
             throw new IllegalArgumentException("이미 존재하는 아이디 입니다.");
         }
 
+        Role role = Role.GUEST;
+        if (userDto.getRole() != null) {
+            try {
+                role = Role.valueOf(userDto.getRole());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("올바르지 않은 권한 값입니다: " + userDto.getRole());
+            }
+        }
+
         final Users user = Users.builder()
                 .userId(userDto.getUserId())
                 .tenantId(tenantId)
                 .password(encoder.encode(userDto.getPassword()))
                 .nickname(userDto.getNickname())
-                .role(Role.GUEST)
+                .role(role)
+                .storeId(userDto.getStoreId())
                 .build();
 
         usersRepository.save(user);
@@ -111,7 +121,13 @@ public class UsersService {
 
         return usersRepository.findAll().stream()
                 .filter(u -> !userId.equals(u.getUserId()))
-                .map(u -> new UserDto.UserInfo(u.getId().toString(), u.getTenantId(), u.getNickname(), u.getRole().toString()))
+                .map(u -> UserDto.UserInfo.builder()
+                        .userId(u.getId().toString())
+                        .tenantId(u.getTenantId())
+                        .nickname(u.getNickname())
+                        .role(u.getRole().toString())
+                        .storeId(u.getStoreId())
+                        .build())
                 .sorted(Comparator.comparingInt(u -> Integer.parseInt(u.getUserId())))
                 .collect(Collectors.toList());
     }
@@ -137,6 +153,7 @@ public class UsersService {
                     .nickname(userInfo.getNickname())
                     .tenantId(userInfo.getTenantId())
                     .role(String.valueOf(userInfo.getRole()))
+                    .storeId(userInfo.getStoreId())
                     .build();
 
             if (user.getRole().equals(Role.GUEST.getKey())) {

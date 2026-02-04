@@ -12,10 +12,18 @@ import com.msa.order.local.stock.service.StockService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+
 
 @RestController
 public class SaleController {
@@ -128,13 +136,13 @@ public class SaleController {
         return ResponseEntity.ok(ApiResponse.success("삭제 완료"));
     }
 
-    //판매 기록
     @GetMapping("/sale/past")
     public ResponseEntity<ApiResponse<List<SaleDto.SaleDetailDto>>> findLastSaleHistory(
+            @AccessToken String accessToken,
             @RequestParam(name = "store") Long storeId,
             @RequestParam(name = "product") Long productId,
             @RequestParam(name = "material") String materialName) {
-        List<SaleDto.SaleDetailDto> saleDetailDtos = saleService.findSaleProductNameAndMaterial(storeId, productId, materialName);
+        List<SaleDto.SaleDetailDto> saleDetailDtos = saleService.findSaleProductNameAndMaterial(accessToken, storeId, productId, materialName);
         return ResponseEntity.ok(ApiResponse.success(saleDetailDtos));
     }
 
@@ -153,6 +161,29 @@ public class SaleController {
             @RequestBody SaleDto.GoldPriceRequest goldPriceRequest) {
         saleService.updateAccountGoldPrice(saleCode, goldPriceRequest);
         return ResponseEntity.ok(ApiResponse.success("추가 완료"));
+    }
+
+    // 판매 내역 엑셀 다운로드
+    @GetMapping("/sales/excel")
+    public ResponseEntity<byte[]> downloadSalesExcel(
+            @RequestParam(name = "search", required = false) String input,
+            @RequestParam(name = "start") String startAt,
+            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "type", required = false) String material) throws IOException {
+
+        byte[] excelBytes = saleService.getSalesExcel(input, startAt, endAt, material);
+
+        String fileName = "판매내역_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replace("+", "%20");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFileName);
+        headers.setContentLength(excelBytes.length);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(excelBytes);
     }
 
 }

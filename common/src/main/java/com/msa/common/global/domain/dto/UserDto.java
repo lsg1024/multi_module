@@ -28,13 +28,15 @@ public class UserDto {
         private String tenantId;
         private String nickname;
         private String role;
+        private Long storeId;
 
         @Builder
-        public UserInfo(String userId, String tenantId, String nickname, String role) {
+        public UserInfo(String userId, String tenantId, String nickname, String role, Long storeId) {
             this.userId = userId;
             this.tenantId = tenantId;
             this.nickname = nickname;
             this.role = role;
+            this.storeId = storeId;
         }
     }
 
@@ -70,6 +72,9 @@ public class UserDto {
         @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*[0-9])(?=.*[$@!%*#?&]).{8,16}$",
                 message = PASSWORD_ERROR)
         private String confirm_password;
+
+        private String role;
+        private Long storeId;
     }
 
     @Getter @Setter

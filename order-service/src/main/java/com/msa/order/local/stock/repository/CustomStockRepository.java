@@ -2,6 +2,7 @@ package com.msa.order.local.stock.repository;
 
 import com.msa.common.global.util.CustomPage;
 import com.msa.order.local.order.dto.OrderDto;
+import com.msa.order.local.stock.dto.InventoryDto;
 import com.msa.order.local.stock.dto.StockDto;
 import org.springframework.data.domain.Pageable;
 
@@ -16,4 +17,10 @@ public interface CustomStockRepository {
     List<String> findByFilterStores(StockDto.StockCondition condition);
     List<String> findByFilterSetType(StockDto.StockCondition condition);
     List<String> findByFilterColor(StockDto.StockCondition condition);
+
+    // 재고 조사
+    CustomPage<InventoryDto.Response> findInventoryStocks(InventoryDto.Condition condition, Pageable pageable);
+    List<String> findInventoryMaterials();
+    int resetAllStockChecks();
+    List<InventoryDto.MaterialStatistics> findInventoryStatistics(boolean checked);
 }

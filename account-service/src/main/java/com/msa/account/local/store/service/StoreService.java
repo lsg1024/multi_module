@@ -5,6 +5,8 @@ import com.msa.account.global.domain.entity.GoldHarry;
 import com.msa.account.global.domain.entity.OptionLevel;
 import com.msa.account.global.domain.repository.GoldHarryRepository;
 import com.msa.account.global.excel.dto.AccountExcelDto;
+import com.msa.account.global.excel.dto.ReceivableExcelDto;
+import com.msa.account.global.excel.util.ReceivableExcelUtil;
 import com.msa.account.global.exception.ExceptionMessage;
 import com.msa.account.global.exception.NotAuthorityException;
 import com.msa.account.global.exception.NotFoundException;
@@ -154,7 +156,9 @@ public class StoreService {
         Store store = storeRepository.findByStoreInfo(id)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        return new StoreDto.ApiStoreInfo(store.getStoreId(), store.getStoreName(), store.getCommonOption().getOptionLevel().getGrade(), store.getCommonOption().getGoldHarryLoss());
+        boolean applyPastSales = store.getAdditionalOption() != null && store.getAdditionalOption().isOptionApplyPastSales();
+
+        return new StoreDto.ApiStoreInfo(store.getStoreId(), store.getStoreName(), store.getCommonOption().getOptionLevel().getGrade(), store.getCommonOption().getGoldHarryLoss(), applyPastSales);
     }
 
     public String getStoreGrade(String storeId) {
@@ -192,6 +196,15 @@ public class StoreService {
     public List<AccountExcelDto> getExcel(String accessToken) {
         if (authorityUserRoleUtil.verification(accessToken)) {
             return storeRepository.findAllStoreExcel();
+        }
+        throw new NotAuthorityException(NO_ROLE);
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] getReceivableExcel(String accessToken, String name) throws java.io.IOException {
+        if (authorityUserRoleUtil.verification(accessToken)) {
+            List<ReceivableExcelDto> receivableList = storeRepository.findAllReceivableExcel(name);
+            return ReceivableExcelUtil.createReceivableWorkSheet(receivableList, "미수금");
         }
         throw new NotAuthorityException(NO_ROLE);
     }

@@ -12,12 +12,19 @@ import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
@@ -80,16 +87,16 @@ public class StoneController {
         return ResponseEntity.ok(ApiResponse.success(stone));
     }
 
-    // 복수 조회 + 검색 + 페이징
     @GetMapping("/stones")
     public ResponseEntity<ApiResponse<CustomPage<StoneDto.PageDto>>> getStones(
-            @RequestParam(name = "search", required = false) String stoneName,
-            @RequestParam(name = "shape", required = false) String stoneShape,
-            @RequestParam(name = "type", required = false) String stoneType,
+            @RequestParam(name = "search", required = false) String search,
+            @RequestParam(name = "searchField", required = false) String searchField,
+            @RequestParam(name = "searchMin", required = false) String searchMin,
+            @RequestParam(name = "searchMax", required = false) String searchMax,
             @RequestParam(name = "sortField", required = false) String sortField,
-            @RequestParam(name = "sortOrder", required = false) String sort,
+            @RequestParam(name = "sortOrder", required = false) String sortOrder,
             @PageableDefault(size = 12) Pageable pageable) {
-        CustomPage<StoneDto.PageDto> result = stoneService.getStones(stoneName, stoneShape, stoneType, sortField, sort, pageable);
+        CustomPage<StoneDto.PageDto> result = stoneService.getStones(search, searchField, searchMin, searchMax, sortField, sortOrder, pageable);
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
@@ -126,5 +133,27 @@ public class StoneController {
             @PathVariable Long id) {
         Boolean existStoneId = stoneService.getExistStoneId(id);
         return ResponseEntity.ok(ApiResponse.success(existStoneId));
+    }
+
+    // 스톤 목록 엑셀 다운로드
+    @GetMapping("/stones/excel")
+    public ResponseEntity<byte[]> downloadStonesExcel(
+            @RequestParam(name = "search", required = false) String stoneName,
+            @RequestParam(name = "shape", required = false) String stoneShape,
+            @RequestParam(name = "type", required = false) String stoneType) throws IOException {
+
+        byte[] excelBytes = stoneService.getStonesExcel(stoneName, stoneShape, stoneType);
+
+        String fileName = "스톤목록_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replace("+", "%20");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFileName);
+        headers.setContentLength(excelBytes.length);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(excelBytes);
     }
 }

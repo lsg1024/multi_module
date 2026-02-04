@@ -4,7 +4,9 @@ import com.msa.account.global.domain.dto.AccountDto;
 import com.msa.account.global.domain.dto.QAccountDto_AccountResponse;
 import com.msa.account.global.domain.dto.QAccountDto_AccountSingleResponse;
 import com.msa.account.global.excel.dto.AccountExcelDto;
+import com.msa.account.global.excel.dto.PurchaseExcelDto;
 import com.msa.account.global.excel.dto.QAccountExcelDto;
+import com.msa.account.global.excel.dto.QPurchaseExcelDto;
 import com.msa.account.local.factory.domain.dto.FactoryDto;
 import com.msa.account.local.factory.domain.dto.QFactoryDto_ApiFactoryInfo;
 import com.msa.account.local.factory.domain.dto.QFactoryDto_FactoryResponse;
@@ -213,6 +215,52 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
                 );
 
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
+    }
+
+    @Override
+    public List<PurchaseExcelDto> findAllPurchaseExcel(String endAt) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDateTime endDateTime = LocalDate.parse(endAt, formatter).atTime(23, 59, 59);
+
+        JPQLQuery<Long> maxIdSubQuery = JPAExpressions
+                .select(saleLog.id.max())
+                .from(saleLog)
+                .where(saleLog.factory.eq(factory)
+                        .and(saleLog.saleDate.loe(endDateTime)));
+
+        Expression<String> goldBalanceSubQuery = ExpressionUtils.as(
+                JPAExpressions.select(saleLog.afterGoldBalance.coalesce(BigDecimal.ZERO).stringValue())
+                        .from(saleLog)
+                        .where(saleLog.id.eq(maxIdSubQuery))
+                        .orderBy(saleLog.saleDate.desc(), saleLog.id.desc()),
+                "currentGoldBalance"
+        );
+
+        Expression<String> moneyBalanceSubQuery = ExpressionUtils.as(
+                JPAExpressions.select(saleLog.afterMoneyBalance.coalesce(0L).stringValue())
+                        .from(saleLog)
+                        .where(saleLog.id.eq(maxIdSubQuery))
+                        .orderBy(saleLog.saleDate.desc(), saleLog.id.desc()),
+                "currentMoneyBalance"
+        );
+
+        return query
+                .select(new QPurchaseExcelDto(
+                        factory.factoryId,
+                        factory.factoryName,
+                        factory.commonOption.optionLevel.stringValue(),
+                        goldBalanceSubQuery,
+                        moneyBalanceSubQuery,
+                        factory.factoryNote
+                ))
+                .from(factory)
+                .leftJoin(factory.commonOption, commonOption)
+                .where(
+                        factory.factoryDeleted.isFalse(),
+                        factory.currentGoldBalance.ne(BigDecimal.ZERO).or(factory.currentMoneyBalance.ne(0L))
+                )
+                .orderBy(factory.factoryName.desc())
+                .fetch();
     }
 
 }

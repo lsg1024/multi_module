@@ -190,9 +190,9 @@ public class ProductService {
     }
     //복수 조회
     @Transactional(readOnly = true)
-    public CustomPage<ProductDto.Page> getProducts(String productName, String factoryName, String classificationId, String setTypeId, Pageable pageable, String sortField, String sort, String level) {
+    public CustomPage<ProductDto.Page> getProducts(String search, String searchField, String searchMin, String searchMax, String sortField, String sortOrder, String grade, Pageable pageable) {
 
-        CustomPage<ProductDto.Page> productList = productRepository.findByAllProductName(productName, factoryName, classificationId, setTypeId, level, sortField, sort, pageable);
+        CustomPage<ProductDto.Page> productList = productRepository.findByAllProductName(search, searchField, searchMin, searchMax, grade, sortField, sortOrder, pageable);
 
         Integer latestGoldPrice = goldRepository.findTopByOrderByGoldIdDesc()
                 .map(Gold::getGoldPrice)

@@ -8,7 +8,7 @@ import org.springframework.data.domain.Pageable;
 
 public interface CustomProductRepository {
     ProductDto.Detail findByProductId(Long productId);
-    CustomPage<ProductDto.Page> findByAllProductName(String productName, String factoryName, String classificationId, String setTypeId, String level, String sortField, String sort, Pageable pageable);
+    CustomPage<ProductDto.Page> findByAllProductName(String search, String searchField, String searchMin, String searchMax, String grade, String sortField, String sortOrder, Pageable pageable);
 
     ProductDetailDto findProductDetail(Long productId, WorkGrade grade);
 

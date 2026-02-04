@@ -25,6 +25,7 @@ import com.msa.order.local.order.util.ChangeTracker;
 import com.msa.order.local.order.util.StatusHistoryHelper;
 import com.msa.order.local.outbox.domain.entity.OutboxEvent;
 import com.msa.order.local.outbox.repository.OutboxEventRepository;
+import com.msa.order.local.stock.dto.InventoryDto;
 import com.msa.order.local.stock.dto.StockDto;
 import com.msa.order.local.stock.entity.ProductSnapshot;
 import com.msa.order.local.stock.entity.Stock;
@@ -594,5 +595,158 @@ public class StockService {
     public List<String> getFilterColors(String startAt, String endAt, String orderStatus) {
         StockDto.StockCondition condition = new StockDto.StockCondition(startAt, endAt, orderStatus);
         return customStockRepository.findByFilterColor(condition);
+    }
+
+    // ==================== 재고 조사 관련 메서드 ====================
+
+    /**
+     * 재고 조사 목록 조회
+     */
+    @Transactional(readOnly = true)
+    public CustomPage<InventoryDto.Response> getInventoryStocks(
+            String searchField, String searchValue,
+            String sortField, String sortOrder,
+            String stockChecked, String orderStatus,
+            String materialName, Pageable pageable) {
+
+        InventoryDto.Condition condition = InventoryDto.Condition.builder()
+                .searchField(searchField)
+                .searchValue(searchValue)
+                .sortField(sortField)
+                .sortOrder(sortOrder)
+                .stockChecked(stockChecked)
+                .orderStatus(orderStatus)
+                .materialName(materialName)
+                .build();
+
+        return customStockRepository.findInventoryStocks(condition, pageable);
+    }
+
+    /**
+     * 재고 조사 재질 필터 목록 조회
+     */
+    @Transactional(readOnly = true)
+    public List<String> getInventoryMaterials() {
+        return customStockRepository.findInventoryMaterials();
+    }
+
+    /**
+     * 재고 조사 준비 (초기화)
+     * 모든 재고의 조사 상태를 초기화합니다.
+     */
+    public InventoryDto.ResetResponse prepareInventoryCheck() {
+        int resetCount = customStockRepository.resetAllStockChecks();
+
+        return InventoryDto.ResetResponse.builder()
+                .resetCount(resetCount)
+                .message("재고 조사가 초기화되었습니다. 총 " + resetCount + "건의 재고가 준비되었습니다.")
+                .build();
+    }
+
+    /**
+     * 재고 조사 처리 (바코드 스캔)
+     * flowCode로 재고를 조회하여 재고 조사 처리합니다.
+     */
+    public InventoryDto.CheckResponse checkStock(Long flowCode) {
+        Stock stock = stockRepository.findByFlowCode(flowCode)
+                .orElse(null);
+
+        // 재고가 존재하지 않는 경우
+        if (stock == null) {
+            return InventoryDto.CheckResponse.builder()
+                    .flowCode(flowCode.toString())
+                    .productName(null)
+                    .status("NOT_FOUND")
+                    .message("해당 시리얼의 재고를 찾을 수 없습니다.")
+                    .stockCheckedAt(null)
+                    .build();
+        }
+
+        String productName = stock.getProduct() != null ? stock.getProduct().getProductName() : "알 수 없음";
+
+        // 재고 조사 가능 상태 확인 (STOCK, RENTAL, RETURN, NORMAL)
+        OrderStatus status = stock.getOrderStatus();
+        if (status != OrderStatus.STOCK && status != OrderStatus.RENTAL &&
+            status != OrderStatus.RETURN && status != OrderStatus.NORMAL) {
+            return InventoryDto.CheckResponse.builder()
+                    .flowCode(flowCode.toString())
+                    .productName(productName)
+                    .status("NOT_CHECKABLE")
+                    .message("재고 조사 불가 상태입니다. 현재 상태: " + status.name())
+                    .stockCheckedAt(null)
+                    .build();
+        }
+
+        // 이미 재고 조사가 완료된 경우
+        if (Boolean.TRUE.equals(stock.getStockChecked())) {
+            return InventoryDto.CheckResponse.builder()
+                    .flowCode(flowCode.toString())
+                    .productName(productName)
+                    .status("ALREADY_CHECKED")
+                    .message("이미 재고 조사가 완료된 상품입니다.")
+                    .stockCheckedAt(stock.getStockCheckedAt() != null ? stock.getStockCheckedAt().toString() : null)
+                    .build();
+        }
+
+        // 재고 조사 처리
+        stock.markAsChecked();
+
+        return InventoryDto.CheckResponse.builder()
+                .flowCode(flowCode.toString())
+                .productName(productName)
+                .status("SUCCESS")
+                .message("재고 조사가 완료되었습니다.")
+                .stockCheckedAt(stock.getStockCheckedAt().toString())
+                .build();
+    }
+
+    /**
+     * 재고 조사 통계 조회
+     * 검사한 재고와 검사하지 않은 재고의 재질별 통계를 반환합니다.
+     */
+    @Transactional(readOnly = true)
+    public InventoryDto.StatisticsResponse getInventoryStatistics() {
+        // 미검사 재고 통계
+        List<InventoryDto.MaterialStatistics> uncheckedStats = customStockRepository.findInventoryStatistics(false);
+        // 검사 재고 통계
+        List<InventoryDto.MaterialStatistics> checkedStats = customStockRepository.findInventoryStatistics(true);
+
+        // 미검사 합계 계산
+        InventoryDto.StatisticsSummary uncheckedSummary = calculateSummary(uncheckedStats);
+        // 검사 합계 계산
+        InventoryDto.StatisticsSummary checkedSummary = calculateSummary(checkedStats);
+
+        return InventoryDto.StatisticsResponse.builder()
+                .uncheckedStatistics(uncheckedStats)
+                .checkedStatistics(checkedStats)
+                .uncheckedSummary(uncheckedSummary)
+                .checkedSummary(checkedSummary)
+                .build();
+    }
+
+    private InventoryDto.StatisticsSummary calculateSummary(List<InventoryDto.MaterialStatistics> statistics) {
+        double totalWeight = 0.0;
+        int totalQuantity = 0;
+        long totalPurchaseCost = 0;
+
+        for (InventoryDto.MaterialStatistics stat : statistics) {
+            if (stat.getTotalGoldWeight() != null && !stat.getTotalGoldWeight().isEmpty()) {
+                try {
+                    totalWeight += Double.parseDouble(stat.getTotalGoldWeight());
+                } catch (NumberFormatException ignored) {}
+            }
+            if (stat.getQuantity() != null) {
+                totalQuantity += stat.getQuantity();
+            }
+            if (stat.getTotalPurchaseCost() != null) {
+                totalPurchaseCost += stat.getTotalPurchaseCost();
+            }
+        }
+
+        return InventoryDto.StatisticsSummary.builder()
+                .totalGoldWeight(String.format("%.3f", totalWeight))
+                .totalQuantity(totalQuantity)
+                .totalPurchaseCost(totalPurchaseCost)
+                .build();
     }
 }

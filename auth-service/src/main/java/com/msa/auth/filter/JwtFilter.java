@@ -77,13 +77,15 @@ public class JwtFilter extends OncePerRequestFilter {
         String tenantId = jwtUtil.getTenantId(token);
         String nickname = jwtUtil.getNickname(token);
         String role = jwtUtil.getRole(token);
+        Long storeId = jwtUtil.getStoreId(token);
 
-        UserDto.UserInfo userInfo = new UserDto.UserInfo(
-                user_id,
-                tenantId,
-                nickname,
-                role
-        );
+        UserDto.UserInfo userInfo = UserDto.UserInfo.builder()
+                .userId(user_id)
+                .tenantId(tenantId)
+                .nickname(nickname)
+                .role(role)
+                .storeId(storeId)
+                .build();
 
         Collection<? extends GrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority(userInfo.getRole()));
         Authentication authentication = new UsernamePasswordAuthenticationToken(userInfo, null, authorities);

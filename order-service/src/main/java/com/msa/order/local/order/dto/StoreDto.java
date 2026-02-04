@@ -20,13 +20,15 @@ public class StoreDto {
         private String storeName;
         private String grade;
         private String storeHarry;
+        private boolean optionApplyPastSales;
 
         @Builder
-        public Response(Long storeId, String storeName, String grade, String storeHarry) {
+        public Response(Long storeId, String storeName, String grade, String storeHarry, boolean optionApplyPastSales) {
             this.storeId = storeId;
             this.storeName = storeName;
             this.grade = grade;
             this.storeHarry = storeHarry;
+            this.optionApplyPastSales = optionApplyPastSales;
         }
 
     }

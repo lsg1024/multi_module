@@ -5,6 +5,8 @@ import com.msa.account.global.domain.entity.GoldHarry;
 import com.msa.account.global.domain.entity.OptionLevel;
 import com.msa.account.global.domain.repository.GoldHarryRepository;
 import com.msa.account.global.excel.dto.AccountExcelDto;
+import com.msa.account.global.excel.dto.PurchaseExcelDto;
+import com.msa.account.global.excel.util.PurchaseExcelUtil;
 import com.msa.account.global.exception.NotAuthorityException;
 import com.msa.account.global.exception.NotFoundException;
 import com.msa.account.local.factory.domain.dto.FactoryDto;
@@ -152,6 +154,15 @@ public class FactoryService {
     @Transactional(readOnly = true)
     public CustomPage<AccountDto.AccountResponse> getFactoryPurchase(String endAt, Pageable pageable) {
         return factoryRepository.findAllFactoryAndPurchase(endAt, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] getPurchaseExcel(String accessToken, String endAt) throws java.io.IOException {
+        if (authorityUserRoleUtil.verification(accessToken)) {
+            List<PurchaseExcelDto> purchaseList = factoryRepository.findAllPurchaseExcel(endAt);
+            return PurchaseExcelUtil.createPurchaseWorkSheet(purchaseList, "매입잔액");
+        }
+        throw new NotAuthorityException(NO_ROLE);
     }
 
 //    @Transactional(readOnly = true)

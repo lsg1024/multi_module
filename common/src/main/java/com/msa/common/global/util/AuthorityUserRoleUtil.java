@@ -11,6 +11,7 @@ public class AuthorityUserRoleUtil {
     private static final String ADMIN = "ADMIN";
     private static final String USER = "USER";
     private static final String GUEST = "GUEST";
+    private static final String STORE = "STORE";
 
     private final JwtUtil jwtUtil;
 
@@ -37,5 +38,15 @@ public class AuthorityUserRoleUtil {
         String nickname = jwtUtil.getNickname(token);
 
         return Objects.equals(nickname, userId);
+    }
+
+    public boolean isStore(String token) {
+        String role = jwtUtil.getRole(token);
+
+        return Objects.equals(role, STORE);
+    }
+
+    public Long getStoreId(String token) {
+        return jwtUtil.getStoreId(token);
     }
 }

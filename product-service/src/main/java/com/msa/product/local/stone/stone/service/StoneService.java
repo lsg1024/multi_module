@@ -2,6 +2,8 @@ package com.msa.product.local.stone.stone.service;
 
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.util.CustomPage;
+import com.msa.product.global.excel.dto.StoneExcelDto;
+import com.msa.product.global.excel.util.StoneExcelUtil;
 import com.msa.product.local.stone.stone.dto.StoneDto;
 import com.msa.product.local.stone.stone.dto.StoneWorkGradePolicyDto;
 import com.msa.product.local.stone.stone.entity.Stone;
@@ -11,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -90,9 +93,8 @@ public class StoneService {
                 .build();
     }
 
-    //복수조회 + 검색 + page
-    public CustomPage<StoneDto.PageDto> getStones(String stoneName, String stoneShape, String stoneType, String sortField, String sort, Pageable pageable) {
-        return stoneRepository.findAllStones(stoneName, stoneShape, stoneType, sortField, sort, pageable);
+    public CustomPage<StoneDto.PageDto> getStones(String search, String searchField, String searchMin, String searchMax, String sortField, String sortOrder, Pageable pageable) {
+        return stoneRepository.findAllStones(search, searchField, searchMin, searchMax, sortField, sortOrder, pageable);
     }
 
     //수정
@@ -142,5 +144,14 @@ public class StoneService {
     public Boolean getExistStoneName(String stoneTypeName, String stoneShapeName, String stoneSize) {
         String stoneName = stoneTypeName + "/" + stoneShapeName + "/" + stoneSize;
         return stoneRepository.existsByStoneName(stoneName);
+    }
+
+    /**
+     * 스톤 목록 엑셀 다운로드
+     */
+    @Transactional(readOnly = true)
+    public byte[] getStonesExcel(String stoneName, String stoneShape, String stoneType) throws IOException {
+        List<StoneExcelDto> stoneExcelDtos = stoneRepository.findStonesForExcel(stoneName, stoneShape, stoneType);
+        return StoneExcelUtil.createStoneWorkSheet(stoneExcelDtos);
     }
 }

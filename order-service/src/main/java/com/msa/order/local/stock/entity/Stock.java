@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.SQLDelete;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -70,6 +71,12 @@ public class Stock extends BaseTimeEntity {
     private Integer totalStoneLaborCost;
     @Column(name = "STOCK_DELETED", nullable = false)
     private boolean stockDeleted = false;
+
+    @Column(name = "STOCK_CHECKED")
+    private Boolean stockChecked = false;
+
+    @Column(name = "STOCK_CHECKED_AT")
+    private LocalDateTime stockCheckedAt;
 
     @Embedded
     private ProductSnapshot product;
@@ -190,5 +197,21 @@ public class Stock extends BaseTimeEntity {
         long newFlowCode = TsidCreator.getTsid().toLong();
         this.flowCode = newFlowCode;
         this.stockCode = newFlowCode;
+    }
+
+    /**
+     * 재고 조사 처리
+     */
+    public void markAsChecked() {
+        this.stockChecked = true;
+        this.stockCheckedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 재고 조사 초기화
+     */
+    public void resetStockCheck() {
+        this.stockChecked = false;
+        this.stockCheckedAt = null;
     }
 }
