@@ -17,6 +17,9 @@ import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Pageable;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.msa.product.local.classification.entity.QClassification.classification;
@@ -79,29 +82,9 @@ public class ProductRepositoryImpl implements CustomProductRepository {
     }
 
     @Override
-    public CustomPage<ProductDto.Page> findByAllProductName(String productName, String factoryName, String classificationId, String setTypeId, String grade,String sortField, String sort,  Pageable pageable) {
+    public CustomPage<ProductDto.Page> findByAllProductName(String search, String searchField, String searchMin, String searchMax, String grade, String sortField, String sortOrder, Pageable pageable) {
 
-        BooleanBuilder builder = new BooleanBuilder();
-
-        // 상품명(productName) 또는 공장번호(productFactoryName) 통합 검색
-        if (productName != null && !productName.isBlank()) {
-            builder.and(
-                    product.productName.containsIgnoreCase(productName)
-                            .or(product.productFactoryName.containsIgnoreCase(productName))
-            );
-        }
-
-        if (factoryName != null && !factoryName.isBlank()) {
-            builder.and(product.factoryName.containsIgnoreCase(factoryName));
-        }
-
-        if (classificationId != null && !classificationId.isBlank()) {
-            builder.and(product.classification.classificationId.eq(Long.parseLong(classificationId)));
-        }
-
-        if (setTypeId != null && !setTypeId.isBlank()) {
-            builder.and(product.setType.setTypeId.eq(Long.parseLong(setTypeId)));
-        }
+        BooleanBuilder builder = buildProductSearchConditions(search, searchField, searchMin, searchMax);
 
         WorkGrade targetGrade;
         if (!StringUtils.hasText(grade)) {
@@ -115,7 +98,7 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 productImage.imagePath.max()
         );
 
-        OrderSpecifier<?>[] orderSpecifiers = createOrderSpecifiers(sortField, sort);
+        OrderSpecifier<?>[] orderSpecifiers = createOrderSpecifiers(sortField, sortOrder);
 
         List<ProductDto.Page> content = query
                 .select(new QProductDto_Page(
@@ -279,6 +262,91 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                 .limit(1)
                 .fetchOne();
 
+    }
+
+    private BooleanBuilder buildProductSearchConditions(String search, String searchField, String searchMin, String searchMax) {
+        BooleanBuilder builder = new BooleanBuilder();
+
+        // searchField가 없으면 기본적으로 modelNumber(상품명/공장번호) 검색
+        if (!StringUtils.hasText(searchField)) {
+            if (StringUtils.hasText(search)) {
+                builder.and(
+                        product.productName.containsIgnoreCase(search)
+                                .or(product.productFactoryName.containsIgnoreCase(search))
+                );
+            }
+            return builder;
+        }
+
+        // searchField에 따른 조건 분기
+        switch (searchField) {
+            // 텍스트 검색
+            case "modelNumber" -> {
+                if (StringUtils.hasText(search)) {
+                    builder.and(
+                            product.productName.containsIgnoreCase(search)
+                                    .or(product.productFactoryName.containsIgnoreCase(search))
+                    );
+                }
+            }
+            case "factory" -> {
+                if (StringUtils.hasText(search)) {
+                    builder.and(product.factoryName.containsIgnoreCase(search));
+                }
+            }
+            case "note" -> {
+                if (StringUtils.hasText(search)) {
+                    builder.and(product.productNote.containsIgnoreCase(search));
+                }
+            }
+            // ID 검색
+            case "setType" -> {
+                if (StringUtils.hasText(search)) {
+                    builder.and(product.setType.setTypeId.eq(Long.parseLong(search)));
+                }
+            }
+            case "classification" -> {
+                if (StringUtils.hasText(search)) {
+                    builder.and(product.classification.classificationId.eq(Long.parseLong(search)));
+                }
+            }
+            case "material" -> {
+                if (StringUtils.hasText(search)) {
+                    builder.and(product.material.materialId.eq(Long.parseLong(search)));
+                }
+            }
+            // 범위 검색
+            case "standardWeight" -> {
+                if (StringUtils.hasText(searchMin)) {
+                    builder.and(product.standardWeight.goe(new BigDecimal(searchMin)));
+                }
+                if (StringUtils.hasText(searchMax)) {
+                    builder.and(product.standardWeight.loe(new BigDecimal(searchMax)));
+                }
+            }
+            case "createDate" -> {
+                if (StringUtils.hasText(searchMin)) {
+                    LocalDateTime startDate = LocalDate.parse(searchMin).atStartOfDay();
+                    builder.and(product.createDate.goe(startDate));
+                }
+                if (StringUtils.hasText(searchMax)) {
+                    LocalDateTime endDate = LocalDate.parse(searchMax).atTime(23, 59, 59);
+                    builder.and(product.createDate.loe(endDate));
+                }
+            }
+            // Boolean 검색
+            case "hasImage" -> {
+                if (StringUtils.hasText(search)) {
+                    if ("true".equalsIgnoreCase(search)) {
+                        builder.and(productImage.imageId.isNotNull());
+                    } else if ("false".equalsIgnoreCase(search)) {
+                        builder.and(productImage.imageId.isNull());
+                    }
+                }
+            }
+        }
+
+        return builder;
     }
 
     private OrderSpecifier<?>[] createOrderSpecifiers(String sortField, String sort) {
