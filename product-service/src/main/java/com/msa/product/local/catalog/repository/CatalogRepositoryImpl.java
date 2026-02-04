@@ -1,6 +1,7 @@
 package com.msa.product.local.catalog.repository;
 
 import com.msa.common.global.util.CustomPage;
+import com.msa.product.global.excel.dto.CatalogExcelDto;
 import com.msa.product.local.catalog.dto.CatalogProductDto;
 import com.msa.product.local.catalog.dto.CatalogStoneDto;
 import com.msa.product.local.classification.dto.QClassificationDto_ResponseSingle;
@@ -298,5 +299,49 @@ public class CatalogRepositoryImpl implements CatalogRepository {
             orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, product.productId));
         }
         return orderSpecifiers.toArray(new OrderSpecifier[0]);
+    }
+
+    @Override
+    public List<CatalogExcelDto> findCatalogProductsForExcel(String productName, String classificationId, String setTypeId) {
+        BooleanBuilder builder = new BooleanBuilder();
+
+        if (productName != null && !productName.isBlank()) {
+            builder.and(product.productName.containsIgnoreCase(productName));
+        }
+
+        if (classificationId != null && !classificationId.isBlank()) {
+            builder.and(product.classification.classificationId.eq(Long.parseLong(classificationId)));
+        }
+
+        if (setTypeId != null && !setTypeId.isBlank()) {
+            builder.and(product.setType.setTypeId.eq(Long.parseLong(setTypeId)));
+        }
+
+        return query
+                .select(Projections.constructor(CatalogExcelDto.class,
+                        product.productId.stringValue(),
+                        product.productName,
+                        product.standardWeight.stringValue(),
+                        setType.setTypeName,
+                        classification.classificationName,
+                        material.materialName,
+                        color.colorName,
+                        product.productRelatedNumber,
+                        product.productNote
+                ))
+                .from(product)
+                .leftJoin(product.material, material)
+                .leftJoin(product.setType, setType)
+                .leftJoin(product.classification, classification)
+                .leftJoin(product.productWorkGradePolicyGroups, productWorkGradePolicyGroup)
+                .on(productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue())
+                .leftJoin(productWorkGradePolicyGroup.color, color)
+                .where(
+                        productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue()
+                                .and(builder)
+                                .and(product.productDeleted.isFalse())
+                )
+                .orderBy(product.productName.asc())
+                .fetch();
     }
 }

@@ -51,6 +51,10 @@ dependencies {
     //image resize
     implementation 'net.coobird:thumbnailator:0.4.20'
 
+    //excel
+    implementation 'org.apache.poi:poi:5.3.0'
+    implementation 'org.apache.poi:poi-ooxml:5.3.0'
+
     //db
     runtimeOnly 'com.h2database:h2'
     testRuntimeOnly 'com.h2database:h2'

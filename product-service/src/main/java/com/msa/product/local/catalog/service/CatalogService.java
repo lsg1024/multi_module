@@ -2,6 +2,8 @@ package com.msa.product.local.catalog.service;
 
 import com.msa.common.global.util.AuthorityUserRoleUtil;
 import com.msa.common.global.util.CustomPage;
+import com.msa.product.global.excel.dto.CatalogExcelDto;
+import com.msa.product.global.excel.util.CatalogExcelUtil;
 import com.msa.product.local.catalog.dto.CatalogProductDto;
 import com.msa.product.local.catalog.repository.CatalogRepository;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -78,5 +81,19 @@ public class CatalogService {
         validateStoreAccess(accessToken);
 
         return catalogRepository.findRelatedProducts(productId, relatedNumber);
+    }
+
+    /**
+     * 카탈로그 상품 엑셀 다운로드
+     */
+    public byte[] getCatalogProductsExcel(String accessToken, String productName,
+                                          String classificationId, String setTypeId) throws IOException {
+        validateStoreAccess(accessToken);
+
+        List<CatalogExcelDto> catalogExcelDtos = catalogRepository.findCatalogProductsForExcel(
+                productName, classificationId, setTypeId
+        );
+
+        return CatalogExcelUtil.createCatalogWorkSheet(catalogExcelDtos);
     }
 }

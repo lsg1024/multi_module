@@ -1,6 +1,7 @@
 package com.msa.product.local.catalog.repository;
 
 import com.msa.common.global.util.CustomPage;
+import com.msa.product.global.excel.dto.CatalogExcelDto;
 import com.msa.product.local.catalog.dto.CatalogProductDto;
 import org.springframework.data.domain.Pageable;
 
@@ -32,4 +33,9 @@ public interface CatalogRepository {
      * 관련 상품 조회
      */
     List<CatalogProductDto.RelatedProduct> findRelatedProducts(Long productId, String relatedNumber);
+
+    /**
+     * 엑셀 다운로드용 상품 목록 조회
+     */
+    List<CatalogExcelDto> findCatalogProductsForExcel(String productName, String classificationId, String setTypeId);
 }

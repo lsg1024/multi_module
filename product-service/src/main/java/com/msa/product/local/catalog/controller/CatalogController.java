@@ -9,9 +9,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -75,5 +82,32 @@ public class CatalogController {
                 catalogService.getRelatedProducts(accessToken, productId, relatedNumber);
 
         return ResponseEntity.ok(ApiResponse.success(relatedProducts));
+    }
+
+    /**
+     * 카탈로그 상품 엑셀 다운로드
+     */
+    @GetMapping("/products/excel")
+    public ResponseEntity<byte[]> downloadCatalogProductsExcel(
+            @AccessToken String accessToken,
+            @RequestParam(name = "name", required = false) String productName,
+            @RequestParam(name = "classification", required = false) String classificationId,
+            @RequestParam(name = "setType", required = false) String setTypeId) throws IOException {
+
+        byte[] excelBytes = catalogService.getCatalogProductsExcel(
+                accessToken, productName, classificationId, setTypeId
+        );
+
+        String fileName = "상품카탈로그_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replace("+", "%20");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFileName);
+        headers.setContentLength(excelBytes.length);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(excelBytes);
     }
 }
