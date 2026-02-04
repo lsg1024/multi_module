@@ -84,7 +84,8 @@ public class CustomLoginFilter extends UsernamePasswordAuthenticationFilter {
         GrantedAuthority auth = iterator.next();
         String role = auth.getAuthority();
 
-        String forward = request.getHeader("X-Forwarded-For").split(",")[0].trim();
+        String forwardHeader = request.getHeader("X-Forwarded-For");
+        String forward = (forwardHeader != null) ? forwardHeader.split(",")[0].trim() : request.getRemoteAddr();
         String userAgent = request.getHeader("User-Agent");
 
         // 토큰 생성 (STORE 역할인 경우 storeId 포함)
