@@ -2,6 +2,7 @@ package com.msa.account.local.factory.repository;
 
 import com.msa.account.global.domain.dto.AccountDto;
 import com.msa.account.global.excel.dto.AccountExcelDto;
+import com.msa.account.global.excel.dto.PurchaseExcelDto;
 import com.msa.account.local.factory.domain.dto.FactoryDto;
 import com.msa.common.global.util.CustomPage;
 import org.springframework.data.domain.Pageable;
@@ -15,5 +16,6 @@ public interface CustomFactoryRepository {
     List<AccountExcelDto>  findAllFactoryExcel();
     List<FactoryDto.ApiFactoryInfo> findAllFactory();
     CustomPage<AccountDto.AccountResponse> findAllFactoryAndPurchase(String endAt, Pageable pageable);
+    List<PurchaseExcelDto> findAllPurchaseExcel(String endAt);
 //    AccountDto.AccountResponse findByFactoryIdAndPurchase(Long factoryId);
 }

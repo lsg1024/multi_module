@@ -149,6 +149,7 @@ public class StoreDto {
         private String storeName;
         private String grade;
         private String storeHarry;
+        private boolean optionApplyPastSales;
     }
 
     @Getter

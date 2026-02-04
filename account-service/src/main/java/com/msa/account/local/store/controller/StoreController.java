@@ -165,6 +165,23 @@ public class StoreController {
         return new ResponseEntity<>(formatDtoToExcel, headers, HttpStatus.OK);
     }
 
+    @GetMapping("/stores/receivable/excel")
+    public ResponseEntity<byte[]> getReceivableExcel(
+            @AccessToken String accessToken,
+            @RequestParam(name = "search", required = false) String name) throws IOException {
+
+        byte[] excelBytes = storeService.getReceivableExcel(accessToken, name);
+
+        HttpHeaders headers = new HttpHeaders();
+        String fileName = "미수금_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodedFileName + "\"; filename*=UTF-8''");
+        headers.add(HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+        return new ResponseEntity<>(excelBytes, headers, HttpStatus.OK);
+    }
+
     @PatchMapping("/stores/harry/{id}/{harry}")
     public ResponseEntity<ApiResponse<String>> updateHarry(
             @AccessToken String accessToken,
