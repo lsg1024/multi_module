@@ -1,14 +1,17 @@
 package com.msa.product.local.stone.stone.repository;
 
 import com.msa.common.global.util.CustomPage;
+import com.msa.product.global.excel.dto.StoneExcelDto;
 import com.msa.product.local.stone.stone.dto.StoneDto;
 import com.msa.product.local.stone.stone.dto.StoneWorkGradePolicyDto;
 import com.msa.product.local.stone.stone.entity.Stone;
+import com.msa.product.local.grade.WorkGrade;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -16,6 +19,7 @@ import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Pageable;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -44,14 +48,18 @@ public class StoneRepositoryImpl implements CustomStoneRepository {
     }
 
     @Override
-    public CustomPage<StoneDto.PageDto> findAllStones(String stoneName, String stoneShape, String stoneType, String sortField, String sort, Pageable pageable) {
+    public CustomPage<StoneDto.PageDto> findAllStones(String search, String searchField, String searchMin, String searchMax, String sortField, String sortOrder, Pageable pageable) {
 
-        OrderSpecifier<?>[] specifiers = specifiers(sortField, sort);
+        OrderSpecifier<?>[] specifiers = specifiers(sortField, sortOrder);
+
+        BooleanBuilder builder = buildSearchConditions(search, searchField, searchMin, searchMax);
 
         List<Long> ids = query
                 .select(stone.stoneId)
                 .from(stone)
-                .where(stoneNameEq(stoneName), stoneNameLike(stoneShape, stoneType))
+                .leftJoin(stone.gradePolicies, stoneWorkGradePolicy)
+                .where(builder)
+                .groupBy(stone.stoneId)
                 .orderBy(specifiers)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -59,9 +67,10 @@ public class StoneRepositoryImpl implements CustomStoneRepository {
 
         if (ids.isEmpty()) {
             JPAQuery<Long> countQuery = query
-                    .select(stone.count())
+                    .select(stone.countDistinct())
                     .from(stone)
-                    .where(stoneNameEq(stoneName), stoneNameLike(stoneShape, stoneType));
+                    .leftJoin(stone.gradePolicies, stoneWorkGradePolicy)
+                    .where(builder);
             return new CustomPage<>(List.of(), pageable, countQuery.fetchOne());
         }
 
@@ -126,33 +135,90 @@ public class StoneRepositoryImpl implements CustomStoneRepository {
                 .sorted(Comparator.comparing(dto -> ids.indexOf(Long.parseLong(dto.getStoneId()))))
                 .toList();
 
-        // Total Count 쿼리
         JPAQuery<Long> total = query
-                .select(stone.count())
+                .select(stone.countDistinct())
                 .from(stone)
-                .where(stoneNameEq(stoneName), stoneNameLike(stoneShape, stoneType));
+                .leftJoin(stone.gradePolicies, stoneWorkGradePolicy)
+                .where(builder);
 
         return new CustomPage<>(content, pageable, total.fetchOne());
     }
 
-    private BooleanBuilder stoneNameLike(String stoneShape, String stoneType) {
+    private BooleanBuilder buildSearchConditions(String search, String searchField, String searchMin, String searchMax) {
         BooleanBuilder builder = new BooleanBuilder();
 
-        // stoneShape
-        if (StringUtils.hasText(stoneShape)) {
-            builder.or(stone.stoneName.containsIgnoreCase(stoneShape));
+        // searchField가 없으면 기본적으로 stoneName 검색
+        if (!StringUtils.hasText(searchField)) {
+            if (StringUtils.hasText(search)) {
+                builder.and(stone.stoneName.containsIgnoreCase(search));
+            }
+            return builder;
         }
 
-        // stoneType
-        if (StringUtils.hasText(stoneType)) {
-            builder.or(stone.stoneName.containsIgnoreCase(stoneType));
+        // searchField에 따른 조건 분기
+        switch (searchField) {
+            // 텍스트 검색 (search 값 사용)
+            case "stoneName", "stoneType", "stoneShape", "stoneSize" -> {
+                if (StringUtils.hasText(search)) {
+                    builder.and(stone.stoneName.containsIgnoreCase(search));
+                }
+            }
+            // 범위 검색 (searchMin, searchMax 사용)
+            case "weight" -> {
+                if (StringUtils.hasText(searchMin)) {
+                    builder.and(stone.stoneWeight.goe(new BigDecimal(searchMin)));
+                }
+                if (StringUtils.hasText(searchMax)) {
+                    builder.and(stone.stoneWeight.loe(new BigDecimal(searchMax)));
+                }
+            }
+            case "purchasePrice" -> {
+                if (StringUtils.hasText(searchMin)) {
+                    builder.and(stone.stonePurchasePrice.goe(Integer.parseInt(searchMin)));
+                }
+                if (StringUtils.hasText(searchMax)) {
+                    builder.and(stone.stonePurchasePrice.loe(Integer.parseInt(searchMax)));
+                }
+            }
+            case "salePrice1" -> {
+                builder.and(stoneWorkGradePolicy.grade.eq(WorkGrade.GRADE_1));
+                if (StringUtils.hasText(searchMin)) {
+                    builder.and(stoneWorkGradePolicy.laborCost.goe(Integer.parseInt(searchMin)));
+                }
+                if (StringUtils.hasText(searchMax)) {
+                    builder.and(stoneWorkGradePolicy.laborCost.loe(Integer.parseInt(searchMax)));
+                }
+            }
+            case "salePrice2" -> {
+                builder.and(stoneWorkGradePolicy.grade.eq(WorkGrade.GRADE_2));
+                if (StringUtils.hasText(searchMin)) {
+                    builder.and(stoneWorkGradePolicy.laborCost.goe(Integer.parseInt(searchMin)));
+                }
+                if (StringUtils.hasText(searchMax)) {
+                    builder.and(stoneWorkGradePolicy.laborCost.loe(Integer.parseInt(searchMax)));
+                }
+            }
+            case "salePrice3" -> {
+                builder.and(stoneWorkGradePolicy.grade.eq(WorkGrade.GRADE_3));
+                if (StringUtils.hasText(searchMin)) {
+                    builder.and(stoneWorkGradePolicy.laborCost.goe(Integer.parseInt(searchMin)));
+                }
+                if (StringUtils.hasText(searchMax)) {
+                    builder.and(stoneWorkGradePolicy.laborCost.loe(Integer.parseInt(searchMax)));
+                }
+            }
+            case "salePrice4" -> {
+                builder.and(stoneWorkGradePolicy.grade.eq(WorkGrade.GRADE_4));
+                if (StringUtils.hasText(searchMin)) {
+                    builder.and(stoneWorkGradePolicy.laborCost.goe(Integer.parseInt(searchMin)));
+                }
+                if (StringUtils.hasText(searchMax)) {
+                    builder.and(stoneWorkGradePolicy.laborCost.loe(Integer.parseInt(searchMax)));
+                }
+            }
         }
 
         return builder;
-    }
-
-    private BooleanExpression stoneNameEq(String stoneName) {
-        return stoneName != null ? stone.stoneName.containsIgnoreCase(stoneName) : null;
     }
 
     private OrderSpecifier<?>[] specifiers(String sortField, String sort) {
@@ -183,5 +249,68 @@ public class StoneRepositoryImpl implements CustomStoneRepository {
         }
 
         return orderSpecifiers.toArray(new OrderSpecifier[0]);
+    }
+
+    @Override
+    public List<StoneExcelDto> findStonesForExcel(String stoneName, String stoneShape, String stoneType) {
+        List<Stone> stones = query
+                .selectFrom(stone)
+                .where(stoneNameEq(stoneName), stoneNameLike(stoneShape, stoneType))
+                .orderBy(stone.stoneName.asc())
+                .fetch();
+
+        List<Long> stoneIds = stones.stream().map(Stone::getStoneId).toList();
+
+        NumberExpression<Long> countExpr = productStone.count();
+
+        Map<Long, Long> productCountMap = query
+                .select(productStone.stone.stoneId, countExpr)
+                .from(productStone)
+                .join(productStone.product, product)
+                .where(productStone.stone.stoneId.in(stoneIds)
+                        .and(product.productDeleted.isFalse()))
+                .groupBy(productStone.stone.stoneId)
+                .fetch()
+                .stream()
+                .collect(Collectors.toMap(
+                        tuple -> tuple.get(productStone.stone.stoneId),
+                        tuple -> tuple.get(countExpr)
+                ));
+
+        return stones.stream()
+                .map(s -> {
+                    String[] nameParts = s.getStoneName().split("/");
+                    String type = nameParts.length > 0 ? nameParts[0] : "";
+                    String shape = nameParts.length > 1 ? nameParts[1] : "";
+                    String size = nameParts.length > 2 ? nameParts[2] : "";
+
+                    return StoneExcelDto.builder()
+                            .stoneId(String.valueOf(s.getStoneId()))
+                            .stoneName(s.getStoneName())
+                            .stoneType(type)
+                            .stoneShape(shape)
+                            .stoneSize(size)
+                            .stoneWeight(s.getStoneWeight().stripTrailingZeros().toPlainString())
+                            .stonePurchasePrice(s.getStonePurchasePrice())
+                            .stoneNote(s.getStoneNote())
+                            .productCount(productCountMap.getOrDefault(s.getStoneId(), 0L).intValue())
+                            .build();
+                })
+                .toList();
+    }
+
+    private BooleanExpression stoneNameEq(String stoneName) {
+        return StringUtils.hasText(stoneName) ? stone.stoneName.containsIgnoreCase(stoneName) : null;
+    }
+
+    private BooleanBuilder stoneNameLike(String stoneShape, String stoneType) {
+        BooleanBuilder builder = new BooleanBuilder();
+        if (StringUtils.hasText(stoneShape)) {
+            builder.and(stone.stoneName.containsIgnoreCase(stoneShape));
+        }
+        if (StringUtils.hasText(stoneType)) {
+            builder.and(stone.stoneName.containsIgnoreCase(stoneType));
+        }
+        return builder;
     }
 }
