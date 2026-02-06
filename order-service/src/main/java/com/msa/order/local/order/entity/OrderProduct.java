@@ -134,9 +134,11 @@ public class OrderProduct {
     }
 
 
-    public void updateOrderProductInfo(Long productId, BigDecimal stoneWeight, Integer productAddLaborCost, String mainStoneNote, String assistanceStoneNote, String productSize) {
+    public void updateOrderProductInfo(Long productId, BigDecimal stoneWeight, Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost, String mainStoneNote, String assistanceStoneNote, String productSize) {
         this.productId = productId;
         this.stoneWeight = stoneWeight;
+        this.productPurchaseCost = productPurchaseCost;
+        this.productLaborCost = productLaborCost;
         this.productAddLaborCost = productAddLaborCost;
         this.orderMainStoneNote = mainStoneNote;
         this.orderAssistanceStoneNote = assistanceStoneNote;
@@ -174,8 +176,10 @@ public class OrderProduct {
         }
     }
 
-    public void updateOrderProductInfo(BigDecimal stoneWeight, Integer productAddLaborCost, String mainStoneNote, String assistanceStoneNote, String productSize) {
+    public void updateOrderProductInfo(BigDecimal stoneWeight, Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost, String mainStoneNote, String assistanceStoneNote, String productSize) {
         this.stoneWeight = stoneWeight;
+        this.productPurchaseCost = productPurchaseCost;
+        this.productLaborCost = productLaborCost;
         this.productAddLaborCost = productAddLaborCost;
         this.orderMainStoneNote = mainStoneNote;
         this.orderAssistanceStoneNote = assistanceStoneNote;

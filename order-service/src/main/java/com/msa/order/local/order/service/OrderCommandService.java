@@ -176,6 +176,8 @@ public class OrderCommandService {
         if (newProductId.equals(productId)) {
             orderProduct.updateOrderProductInfo(
                     orderDto.getStoneWeight(),
+                    orderDto.getProductPurchaseCost(),
+                    orderDto.getProductLaborCost(),
                     orderDto.getProductAddLaborCost(),
                     orderDto.getMainStoneNote(),
                     orderDto.getAssistanceStoneNote(),
@@ -185,6 +187,8 @@ public class OrderCommandService {
             orderProduct.updateOrderProductInfo(
                     productId,
                     orderDto.getStoneWeight(),
+                    orderDto.getProductPurchaseCost(),
+                    orderDto.getProductLaborCost(),
                     orderDto.getProductAddLaborCost(),
                     orderDto.getMainStoneNote(),
                     orderDto.getAssistanceStoneNote(),
