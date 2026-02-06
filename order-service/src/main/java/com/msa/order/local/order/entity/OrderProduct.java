@@ -107,11 +107,9 @@ public class OrderProduct {
         this.order = order;
     }
 
-    public void updateOrderProduct(String productName, String productFactoryName, Integer productPurchaseCost, Integer laborCost, Long materialId, String materialName, Long colorId, String colorName, Long classificationId, String classificationName, Long setTypeId, String setTypeName) {
+    public void updateOrderProduct(String productName, String productFactoryName, Long materialId, String materialName, Long colorId, String colorName, Long classificationId, String classificationName, Long setTypeId, String setTypeName) {
         this.productName = productName;
         this.productFactoryName = productFactoryName;
-        this.productPurchaseCost = productPurchaseCost;
-        this.productLaborCost = laborCost;
         this.materialId = materialId;
         this.materialName = materialName;
         this.colorId = colorId;
@@ -145,15 +143,9 @@ public class OrderProduct {
         this.productSize = productSize;
     }
 
-    public void updateDetails(String productName, Integer productPurchaseCost, Integer laborCost, String classificationName, String setTypeName, String materialName, String colorName, Boolean isAssistantStone, Long assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt) {
+    public void updateDetails(String productName, String classificationName, String setTypeName, String materialName, String colorName, Boolean isAssistantStone, Long assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt) {
         if (productName != null) {
             this.productName = productName;
-        }
-        if (productPurchaseCost != null) {
-            this.productPurchaseCost = productPurchaseCost;
-        }
-        if (laborCost != null) {
-            this.productLaborCost = laborCost;
         }
         if (classificationName != null) {
             this.classificationName = classificationName;
