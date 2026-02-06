@@ -82,9 +82,10 @@ public class ProductRepositoryImpl implements CustomProductRepository {
     }
 
     @Override
-    public CustomPage<ProductDto.Page> findByAllProductName(String search, String searchField, String searchMin, String searchMax, String grade, String sortField, String sortOrder, Pageable pageable) {
+    public CustomPage<ProductDto.Page> findByAllProductName(String search, String searchField, String searchMin, String searchMax, String grade, String sortField, String sortOrder, String setTypeFilter, String classificationFilter, String factoryFilter, Pageable pageable) {
 
         BooleanBuilder builder = buildProductSearchConditions(search, searchField, searchMin, searchMax);
+        buildFilterConditions(builder, setTypeFilter, classificationFilter, factoryFilter);
 
         WorkGrade targetGrade;
         if (!StringUtils.hasText(grade)) {
@@ -347,6 +348,18 @@ public class ProductRepositoryImpl implements CustomProductRepository {
         }
 
         return builder;
+    }
+
+    private void buildFilterConditions(BooleanBuilder builder, String setTypeFilter, String classificationFilter, String factoryFilter) {
+        if (StringUtils.hasText(setTypeFilter)) {
+            builder.and(product.setType.setTypeId.eq(Long.parseLong(setTypeFilter)));
+        }
+        if (StringUtils.hasText(classificationFilter)) {
+            builder.and(product.classification.classificationId.eq(Long.parseLong(classificationFilter)));
+        }
+        if (StringUtils.hasText(factoryFilter)) {
+            builder.and(product.factoryId.eq(Long.parseLong(factoryFilter)));
+        }
     }
 
     private OrderSpecifier<?>[] createOrderSpecifiers(String sortField, String sort) {
