@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -20,77 +19,60 @@ public class OutboxRelayService {
 
     private final KafkaProducer kafkaProducer;
     private final OutboxEventRepository outboxEventRepository;
-    private final OutboxEventProcessor outboxEventProcessor;
 
     public OutboxRelayService(KafkaProducer kafkaProducer,
-                              OutboxEventRepository outboxEventRepository,
-                              OutboxEventProcessor outboxEventProcessor) {
+                              OutboxEventRepository outboxEventRepository) {
         this.kafkaProducer = kafkaProducer;
         this.outboxEventRepository = outboxEventRepository;
-        this.outboxEventProcessor = outboxEventProcessor;
     }
 
+    /**
+     * 한 번의 DB 조회로 모든 PENDING 이벤트를 가져와 타입별 처리
+     * - DB 조회 1회 = 커넥션 1개만 사용
+     * - 정산: 순차 처리 (순서 보장)
+     * - 재고: 일괄 처리 (개별 실패 허용)
+     *
+     * @return 처리한 이벤트가 있으면 true
+     */
     @Transactional
-    public void relayPaymentEventsSequentially() throws ExecutionException, InterruptedException {
-
-        List<String> types = List.of("PAYMENT_SETTLED");
+    public boolean relayAllEventsForTenant() {
         List<OutboxEvent> events = outboxEventRepository
-                .findPendingEventsByType(EventStatus.PENDING, types, PageRequest.of(0, 100));
+                .findRetryableEvents(EventStatus.PENDING, PageRequest.of(0, 100));
 
-        if (events.isEmpty()) return;
-
-        log.info("정산 이벤트 순차 처리: {} 건", events.size());
-
-        for (OutboxEvent event : events) {
-            try {
-                kafkaProducer.send(event.getTopic(), event.getMessageKey(), event.getPayload());
-                event.markAsSent();
-            } catch (Exception e) {
-                log.error("정산 이벤트 전송 실패. EventID: {}, Error: {}",
-                        event.getId(), e.getMessage());
-                throw e; // 트랜잭션 롤백
-            }
-        }
-    }
-
-
-    /**
-     * 재고 이벤트 독립 처리
-     * 트랜잭션 없이 각 이벤트를 별도 Bean에서 독립적으로 처리
-     */
-    public void relayStockEventsIndependently() {
-        List<String> types = List.of("ORDER_CREATE", "ORDER_UPDATE", "STOCK_CREATED", "STOCK_UPDATE");
-        List<OutboxEvent> events = outboxEventRepository
-                .findPendingEventsByType(EventStatus.PENDING, types, PageRequest.of(0, 100));
-
-        if (events.isEmpty()) return;
-
-        log.info("재고 이벤트 독립 처리: {} 건", events.size());
-
-        events.forEach(outboxEventProcessor::processEventIndependently);
-    }
-
-    /**
-     * 전체 대기 이벤트 재처리
-     * 트랜잭션 없이 각 이벤트를 별도 Bean에서 처리
-     */
-    public void relayAllPendingEvents() {
-        List<OutboxEvent> events = outboxEventRepository
-                .findRetryableEvents(EventStatus.PENDING, PageRequest.of(0, 200));
-
-        if (events.isEmpty()) return;
-
-        log.info("전체 Outbox 이벤트 처리: {} 건", events.size());
+        if (events.isEmpty()) return false;
 
         Map<String, List<OutboxEvent>> eventsByType = events.stream()
                 .collect(Collectors.groupingBy(OutboxEvent::getEventType));
 
+        // 정산 이벤트: 순차 처리 (순서 보장)
+        List<OutboxEvent> paymentEvents = eventsByType.getOrDefault("PAYMENT_SETTLED", List.of());
+        for (OutboxEvent event : paymentEvents) {
+            try {
+                kafkaProducer.send(event.getTopic(), event.getMessageKey(), event.getPayload());
+                event.markAsSent();
+            } catch (Exception e) {
+                log.error("정산 이벤트 전송 실패. EventID: {}, Error: {}", event.getId(), e.getMessage());
+                event.incrementRetryCount(e.getMessage());
+            }
+        }
+
+        // 나머지 이벤트: 일괄 처리 (개별 실패 허용)
         eventsByType.forEach((eventType, eventList) -> {
-            if ("PAYMENT_SETTLED".equals(eventType)) {
-                eventList.forEach(outboxEventProcessor::processEventSequentially);
-            } else {
-                eventList.forEach(outboxEventProcessor::processEventIndependently);
+            if (!"PAYMENT_SETTLED".equals(eventType)) {
+                for (OutboxEvent event : eventList) {
+                    try {
+                        kafkaProducer.send(event.getTopic(), event.getMessageKey(), event.getPayload());
+                        event.markAsSent();
+                    } catch (Exception e) {
+                        log.warn("이벤트 전송 실패 (재시도 예정). EventID: {}, Error: {}",
+                                event.getId(), e.getMessage());
+                        event.incrementRetryCount(e.getMessage());
+                    }
+                }
             }
         });
+
+        log.info("Outbox 이벤트 처리 완료: {} 건", events.size());
+        return true;
     }
 }
