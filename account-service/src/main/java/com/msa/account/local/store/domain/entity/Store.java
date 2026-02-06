@@ -31,7 +31,7 @@ public class Store extends BaseEntity {
     private Long storeId;
     @Column(name = "STORE_NAME", unique = true, nullable = false, length = 30)
     private String storeName;
-    @Column(name = "STORE_OWNER_NAME", nullable = false, length = 30)
+    @Column(name = "STORE_OWNER_NAME", length = 30)
     private String storeOwnerName;
     @Column(name = "STORE_PHONE_NUMBER", length = 13)
     private String storePhoneNumber;
