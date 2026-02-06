@@ -31,7 +31,7 @@ public class Factory extends BaseEntity {
 
     @Column(name = "FACTORY_NAME", unique = true, nullable = false, length = 30)
     private String factoryName;
-    @Column(name = "FACTORY_OWNER_NAME", nullable = false, length = 30)
+    @Column(name = "FACTORY_OWNER_NAME", length = 30)
     private String factoryOwnerName;
     @Column(name = "FACTORY_PHONE_NUMBER", length = 13)
     private String factoryPhoneNumber;

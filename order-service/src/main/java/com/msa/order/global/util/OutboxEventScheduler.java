@@ -12,21 +12,27 @@ import org.springframework.stereotype.Component;
 
 import java.util.Set;
 
+/**
+ * Outbox 이벤트 Fallback 스케줄러
+ * - 메인 처리: OutboxNotificationListener (PostgreSQL LISTEN/NOTIFY)
+ * - 이 스케줄러는 LISTEN 누락분 안전망 역할 (30초마다)
+ */
 @NoTrace
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class OutboxEventScheduler {
-    private final OutboxRelayService outboxRelayService;
 
+    private final OutboxRelayService outboxRelayService;
     private final RedisTemplate<String, String> redisTemplate;
     private static final String OUTBOX_TENANT_WORK_QUEUE_KEY = "outbox:work:tenants";
 
     /**
-     * 실시간성이 중요한 재고 이벤트 - 1초마다
+     * Fallback: LISTEN 누락분 처리 - 30초마다
+     * (메인 처리는 OutboxNotificationListener가 즉시 수행)
      */
-    @Scheduled(fixedDelay = 1000)
-    public void relayStockEvents() {
+    @Scheduled(fixedDelay = 30000)
+    public void fallbackRelay() {
         Set<String> tenants = redisTemplate.opsForSet().members(OUTBOX_TENANT_WORK_QUEUE_KEY);
 
         if (tenants == null || tenants.isEmpty()) {
@@ -38,66 +44,14 @@ public class OutboxEventScheduler {
                 TenantContext.setTenant(tenantId);
                 AuditorHolder.setAuditor(tenantId);
 
-                outboxRelayService.relayStockEventsIndependently();
+                boolean hasEvents = outboxRelayService.relayAllEventsForTenant();
 
-                redisTemplate.opsForSet().remove(OUTBOX_TENANT_WORK_QUEUE_KEY, tenantId);
-
-            } catch (Exception e) {
-                log.error("재고 Outbox 처리 실패. TenantID: {}", tenantId, e);
-            } finally {
-                TenantContext.clear();
-                AuditorHolder.clear();
-            }
-        }
-    }
-
-    /**
-     * 정산 이벤트 - 1초마다
-     */
-    @Scheduled(fixedDelay = 1000)
-    public void relayPaymentEvents() {
-        Set<String> tenants = redisTemplate.opsForSet().members(OUTBOX_TENANT_WORK_QUEUE_KEY);
-
-        if (tenants == null || tenants.isEmpty()) {
-            return;
-        }
-
-        for (String tenantId : tenants) {
-            try {
-                TenantContext.setTenant(tenantId);
-                AuditorHolder.setAuditor(tenantId);
-
-                outboxRelayService.relayPaymentEventsSequentially();
+                if (!hasEvents) {
+                    redisTemplate.opsForSet().remove(OUTBOX_TENANT_WORK_QUEUE_KEY, tenantId);
+                }
 
             } catch (Exception e) {
-                log.error("정산 Outbox 처리 실패. TenantID: {}", tenantId, e);
-            } finally {
-                TenantContext.clear();
-                AuditorHolder.clear();
-            }
-        }
-    }
-
-    /**
-     * 실패한 이벤트 재시도 - 1분마다
-     */
-    @Scheduled(fixedDelay = 60000)
-    public void retryFailedEvents() {
-        Set<String> tenants = redisTemplate.opsForSet().members(OUTBOX_TENANT_WORK_QUEUE_KEY);
-
-        if (tenants == null || tenants.isEmpty()) {
-            return;
-        }
-
-        for (String tenantId : tenants) {
-            try {
-                TenantContext.setTenant(tenantId);
-                AuditorHolder.setAuditor(tenantId);
-
-                outboxRelayService.relayAllPendingEvents();
-
-            } catch (Exception e) {
-                log.error("Outbox 재시도 처리 실패. TenantID: {}", tenantId, e);
+                log.error("Outbox fallback 처리 실패. TenantID: {}", tenantId, e);
             } finally {
                 TenantContext.clear();
                 AuditorHolder.clear();
