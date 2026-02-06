@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
 import java.sql.*;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -21,6 +22,7 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
 
     private final DataSource defaultDataSource;
     private final Set<String> initializedTenants = ConcurrentHashMap.newKeySet();
+    private final Map<String, Object> tenantLocks = new ConcurrentHashMap<>();
     private static final String DEFAULT_SCHEMA = "public";
 
     public SchemaMultiTenantConnectionProvider(@Qualifier("defaultDataSource") DataSource defaultDataSource) {
@@ -39,38 +41,51 @@ public class SchemaMultiTenantConnectionProvider implements MultiTenantConnectio
 
     @Override
     public Connection getConnection(Object tenantIdentifier) throws SQLException {
+        String tenant = tenantIdentifier.toString().toLowerCase();
+
+        if (!isValidTenantIdentifier(tenant)) {
+            throw new SQLException("Invalid tenant identifier: " + tenant);
+        }
+
+        // 마이그레이션은 커넥션 점유 없이 실행 (풀 고갈 방지)
+        initializeTenantIfNeeded(tenant);
+
+        // 마이그레이션 완료 후 커넥션 획득
         Connection connection = getAnyConnection();
         try {
-            String tenant = tenantIdentifier.toString().toLowerCase();
-
-            if (!isValidTenantIdentifier(tenant)) {
-                throw new SQLException("Invalid tenant identifier: " + tenant);
-            }
-
-            if (!initializedTenants.contains(tenant)) {
-                try (Statement stmt = connection.createStatement()) {
-                    stmt.execute("CREATE SCHEMA IF NOT EXISTS " + tenant);
-                }
-                runMigration(tenant);
-                initializedTenants.add(tenant);
-            }
-
             try (Statement stmt = connection.createStatement()) {
                 stmt.execute("SET search_path TO " + tenant);
             }
-
             return connection;
         } catch (Exception e) {
-            // 예외 발생 시 커넥션 반환하여 누수 방지
-            try {
-                connection.close();
-            } catch (SQLException closeEx) {
-                // 닫기 실패는 무시
-            }
-            if (e instanceof SQLException) {
-                throw (SQLException) e;
-            }
+            try { connection.close(); } catch (SQLException ignored) {}
+            if (e instanceof SQLException) throw (SQLException) e;
             throw new SQLException("Failed to get connection for tenant", e);
+        }
+    }
+
+    /**
+     * 테넌트 초기화 (스키마 생성 + Flyway 마이그레이션)
+     * - 커넥션을 점유하지 않은 상태에서 실행하여 풀 고갈 방지
+     * - 테넌트별 synchronized로 동시 마이그레이션 방지
+     */
+    private void initializeTenantIfNeeded(String tenant) throws SQLException {
+        if (initializedTenants.contains(tenant)) {
+            return;
+        }
+
+        synchronized (tenantLocks.computeIfAbsent(tenant, k -> new Object())) {
+            if (initializedTenants.contains(tenant)) {
+                return;
+            }
+
+            try (Connection conn = getAnyConnection();
+                 Statement stmt = conn.createStatement()) {
+                stmt.execute("CREATE SCHEMA IF NOT EXISTS " + tenant);
+            }
+
+            runMigration(tenant);
+            initializedTenants.add(tenant);
         }
     }
 
