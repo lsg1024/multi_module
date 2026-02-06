@@ -60,13 +60,14 @@ public class JwtFilter extends OncePerRequestFilter {
         String device = jwtUtil.getDevice(token);
         String H_userAgent = request.getHeader("User-Agent");
 
-        if (!H_userAgent.equals(device)) {
+        if (H_userAgent == null || !H_userAgent.equals(device)) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
         String forward = jwtUtil.getForward(token);
-        String H_forwarded = request.getHeader("X-Forwarded-For");
+        String forwardHeader = request.getHeader("X-Forwarded-For");
+        String H_forwarded = (forwardHeader != null) ? forwardHeader.split(",")[0].trim() : request.getRemoteAddr();
 
         if (!H_forwarded.equals(forward)) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
