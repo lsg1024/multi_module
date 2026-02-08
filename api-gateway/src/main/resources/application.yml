@@ -141,7 +141,6 @@ spring:
           predicates:
             - Path=/catalog/**
           filters:
-            - StripPrefix=1
             - name: LoggingFilter
             - name: TenantHeaderFilter
             - name: ForwardedForHeaderFilter
