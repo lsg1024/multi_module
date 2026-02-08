@@ -120,7 +120,6 @@ public class KafkaStockService {
             ProductDetailDto latestProductInfo = productClient.getProductInfo(token, stockDto.getProductId(), storeInfo.getGrade());
 
             if (!Objects.equals(latestProductInfo.getProductName(), product.getProductName()) ||
-                    !Objects.equals(latestProductInfo.getLaborCost(), product.getProductLaborCost()) ||
                     !Objects.equals(latestMaterialName, product.getMaterialName()) ||
                     !Objects.equals(latestClassificationName, product.getClassificationName()) ||
                     !Objects.equals(latestColorName, product.getColorName()) ||
@@ -129,8 +128,6 @@ public class KafkaStockService {
 
                 product.updateProduct(
                         latestProductInfo.getProductName(),
-                        latestProductInfo.getLaborCost(),
-                        latestProductInfo.getPurchaseCost(),
                         latestMaterialName,
                         latestClassificationName,
                         latestColorName,

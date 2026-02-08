@@ -68,7 +68,7 @@ public class CatalogRepositoryImpl implements CatalogRepository {
 
         OrderSpecifier<?>[] orderSpecifiers = createOrderSpecifiers(sortField, sort);
 
-        // 가격, 제조사 정보 없이 조회
+        // 가격, 제조사 정보 없이 조회 (이미지 있는 상품만)
         List<CatalogProductDto.Page> content = query
                 .select(Projections.constructor(CatalogProductDto.Page.class,
                         product.productId.stringValue(),
@@ -80,7 +80,7 @@ public class CatalogRepositoryImpl implements CatalogRepository {
                         image
                 ))
                 .from(product)
-                .leftJoin(productImage).on(productImage.product.eq(product).and(productImage.imageMain.isTrue()))
+                .join(productImage).on(productImage.product.eq(product).and(productImage.imageMain.isTrue()))
                 .leftJoin(product.material, material)
                 .leftJoin(product.setType, setType)
                 .leftJoin(product.classification, classification)
@@ -107,6 +107,7 @@ public class CatalogRepositoryImpl implements CatalogRepository {
         JPAQuery<Long> countQuery = query
                 .select(product.countDistinct())
                 .from(product)
+                .join(productImage).on(productImage.product.eq(product).and(productImage.imageMain.isTrue()))
                 .leftJoin(product.material, material)
                 .leftJoin(product.setType, setType)
                 .leftJoin(product.classification, classification)

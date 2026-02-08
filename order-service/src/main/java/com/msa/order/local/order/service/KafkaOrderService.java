@@ -95,8 +95,6 @@ public class KafkaOrderService {
 
             if (!Objects.equals(latestProductInfo.getProductName(), orderProduct.getProductName()) ||
                     !Objects.equals(latestProductInfo.getProductFactoryName(), orderProduct.getProductFactoryName()) ||
-                    !Objects.equals(latestProductInfo.getPurchaseCost(), orderProduct.getProductPurchaseCost()) ||
-                    !Objects.equals(latestProductInfo.getLaborCost(), orderProduct.getProductLaborCost()) ||
                     !Objects.equals(latestMaterialName, orderProduct.getMaterialName()) ||
                     !Objects.equals(latestColorName, orderProduct.getColorName()) ||
                     !Objects.equals(latestProductInfo.getClassificationName(), orderProduct.getClassificationName()) ||
@@ -107,8 +105,6 @@ public class KafkaOrderService {
                 orderProduct.updateOrderProduct(
                         latestProductInfo.getProductName(),
                         latestProductInfo.getProductFactoryName(),
-                        latestProductInfo.getPurchaseCost(),
-                        latestProductInfo.getLaborCost(),
                         evt.getMaterialId(),
                         latestMaterialName,
                         evt.getColorId(),
@@ -218,8 +214,6 @@ public class KafkaOrderService {
             OrderProduct orderProduct = order.getOrderProduct();
             orderProduct.updateDetails(
                     productInfo != null ? productInfo.getProductName() : null,
-                    productInfo != null ? productInfo.getPurchaseCost() : null,
-                    productInfo != null ? productInfo.getLaborCost() : null,
                     productInfo != null ? productInfo.getClassificationName() : null,
                     productInfo != null ? productInfo.getSetTypeName() : null,
                     materialName,
