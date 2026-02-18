@@ -12,11 +12,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Set;
 
-/**
- * Outbox 이벤트 Fallback 스케줄러
- * - 메인 처리: OutboxNotificationListener (PostgreSQL LISTEN/NOTIFY)
- * - 이 스케줄러는 LISTEN 누락분 안전망 역할 (30초마다)
- */
 @NoTrace
 @Slf4j
 @Component
