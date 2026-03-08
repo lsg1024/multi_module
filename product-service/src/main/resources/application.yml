@@ -62,6 +62,7 @@ logging:
     org.apache.kafka.clients.consumer: WARN
     org.apache.kafka.clients.NetworkClient: WARN
     org.springframework.kafka: WARN
+    com.netflix.discovery.shared.resolver.aws.ConfigClusterResolver: WARN
 
 management:
   endpoints:

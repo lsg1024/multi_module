@@ -3,6 +3,11 @@ spring:
         name: auth
     profiles:
         active: dev
+
+logging:
+    level:
+        com.netflix.discovery.shared.resolver.aws.ConfigClusterResolver: WARN
+
 resilience4j:
     timelimiter:
         instances:
