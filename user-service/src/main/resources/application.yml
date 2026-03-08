@@ -22,6 +22,7 @@ logging:
   level:
     org.hibernate.SQL: debug
     org.hibernate.orm.jdbc.bind: trace
+    com.netflix.discovery.shared.resolver.aws.ConfigClusterResolver: WARN
 
 custom:
   flyway:

@@ -55,6 +55,7 @@ logging:
     org.springframework.kafka: WARN
     com.msa.order.local.outbox.redis.OutboxRelayService: WARN
     com.msa.order.global.util.OutboxEventScheduler: WARN
+    com.netflix.discovery.shared.resolver.aws.ConfigClusterResolver: WARN
 
 management:
   endpoints:

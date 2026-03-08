@@ -45,6 +45,7 @@ logging:
     org.apache.kafka.clients.consumer: WARN
     org.apache.kafka.clients.NetworkClient: WARN
     org.springframework.kafka: WARN
+    com.netflix.discovery.shared.resolver.aws.ConfigClusterResolver: WARN
 
 custom:
   flyway:
@@ -61,4 +62,5 @@ custom:
       - com.msa.account.local.factory.domain.entity
       - com.msa.account.local.transaction_history.domain.entity
       - com.msa.account.local.schedule.entity
+      - com.msa.account.local.ledger.domain.entity
       - com.msa.account.global.domain.entity

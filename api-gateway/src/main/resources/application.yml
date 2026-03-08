@@ -263,6 +263,7 @@ logging:
   level:
     org.springframework.cloud.gateway: INFO
     org.springframework.security: DEBUG
+    com.netflix.discovery.shared.resolver.aws.ConfigClusterResolver: WARN
 
 server:
   port: ${gateway.port}
