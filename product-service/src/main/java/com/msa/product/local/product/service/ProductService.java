@@ -133,6 +133,8 @@ public class ProductService {
                     .stone(stone)
                     .mainStone(productStoneDto.isMainStone())
                     .includeStone(productStoneDto.isIncludeStone())
+                    .includeQuantity(productStoneDto.isIncludeQuantity())
+                    .includePrice(productStoneDto.isIncludePrice())
                     .stoneQuantity(productStoneDto.getStoneQuantity())
                     .productStoneNote(productStoneDto.getProductStoneNote())
                     .build();
@@ -312,6 +314,8 @@ public class ProductService {
                         .stone(stone)
                         .mainStone(r.isMainStone())
                         .includeStone(r.isIncludeStone())
+                        .includeQuantity(r.isIncludeQuantity())
+                        .includePrice(r.isIncludePrice())
                         .stoneQuantity(r.getStoneQuantity())
                         .productStoneNote(r.getProductStoneNote())
                         .build();

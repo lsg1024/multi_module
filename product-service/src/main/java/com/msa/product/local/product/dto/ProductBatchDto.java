@@ -35,6 +35,8 @@ public class ProductBatchDto {
         private String stoneName;
         private boolean mainStone;
         private boolean includeStone;
+        private boolean includeQuantity;
+        private boolean includePrice;
         private Integer stoneQuantity;
         private String productStoneNote;
     }

@@ -34,6 +34,8 @@ public class ProductStoneRepositoryImpl implements CustomProductStoneRepository 
                         stone.stonePurchasePrice,
                         productStone.mainStone,
                         productStone.includeStone,
+                        productStone.includeQuantity,
+                        productStone.includePrice,
                         productStone.stoneQuantity,
                         productStone.productStoneNote
                 ))

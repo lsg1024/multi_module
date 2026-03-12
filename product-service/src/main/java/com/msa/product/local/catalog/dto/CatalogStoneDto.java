@@ -27,16 +27,21 @@ public class CatalogStoneDto {
         private String stoneName;
         private boolean mainStone;
         private boolean includeStone;
+        private boolean includeQuantity;
+        private boolean includePrice;
         private Integer stoneQuantity;
 
         @Builder
         public PageResponse(String productStoneId, String stoneId, String stoneName,
-                            boolean mainStone, boolean includeStone, Integer stoneQuantity) {
+                            boolean mainStone, boolean includeStone, boolean includeQuantity,
+                            boolean includePrice, Integer stoneQuantity) {
             this.productStoneId = productStoneId;
             this.stoneId = stoneId;
             this.stoneName = stoneName;
             this.mainStone = mainStone;
             this.includeStone = includeStone;
+            this.includeQuantity = includeQuantity;
+            this.includePrice = includePrice;
             this.stoneQuantity = stoneQuantity;
         }
     }
@@ -55,6 +60,8 @@ public class CatalogStoneDto {
         private BigDecimal stoneWeight;
         private boolean mainStone;
         private boolean includeStone;
+        private boolean includeQuantity;
+        private boolean includePrice;
         private Integer stoneQuantity;
         private String productStoneNote;
 
@@ -62,6 +69,7 @@ public class CatalogStoneDto {
         @QueryProjection
         public Response(String productStoneId, String stoneId, String stoneName,
                         BigDecimal stoneWeight, boolean mainStone, boolean includeStone,
+                        boolean includeQuantity, boolean includePrice,
                         Integer stoneQuantity, String productStoneNote) {
             this.productStoneId = productStoneId;
             this.stoneId = stoneId;
@@ -69,6 +77,8 @@ public class CatalogStoneDto {
             this.stoneWeight = stoneWeight;
             this.mainStone = mainStone;
             this.includeStone = includeStone;
+            this.includeQuantity = includeQuantity;
+            this.includePrice = includePrice;
             this.stoneQuantity = stoneQuantity;
             this.productStoneNote = productStoneNote;
         }

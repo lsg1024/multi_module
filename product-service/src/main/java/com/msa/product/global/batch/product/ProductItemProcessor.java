@@ -128,6 +128,8 @@ public class ProductItemProcessor implements ItemProcessor<ProductBatchDto, Prod
                                     .stone(stone)
                                     .mainStone(stoneDto.isMainStone())
                                     .includeStone(stoneDto.isIncludeStone())
+                                    .includeQuantity(stoneDto.isIncludeQuantity())
+                                    .includePrice(stoneDto.isIncludePrice())
                                     .stoneQuantity(stoneDto.getStoneQuantity())
                                     .productStoneNote(stoneDto.getProductStoneNote())
                                     .build();

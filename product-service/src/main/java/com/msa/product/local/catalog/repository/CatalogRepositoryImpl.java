@@ -148,7 +148,9 @@ public class CatalogRepositoryImpl implements CatalogRepository {
                         stone.stoneName,
                         productStone.stoneQuantity,
                         productStone.mainStone,
-                        productStone.includeStone
+                        productStone.includeStone,
+                        productStone.includeQuantity,
+                        productStone.includePrice
                 )
                 .from(productStone)
                 .join(productStone.product, product)
@@ -169,6 +171,8 @@ public class CatalogRepositoryImpl implements CatalogRepository {
             Integer quantity = Optional.ofNullable(t.get(productStone.stoneQuantity)).orElse(0);
             boolean main = Optional.ofNullable(t.get(productStone.mainStone)).orElse(false);
             boolean include = Optional.ofNullable(t.get(productStone.includeStone)).orElse(false);
+            boolean includeQty = Optional.ofNullable(t.get(productStone.includeQuantity)).orElse(false);
+            boolean includePrc = Optional.ofNullable(t.get(productStone.includePrice)).orElse(false);
 
             CatalogStoneDto.PageResponse resp = CatalogStoneDto.PageResponse.builder()
                     .productStoneId(productStoneId != null ? productStoneId.toString() : null)
@@ -176,6 +180,8 @@ public class CatalogRepositoryImpl implements CatalogRepository {
                     .stoneName(stoneName != null ? stoneName : "")
                     .mainStone(main)
                     .includeStone(include)
+                    .includeQuantity(includeQty)
+                    .includePrice(includePrc)
                     .stoneQuantity(quantity)
                     .build();
 
@@ -227,6 +233,8 @@ public class CatalogRepositoryImpl implements CatalogRepository {
                             stone.stoneWeight,
                             productStone.mainStone,
                             productStone.includeStone,
+                            productStone.includeQuantity,
+                            productStone.includePrice,
                             productStone.stoneQuantity,
                             productStone.productStoneNote
                     ))

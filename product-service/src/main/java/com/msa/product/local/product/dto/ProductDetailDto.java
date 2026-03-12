@@ -42,10 +42,12 @@ public class ProductDetailDto {
         private Integer quantity;
         private boolean isMainStone;
         private boolean isIncludeStone;
+        private boolean isIncludeQuantity;
+        private boolean isIncludePrice;
         private String stoneNote;
 
         @QueryProjection
-        public StoneInfo(String stoneId, String stoneName, String stoneWeight, Integer purchaseCost, Integer laborCost, Integer quantity, boolean isMainStone, boolean isIncludeStone, String stoneNote) {
+        public StoneInfo(String stoneId, String stoneName, String stoneWeight, Integer purchaseCost, Integer laborCost, Integer quantity, boolean isMainStone, boolean isIncludeStone, boolean isIncludeQuantity, boolean isIncludePrice, String stoneNote) {
             this.stoneId = stoneId;
             this.stoneName = stoneName;
             this.stoneWeight = stoneWeight;
@@ -54,6 +56,8 @@ public class ProductDetailDto {
             this.quantity = quantity;
             this.isMainStone = isMainStone;
             this.isIncludeStone = isIncludeStone;
+            this.isIncludeQuantity = isIncludeQuantity;
+            this.isIncludePrice = isIncludePrice;
             this.stoneNote = stoneNote;
         }
     }
