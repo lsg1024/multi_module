@@ -134,9 +134,9 @@ public class OrdersService {
 
     // 주문 전체 리스트 조회
     @Transactional(readOnly = true)
-    public CustomPage<OrderDto.Response> getOrderProducts(String accessToken, String input, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort, String orderStatus, Pageable pageable) {
-        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
-        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
+    public CustomPage<OrderDto.Response> getOrderProducts(String accessToken, String input, String searchField, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String classificationName, String materialName, String sortField, String sort, String orderStatus, Pageable pageable) {
+        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input, searchField);
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName, classificationName, materialName);
         OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
         OrderDto.OrderCondition orderCondition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, sortCondition, orderStatus);
 
@@ -401,9 +401,9 @@ public class OrdersService {
 
     // 수리 예정 목록 출력
     @Transactional(readOnly = true)
-    public CustomPage<OrderDto.Response> getFixProducts(String accessToken, String input, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort, String orderStatus, Pageable pageable) {
-        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
-        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
+    public CustomPage<OrderDto.Response> getFixProducts(String accessToken, String input, String searchField, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String classificationName, String materialName, String sortField, String sort, String orderStatus, Pageable pageable) {
+        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input, searchField);
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName, classificationName, materialName);
         OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
         OrderDto.OrderCondition fixCondition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, sortCondition, orderStatus);
 
@@ -447,9 +447,9 @@ public class OrdersService {
 
     // 출고 예정 목록 출력
     @Transactional(readOnly = true)
-    public CustomPage<OrderDto.Response> getDeliveryProducts(String accessToken, String input, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort, Pageable pageable) {
-        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
-        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
+    public CustomPage<OrderDto.Response> getDeliveryProducts(String accessToken, String input, String searchField, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String classificationName, String materialName, String sortField, String sort, Pageable pageable) {
+        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input, searchField);
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName, classificationName, materialName);
         OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
         OrderDto.ExpectCondition expectCondition = new OrderDto.ExpectCondition(endAt, optionCondition, sortCondition);
 
@@ -493,9 +493,9 @@ public class OrdersService {
 
     // 주문 상태에서 삭제된 목록 출력
     @Transactional(readOnly = true)
-    public CustomPage<OrderDto.Response> getDeletedProducts(String accessToken, String input, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort, String orderStatus, Pageable pageable) {
-        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
-        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
+    public CustomPage<OrderDto.Response> getDeletedProducts(String accessToken, String input, String searchField, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String classificationName, String materialName, String sortField, String sort, String orderStatus, Pageable pageable) {
+        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input, searchField);
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName, classificationName, materialName);
         OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
         OrderDto.OrderCondition orderCondition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, sortCondition, orderStatus);
 
@@ -539,40 +539,53 @@ public class OrdersService {
 
     // 엑셀 주문장 호출 가변 형태와 당일 값을 호출 가능하게 설정 - 주문, 수리, 출고예정, 삭제 전체에서 사용
     @Transactional(readOnly = true)
-    public List<OrderExcelQueryDto> getExcel(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String orderStatus) {
-        // 주문장에서 사용할 데이터 호출
-        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
+    public List<OrderExcelQueryDto> getExcel(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String classificationName, String materialName, String orderStatus) {
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName, classificationName, materialName);
         OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
         return customOrderRepository.findByExcelData(condition);
 
     }
 
     @Transactional(readOnly = true)
-    public List<String> getFilterFactories(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String orderStatus) {
-        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
+    public List<String> getFilterFactories(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String classificationName, String materialName, String orderStatus) {
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName, classificationName, materialName);
         OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
         return customOrderRepository.findByFilterFactories(condition);
     }
 
     @Transactional(readOnly = true)
-    public List<String> getFilterStores(String startAt, String endAt, String factoryName, String storeName,String setTypeName, String colorName, String orderStatus) {
-        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
+    public List<String> getFilterStores(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String classificationName, String materialName, String orderStatus) {
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName, classificationName, materialName);
         OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
         return customOrderRepository.findByFilterStores(condition);
     }
 
     @Transactional(readOnly = true)
-    public List<String> getFilterSetType(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String orderStatus) {
-        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
+    public List<String> getFilterSetType(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String classificationName, String materialName, String orderStatus) {
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName, classificationName, materialName);
         OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
         return customOrderRepository.findByFilterSetType(condition);
     }
 
     @Transactional(readOnly = true)
-    public List<String> getFilterColors(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String orderStatus) {
-        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
+    public List<String> getFilterColors(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String classificationName, String materialName, String orderStatus) {
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName, classificationName, materialName);
         OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
         return customOrderRepository.findByFilterColor(condition);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getFilterClassifications(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String classificationName, String materialName, String orderStatus) {
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName, classificationName, materialName);
+        OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
+        return customOrderRepository.findByFilterClassification(condition);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getFilterMaterials(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String classificationName, String materialName, String orderStatus) {
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName, classificationName, materialName);
+        OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
+        return customOrderRepository.findByFilterMaterial(condition);
     }
 
     @Transactional(readOnly = true)

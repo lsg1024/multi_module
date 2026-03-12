@@ -58,19 +58,22 @@ public class OrdersController {
     public ResponseEntity<ApiResponse<CustomPage<OrderDto.Response>>> getOrders(
             @AccessToken String accessToken,
             @RequestParam(name = "search", required = false) String input,
+            @RequestParam(name = "searchField", required = false) String searchField,
             @RequestParam(name = "start") String startAt,
             @RequestParam(name = "end") String endAt,
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
             @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "classification", required = false) String classificationName,
+            @RequestParam(name = "material", required = false) String materialName,
             @RequestParam(name = "sortField", required = false) String sortField,
             @RequestParam(name = "sortOrder", required = false) String sort,
             @RequestParam(name = "order_status", required = false) String orderStatus,
             @PageableDefault(size = 20) Pageable pageable) {
 
-        CustomPage<OrderDto.Response> orderProducts = ordersService.getOrderProducts(accessToken, input, startAt, endAt, factoryName,
-                storeName, setTypeName, colorName, sortField, sort, orderStatus, pageable);
+        CustomPage<OrderDto.Response> orderProducts = ordersService.getOrderProducts(accessToken, input, searchField, startAt, endAt, factoryName,
+                storeName, setTypeName, colorName, classificationName, materialName, sortField, sort, orderStatus, pageable);
         return ResponseEntity.ok(ApiResponse.success(orderProducts));
     }
 
@@ -147,18 +150,21 @@ public class OrdersController {
     public ResponseEntity<ApiResponse<CustomPage<OrderDto.Response>>> getOrderExpect(
             @AccessToken String accessToken,
             @RequestParam(name = "search", required = false) String input,
+            @RequestParam(name = "searchField", required = false) String searchField,
             @RequestParam(name = "end") String endAt,
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
             @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "classification", required = false) String classificationName,
+            @RequestParam(name = "material", required = false) String materialName,
             @RequestParam(name = "sortField", required = false) String sortField,
             @RequestParam(name = "sortOrder", required = false) String sort,
             @PageableDefault(size = 20) Pageable pageable) {
 
         CustomPage<OrderDto.Response> expectProducts = ordersService.getDeliveryProducts(accessToken,
-                input, endAt, factoryName, storeName, setTypeName,
-                colorName, sortField, sort, pageable);
+                input, searchField, endAt, factoryName, storeName, setTypeName,
+                colorName, classificationName, materialName, sortField, sort, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(expectProducts));
     }
@@ -167,19 +173,22 @@ public class OrdersController {
     public ResponseEntity<ApiResponse<CustomPage<OrderDto.Response>>> getOrderDeleted(
             @AccessToken String accessToken,
             @RequestParam(name = "search", required = false) String input,
+            @RequestParam(name = "searchField", required = false) String searchField,
             @RequestParam(name = "start") String startAt,
             @RequestParam(name = "end") String endAt,
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
             @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "classification", required = false) String classificationName,
+            @RequestParam(name = "material", required = false) String materialName,
             @RequestParam(name = "sortField", required = false) String sortField,
             @RequestParam(name = "sortOrder", required = false) String sort,
             @RequestParam(name = "order_status") String orderStatus,
             @PageableDefault(size = 20) Pageable pageable) {
 
-        CustomPage<OrderDto.Response> deletedProducts = ordersService.getDeletedProducts(accessToken, input, startAt, endAt, factoryName,
-                storeName, setTypeName, colorName, sortField, sort, orderStatus, pageable);
+        CustomPage<OrderDto.Response> deletedProducts = ordersService.getDeletedProducts(accessToken, input, searchField, startAt, endAt, factoryName,
+                storeName, setTypeName, colorName, classificationName, materialName, sortField, sort, orderStatus, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(deletedProducts));
     }
@@ -193,10 +202,12 @@ public class OrdersController {
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
             @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "classification", required = false) String classificationName,
+            @RequestParam(name = "material", required = false) String materialName,
             @RequestParam(name = "order_status") String orderStatus) {
 
         List<String> filterFactories = ordersService.getFilterFactories(startAt, endAt, factoryName,
-                storeName, setTypeName, colorName, orderStatus);
+                storeName, setTypeName, colorName, classificationName, materialName, orderStatus);
         return ResponseEntity.ok(ApiResponse.success(filterFactories));
     }
 
@@ -209,9 +220,11 @@ public class OrdersController {
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
             @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "classification", required = false) String classificationName,
+            @RequestParam(name = "material", required = false) String materialName,
             @RequestParam(name = "order_status") String orderStatus) {
 
-        List<String> filterStores = ordersService.getFilterStores(startAt, endAt, factoryName, storeName, setTypeName, colorName, orderStatus);
+        List<String> filterStores = ordersService.getFilterStores(startAt, endAt, factoryName, storeName, setTypeName, colorName, classificationName, materialName, orderStatus);
         return ResponseEntity.ok(ApiResponse.success(filterStores));
     }
 
@@ -224,9 +237,11 @@ public class OrdersController {
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
             @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "classification", required = false) String classificationName,
+            @RequestParam(name = "material", required = false) String materialName,
             @RequestParam(name = "order_status") String orderStatus) {
 
-        List<String> filterSetType = ordersService.getFilterSetType(startAt, endAt, factoryName, storeName, setTypeName, colorName, orderStatus);
+        List<String> filterSetType = ordersService.getFilterSetType(startAt, endAt, factoryName, storeName, setTypeName, colorName, classificationName, materialName, orderStatus);
         return ResponseEntity.ok(ApiResponse.success(filterSetType));
     }
 
@@ -238,9 +253,43 @@ public class OrdersController {
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
             @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "classification", required = false) String classificationName,
+            @RequestParam(name = "material", required = false) String materialName,
             @RequestParam(name = "order_status") String orderStatus) {
-        List<String> filterColors = ordersService.getFilterColors(startAt, endAt, factoryName, storeName, setTypeName, colorName, orderStatus);
+        List<String> filterColors = ordersService.getFilterColors(startAt, endAt, factoryName, storeName, setTypeName, colorName, classificationName, materialName, orderStatus);
         return ResponseEntity.ok(ApiResponse.success(filterColors));
+    }
+
+    // 분류 리스트 배열
+    @GetMapping("/filters/classification")
+    public ResponseEntity<ApiResponse<List<String>>> getClassificationNames(
+            @RequestParam(name = "start") String startAt,
+            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "factory", required = false) String factoryName,
+            @RequestParam(name = "store", required = false) String storeName,
+            @RequestParam(name = "setType", required = false) String setTypeName,
+            @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "classification", required = false) String classificationName,
+            @RequestParam(name = "material", required = false) String materialName,
+            @RequestParam(name = "order_status") String orderStatus) {
+        List<String> filterClassifications = ordersService.getFilterClassifications(startAt, endAt, factoryName, storeName, setTypeName, colorName, classificationName, materialName, orderStatus);
+        return ResponseEntity.ok(ApiResponse.success(filterClassifications));
+    }
+
+    // 재질 리스트 배열
+    @GetMapping("/filters/material")
+    public ResponseEntity<ApiResponse<List<String>>> getMaterialNames(
+            @RequestParam(name = "start") String startAt,
+            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "factory", required = false) String factoryName,
+            @RequestParam(name = "store", required = false) String storeName,
+            @RequestParam(name = "setType", required = false) String setTypeName,
+            @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "classification", required = false) String classificationName,
+            @RequestParam(name = "material", required = false) String materialName,
+            @RequestParam(name = "order_status") String orderStatus) {
+        List<String> filterMaterials = ordersService.getFilterMaterials(startAt, endAt, factoryName, storeName, setTypeName, colorName, classificationName, materialName, orderStatus);
+        return ResponseEntity.ok(ApiResponse.success(filterMaterials));
     }
 
 }

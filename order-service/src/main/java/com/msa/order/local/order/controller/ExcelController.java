@@ -41,9 +41,11 @@ public class ExcelController {
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
             @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "classification", required = false) String classificationName,
+            @RequestParam(name = "material", required = false) String materialName,
             @RequestParam(name = "order_status") String orderStatus) throws IOException {
 
-        List<OrderExcelQueryDto> excelData = ordersService.getExcel(startAt, endAt, factoryName, storeName, setTypeName, colorName, orderStatus);
+        List<OrderExcelQueryDto> excelData = ordersService.getExcel(startAt, endAt, factoryName, storeName, setTypeName, colorName, classificationName, materialName, orderStatus);
 
         byte[] formatDtoToExcel = excelService.getFormatDtoToExcel(excelData);
 

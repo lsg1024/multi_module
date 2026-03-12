@@ -135,7 +135,7 @@ public class StockService {
     @Transactional(readOnly = true)
     public CustomPage<StockDto.Response> getStocks(String input, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort, String orderStatus, Pageable pageable) {
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
-        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName, null, null);
         OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
         StockDto.StockCondition condition = new StockDto.StockCondition(startAt, endAt, optionCondition, sortCondition, orderStatus);
 
@@ -170,7 +170,7 @@ public class StockService {
     @Transactional(readOnly = true)
     public CustomPage<StockDto.Response> getPastRentalHistory(String input, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort,  Pageable pageable) {
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
-        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName);
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName, null, null);
         OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
         BusinessPhase historicalPhase = BusinessPhase.RENTAL;
         StockDto.HistoryCondition historyCondition = new StockDto.HistoryCondition(startAt, endAt, historicalPhase, optionCondition, sortCondition);

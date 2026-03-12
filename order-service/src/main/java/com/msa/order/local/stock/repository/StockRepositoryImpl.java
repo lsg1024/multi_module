@@ -382,6 +382,12 @@ public class StockRepositoryImpl implements CustomStockRepository {
             if (StringUtils.hasText(condition.getColorName())) {
                 builder.and(stock.product.colorName.eq(condition.getColorName()));
             }
+            if (StringUtils.hasText(condition.getClassificationName())) {
+                builder.and(stock.product.classificationName.eq(condition.getClassificationName()));
+            }
+            if (StringUtils.hasText(condition.getMaterialName())) {
+                builder.and(stock.product.materialName.eq(condition.getMaterialName()));
+            }
         }
         return builder;
     }
