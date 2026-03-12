@@ -26,4 +26,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
             "order by s.createDate desc " +
             "limit 1")
     Optional<Sale> findSaleCodeByAccountIdAndDate(@Param("accountId") Long accountId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    @Query("select count(s) from Sale s where s.createDate between :start and :end")
+    long countByCreateDateBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 }

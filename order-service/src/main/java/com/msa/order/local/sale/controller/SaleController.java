@@ -57,7 +57,7 @@ public class SaleController {
         return ResponseEntity.ok(ApiResponse.success(sale));
     }
 
-    // 주문장 인쇄
+    // 거래 명세서 인쇄
     @GetMapping("/sale/print")
     public ResponseEntity<ApiResponse<SalePrintResponse>> getSalePrint(
             @AccessToken String accessToken,

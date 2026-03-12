@@ -635,16 +635,31 @@ public class SaleService {
     }
 
     private Sale createNewSaleEntity(Long storeId, String storeName, BigDecimal harry, String grade) {
+        String displayCode = generateDisplayCode();
+
         Sale newSale = Sale.builder()
                 .saleStatus(SaleStatus.SALE)
                 .accountId(storeId)
                 .accountName(storeName)
                 .accountHarry(harry)
                 .accountGrade(grade)
+                .displayCode(displayCode)
                 .items(new ArrayList<>())
                 .build();
 
         return saleRepository.save(newSale);
+    }
+
+    private String generateDisplayCode() {
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
+
+        long todayCount = saleRepository.countByCreateDateBetween(startOfDay, endOfDay);
+        int index = (int) todayCount + 1;
+
+        return String.format("%02d%02d%02d%02d",
+                today.getYear() % 100, today.getMonthValue(), today.getDayOfMonth(), index);
     }
 
     @NotNull
@@ -717,7 +732,7 @@ public class SaleService {
         Sale sale = saleRepository.findSaleCodeByAccountIdAndDate(accountId, startOfDay, endOfDay)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        return new SaleDto.PastSaleRequest(sale.getSaleCode().toString(), sale.getAccountGoldPrice());
+        return new SaleDto.PastSaleRequest(sale.getSaleCode().toString(), sale.getDisplayCode(), sale.getAccountGoldPrice());
     }
 
     public Integer checkAccountGoldPrice(String saleCode) {

@@ -45,6 +45,9 @@ public class Sale extends BaseEntity {
     @Column(name = "ACCOUNT_GOLD_PRICE")
     private Integer accountGoldPrice;
 
+    @Column(name = "DISPLAY_CODE", length = 10)
+    private String displayCode;
+
     @OneToMany(mappedBy="sale", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SaleItem> items = new ArrayList<>();
 
@@ -60,12 +63,13 @@ public class Sale extends BaseEntity {
     }
 
     @Builder
-    public Sale(SaleStatus saleStatus, Long accountId, String accountName, BigDecimal accountHarry, String accountGrade, List<SaleItem> items) {
+    public Sale(SaleStatus saleStatus, Long accountId, String accountName, BigDecimal accountHarry, String accountGrade, String displayCode, List<SaleItem> items) {
         this.saleStatus = saleStatus;
         this.accountId = accountId;
         this.accountName = accountName;
         this.accountHarry = accountHarry;
         this.accountGrade = accountGrade;
+        this.displayCode = displayCode;
         this.items = items;
     }
 

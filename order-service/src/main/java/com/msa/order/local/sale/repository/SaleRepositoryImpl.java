@@ -90,6 +90,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                 .storeName(saleEntity.getAccountName())
                 .storeHarry(saleEntity.getAccountHarry().toPlainString())
                 .storeCode(String.valueOf(saleEntity.getSaleCode()))
+                .displayCode(saleEntity.getDisplayCode())
                 .accountGoldPrice(saleEntity.getAccountGoldPrice() != null ? String.valueOf(saleEntity.getAccountGoldPrice()) : "0")
                 .saleItems(totalSaleItems)
                 .build());
@@ -187,6 +188,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                     sale.accountId.stringValue(),
                     sale.accountName,
                     sale.saleCode.stringValue(),
+                    sale.displayCode,
                     saleItem.flowCode.stringValue(),
                     stock.product.productName,
                     stock.product.materialName,
@@ -255,6 +257,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                         sale.accountId.stringValue(),
                         sale.accountName,
                         sale.saleCode.stringValue(),
+                        sale.displayCode,
                         salePayment.flowCode.stringValue(),
                         saleTypeTitle,
                         salePayment.material,
@@ -351,6 +354,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                         sale.accountId.stringValue(),
                         sale.accountName,
                         sale.saleCode.stringValue(),
+                        sale.displayCode,
                         saleItem.flowCode.stringValue(),
                         stock.product.productName,
                         stock.product.materialName,
@@ -410,6 +414,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                         sale.accountId.stringValue(),
                         sale.accountName,
                         sale.saleCode.stringValue(),
+                        sale.displayCode,
                         salePayment.flowCode.stringValue(),
                         saleTypeTitle,
                         salePayment.material,
