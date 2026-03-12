@@ -19,6 +19,10 @@ public class RefreshTokenService {
         this.redisRefreshTokenService = redisRefreshTokenService;
     }
 
+    public String getTenantIdFromToken(String refreshToken) {
+        return jwtUtil.getTenantId(refreshToken);
+    }
+
     public String[] reissueRefreshToken(String refreshToken, Long access_ttl, Long refresh_ttl) {
 
         String tenantId = jwtUtil.getTenantId(refreshToken);
