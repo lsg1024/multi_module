@@ -30,19 +30,22 @@ public class FixController {
     public ResponseEntity<ApiResponse<CustomPage<OrderDto.Response>>> getFixes(
             @AccessToken String accessToken,
             @RequestParam(name = "search", required = false) String input,
+            @RequestParam(name = "searchField", required = false) String searchField,
             @RequestParam(name = "start") String startAt,
             @RequestParam(name = "end") String endAt,
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
             @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "classification", required = false) String classificationName,
+            @RequestParam(name = "material", required = false) String materialName,
             @RequestParam(name = "sortField", required = false) String sortField,
             @RequestParam(name = "sortOrder", required = false) String sort,
             @RequestParam(name = "order_status") String orderType,
             @PageableDefault(size = 20) Pageable pageable) {
 
-        CustomPage<OrderDto.Response> fixProducts = ordersService.getFixProducts(accessToken, input, startAt, endAt,
-                factoryName, storeName, setTypeName, colorName, sortField, sort, orderType, pageable);
+        CustomPage<OrderDto.Response> fixProducts = ordersService.getFixProducts(accessToken, input, searchField, startAt, endAt,
+                factoryName, storeName, setTypeName, colorName, classificationName, materialName, sortField, sort, orderType, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(fixProducts));
     }

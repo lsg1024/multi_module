@@ -345,33 +345,74 @@ public class ProductService {
     }
 
     private void extractedProductColorWorkGradePolicy(ProductDto.Update productDto, Product product) {
-        List<Long> groupIds = productDto.getProductWorkGradePolicyGroupDto().stream()
-                .map(dto -> Long.valueOf(dto.getProductGroupId()))
-                .collect(Collectors.toList());
+        List<ProductWorkGradePolicyGroupDto.Request> reqs =
+                productDto.getProductWorkGradePolicyGroupDto() != null
+                        ? productDto.getProductWorkGradePolicyGroupDto() : Collections.emptyList();
 
-        List<ProductWorkGradePolicyGroup> groups = productWorkGradePolicyGroupRepository
-                .findAllWithDetailsByGroupIds(groupIds, product.getProductId());
+        // 기존 그룹 ID 수집
+        List<Long> existingIds = reqs.stream()
+                .map(ProductWorkGradePolicyGroupDto.Request::getProductGroupId)
+                .filter(this::isNumericPositive)
+                .map(Long::parseLong)
+                .toList();
 
-        Map<Long, ProductWorkGradePolicyGroup> groupMap = groups.stream()
+        Map<Long, ProductWorkGradePolicyGroup> existingMap = existingIds.isEmpty()
+                ? Collections.emptyMap()
+                : productWorkGradePolicyGroupRepository
+                .findAllWithDetailsByGroupIds(existingIds, product.getProductId()).stream()
                 .collect(Collectors.toMap(
                         ProductWorkGradePolicyGroup::getProductWorkGradePolicyGroupId,
                         g -> g
                 ));
 
-        for (ProductWorkGradePolicyGroupDto.Request dto : productDto.getProductWorkGradePolicyGroupDto()) {
+        Set<Long> keepIds = new HashSet<>();
 
-            Long groupId = Long.valueOf(dto.getProductGroupId());
-            ProductWorkGradePolicyGroup group = groupMap.get(groupId);
+        for (ProductWorkGradePolicyGroupDto.Request dto : reqs) {
+            String idStr = dto.getProductGroupId();
 
-            Color originColor = group.getColor();
-            if (!originColor.getColorId().equals(Long.valueOf(dto.getColorId()))) {
+            if (isNumericPositive(idStr)) {
+                // ---- 기존 그룹 업데이트 ----
+                long groupId = Long.parseLong(idStr);
+                ProductWorkGradePolicyGroup group = existingMap.get(groupId);
+                if (group == null) continue;
+
+                Color originColor = group.getColor();
+                if (!originColor.getColorId().equals(Long.valueOf(dto.getColorId()))) {
+                    Color color = colorRepository.findById(Long.valueOf(dto.getColorId()))
+                            .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+                    group.setColor(color);
+                }
+                group.updateProductPurchasePrice(dto.getProductPurchasePrice(), dto.getNote());
+                updatePolicies(group, dto.getPolicyDtos());
+                keepIds.add(groupId);
+
+            } else {
                 Color color = colorRepository.findById(Long.valueOf(dto.getColorId()))
                         .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-                group.setColor(color);
+
+                ProductWorkGradePolicyGroup newGroup = ProductWorkGradePolicyGroup.builder()
+                        .productPurchasePrice(dto.getProductPurchasePrice())
+                        .color(color)
+                        .gradePolicies(new ArrayList<>())
+                        .productWorkGradePolicyGroupDefault(false)
+                        .note(dto.getNote())
+                        .build();
+
+                for (ProductWorkGradePolicyDto.Request policyDto : dto.getPolicyDtos()) {
+                    ProductWorkGradePolicy policy = ProductWorkGradePolicy.builder()
+                            .grade(policyDto.getGrade())
+                            .laborCost(policyDto.getLaborCost())
+                            .build();
+                    newGroup.addGradePolicy(policy);
+                }
+                product.addPolicyGroup(newGroup);
             }
-            group.updateProductPurchasePrice(dto.getProductPurchasePrice(), dto.getNote());
-            updatePolicies(group, dto.getPolicyDtos());
         }
+
+        // ---- 삭제된 그룹 제거 (orphanRemoval) ----
+        product.getProductWorkGradePolicyGroups()
+                .removeIf(g -> g.getProductWorkGradePolicyGroupId() != null
+                        && !keepIds.contains(g.getProductWorkGradePolicyGroupId()));
     }
 
     private boolean isNumericPositive(String s) {

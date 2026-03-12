@@ -245,6 +245,11 @@ public class OrderDto {
     @AllArgsConstructor
     public static class InputCondition {
         private String searchInput;
+        private String searchField;
+
+        public InputCondition(String searchInput) {
+            this.searchInput = searchInput;
+        }
     }
     @Getter
     @NoArgsConstructor
@@ -288,6 +293,8 @@ public class OrderDto {
         private String storeName;
         private String setTypeName;
         private String colorName;
+        private String classificationName;
+        private String materialName;
     }
 
     @Getter
