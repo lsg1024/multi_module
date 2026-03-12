@@ -189,6 +189,8 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                         productStone.stoneQuantity,
                         productStone.mainStone,
                         productStone.includeStone,
+                        productStone.includeQuantity,
+                        productStone.includePrice,
                         stone.stonePurchasePrice,
                         stoneWorkGradePolicy.stoneWorkGradePolicyId,
                         stoneWorkGradePolicy.grade,
@@ -214,6 +216,8 @@ public class ProductRepositoryImpl implements CustomProductRepository {
             Integer quantity = Optional.ofNullable(t.get(productStone.stoneQuantity)).orElse(0);
             boolean main = Optional.ofNullable(t.get(productStone.mainStone)).orElse(false);
             boolean include = Optional.ofNullable(t.get(productStone.includeStone)).orElse(false);
+            boolean includeQty = Optional.ofNullable(t.get(productStone.includeQuantity)).orElse(true);
+            boolean includePrc = Optional.ofNullable(t.get(productStone.includePrice)).orElse(true);
             Integer cost = t.get(stoneWorkGradePolicy.laborCost);
             Integer purchasePrice = t.get(stone.stonePurchasePrice);
 
@@ -221,7 +225,7 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                     productStoneId != null ? productStoneId.toString() : null,
                     stoneId != null ? stoneId.toString() : null,
                     stoneName != null ? stoneName : "",
-                    main, include, quantity, cost,
+                    main, include, includeQty, includePrc, quantity, cost,
                     purchasePrice);
 
             result.computeIfAbsent(productId, k -> new ArrayList<>()).add(resp);
@@ -300,20 +304,20 @@ public class ProductRepositoryImpl implements CustomProductRepository {
                     builder.and(product.productNote.containsIgnoreCase(search));
                 }
             }
-            // ID 검색
+            // 텍스트 검색 (옵션)
             case "setType" -> {
                 if (StringUtils.hasText(search)) {
-                    builder.and(product.setType.setTypeId.eq(Long.parseLong(search)));
+                    builder.and(setType.setTypeName.containsIgnoreCase(search));
                 }
             }
             case "classification" -> {
                 if (StringUtils.hasText(search)) {
-                    builder.and(product.classification.classificationId.eq(Long.parseLong(search)));
+                    builder.and(classification.classificationName.containsIgnoreCase(search));
                 }
             }
             case "material" -> {
                 if (StringUtils.hasText(search)) {
-                    builder.and(product.material.materialId.eq(Long.parseLong(search)));
+                    builder.and(material.materialName.containsIgnoreCase(search));
                 }
             }
             // 범위 검색

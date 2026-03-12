@@ -23,18 +23,20 @@ public class SaleItemResponse {
     private String storeName;
     private String storeHarry;
     private String storeCode;
+    private String displayCode;
     private String accountGoldPrice;
     private List<SaleItem> saleItems;
 
     @Builder
     @QueryProjection
-    public SaleItemResponse(String createAt, String createBy, String storeId, String storeName, String storeHarry, String storeCode, String accountGoldPrice, List<SaleItem> saleItems) {
+    public SaleItemResponse(String createAt, String createBy, String storeId, String storeName, String storeHarry, String storeCode, String displayCode, String accountGoldPrice, List<SaleItem> saleItems) {
         this.createAt = createAt;
         this.createBy = createBy;
         this.storeId = storeId;
         this.storeName = storeName;
         this.storeHarry = storeHarry;
         this.storeCode = storeCode;
+        this.displayCode = displayCode;
         this.accountGoldPrice = accountGoldPrice;
         this.saleItems = saleItems;
     }
@@ -48,6 +50,7 @@ public class SaleItemResponse {
         private String storeId;
         private String storeName;
         private String saleCode;
+        private String displayCode;
         private String flowCode;
         private String imagePath = "";
         private String productName;
@@ -69,13 +72,14 @@ public class SaleItemResponse {
         private List<StatusHistoryDto> statusHistories;
 
         @QueryProjection
-        public SaleItem(String createAt, String createBy, String saleType, String storeId, String storeName, String saleCode, String flowCode, String productName, String materialName, String colorName, String stockNote, String mainNote, String subNote, Boolean assistantStone, String assistantName, BigDecimal goldWeight, BigDecimal stoneWeight, BigDecimal harry, Integer productLabor, Integer productAddLabor, String assistantCreateAt, Long mainStoneLabor, Long asstStoneLabor, Integer stoneAddLabor, Long mainQty, Long asstQty) {
+        public SaleItem(String createAt, String createBy, String saleType, String storeId, String storeName, String saleCode, String displayCode, String flowCode, String productName, String materialName, String colorName, String stockNote, String mainNote, String subNote, Boolean assistantStone, String assistantName, BigDecimal goldWeight, BigDecimal stoneWeight, BigDecimal harry, Integer productLabor, Integer productAddLabor, String assistantCreateAt, Long mainStoneLabor, Long asstStoneLabor, Integer stoneAddLabor, Long mainQty, Long asstQty) {
             this.createAt = createAt;
             this.createBy = createBy;
             this.saleType = saleType;
             this.storeId = storeId;
             this.storeName = storeName;
             this.saleCode = saleCode;
+            this.displayCode = displayCode;
             this.flowCode = flowCode;
             this.productName = productName;
             this.materialName = materialName;

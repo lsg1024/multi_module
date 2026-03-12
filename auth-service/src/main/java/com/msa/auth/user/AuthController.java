@@ -35,9 +35,31 @@ public class AuthController {
         String refreshToken = null;
 
         Cookie[] cookies = request.getCookies();
-        for (Cookie cookie : cookies) {
-            if (cookie.getName().equals("refreshToken")) {
-                refreshToken = cookie.getValue();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (cookie.getName().equals("refreshToken")) {
+                    refreshToken = cookie.getValue();
+                }
+            }
+        }
+
+        if (refreshToken == null) {
+            return ResponseEntity.status(401).body(ApiResponse.error("Refresh token not found"));
+        }
+
+        // 요청 헤더의 X-Tenant-ID와 refreshToken의 tenantId 비교
+        String requestTenantId = request.getHeader("X-Tenant-ID");
+        if (requestTenantId != null && !requestTenantId.isBlank()) {
+            String tokenTenantId = refreshTokenService.getTenantIdFromToken(refreshToken);
+            if (tokenTenantId != null && !tokenTenantId.equals(requestTenantId)) {
+                // 테넌트 불일치 → refreshToken 쿠키 삭제 후 거부
+                Cookie expiredCookie = new Cookie("refreshToken", null);
+                expiredCookie.setDomain(COOKIE_URL);
+                expiredCookie.setMaxAge(0);
+                expiredCookie.setPath("/");
+                expiredCookie.setHttpOnly(true);
+                response.addCookie(expiredCookie);
+                return ResponseEntity.status(401).body(ApiResponse.error("Tenant mismatch"));
             }
         }
 

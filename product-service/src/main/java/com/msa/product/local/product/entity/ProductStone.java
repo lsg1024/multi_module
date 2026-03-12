@@ -33,6 +33,12 @@ public class ProductStone {
     @Column(name = "INCLUDE_STONE")
     private Boolean includeStone; // 포함 여부
 
+    @Column(name = "INCLUDE_QUANTITY")
+    private Boolean includeQuantity; // 알 개수 포함 여부
+
+    @Column(name = "INCLUDE_PRICE")
+    private Boolean includePrice; // 가격 포함 여부
+
     @Column(name = "STONE_QUANTITY")
     private Integer stoneQuantity;
 
@@ -40,11 +46,13 @@ public class ProductStone {
     private String productStoneNote;
 
     @Builder
-    public ProductStone(Product product, Stone stone, Boolean mainStone, Boolean includeStone, Boolean includeWeight, Boolean includeLabor, Integer stoneQuantity, String productStoneNote) {
+    public ProductStone(Product product, Stone stone, Boolean mainStone, Boolean includeStone, Boolean includeQuantity, Boolean includePrice, Integer stoneQuantity, String productStoneNote) {
         this.product = product;
         this.stone = stone;
         this.mainStone = mainStone;
         this.includeStone = includeStone;
+        this.includeQuantity = includeQuantity != null ? includeQuantity : true;
+        this.includePrice = includePrice != null ? includePrice : true;
         this.stoneQuantity = stoneQuantity;
         this.productStoneNote = productStoneNote;
     }
@@ -52,6 +60,8 @@ public class ProductStone {
     public void updateStone(ProductStoneDto.Request dto) {
         this.mainStone = dto.isMainStone();
         this.includeStone = dto.isIncludeStone();
+        this.includeQuantity = dto.isIncludeQuantity();
+        this.includePrice = dto.isIncludePrice();
         this.stoneQuantity = dto.getStoneQuantity();
     }
 

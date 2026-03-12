@@ -201,10 +201,12 @@ public class SaleDto {
     @NoArgsConstructor
     public static class PastSaleRequest {
         private String saleCode;
+        private String displayCode;
         private Integer accountGoldPrice;
 
-        public PastSaleRequest(String saleCode, Integer accountGoldPrice) {
+        public PastSaleRequest(String saleCode, String displayCode, Integer accountGoldPrice) {
             this.saleCode = saleCode;
+            this.displayCode = displayCode;
             this.accountGoldPrice = accountGoldPrice;
         }
     }
