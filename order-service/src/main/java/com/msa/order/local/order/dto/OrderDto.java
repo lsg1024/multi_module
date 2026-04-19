@@ -93,6 +93,7 @@ public class OrderDto {
         private String storeName;
         private String productId;
         private String productName;
+        private String productFactoryName;
         private String materialName;
         private String colorName;
         private String setType;
@@ -114,12 +115,13 @@ public class OrderDto {
 
         public static Response from(OrderQueryDto queryDto, String imagePath, List<StatusHistoryDto> statusHistoryDtos) {
             Response response = new Response();
-            response.productId = queryDto.getProductId().toString();
+            response.productId = queryDto.getProductId() != null ? queryDto.getProductId().toString() : null;
             response.createAt = queryDto.getCreateAt();
             response.shippingAt = queryDto.getShippingAt();
             response.flowCode = queryDto.getFlowCode();
             response.storeName = queryDto.getStoreName();
             response.productName = queryDto.getProductName();
+            response.productFactoryName = queryDto.getProductFactoryName();
             response.materialName = queryDto.getMaterialName();
             response.colorName = queryDto.getColorName();
             response.setType = queryDto.getSetType();

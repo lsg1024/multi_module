@@ -27,6 +27,6 @@ public interface CustomOrderRepository {
     List<String> findByFilterClassification(OrderDto.OrderCondition condition);
     List<String> findByFilterMaterial(OrderDto.OrderCondition condition);
 
-    List<OrderExcelQueryDto> findByExcelData(OrderDto.OrderCondition condition);
+    List<OrderExcelQueryDto> findByExcelData(OrderDto.InputCondition inputCondition, OrderDto.OrderCondition condition);
 
 }

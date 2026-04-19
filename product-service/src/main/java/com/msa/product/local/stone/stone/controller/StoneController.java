@@ -95,7 +95,7 @@ public class StoneController {
             @RequestParam(name = "searchMax", required = false) String searchMax,
             @RequestParam(name = "sortField", required = false) String sortField,
             @RequestParam(name = "sortOrder", required = false) String sortOrder,
-            @PageableDefault(size = 12) Pageable pageable) {
+            @PageableDefault(size = 20) Pageable pageable) {
         CustomPage<StoneDto.PageDto> result = stoneService.getStones(search, searchField, searchMin, searchMax, sortField, sortOrder, pageable);
         return ResponseEntity.ok(ApiResponse.success(result));
     }

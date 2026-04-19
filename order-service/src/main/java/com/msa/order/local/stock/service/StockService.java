@@ -78,6 +78,22 @@ public class StockService {
         this.statusHistoryHelper = statusHistoryHelper;
     }
 
+    /**
+     * 상품명 목록 기반 활성 재고 수량 조회 (카탈로그용)
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Integer> getStockCountByProductNames(List<String> productNames) {
+        if (productNames == null || productNames.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Object[]> results = stockRepository.countByProductNames(productNames);
+        Map<String, Integer> countMap = new HashMap<>();
+        for (Object[] row : results) {
+            countMap.put((String) row[0], ((Long) row[1]).intValue());
+        }
+        return countMap;
+    }
+
     // 재고 상세 조회
     @Transactional(readOnly = true)
     public List<StockDto.ResponseDetail> getDetailStock(List<Long> flowCodes) {
@@ -133,9 +149,9 @@ public class StockService {
 
     // 재고 관리  주문, 수리, 대여 관련
     @Transactional(readOnly = true)
-    public CustomPage<StockDto.Response> getStocks(String input, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort, String orderStatus, Pageable pageable) {
-        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
-        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName, null, null);
+    public CustomPage<StockDto.Response> getStocks(String input, String searchField, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String classificationName, String materialName, String sortField, String sort, String orderStatus, Pageable pageable) {
+        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input, searchField);
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName, classificationName, materialName);
         OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
         StockDto.StockCondition condition = new StockDto.StockCondition(startAt, endAt, optionCondition, sortCondition, orderStatus);
 
@@ -168,9 +184,9 @@ public class StockService {
     }
 
     @Transactional(readOnly = true)
-    public CustomPage<StockDto.Response> getPastRentalHistory(String input, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String sortField, String sort,  Pageable pageable) {
-        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input);
-        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName, null, null);
+    public CustomPage<StockDto.Response> getPastRentalHistory(String input, String searchField, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String classificationName, String materialName, String sortField, String sort,  Pageable pageable) {
+        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input, searchField);
+        OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName, classificationName, materialName);
         OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
         BusinessPhase historicalPhase = BusinessPhase.RENTAL;
         StockDto.HistoryCondition historyCondition = new StockDto.HistoryCondition(startAt, endAt, historicalPhase, optionCondition, sortCondition);
@@ -595,6 +611,18 @@ public class StockService {
     public List<String> getFilterColors(String startAt, String endAt, String orderStatus) {
         StockDto.StockCondition condition = new StockDto.StockCondition(startAt, endAt, orderStatus);
         return customStockRepository.findByFilterColor(condition);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getFilterClassifications(String startAt, String endAt, String orderStatus) {
+        StockDto.StockCondition condition = new StockDto.StockCondition(startAt, endAt, orderStatus);
+        return customStockRepository.findByFilterClassification(condition);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getFilterMaterials(String startAt, String endAt, String orderStatus) {
+        StockDto.StockCondition condition = new StockDto.StockCondition(startAt, endAt, orderStatus);
+        return customStockRepository.findByFilterMaterial(condition);
     }
 
     // ==================== 재고 조사 관련 메서드 ====================

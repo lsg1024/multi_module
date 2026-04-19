@@ -114,6 +114,11 @@ public class StockDto {
         private String stoneWeight;
         private Integer productAddLaborCost;
         private Integer stoneAddLaborCost;
+        // 대여 시 거래처 변경 가능
+        private String storeId;
+        private String storeName;
+        private String storeGrade;
+        private String storeHarry;
         @Valid
         private List<StoneDto.StoneInfo> stoneInfos; // 개당 알수는 직접 수정 불가
     }
@@ -253,6 +258,7 @@ public class StockDto {
         private String storeName;
         private String productId;
         private String productName;
+        private String productFactoryName;
         private String productSize;
         private String stockNote;
         private String materialName;
@@ -284,7 +290,7 @@ public class StockDto {
         }
 
         @QueryProjection
-        public Response(String flowCode, String createAt, String shippingAt, String originStatus, String currentStatus, String storeName, String productId, String productName, String productSize, String stockNote, String materialName, String classificationName, String colorName, Integer productLaborCost, Integer productAddLaborCost, String assistantStoneName, boolean assistantStone, Integer mainStoneLaborCost, Integer assistanceStoneLaborCost, Integer stoneAddLaborCost, String mainStoneNote, String assistanceStoneNote, Integer mainStoneQuantity, Integer assistanceStoneQuantity, String stoneWeight, String goldWeight, Integer productPurchaseCost, Integer stonePurchaseCost) {
+        public Response(String flowCode, String createAt, String shippingAt, String originStatus, String currentStatus, String storeName, String productId, String productName, String productFactoryName, String productSize, String stockNote, String materialName, String classificationName, String colorName, Integer productLaborCost, Integer productAddLaborCost, String assistantStoneName, boolean assistantStone, Integer mainStoneLaborCost, Integer assistanceStoneLaborCost, Integer stoneAddLaborCost, String mainStoneNote, String assistanceStoneNote, Integer mainStoneQuantity, Integer assistanceStoneQuantity, String stoneWeight, String goldWeight, Integer productPurchaseCost, Integer stonePurchaseCost) {
             this.flowCode = flowCode;
             this.createAt = createAt;
             this.shippingAt = shippingAt;
@@ -293,6 +299,7 @@ public class StockDto {
             this.storeName = storeName;
             this.productId = productId;
             this.productName = productName;
+            this.productFactoryName = productFactoryName;
             this.productSize = productSize;
             this.stockNote = stockNote;
             this.materialName = materialName;

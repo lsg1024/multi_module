@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface FactoryRepository extends JpaRepository<Factory, Long>, CustomFactoryRepository {
@@ -30,6 +31,14 @@ public interface FactoryRepository extends JpaRepository<Factory, Long>, CustomF
             "where f.factoryId= :factoryId " +
             "and f.factoryName= :factoryName")
     TransactionDto findByFactoryIdAndFactoryName(@Param("factoryId") Long factoryId, @Param("factoryName") String factoryName);
+
+    @Query("""
+      select f
+      from Factory f
+      join fetch f.commonOption co
+      where lower(f.factoryName) = lower(:factoryName) and f.factoryDeleted = false
+    """)
+    List<Factory> findByFactoryNameIgnoreCase(@Param("factoryName") String factoryName);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select f from Factory f where f.factoryId = :id")

@@ -109,6 +109,18 @@ public class Product extends BaseEntity {
         images.setProduct(this);
     }
 
+    public void updateProductFactoryName(String productFactoryName) {
+        this.productFactoryName = productFactoryName;
+    }
+
+    public void appendProductNote(String note) {
+        if (this.productNote == null || this.productNote.isBlank()) {
+            this.productNote = note;
+        } else {
+            this.productNote = this.productNote + " | " + note;
+        }
+    }
+
     public void updateProductInfo(ProductDto.Update productDto, String factoryName) {
         this.factoryId = productDto.getFactoryId();
         this.factoryName = factoryName;

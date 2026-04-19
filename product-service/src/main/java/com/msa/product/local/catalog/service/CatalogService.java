@@ -4,6 +4,7 @@ import com.msa.common.global.util.AuthorityUserRoleUtil;
 import com.msa.common.global.util.CustomPage;
 import com.msa.product.global.excel.dto.CatalogExcelDto;
 import com.msa.product.global.excel.util.CatalogExcelUtil;
+import com.msa.product.global.feign_client.client.StockClient;
 import com.msa.product.local.catalog.dto.CatalogProductDto;
 import com.msa.product.local.catalog.repository.CatalogRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 카탈로그 서비스 (판매처 전용)
@@ -27,6 +29,7 @@ public class CatalogService {
 
     private final CatalogRepository catalogRepository;
     private final AuthorityUserRoleUtil authorityUserRoleUtil;
+    private final StockClient stockClient;
 
     /**
      * 판매처 권한 검증
@@ -51,10 +54,23 @@ public class CatalogService {
 
         validateStoreAccess(accessToken);
 
-        return catalogRepository.findCatalogProducts(
+        CustomPage<CatalogProductDto.Page> page = catalogRepository.findCatalogProducts(
                 productName, classificationId, setTypeId,
                 sortField, sort, pageable
         );
+
+        // 재고 수량 조회 후 설정
+        List<String> productNames = page.getContent().stream()
+                .map(CatalogProductDto.Page::getProductName)
+                .toList();
+        if (!productNames.isEmpty()) {
+            Map<String, Integer> stockCounts = stockClient.getStockCountByProductNames(accessToken, productNames);
+            page.getContent().forEach(p ->
+                    p.setStockCount(stockCounts.getOrDefault(p.getProductName(), 0))
+            );
+        }
+
+        return page;
     }
 
     /**

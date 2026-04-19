@@ -64,6 +64,32 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
     }
 
     @Override
+    public List<SaleItemResponse.SaleItem> findAllSales(SaleDto.Condition condition) {
+        List<SaleItemResponse.SaleItem> items = fetchItems(condition);
+        List<SaleItemResponse.SaleItem> payments = fetchPayment(condition);
+
+        return Stream.concat(items.stream(), payments.stream())
+                .sorted(Comparator.comparing(SaleItemResponse.SaleItem::getCreateAt,
+                        Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+                .toList();
+    }
+
+    @Override
+    public List<SaleDto.SaleStoreInfo> findSaleStores(String startAt, String endAt) {
+        BooleanExpression dateRange = getCreateAtAndEndAt(startAt, endAt);
+
+        return query
+                .select(Projections.constructor(SaleDto.SaleStoreInfo.class,
+                        sale.accountId,
+                        sale.accountName
+                ))
+                .from(sale)
+                .where(dateRange)
+                .groupBy(sale.accountId, sale.accountName)
+                .fetch();
+    }
+
+    @Override
     public List<SaleItemResponse> findPrintSales(String saleCode) {
 
         List<SaleItemResponse.SaleItem> saleItems = printFetchItems(saleCode);

@@ -122,6 +122,18 @@ public class SaleDto {
         private String material;
     }
 
+    /**
+     * 판매 거래처 정보 (메시지 전송용).
+     * 날짜 범위 내 판매된 고유한 거래처 ID/이름만 반환.
+     */
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SaleStoreInfo {
+        private Long storeId;
+        private String storeName;
+    }
+
     @Setter
     @Getter
     @NoArgsConstructor

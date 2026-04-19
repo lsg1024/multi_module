@@ -35,6 +35,26 @@ import static com.msa.order.local.sale.entity.QSaleItem.saleItem;
 import static com.msa.order.local.sale.entity.QSalePayment.salePayment;
 import static com.msa.order.local.stock.entity.QStock.stock;
 
+/**
+ * 대시보드 통계 QueryDSL 쿼리 구현체.
+ *
+ * *대시보드 화면에 필요한 각종 집계 데이터를 제공한다.
+ *
+ * *주요 쿼리:
+ *
+ *   - 재질별 재고 요약 — 재질명 GROUP BY, 금 중량 합계, 재고 수량 집계
+ *   - 재고 Top5 — 상품명 기준 수량 내림차순 정렬 후 limit 적용
+ *   - 월별 매출 요약 — 당월 판매 항목의 공임비·매입가 합계 및 순이익 계산
+ *   - 거래처별 판매 통계 — 판매/반품/DC 상태별 별도 쿼리 실행 후 Java Map에서 조합,
+ *       결제 정보 및 주석/보조석 수량을 추가로 조회하여 병합
+ *   - 대여 현황 — 매장별 대여 중인 재고의 중량·공임비·수량 집계
+ *   - 미수금 요약 — 전체 판매 금액에서 전체 결제 금액을 차감
+ *   - 매입처 미납 요약 — 전체 매입 비용에서 PURCHASE 결제 금액을 차감
+ * 
+ *
+ * *의존성: {@link JPAQueryFactory}, {@code sale}, {@code saleItem},
+ * {@code salePayment}, {@code stock}, {@code orderStone} Q클래스
+ */
 @Repository
 public class DashboardRepositoryImpl implements DashboardRepository {
 

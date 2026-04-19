@@ -25,6 +25,31 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 
+/**
+ * 판매 관리 REST 컨트롤러.
+ *
+ * *판매 등록·조회·수정·취소·결제 및 엑셀 다운로드 API를 제공한다.
+ *
+ * *제공 엔드포인트 요약:
+ *
+ *   - {@code GET /sale} — 판매 단건 상세 조회
+ *   - {@code GET /sales} — 판매 목록 페이징 조회
+ *   - {@code GET /sale/print} — 거래 명세서 인쇄 데이터 조회
+ *   - {@code GET /sale/check} — 오늘 판매 데이터 확인
+ *   - {@code PATCH /sales/product} — 판매 상품 수정 (멱등성 키 적용)
+ *   - {@code PATCH /orders/order_sale} — 주문 → 판매 등록
+ *   - {@code PATCH /sales/stock_sale} — 재고 → 판매 등록
+ *   - {@code POST /sales/payment} — 결제/DC/결통 등록
+ *   - {@code DELETE /sales/{type}} — 판매 취소
+ *   - {@code GET /sale/past} — 과거 판매 이력 조회
+ *   - {@code GET /sale/gold-price} — 주문장 시세 확인
+ *   - {@code PATCH /sale/gold-price} — 주문장 시세 추가
+ *   - {@code GET /sales/excel} — 판매 내역 엑셀 다운로드
+ * 
+ *
+ * *의존성: {@link com.msa.order.local.sale.service.SaleService},
+ * {@link com.msa.order.local.stock.service.StockService}
+ */
 @RestController
 public class SaleController {
 
@@ -55,6 +80,28 @@ public class SaleController {
 
         CustomPage<SaleItemResponse.SaleItem> sale = saleService.getSale(input,startAt, endAt, material, pageable);
         return ResponseEntity.ok(ApiResponse.success(sale));
+    }
+
+    // 판매 전체 목록 (페이징 없이 배열 반환)
+    @GetMapping("/sales/all")
+    public ResponseEntity<ApiResponse<List<SaleItemResponse.SaleItem>>> getAllSales(
+            @RequestParam(name = "start") String startAt,
+            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "search", required = false) String input,
+            @RequestParam(name = "type", required = false) String material) {
+
+        List<SaleItemResponse.SaleItem> sales = saleService.getAllSales(startAt, endAt, input, material);
+        return ResponseEntity.ok(ApiResponse.success(sales));
+    }
+
+    // 날짜 범위 내 판매 거래처 목록 (메시지 전송용 - 거래처 ID/이름만 반환)
+    @GetMapping("/sales/stores")
+    public ResponseEntity<ApiResponse<List<SaleDto.SaleStoreInfo>>> getSaleStores(
+            @RequestParam(name = "start") String startAt,
+            @RequestParam(name = "end") String endAt) {
+
+        List<SaleDto.SaleStoreInfo> stores = saleService.getSaleStores(startAt, endAt);
+        return ResponseEntity.ok(ApiResponse.success(stores));
     }
 
     // 거래 명세서 인쇄

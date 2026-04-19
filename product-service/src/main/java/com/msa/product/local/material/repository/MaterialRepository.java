@@ -11,4 +11,5 @@ public interface MaterialRepository extends JpaRepository<Material, Long>, Custo
     String findByMaterialName(Long id);
     boolean existsByMaterialName(String name);
     Optional<Material> findByMaterialName(String materialName);
+    Optional<Material> findByMaterialNameIgnoreCase(String materialName);
 }

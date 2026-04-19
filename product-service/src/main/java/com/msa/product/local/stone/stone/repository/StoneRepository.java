@@ -9,4 +9,5 @@ public interface StoneRepository extends JpaRepository<Stone, Long>, CustomStone
     boolean existsByStoneName(String stoneName);
     boolean existsByStoneId(Long stoneId);
     Optional<Stone> findByStoneName(String stoneName);
+    Optional<Stone> findByStoneNameIgnoreCase(String stoneName);
 }

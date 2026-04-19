@@ -31,6 +31,35 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+/**
+ * 매장 관리 REST 컨트롤러.
+ *
+ * *매장 생성·조회·수정·삭제, 미수금 조회, 배치 등록, 엑셀 다운로드 API를 제공한다.
+ *
+ * *제공 엔드포인트 요약:
+ *
+ *   - {@code GET /store/{id}} — 매장 단건 상세 조회
+ *   - {@code GET /stores} — 매장 목록 페이징 조회
+ *   - {@code GET /stores/receivable} — 미수금 있는 매장 목록 조회
+ *   - {@code GET /stores/receivable/{id}} — 특정 매장 미수금 상세 조회
+ *   - {@code GET /stores/receivable/sale-log/{id}} — 판매 로그 기반 미수금 상세 조회
+ *   - {@code POST /store} — 매장 생성
+ *   - {@code POST /stores/batch} — Spring Batch를 이용한 JSON 파일 기반 매장 대량 등록
+ *   - {@code PATCH /stores/{id}} — 매장 정보 수정
+ *   - {@code DELETE /stores/{id}} — 매장 삭제
+ *   - {@code GET /stores/excel} — 매장 목록 엑셀 다운로드
+ *   - {@code GET /stores/receivable/excel} — 미수금 목록 엑셀 다운로드
+ *   - {@code PATCH /stores/harry/{id}/{harry}} — 매장 금 해리 설정 변경
+ *   - {@code PATCH /stores/grade/{id}/{grade}} — 매장 등급 변경
+ *   - {@code GET /stores/grade} — 매장 등급 조회
+ *   - {@code GET /api/store/{id}} — 내부 API 매장 정보 조회
+ *   - {@code GET /api/stores/phones} — 내부 API 매장 전화번호 일괄 조회
+ * 
+ *
+ * *의존성: {@link com.msa.account.local.store.service.StoreService},
+ * {@link com.msa.account.local.factory.service.ExcelService},
+ * {@link org.springframework.batch.core.launch.JobLauncher} (대량 등록용)
+ */
 @Slf4j
 @RestController
 public class StoreController {
@@ -112,8 +141,9 @@ public class StoreController {
     public ResponseEntity<ApiResponse<String>> createStoreForBatch(
             @RequestParam("file") MultipartFile file) {
 
+        Path tempPath = null;
         try {
-            Path tempPath = Files.createTempFile("store-upload-", ".json");
+            tempPath = Files.createTempFile("store-upload-", ".json");
 
             file.transferTo(tempPath.toFile());
 
@@ -125,9 +155,13 @@ public class StoreController {
             jobLauncher.run(storeImportJob, jobParameters);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Store batch upload failed", e);
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("저장 실패: " + e.getMessage()));
+        } finally {
+            if (tempPath != null) {
+                try { Files.deleteIfExists(tempPath); } catch (IOException ignored) {}
+            }
         }
 
         return ResponseEntity.ok(ApiResponse.success("저장 중..."));
@@ -224,6 +258,20 @@ public class StoreController {
             @PathVariable Long id) {
         StoreDto.ApiStoreInfo storeInfo = storeService.getStoreInfo(id);
         return ResponseEntity.ok(ApiResponse.success(storeInfo));
+    }
+
+    @GetMapping("/api/store/name")
+    public ResponseEntity<ApiResponse<StoreDto.ApiStoreInfo>> getStoreInfoByName(
+            @RequestParam("name") String storeName) {
+        StoreDto.ApiStoreInfo storeInfo = storeService.getStoreInfoByName(storeName);
+        return ResponseEntity.ok(ApiResponse.success(storeInfo));
+    }
+
+    @GetMapping("/api/stores/phones")
+    public ResponseEntity<ApiResponse<List<StoreDto.StorePhoneInfo>>> getStorePhones(
+            @RequestParam("ids") List<Long> storeIds) {
+        List<StoreDto.StorePhoneInfo> phones = storeService.getStorePhones(storeIds);
+        return ResponseEntity.ok(ApiResponse.success(phones));
     }
 
 }

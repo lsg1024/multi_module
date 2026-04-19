@@ -27,6 +27,18 @@ public interface AccountFeignClient {
             @PathVariable("storeId") Long storeId
     );
 
+    @GetMapping("/api/store/name")
+    ResponseEntity<ApiResponse<StoreDto.Response>> getStoreInfoByName(
+            @RequestHeader Map<String, Object> headers,
+            @RequestParam("name") String storeName
+    );
+
+    @GetMapping("/api/factory/name")
+    ResponseEntity<ApiResponse<FactoryDto.Response>> getFactoryInfoByName(
+            @RequestHeader Map<String, Object> headers,
+            @RequestParam("name") String factoryName
+    );
+
     @GetMapping("/stores/receivable/sale-log/{id}")
     ResponseEntity<ApiResponse<StoreDto.accountResponse>> getStoreReceivableDetailLog(
             @RequestHeader Map<String, Object> header,

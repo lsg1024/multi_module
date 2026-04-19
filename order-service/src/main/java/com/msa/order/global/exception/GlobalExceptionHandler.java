@@ -1,6 +1,7 @@
 package com.msa.order.global.exception;
 
 import com.msa.common.global.api.ApiResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -71,6 +73,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<String>> handleUnexpectedException(Exception e) {
+        log.error("[UnexpectedException] {}", e.getMessage(), e);
         ApiResponse<String> body = ApiResponse.error("서버 내부 오류가 발생했습니다.");
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)

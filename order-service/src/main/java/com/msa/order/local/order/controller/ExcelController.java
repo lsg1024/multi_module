@@ -37,6 +37,8 @@ public class ExcelController {
     public ResponseEntity<byte[]> getOrderExcel(
             @RequestParam(name = "start") String startAt,
             @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "search", required = false) String search,
+            @RequestParam(name = "searchField", required = false) String searchField,
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
@@ -45,7 +47,7 @@ public class ExcelController {
             @RequestParam(name = "material", required = false) String materialName,
             @RequestParam(name = "order_status") String orderStatus) throws IOException {
 
-        List<OrderExcelQueryDto> excelData = ordersService.getExcel(startAt, endAt, factoryName, storeName, setTypeName, colorName, classificationName, materialName, orderStatus);
+        List<OrderExcelQueryDto> excelData = ordersService.getExcel(startAt, endAt, search, searchField, factoryName, storeName, setTypeName, colorName, classificationName, materialName, orderStatus);
 
         byte[] formatDtoToExcel = excelService.getFormatDtoToExcel(excelData);
 

@@ -14,6 +14,18 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 판매 집합 엔티티.
+ *
+ * *하나의 판매 세션(주문장)을 나타내며, 여러 {@link SaleItem}과 {@link SalePayment}를 포함한다.
+ * {@code saleCode}는 TSID 기반 전역 고유 식별자이며 유니크 제약이 적용된다.
+ *
+ * *{@code accountGoldPrice}는 해당 판매 세션의 금 시세로,
+ * 한 번 설정된 후에는 변경이 불가능하다({@link #updateAccountGoldPrice} 참조).
+ *
+ * *{@code displayCode}는 사용자에게 표시되는 날짜+순번 형식의 주문장 코드이다
+ * (예: {@code YYMMDDNN}).
+ */
 @Getter
 @Entity
 @Table(
@@ -28,6 +40,7 @@ public class Sale extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "SALE_ID")
     private Long saleId;
+    /** TSID 기반 판매 세션 고유 코드. OutboxEvent의 메시지 키로도 활용된다. */
     @Tsid
     @Column(name = "SALE_CODE")
     private Long saleCode;
@@ -42,9 +55,11 @@ public class Sale extends BaseEntity {
     private BigDecimal accountHarry;
     @Column(name = "ACCOUNT_GRADE")
     private String accountGrade;
+    /** 이 판매 세션에 적용된 금 시세(원/g). 최초 설정 후 변경 불가. */
     @Column(name = "ACCOUNT_GOLD_PRICE")
     private Integer accountGoldPrice;
 
+    /** 사용자 표시용 주문장 코드 (형식: YYMMDDNN, 예: 2604010001). */
     @Column(name = "DISPLAY_CODE", length = 10)
     private String displayCode;
 

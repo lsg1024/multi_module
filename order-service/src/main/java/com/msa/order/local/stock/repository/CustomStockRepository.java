@@ -17,6 +17,8 @@ public interface CustomStockRepository {
     List<String> findByFilterStores(StockDto.StockCondition condition);
     List<String> findByFilterSetType(StockDto.StockCondition condition);
     List<String> findByFilterColor(StockDto.StockCondition condition);
+    List<String> findByFilterClassification(StockDto.StockCondition condition);
+    List<String> findByFilterMaterial(StockDto.StockCondition condition);
 
     // 재고 조사
     CustomPage<InventoryDto.Response> findInventoryStocks(InventoryDto.Condition condition, Pageable pageable);

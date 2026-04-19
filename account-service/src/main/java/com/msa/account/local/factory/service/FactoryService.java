@@ -147,6 +147,17 @@ public class FactoryService {
         throw new NotAuthorityException(NO_ROLE);
     }
 
+    @Transactional(readOnly = true)
+    public FactoryDto.ApiFactoryInfo getFactoryInfoByName(String factoryName) {
+        List<Factory> factories = factoryRepository.findByFactoryNameIgnoreCase(factoryName);
+        if (factories.isEmpty()) {
+            throw new NotFoundException(NOT_FOUND_FACTORY);
+        }
+        Factory factory = factories.get(0);
+
+        return new FactoryDto.ApiFactoryInfo(factory.getFactoryId(), factory.getFactoryName(), factory.getCommonOption().getGoldHarryLoss());
+    }
+
     public List<FactoryDto.ApiFactoryInfo> findAllFactory() {
         return factoryRepository.findAllFactory();
     }

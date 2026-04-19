@@ -29,6 +29,7 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +43,22 @@ import static com.msa.order.local.priority.entitiy.QPriority.priority;
 import static com.msa.order.local.stock.entity.QStock.stock;
 import static java.util.stream.Collectors.*;
 
+/**
+ * 주문 QueryDSL 동적 쿼리 구현체.
+ *
+ * *주문 목록 조회, 출고 예정 조회, 삭제된 주문 조회, 필터 목록 조회,
+ * 엑셀 데이터 조회 등 다양한 동적 쿼리를 제공한다.
+ *
+ * *주요 특징:
+ *
+ *   - {@link BooleanBuilder}를 이용한 다중 조건 필터 조합
+ *   - {@code StatusHistory} EXISTS 서브쿼리로 주문 상태 이력 검증
+ *   - 재고 수량 서브쿼리 및 (상품명·재질·컬러) 키 기반 flowCode 맵 후처리로 2단계 로딩
+ *   - 동적 정렬 — 공장·매장·세트유형·컬러 필드별 ASC/DESC 지원
+ * 
+ *
+ * *의존성: {@link JPAQueryFactory}, {@code DEFAULT_STORE_STOCK_ID}(매장 재고 고정 ID = 1)
+ */
 @Slf4j
 @Repository
 public class OrderRepositoryImpl implements CustomOrderRepository {
@@ -206,8 +223,9 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
     }
 
     @Override
-    public List<OrderExcelQueryDto> findByExcelData(OrderDto.OrderCondition condition) {
+    public List<OrderExcelQueryDto> findByExcelData(OrderDto.InputCondition inputCondition, OrderDto.OrderCondition condition) {
 
+        BooleanBuilder searchBuilder = getSearchBuilder(inputCondition);
         BooleanBuilder optionBuilder = getOptionBuilder(condition.getOptionCondition());
         BooleanExpression ordersReceiptStatusBuilder = getOrdersReceiptStatusBuilder(condition);
 
@@ -225,6 +243,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 .from(orders)
                 .join(orders.orderProduct, orderProduct)
                 .where(
+                        searchBuilder,
                         optionBuilder,
                         ordersReceiptStatusBuilder
                 )
@@ -232,6 +251,27 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 .fetch();
     }
 
+    /**
+     * 주문 목록 페이징 쿼리를 실행하고 재고 flowCode 맵을 후처리하여 응답을 구성한다.
+     *
+     * *처리 흐름:
+     *
+     *   - 재고 수량 서브쿼리({@code stockQty})를 인라인으로 구성하여 SELECT에 포함
+     *   - 동적 정렬 스펙({@link #createOrderSpecifiers})을 적용하여 본 쿼리 실행
+     *   - 결과 DTO에서 (productName, materialName, colorName) 키 집합을 추출
+     *   - 해당 키들의 {@code stock.flowCode} 목록을 단일 배치 쿼리로 조회
+     *   - Tuple을 {@code Map<StockCondition, List<String>>}으로 그룹핑 후 각 DTO에 주입
+     *   - 카운트 쿼리를 별도로 실행하여 {@link CustomPage} 반환
+     * 
+     *
+     * @param pageable        페이징 정보
+     * @param sortCondition   동적 정렬 조건
+     * @param conditionBuilder 검색어 필터
+     * @param statusBuilder   상태/날짜 필터
+     * @param optionBuilder   드롭다운 옵션 필터
+     * @param orderDeleted    삭제 여부 플래그
+     * @return 페이징된 주문 쿼리 결과
+     */
     @NotNull
     private CustomPage<OrderQueryDto> getResponse(Pageable pageable, OrderDto.SortCondition sortCondition, BooleanBuilder conditionBuilder, BooleanExpression statusBuilder, BooleanBuilder optionBuilder, Boolean orderDeleted) {
 
@@ -260,6 +300,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                         orders.flowCode.stringValue(),
                         orders.storeName,
                         orders.orderProduct.productName,
+                        orders.orderProduct.productFactoryName,
                         orders.orderProduct.materialName,
                         orderProduct.colorName,
                         orderProduct.setTypeName,
@@ -446,8 +487,8 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         LocalDateTime start = LocalDate.parse(startAt).atStartOfDay(); // 예: 2025-08-04 00:00:00
         LocalDateTime end = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
 
-        OffsetDateTime startDateTime = start.atOffset(ZoneOffset.of("+09:00"));
-        OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
+        OffsetDateTime startDateTime = start.atOffset(ZoneId.of("Asia/Seoul").getRules().getOffset(start));
+        OffsetDateTime endDateTime = end.atOffset(ZoneId.of("Asia/Seoul").getRules().getOffset(end));
 
         BooleanExpression createdBetween =
                 orders.createAt.between(startDateTime, endDateTime);
@@ -464,7 +505,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
         LocalDateTime end = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
 
-        OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
+        OffsetDateTime endDateTime = end.atOffset(ZoneId.of("Asia/Seoul").getRules().getOffset(end));
 
         BooleanExpression shippingAt =
                 orders.shippingAt.loe(endDateTime);
@@ -481,8 +522,8 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         LocalDateTime start = LocalDate.parse(startAt).atStartOfDay(); // 예: 2025-08-04 00:00:00
         LocalDateTime end = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
 
-        OffsetDateTime startDateTime = start.atOffset(ZoneOffset.of("+09:00"));
-        OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
+        OffsetDateTime startDateTime = start.atOffset(ZoneId.of("Asia/Seoul").getRules().getOffset(start));
+        OffsetDateTime endDateTime = end.atOffset(ZoneId.of("Asia/Seoul").getRules().getOffset(end));
 
         BooleanExpression createdBetween =
                 orders.createAt.between(startDateTime, endDateTime);
@@ -499,8 +540,8 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         LocalDateTime start = LocalDate.parse(startAt).atStartOfDay(); // 예: 2025-08-04 00:00:00
         LocalDateTime end = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
 
-        OffsetDateTime startDateTime = start.atOffset(ZoneOffset.of("+09:00"));
-        OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
+        OffsetDateTime startDateTime = start.atOffset(ZoneId.of("Asia/Seoul").getRules().getOffset(start));
+        OffsetDateTime endDateTime = end.atOffset(ZoneId.of("Asia/Seoul").getRules().getOffset(end));
 
         BooleanExpression createdBetween =
                 orders.createAt.between(startDateTime, endDateTime);
@@ -508,7 +549,11 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanExpression statusIsReceiptOrWaiting =
                 orders.productStatus.eq(ProductStatus.RECEIPT);
 
-        BooleanExpression status = orders.orderStatus.eq(OrderStatus.valueOf(orderCondition.getOrderStatus()));
+        OrderStatus requestedStatus = OrderStatus.valueOf(orderCondition.getOrderStatus());
+        // WAIT 상태의 신규 주문도 포함 (비동기 처리 전 상태)
+        BooleanExpression status = requestedStatus == OrderStatus.ORDER
+                ? orders.orderStatus.in(OrderStatus.ORDER, OrderStatus.WAIT)
+                : orders.orderStatus.eq(requestedStatus);
 
         return statusIsReceiptOrWaiting.and(status).and(createdBetween);
     }
@@ -518,7 +563,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
         LocalDateTime end = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
 
-        OffsetDateTime endDateTime = end.atOffset(ZoneOffset.of("+09:00"));
+        OffsetDateTime endDateTime = end.atOffset(ZoneId.of("Asia/Seoul").getRules().getOffset(end));
 
         BooleanExpression shippingAt =
                 orders.shippingAt.loe(endDateTime);
@@ -546,7 +591,10 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 }
             }
         } else {
-            orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, orders.orderId));
+            // 기본 정렬: 날짜(최신순) → 상태 → 상품명
+            orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, orders.createAt));
+            orderSpecifiers.add(new OrderSpecifier<>(Order.ASC, orders.orderStatus));
+            orderSpecifiers.add(new OrderSpecifier<>(Order.ASC, orders.orderProduct.productName));
         }
 
         return orderSpecifiers.toArray(new OrderSpecifier[0]);

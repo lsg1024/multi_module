@@ -29,4 +29,17 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from Stock s where s.flowCode = :flowCode")
     Optional<Stock> findByFlowCodeForUpdate(@Param("flowCode") Long flowCode);
+
+    /**
+     * 상품명 목록에 해당하는 활성 재고 수량을 상품명별로 집계한다.
+     * 활성 재고: STOCK, NORMAL, RENTAL 상태이며 삭제되지 않은 것
+     */
+    @Query("SELECT s.product.productName, COUNT(s) FROM Stock s " +
+            "WHERE s.product.productName IN :productNames " +
+            "AND s.stockDeleted = false " +
+            "AND s.orderStatus IN (com.msa.order.local.order.entity.order_enum.OrderStatus.STOCK, " +
+            "com.msa.order.local.order.entity.order_enum.OrderStatus.NORMAL, " +
+            "com.msa.order.local.order.entity.order_enum.OrderStatus.RENTAL) " +
+            "GROUP BY s.product.productName")
+    List<Object[]> countByProductNames(@Param("productNames") List<String> productNames);
 }

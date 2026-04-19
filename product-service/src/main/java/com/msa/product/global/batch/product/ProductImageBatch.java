@@ -179,12 +179,10 @@ public class ProductImageBatch {
 
             log.info(">>>> [Batch] 상품 데이터 캐싱 시작 (Tenant: {})", this.tenant);
             try {
-                productCache = productRepository.findAll().stream()
-                        .collect(Collectors.toMap(
-                                Product::getProductName,
-                                Product::getProductId,
-                                (oldVal, newVal) -> oldVal
-                        ));
+                // 대소문자 무시 TreeMap으로 캐시 구성 (파일명과 상품명 대소문자 불일치 방지)
+                productCache = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+                productRepository.findAll().forEach(p ->
+                        productCache.putIfAbsent(p.getProductName(), p.getProductId()));
                 log.info(">>>> [Batch] 캐싱 완료. 상품 수: {}", productCache.size());
             } finally {
                 TenantContext.clear();

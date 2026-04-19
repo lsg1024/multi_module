@@ -17,6 +17,29 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 주문 관리 REST 컨트롤러.
+ *
+ * *주문 생성·단건 조회·목록 조회·수정·삭제 및 상태 변경 API를 제공한다.
+ *
+ * *제공 엔드포인트 요약:
+ *
+ *   - {@code POST /orders} — 주문 생성
+ *   - {@code GET /order} — 주문 단건 상세 조회
+ *   - {@code GET /orders} — 주문 목록 페이징 조회 (다중 필터·정렬 지원)
+ *   - {@code PATCH /order} — 주문 전체 수정
+ *   - {@code PATCH /orders/status} — 주문 상태 변경
+ *   - {@code PATCH /orders/delivery-date} — 출고일 변경
+ *   - {@code PATCH /orders/store} — 주문 상점 변경
+ *   - {@code PATCH /orders/factory} — 주문 공장 변경
+ *   - {@code DELETE /orders/delete} — 주문 삭제
+ *   - {@code GET /orders/deliveries} — 출고 예정 목록 조회
+ *   - {@code GET /orders/deleted} — 삭제된 주문 목록 조회
+ *   - {@code GET /filters/*} — 공장·상점·세트유형·컬러·분류·재질 필터 목록 조회
+ * 
+ *
+ * *의존성: {@link com.msa.order.local.order.service.OrdersService}
+ */
 @RestController
 public class OrdersController {
 
@@ -112,7 +135,7 @@ public class OrdersController {
     public ResponseEntity<ApiResponse<String>> updateOrderDeliveryDate(
             @AccessToken String accessToken,
             @RequestParam String id,
-            @RequestBody DateDto updateDate) {
+            @Valid @RequestBody DateDto updateDate) {
         ordersService.updateOrderDeliveryDate(accessToken, id, updateDate);
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
@@ -122,7 +145,7 @@ public class OrdersController {
     public ResponseEntity<ApiResponse<String>> updateOrderStore (
             @AccessToken String accessToken,
             @RequestParam String id,
-            @RequestBody StoreDto.Request updateStoreDto) {
+            @Valid @RequestBody StoreDto.Request updateStoreDto) {
         ordersService.updateOrderStore(accessToken, id, updateStoreDto);
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
@@ -131,7 +154,7 @@ public class OrdersController {
     public ResponseEntity<ApiResponse<String>> updateOrderFactory (
             @AccessToken String accessToken,
             @RequestParam String id,
-            @RequestBody FactoryDto.Request updateFactoryDto) {
+            @Valid @RequestBody FactoryDto.Request updateFactoryDto) {
         ordersService.updateOrderFactory(accessToken, id, updateFactoryDto);
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }

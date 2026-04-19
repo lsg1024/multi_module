@@ -23,6 +23,24 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
 
+/**
+ * 해리 삭제 시 연관 CommonOption을 기본 해리(ID=1)로 대체하는 Spring Batch Job 설정.
+ *
+ * *{@code goldHarry.deleted} Kafka 토픽 이벤트를 수신한 {@code KafkaConsumer}가
+ * 이 Job을 실행한다. 처리 흐름:
+ *
+ *   - <b>Reader</b>({@code deleteCommonOptionReader}): 삭제된 {@code goldHarryId}를 참조하는
+ *       모든 {@link CommonOption}을 JDBC 페이징으로 읽는다.
+ *   - <b>Processor</b>({@code deleteGoldHarryDefaultProcessor}): 시스템 기본 해리(ID=1)를
+ *       조회하여 각 {@link CommonOption}의 {@code goldHarry} 참조와 {@code goldHarryLoss} 사본을
+ *       기본값으로 교체한다.
+ *   - <b>Writer</b>({@code deleteCommonOptionWriter}): 변경된 {@code GOLD_HARRY_ID} 및
+ *       {@code GOLD_HARRY_LOSS}를 JDBC 배치 UPDATE로 반영한다.
+ * 
+ *
+ * *청크 크기: 100건. 기본 해리(ID=1)가 존재하지 않으면 {@link NotFoundException}이 발생한다.
+ * {@code @StepScope} 어노테이션은 애플리케이션 구동 시 스키마 미보유 오류를 방지하기 위해 사용된다.
+ */
 @Configuration
 public class DeleteGoldHarryBatchJob {
 
