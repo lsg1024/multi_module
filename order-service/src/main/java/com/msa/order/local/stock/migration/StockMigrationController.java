@@ -63,8 +63,15 @@ public class StockMigrationController {
                     .toJobParameters();
 
             log.info("재고 마이그레이션 배치 Job 시작");
-            jobLauncher.run(stockImportJob, params);
-            log.info("재고 마이그레이션 배치 Job 완료 - 실패: {}건", failureCollector.getFailureCount());
+            var execution = jobLauncher.run(stockImportJob, params);
+            long readCount = execution.getStepExecutions().stream()
+                    .mapToLong(s -> s.getReadCount()).sum();
+            long writeCount = execution.getStepExecutions().stream()
+                    .mapToLong(s -> s.getWriteCount()).sum();
+            long skipCount = execution.getStepExecutions().stream()
+                    .mapToLong(s -> s.getReadSkipCount() + s.getProcessSkipCount() + s.getWriteSkipCount()).sum();
+            log.info("재고 마이그레이션 배치 Job 완료 - 읽기: {}건, 저장: {}건, skip: {}건, 실패기록: {}건",
+                    readCount, writeCount, skipCount, failureCollector.getFailureCount());
 
             // 4. 임시 파일 삭제
             Files.deleteIfExists(tempPath);
@@ -73,7 +80,8 @@ public class StockMigrationController {
             List<FailedStockRow> failures = failureCollector.getFailures();
 
             if (failures.isEmpty()) {
-                return ResponseEntity.ok(ApiResponse.success("재고 마이그레이션 완료"));
+                return ResponseEntity.ok(ApiResponse.success(
+                        String.format("재고 마이그레이션 완료 (읽기: %d건, 저장: %d건)", readCount, writeCount)));
             }
 
             // 6. 실패 건이 있으면 CSV 파일로 저장
@@ -88,8 +96,8 @@ public class StockMigrationController {
             log.info("재고 마이그레이션 실패 {}건 - 파일 저장: {}", failures.size(), failurePath.toAbsolutePath());
 
             return ResponseEntity.ok(ApiResponse.error(
-                    String.format("재고 마이그레이션 완료 (실패 %d건) - 파일: %s",
-                            failures.size(), failurePath.toAbsolutePath())));
+                    String.format("재고 마이그레이션 완료 (읽기: %d건, 저장: %d건, 실패: %d건) - 파일: %s",
+                            readCount, writeCount, failures.size(), failurePath.toAbsolutePath())));
 
         } catch (Exception e) {
             log.error("재고 마이그레이션 처리 중 오류", e);

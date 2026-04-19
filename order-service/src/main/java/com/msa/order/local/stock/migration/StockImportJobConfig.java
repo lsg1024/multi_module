@@ -15,6 +15,7 @@ import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.file.FlatFileItemReader;
+import org.springframework.batch.item.file.FlatFileParseException;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
@@ -40,7 +41,7 @@ public class StockImportJobConfig {
     private final ProductClient productClient;
     private final StockMigrationFailureCollector failureCollector;
 
-    private static final int CHUNK_SIZE = 500;
+    private static final int CHUNK_SIZE = 50;
     private static final Charset CP949 = Charset.forName("CP949");
     private static final String[] FIELD_NAMES = {
             "no", "storeName", "storeGrade", "sourceType", "currentStockType",
@@ -66,6 +67,11 @@ public class StockImportJobConfig {
                 .reader(stockCsvReader(null, null))
                 .processor(stockCsvProcessor(null))
                 .writer(stockMigrationWriter())
+                .faultTolerant()
+                .skip(FlatFileParseException.class)   // Reader CSV 파싱 오류 skip
+                .skip(Exception.class)                 // Processor/Writer 예외도 skip
+                .skipLimit(Integer.MAX_VALUE)           // skip 무제한 (실패는 failureCollector에 기록)
+                .listener(new StockMigrationSkipListener(failureCollector))
                 .build();
     }
 
@@ -146,6 +152,6 @@ public class StockImportJobConfig {
      */
     @Bean
     public ItemWriter<Stock> stockMigrationWriter() {
-        return new StockMigrationItemWriter(entityManagerFactory);
+        return new StockMigrationItemWriter(entityManagerFactory, failureCollector);
     }
 }
