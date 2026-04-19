@@ -22,6 +22,26 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.Map;
 
+/**
+ * SaleLog 잔액 재계산 배치 Job 설정.
+ *
+ * *과거 또는 중간 시점에 거래가 삽입되었을 때, 그 이후의 모든 {@link SaleLog} 레코드의
+ * before/after 잔액을 시간순으로 재계산하여 running balance의 정합성을 복원한다.
+ *
+ * *처리 흐름:
+ *
+ *   - <b>Reader</b>({@code rebalanceReader}): 대상 {@code storeId}의 모든 {@link SaleLog}를
+ *       {@code saleDate ASC, id ASC} 순서로 JPA 페이징 조회한다.
+ *   - <b>Processor</b>({@code rebalanceProcessor}): {@link SaleLogStatefulProcessor}를 사용하여
+ *       상태를 유지하며 각 로그의 잔액을 누적 재계산한다.
+ *   - <b>Writer</b>({@code rebalanceWriter}): 재계산된 {@link SaleLog}를 JPA merge로 저장한다.
+ * 
+ *
+ * *청크 크기: {@value #CHUNK_SIZE}건.
+ * {@link TenantAwareJobListener}를 통해 멀티테넌트 컨텍스트를 Job 실행 전후로 설정/해제한다.
+ *
+ * *트리거: {@code KafkaConsumer.handleUpdateCurrentBalance()} 에서 중간 삽입이 감지된 경우.
+ */
 @Slf4j
 @Configuration
 public class SaleLogUpdateBatchConfig {

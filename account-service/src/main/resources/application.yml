@@ -63,4 +63,5 @@ custom:
       - com.msa.account.local.transaction_history.domain.entity
       - com.msa.account.local.schedule.entity
       - com.msa.account.local.ledger.domain.entity
+      - com.msa.account.local.expense.domain.entity
       - com.msa.account.global.domain.entity

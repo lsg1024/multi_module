@@ -37,6 +37,26 @@ import static com.msa.order.local.order.entity.QOrderStone.orderStone;
 import static com.msa.order.local.order.entity.QStatusHistory.statusHistory;
 import static com.msa.order.local.stock.entity.QStock.stock;
 
+/**
+ * 재고 QueryDSL 동적 쿼리 구현체.
+ *
+ * *재고 목록 조회, 대여/반납 이력 조회, 재고 조사, 필터 목록 조회 등
+ * 다양한 동적 쿼리를 제공한다.
+ *
+ * *주요 특징:
+ *
+ *   - 주석/보조석 수량 분리 — {@code Expressions.cases()}의 CASE-WHEN 구문으로
+ *       {@code mainStone=true} 인 경우와 {@code mainStone=false} 인 경우를 각각 집계
+ *   - 그룹 JOIN — {@code stock}을 기준으로 {@code orderStone} LEFT JOIN 후
+ *       {@code stockId, statusHistory.id} 기준 GROUP BY 적용
+ *   - 상태 이력 최신/최초 조회 — 서브쿼리로 {@code statusHistory.createAt.max()} /
+ *       {@code statusHistory.createAt.min()} 을 이용하여 최신 또는 최초 이력의 sourceType 조회
+ *   - QueryDSL UPDATE — {@link #resetAllStockChecks}에서 재고 조사 초기화 시 사용
+ *   - 재고 조사 통계 — 재질별 중량 합계·수량·매입가 합계를 GROUP BY materialName으로 집계
+ * 
+ *
+ * *의존성: {@link JPAQueryFactory}
+ */
 @Repository
 public class StockRepositoryImpl implements CustomStockRepository {
 
@@ -49,7 +69,7 @@ public class StockRepositoryImpl implements CustomStockRepository {
     @Override
     public CustomPage<StockDto.Response> findByStockProducts(OrderDto.InputCondition inputCondition, StockDto.StockCondition condition, Pageable pageable) {
 
-        BooleanBuilder searchBuilder = getSearchBuilder(inputCondition.getSearchInput());
+        BooleanBuilder searchBuilder = getSearchBuilder(inputCondition);
         BooleanExpression stockStatusBuilder = getStockCreateAtAndEndAt(condition);
         BooleanExpression orderTypeCondition = getOrderTypeBuilder(condition);
 
@@ -67,6 +87,7 @@ public class StockRepositoryImpl implements CustomStockRepository {
                         stock.storeName,
                         stock.product.id.stringValue(),
                         stock.product.productName,
+                        stock.product.productFactoryName,
                         stock.product.size,
                         stock.stockNote,
                         stock.product.materialName,
@@ -152,7 +173,7 @@ public class StockRepositoryImpl implements CustomStockRepository {
                         )
                 );
 
-        BooleanBuilder searchBuilder = getSearchBuilder(inputCondition.getSearchInput());
+        BooleanBuilder searchBuilder = getSearchBuilder(inputCondition);
         BooleanBuilder optionBuilder = getOptionBuilder(condition.getOptionCondition());
         OrderSpecifier<?>[] stockSpecifiers = createStockSpecifiers(condition.getSortCondition());
         QStatusHistory subHistory = new QStatusHistory("subHistory");
@@ -167,6 +188,7 @@ public class StockRepositoryImpl implements CustomStockRepository {
                         stock.storeName,
                         stock.product.id.stringValue(),
                         stock.product.productName,
+                        stock.product.productFactoryName,
                         stock.product.size,
                         stock.stockNote,
                         stock.product.materialName,
@@ -291,6 +313,32 @@ public class StockRepositoryImpl implements CustomStockRepository {
                 .fetch();
     }
 
+    @Override
+    public List<String> findByFilterClassification(StockDto.StockCondition condition) {
+        BooleanExpression stockCreateAtAndEndAt = getStockCreateAtAndEndAt(condition);
+        BooleanExpression orderTypeBuilder = getOrderTypeBuilder(condition);
+        return query
+                .selectDistinct(stock.product.classificationName)
+                .from(stock)
+                .where(
+                        stockCreateAtAndEndAt,
+                        orderTypeBuilder)
+                .fetch();
+    }
+
+    @Override
+    public List<String> findByFilterMaterial(StockDto.StockCondition condition) {
+        BooleanExpression stockCreateAtAndEndAt = getStockCreateAtAndEndAt(condition);
+        BooleanExpression orderTypeBuilder = getOrderTypeBuilder(condition);
+        return query
+                .selectDistinct(stock.product.materialName)
+                .from(stock)
+                .where(
+                        stockCreateAtAndEndAt,
+                        orderTypeBuilder)
+                .fetch();
+    }
+
     private static BooleanExpression getStockCreateAtAndEndAt(StockDto.StockCondition condition) {
         String startAt = condition.getStartAt();
         String endAt = condition.getEndAt();
@@ -329,16 +377,43 @@ public class StockRepositoryImpl implements CustomStockRepository {
     }
 
     @NotNull
-    private static BooleanBuilder getSearchBuilder(String searchInput) {
+    private static BooleanBuilder getSearchBuilder(OrderDto.InputCondition inputCondition) {
         BooleanBuilder searchBuilder = new BooleanBuilder();
 
-        if (StringUtils.hasText(searchInput)) {
+        String searchInput = inputCondition.getSearchInput();
+        String searchField = inputCondition.getSearchField();
+
+        if (!StringUtils.hasText(searchInput)) {
+            return searchBuilder;
+        }
+
+        if (!StringUtils.hasText(searchField)) {
             searchBuilder.and(
                     stock.product.productName.containsIgnoreCase(searchInput)
                             .or(stock.storeName.containsIgnoreCase(searchInput))
                             .or(stock.factoryName.containsIgnoreCase(searchInput))
             );
+            return searchBuilder;
         }
+
+        switch (searchField) {
+            case "modelNumber" -> searchBuilder.and(
+                    stock.product.productName.containsIgnoreCase(searchInput)
+                            .or(stock.factoryName.containsIgnoreCase(searchInput))
+            );
+            case "factory" -> searchBuilder.and(stock.factoryName.containsIgnoreCase(searchInput));
+            case "store" -> searchBuilder.and(stock.storeName.containsIgnoreCase(searchInput));
+            case "setType" -> searchBuilder.and(stock.product.setTypeName.containsIgnoreCase(searchInput));
+            case "classification" -> searchBuilder.and(stock.product.classificationName.containsIgnoreCase(searchInput));
+            case "material" -> searchBuilder.and(stock.product.materialName.containsIgnoreCase(searchInput));
+            case "color" -> searchBuilder.and(stock.product.colorName.containsIgnoreCase(searchInput));
+            default -> searchBuilder.and(
+                    stock.product.productName.containsIgnoreCase(searchInput)
+                            .or(stock.storeName.containsIgnoreCase(searchInput))
+                            .or(stock.factoryName.containsIgnoreCase(searchInput))
+            );
+        }
+
         return searchBuilder;
     }
 
@@ -360,7 +435,9 @@ public class StockRepositoryImpl implements CustomStockRepository {
                 }
             }
         } else {
-            orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, stock.flowCode));
+            orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, stock.createDate));
+            orderSpecifiers.add(new OrderSpecifier<>(Order.ASC, stock.orderStatus));
+            orderSpecifiers.add(new OrderSpecifier<>(Order.ASC, stock.product.productName));
         }
 
         return orderSpecifiers.toArray(new OrderSpecifier[0]);

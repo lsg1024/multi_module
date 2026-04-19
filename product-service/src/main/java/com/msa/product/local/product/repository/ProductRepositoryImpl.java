@@ -34,6 +34,31 @@ import static com.msa.product.local.set.entity.QSetType.setType;
 import static com.msa.product.local.stone.stone.entity.QStone.stone;
 import static com.msa.product.local.stone.stone.entity.QStoneWorkGradePolicy.stoneWorkGradePolicy;
 
+/**
+ * 상품 QueryDSL 쿼리 구현체.
+ *
+ * *상품 단건 조회, 페이징 목록 조회, 관련 상품 조회 등 다양한 쿼리를 제공한다.
+ *
+ * *주요 특징:
+ *
+ *   - 2단계 로딩 — 1단계에서 상품 목록을 페이징 조회하고,
+ *       2단계에서 추출한 productId 목록으로 보석 정보를 배치 조회하여
+ *       Java Map 기반으로 각 DTO에 중첩 설정
+ *   - Map 기반 중첩 결합 — {@code Map<Long, List<ProductStoneDto.PageResponse>>}를
+ *       {@code computeIfAbsent}로 구성한 뒤 DTO에 주입
+ *   - 등급 정책 — {@link WorkGrade} 열거형의 서수(ordinal) 범위를 이용하여
+ *       요청 등급 이하의 후보 등급 목록을 구성하고,
+ *       가장 가까운 등급의 공임비를 {@code ORDER BY grade DESC LIMIT 1} 로 조회
+ *   - 기본 등급 그룹 필터 — {@code productWorkGradePolicyGroupDefault = true} 조건으로
+ *       기본 가격 정책 그룹만 조회
+ * 
+ *
+ * *의존성: {@link JPAQueryFactory}, {@code product}, {@code setType},
+ * {@code classification}, {@code material}, {@code color},
+ * {@code productWorkGradePolicyGroup}, {@code productWorkGradePolicy},
+ * {@code productStone}, {@code stone}, {@code stoneWorkGradePolicy},
+ * {@code productImage} Q클래스
+ */
 public class ProductRepositoryImpl implements CustomProductRepository {
 
     private final JPAQueryFactory query;

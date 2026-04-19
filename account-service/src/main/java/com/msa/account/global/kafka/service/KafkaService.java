@@ -19,6 +19,21 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
+/**
+ * Kafka 메시지 기반 잔액 갱신 서비스.
+ *
+ * *order-service가 발행한 OutboxEvent를 소비하여 Store(매장) 또는 Factory(공장)의
+ * 금(gold) 및 돈(money) 잔액을 업데이트한다. 처리 흐름은 다음과 같다:
+ *
+ *   - 이벤트 중복 여부를 {@code eventId}로 검사한다 (멱등성 보장).
+ *   - 가장 최근 {@link SaleLog}에서 이전 잔액(previousBalance)을 확보한다.
+ *   - 새로운 {@link SaleLog}를 생성하고 Store/Factory 잔액을 갱신한다.
+ *   - {@link com.msa.account.local.transaction_history.domain.entity.TransactionHistory}를 기록한다.
+ * 
+ *
+ * *의존 컴포넌트: {@link StoreRepository}, {@link FactoryRepository},
+ * {@link SaleLogRepository}, {@link TransactionHistoryRepository}
+ */
 @Slf4j
 @Service
 @Transactional
@@ -37,6 +52,27 @@ public class KafkaService {
     }
 
 
+    /**
+     * Store 또는 Factory의 현재 잔액을 Kafka 이벤트 정보를 기반으로 갱신한다.
+     *
+     * *처리 규칙:
+     *
+     *   - <b>RETURN 타입</b>: 원본 {@link SaleLog}를 조회하여 해당 거래 시각에
+     *       +1 마이크로초를 더한 타임스탬프를 사용한다. 동일 시각 충돌 방지 목적.
+     *   - <b>WG 타입</b>: 금 거래만 인정하므로 {@code moneyAmount}를 강제로 0으로 설정한다.
+     *   - <b>멱등성</b>: {@code eventId}로 {@link TransactionHistoryRepository}를 조회하여
+     *       이미 처리된 이벤트인 경우 {@link IllegalArgumentException}을 발생시켜 중복 처리를 차단한다.
+     *       DB 유니크 제약 위반({@link org.springframework.dao.DataIntegrityViolationException})도
+     *       컨슈머 레이어에서 동일하게 처리된다.
+     *   - <b>previousBalance 확보</b>: 마지막 {@link SaleLog}가 존재하면 그 {@code afterBalance}를
+     *       이번 거래의 {@code previousBalance}로 사용하고, 없으면 엔티티의 현재 잔액을 사용한다.
+     *   - <b>afterBalance 계산</b>: {@code prevBalance + delta}
+     * 
+     *
+     * @param dto Kafka 이벤트로부터 역직렬화된 잔액 갱신 요청 DTO
+     * @return 새로 저장된 {@link SaleLog} 엔티티
+     * @throws IllegalArgumentException 이미 처리된 이벤트이거나 알 수 없는 {@code type}인 경우
+     */
     // 상점 or 공장 잔액 업데이트
     public SaleLog updateCurrentBalance(KafkaEventDto.updateCurrentBalance dto) {
 

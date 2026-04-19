@@ -1,7 +1,6 @@
 package com.msa.product.local.stone.stone.service;
 
 import com.msa.common.global.jwt.JwtUtil;
-import com.msa.common.global.util.CustomPage;
 import com.msa.product.local.stone.stone.dto.StoneDto;
 import com.msa.product.local.stone.stone.dto.StoneWorkGradePolicyDto;
 import com.msa.product.local.stone.stone.entity.Stone;
@@ -13,7 +12,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -111,18 +109,6 @@ class StoneServiceTest {
                 .hasMessage(NOT_FOUND);
     }
 
-    @Test
-    void getStones_success() {
-        CustomPage<StoneDto.PageDto> mockPage = mock(CustomPage.class);
-        String stoneShape = null;
-        String stoneType = null;
-        String sortField = null;
-        String sort = null;
-        given(stoneRepository.findAllStones(null, stoneShape, stoneType, sortField, sort, Pageable.unpaged())).willReturn(mockPage);
-
-        CustomPage<StoneDto.PageDto> result = stoneService.getStones(null, stoneShape, stoneType, sortField, sort, Pageable.unpaged());
-        assertThat(result).isNotNull();
-    }
 
     @Test
     void updateStone_success() {

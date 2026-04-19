@@ -11,4 +11,5 @@ public interface ClassificationRepository extends JpaRepository<Classification, 
     String findByClassificationName(Long id);
     boolean existsByClassificationName(String name);
     Optional<Classification> findByClassificationName(String classificationName);
+    Optional<Classification> findByClassificationNameIgnoreCase(String classificationName);
 }

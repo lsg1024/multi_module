@@ -441,11 +441,104 @@ public class ProductService {
                         p -> p
                 ));
 
+        // grade 기반 매핑 (임시 ID가 올 경우 grade로 매칭)
+        Map<String, ProductWorkGradePolicy> gradePolicyMap = group.getGradePolicies().stream()
+                .collect(Collectors.toMap(
+                        p -> p.getGrade().name(),
+                        p -> p,
+                        (a, b) -> a
+                ));
+
         for (ProductWorkGradePolicyDto.Request dto : policyDtos) {
-            Long policyId = Long.valueOf(dto.getWorkGradePolicyId());
-            ProductWorkGradePolicy policy = entityPolicyMap.get(policyId);
-            policy.updateWorkGradePolicyDto(dto);
+            String policyIdStr = dto.getWorkGradePolicyId();
+            ProductWorkGradePolicy policy = null;
+
+            // 숫자 ID인 경우 기존 정책 조회
+            if (isNumericPositive(policyIdStr)) {
+                policy = entityPolicyMap.get(Long.valueOf(policyIdStr));
+            }
+
+            // ID로 못 찾으면 grade 기반으로 매칭 (프론트에서 임시 ID 보낸 경우)
+            if (policy == null && dto.getGrade() != null) {
+                policy = gradePolicyMap.get(dto.getGrade());
+            }
+
+            if (policy != null) {
+                policy.updateWorkGradePolicyDto(dto);
+            } else {
+                // 새 등급 정책 추가
+                ProductWorkGradePolicy newPolicy = ProductWorkGradePolicy.builder()
+                        .grade(dto.getGrade())
+                        .laborCost(dto.getLaborCost())
+                        .build();
+                group.addGradePolicy(newPolicy);
+            }
         }
+    }
+
+    @Transactional(readOnly = true)
+    public ProductDetailDto getProductInfoByName(String productName) {
+        Product product = productRepository.findByProductName(productName)
+                .orElse(null);
+
+        if (product == null) {
+            return null;
+        }
+
+        Long classificationId = product.getClassification() != null ? product.getClassification().getClassificationId() : null;
+        String classificationName = product.getClassification() != null ? product.getClassification().getClassificationName() : null;
+        Long setTypeId = product.getSetType() != null ? product.getSetType().getSetTypeId() : null;
+        String setTypeName = product.getSetType() != null ? product.getSetType().getSetTypeName() : null;
+
+        return new ProductDetailDto(
+                product.getProductId(),
+                product.getProductName(),
+                product.getProductFactoryName(),
+                classificationId,
+                classificationName,
+                setTypeId,
+                setTypeName,
+                null,
+                null
+        );
+    }
+
+    /**
+     * 상품명으로 해당 상품의 스톤 목록 조회 (마이그레이션용).
+     * 상품이 없거나 스톤이 없으면 빈 리스트 반환.
+     */
+    @Transactional(readOnly = true)
+    public List<ProductDetailDto.StoneInfo> getProductStonesByName(String productName) {
+        Product product = productRepository.findByProductNameIgnoreCase(productName)
+                .orElse(null);
+
+        if (product == null) {
+            return List.of();
+        }
+
+        List<ProductStoneDto.Response> stones = productStoneRepository.findProductStones(product.getProductId());
+
+        return stones.stream()
+                .map(s -> new ProductDetailDto.StoneInfo(
+                        s.getStoneId(),
+                        s.getStoneName(),
+                        s.getStoneWeight() != null ? s.getStoneWeight().toPlainString() : null,
+                        s.getStonePurchase(),
+                        null, // laborCost — grade별 정책에 따라 다르므로 null
+                        s.getStoneQuantity(),
+                        s.isMainStone(),
+                        s.isIncludeStone(),
+                        s.isIncludeQuantity(),
+                        s.isIncludePrice(),
+                        s.getProductStoneNote()
+                ))
+                .toList();
+    }
+
+    public void updateProductFactoryName(Long productId, String productFactoryName) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+        product.updateProductFactoryName(productFactoryName);
     }
 
     public ProductDetailDto getProductInfo(Long id, String grade) {

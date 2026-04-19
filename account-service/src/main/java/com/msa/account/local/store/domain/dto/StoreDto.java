@@ -119,7 +119,6 @@ public class StoreDto {
         @Pattern(regexp = "^[0-9]+$", message = ERR_NUM_ONLY)
         private String storeFaxNumber;
 
-        @Pattern(regexp = "^[A-Za-z0-9가-힣\\s]+$", message = ERR_KO_EN_NUM_ONLY)
         private String storeNote;
 
         @Builder
@@ -150,6 +149,15 @@ public class StoreDto {
         private String grade;
         private String storeHarry;
         private boolean optionApplyPastSales;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class StorePhoneInfo {
+        private Long storeId;
+        private String storeName;
+        private String storePhoneNumber;
     }
 
     @Getter

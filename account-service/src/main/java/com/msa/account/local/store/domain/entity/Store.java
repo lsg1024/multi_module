@@ -19,6 +19,23 @@ import org.hibernate.annotations.SQLDelete;
 
 import java.math.BigDecimal;
 
+/**
+ * 매장(판매처) 엔티티.
+ *
+ * *금 거래의 판매 주체인 매장 정보를 관리한다. 주요 속성:
+ *
+ *   - 현재 금({@code currentGoldBalance}) 및 돈({@code currentMoneyBalance}) 잔액
+ *   - 주소({@link com.msa.account.global.domain.entity.Address}) — 1:1 관계, CASCADE
+ *   - 거래 옵션({@link com.msa.account.global.domain.entity.CommonOption}) — 해리/거래유형/등급 포함
+ *   - 부가 옵션({@link AdditionalOption}) — 과거 매출 적용 여부 등 추가 설정
+ * 
+ *
+ * *소프트 삭제 방식을 사용한다 ({@code storeDeleted = true}).
+ * {@code storeDefault = true}인 레코드는 시스템 기본 매장을 나타낸다.
+ *
+ * *의존 엔티티: {@link com.msa.account.global.domain.entity.CommonOption},
+ * {@link com.msa.account.global.domain.entity.Address}, {@link AdditionalOption}
+ */
 @Getter
 @Entity
 @Table(name = "STORE")
@@ -43,13 +60,16 @@ public class Store extends BaseEntity {
     private String storeFaxNumber;
     @Column(name = "STORE_NOTE")
     private String storeNote;
+    /** 시스템 기본 매장 여부. 기본 매장은 삭제 및 변경이 제한될 수 있다. */
     @Column(name = "STORE_DEFAULT", nullable = false)
     private boolean storeDefault = false;
     @Column(name = "STORE_DELETED", nullable = false)
     private boolean storeDeleted = false;
 
+    /** 현재 보유 금 잔액 (단위: 돈, 소수점 3자리). Kafka 이벤트 처리 시 delta 합산으로 갱신된다. */
     @Column(name = "CURRENT_GOLD_BALANCE", nullable = false, precision = 10, scale = 3)
     private BigDecimal currentGoldBalance = BigDecimal.ZERO;
+    /** 현재 보유 돈(현금) 잔액 (단위: 원). Kafka 이벤트 처리 시 delta 합산으로 갱신된다. */
     @Column(name = "CURRENT_MONEY_BALANCE", nullable = false)
     private Long currentMoneyBalance = 0L;
 
@@ -129,6 +149,15 @@ public class Store extends BaseEntity {
         }
     }
 
+    /**
+     * 금 및 돈 잔액에 delta 값을 합산하여 현재 잔액을 갱신한다.
+     *
+     * *양수 delta는 잔액 증가(입금/매입), 음수 delta는 잔액 감소(출금/매출)를 의미한다.
+     * Kafka 이벤트 처리 흐름에서 {@link com.msa.account.global.kafka.service.KafkaService}가 호출한다.
+     *
+     * @param goldAmount  금 잔액 변동분 (단위: 돈, 양수=증가, 음수=감소)
+     * @param moneyAmount 돈 잔액 변동분 (단위: 원, 양수=증가, 음수=감소)
+     */
     public void updateBalance(BigDecimal goldAmount, Long moneyAmount) {
         this.currentGoldBalance = this.currentGoldBalance.add(goldAmount);
         this.currentMoneyBalance += moneyAmount;

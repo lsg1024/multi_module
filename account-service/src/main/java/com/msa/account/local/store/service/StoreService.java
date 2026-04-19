@@ -201,6 +201,32 @@ public class StoreService {
     }
 
     @Transactional(readOnly = true)
+    public List<StoreDto.StorePhoneInfo> getStorePhones(List<Long> storeIds) {
+        return storeIds.stream()
+                .map(id -> storeRepository.findById(id)
+                        .map(store -> new StoreDto.StorePhoneInfo(
+                                store.getStoreId(),
+                                store.getStoreName(),
+                                store.getStorePhoneNumber()))
+                        .orElse(null))
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public StoreDto.ApiStoreInfo getStoreInfoByName(String storeName) {
+        List<Store> stores = storeRepository.findByStoreNameIgnoreCase(storeName);
+        if (stores.isEmpty()) {
+            throw new NotFoundException(NOT_FOUND_STORE);
+        }
+        Store store = stores.get(0);
+
+        boolean applyPastSales = store.getAdditionalOption() != null && store.getAdditionalOption().isOptionApplyPastSales();
+
+        return new StoreDto.ApiStoreInfo(store.getStoreId(), store.getStoreName(), store.getCommonOption().getOptionLevel().getGrade(), store.getCommonOption().getGoldHarryLoss(), applyPastSales);
+    }
+
+    @Transactional(readOnly = true)
     public byte[] getReceivableExcel(String accessToken, String name) throws java.io.IOException {
         if (authorityUserRoleUtil.verification(accessToken)) {
             List<ReceivableExcelDto> receivableList = storeRepository.findAllReceivableExcel(name);

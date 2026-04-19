@@ -72,6 +72,24 @@ public class ProductFeignClientFallbackFactory implements FallbackFactory<Produc
                 log.error("[Fallback] getExistStoneId ID: {}, Error: {}", stoneId, cause.getMessage());
                 return resolveError(cause, "스톤 존재 여부를 확인할 수 없습니다.");
             }
+
+            @Override
+            public ResponseEntity<ApiResponse<ProductDetailDto>> getProductInfoByName(Map<String, Object> headers, String productName) {
+                log.error("[Fallback] getProductInfoByName Name: {}, Error: {}", productName, cause.getMessage());
+                return resolveError(cause, "제품 이름 조회 중 오류가 발생했습니다.");
+            }
+
+            @Override
+            public ResponseEntity<ApiResponse<String>> updateProductFactoryName(Map<String, Object> headers, Long productId, Map<String, String> body) {
+                log.error("[Fallback] updateProductFactoryName ID: {}, Error: {}", productId, cause.getMessage());
+                return resolveError(cause, "제품 공장명 업데이트 중 오류가 발생했습니다.");
+            }
+
+            @Override
+            public ResponseEntity<ApiResponse<List<ProductDetailDto.StoneInfo>>> getProductStonesByName(Map<String, Object> headers, String productName) {
+                log.error("[Fallback] getProductStonesByName Name: {}, Error: {}", productName, cause.getMessage());
+                return resolveError(cause, "제품 스톤 목록 조회 중 오류가 발생했습니다.");
+            }
         };
     }
 

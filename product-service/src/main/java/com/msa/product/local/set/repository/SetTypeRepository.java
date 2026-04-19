@@ -11,4 +11,5 @@ public interface SetTypeRepository extends JpaRepository<SetType, Long>, CustomS
     @Query("select s.setTypeName from SetType s where s.setTypeId= :id")
     String findByMaterialName(Long id);
     Optional<SetType> findBySetTypeName(String setTypeName);
+    Optional<SetType> findBySetTypeNameIgnoreCase(String setTypeName);
 }

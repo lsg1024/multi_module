@@ -1,261 +1,247 @@
 package com.msa.account.local.store.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.msa.account.global.domain.dto.AccountDto;
+import com.msa.account.local.factory.service.ExcelService;
 import com.msa.account.local.store.domain.dto.StoreDto;
-import com.msa.account.global.domain.dto.AdditionalOptionDto;
-import com.msa.account.global.domain.dto.AddressDto;
-import com.msa.account.global.domain.dto.CommonOptionDto;
-import com.msa.account.global.domain.entity.GoldHarry;
-import org.junit.jupiter.api.BeforeEach;
+import com.msa.account.local.store.service.StoreService;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.math.BigDecimal;
-
-import static org.springframework.test.util.ReflectionTestUtils.setField;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(StoreController.class)
 class StoreControllerTest {
 
     @Autowired
-    MockMvc mockMvc;
-    private StoreDto.StoreInfo originStoreInfo;
-    private AddressDto.AddressInfo originAddressInfo;
-    private CommonOptionDto.CommonOptionInfo originCommonOptionInfo;
-    private AdditionalOptionDto.AdditionalOptionInfo originAdditionalOptionInfo;
-    private GoldHarry mockGoldHarry;
+    private MockMvc mockMvc;
 
-    @BeforeEach
-    void setUp() {
-        originStoreInfo = StoreDto.StoreInfo.builder()
-                .storeName("testName")
-                .storeOwnerName("testOwner")
-                .storePhoneNumber("01012341234")
-                .storeContactNumber1("01012341235")
-                .storeContactNumber2("01012345678")
-                .storeFaxNumber("010234556")
-                .storeNote("testNote")
-                .build();
+    @MockitoBean
+    private StoreService storeService;
 
-        originAddressInfo = AddressDto.AddressInfo.builder()
-                .addressZipCode("12345")
-                .addressBasic("서울특별시")
-                .addressAdd("강남구")
-                .build();
+    @MockitoBean
+    private ExcelService excelService;
 
-        originCommonOptionInfo = CommonOptionDto.CommonOptionInfo.builder()
-                .grade("ONE")
-                .tradeType("WEIGHT")
-                .goldHarryId("1")
-                .build();
+    @MockitoBean
+    private JobLauncher jobLauncher;
 
-        originAdditionalOptionInfo = AdditionalOptionDto.AdditionalOptionInfo.builder()
-                .additionalMaterialId("1")
-                .additionalMaterialName("gold")
-                .additionalApplyPastSales(true)
-                .build();
+    @MockitoBean
+    private Job storeImportJob;
 
-        mockGoldHarry = GoldHarry.builder()
-                .goldHarryLoss(new BigDecimal("1.10"))
-                .build();
+    @Nested
+    @DisplayName("GET /store/{id} - 판매처 단건 조회")
+    class GetStore {
 
-        ReflectionTestUtils.setField(mockGoldHarry, "goldHarryId", 1L);
+        @Test
+        @DisplayName("성공")
+        void getStoreInfo_success() throws Exception {
+            // given
+            String storeId = "1";
+            AccountDto.AccountSingleResponse response = new AccountDto.AccountSingleResponse(
+                    "1", "테스트매장", "홍길동", "01012345678", null, null, null, "테스트 메모",
+                    null, null, null, null, "1", "WEIGHT", "ONE", "1", "1.10"
+            );
+
+            given(storeService.getStoreInfo(storeId)).willReturn(response);
+
+            // when & then
+            mockMvc.perform(get("/store/{id}", storeId)
+                            .header("Authorization", "Bearer test-token"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.accountName").value("테스트매장"))
+                    .andExpect(jsonPath("$.data.accountOwnerName").value("홍길동"));
+
+            verify(storeService).getStoreInfo(storeId);
+        }
     }
 
-    @Test
-    void store_createStoreApi_success() throws Exception {
-        StoreDto.StoreRequest storeDto = new StoreDto.StoreRequest();
-        setField(storeDto, "storeInfo", originStoreInfo);
-        setField(storeDto, "addressInfo", originAddressInfo);
-        setField(storeDto, "commonOptionInfo", originCommonOptionInfo);
-        setField(storeDto, "additionalOptionInfo", originAdditionalOptionInfo);
+    @Nested
+    @DisplayName("GET /stores - 판매처 목록 조회")
+    class GetStores {
 
-        mockMvc.perform(post("/store")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Tenant-ID", "test")
-                        .content(new ObjectMapper().writeValueAsString(storeDto)))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+        @Test
+        @DisplayName("성공")
+        void getStoreList_success() throws Exception {
+            // when & then
+            mockMvc.perform(get("/stores")
+                            .param("page", "0")
+                            .param("size", "12")
+                            .header("Authorization", "Bearer test-token"))
+                    .andDo(print())
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("성공 - 검색어 포함")
+        void getStoreList_withSearch_success() throws Exception {
+            // when & then
+            mockMvc.perform(get("/stores")
+                            .param("search", "테스트")
+                            .param("page", "0")
+                            .param("size", "12")
+                            .header("Authorization", "Bearer test-token"))
+                    .andDo(print())
+                    .andExpect(status().isOk());
+        }
     }
 
-    @Test
-    void store_createStoreApi_fail_storeName1() throws Exception {
-        StoreDto.StoreRequest storeDto = new StoreDto.StoreRequest();
-        StoreDto.StoreInfo storeInfo = StoreDto.StoreInfo.builder()
-                .storeName(null)
-                .storeOwnerName("testOwner")
-                .storePhoneNumber("01012341234")
-                .storeContactNumber1("01012341235")
-                .storeContactNumber2("01012345678")
-                .storeFaxNumber("010234556")
-                .storeNote("testNote")
-                .build();
+    @Nested
+    @DisplayName("GET /stores/grade - 판매처 등급 조회")
+    class GetStoreGrade {
 
-        setField(storeDto, "storeInfo", storeInfo);
-        setField(storeDto, "addressInfo", originAddressInfo);
-        setField(storeDto, "commonOptionInfo", originCommonOptionInfo);
-        setField(storeDto, "additionalOptionInfo", originAdditionalOptionInfo);
+        @Test
+        @DisplayName("성공")
+        void getStoreGrade_success() throws Exception {
+            // given
+            String storeId = "1";
+            given(storeService.getStoreGrade(storeId)).willReturn("1급");
 
-        mockMvc.perform(post("/store")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Tenant-ID", "test")
-                        .content(new ObjectMapper().writeValueAsString(storeDto)))
-                .andExpect(status().is4xxClientError())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("NO"))
-                .andExpect(jsonPath("$.data['storeInfo.storeName']").value("필수 입력입니다."));
+            // when & then
+            mockMvc.perform(get("/stores/grade")
+                            .param("id", storeId)
+                            .header("Authorization", "Bearer test-token"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data").value("1급"));
+
+            verify(storeService).getStoreGrade(storeId);
+        }
     }
 
-    @Test
-    void store_createStoreApi_fail_storeName2() throws Exception {
-        StoreDto.StoreRequest storeDto = new StoreDto.StoreRequest();
-        StoreDto.StoreInfo storeInfo = StoreDto.StoreInfo.builder()
-                .storeName("")
-                .storeOwnerName("testOwner")
-                .storePhoneNumber("01012341234")
-                .storeContactNumber1("01012341235")
-                .storeContactNumber2("01012345678")
-                .storeFaxNumber("010234556")
-                .storeNote("testNote")
-                .build();
+    @Nested
+    @DisplayName("DELETE /stores/{id} - 판매처 삭제")
+    class DeleteStore {
 
-        setField(storeDto, "storeInfo", storeInfo);
-        setField(storeDto, "addressInfo", originAddressInfo);
-        setField(storeDto, "commonOptionInfo", originCommonOptionInfo);
-        setField(storeDto, "additionalOptionInfo", originAdditionalOptionInfo);
+        @Test
+        @DisplayName("성공")
+        void deleteStore_success() throws Exception {
+            // given
+            String storeId = "1";
 
-        mockMvc.perform(post("/store")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Tenant-ID", "test")
-                        .content(new ObjectMapper().writeValueAsString(storeDto)))
-                .andExpect(status().is4xxClientError())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("NO"))
-                .andExpect(jsonPath("$.data['storeInfo.storeName']").value("필수 입력입니다."));
+            // when & then
+            mockMvc.perform(delete("/stores/{id}", storeId)
+                            .header("Authorization", "Bearer test-token"))
+                    .andDo(print())
+                    .andExpect(status().isOk());
+        }
     }
 
-    @Test
-    void store_createStoreApi_fail_storeName3() throws Exception {
-        StoreDto.StoreRequest storeDto = new StoreDto.StoreRequest();
-        StoreDto.StoreInfo storeInfo = StoreDto.StoreInfo.builder()
-                .storeName("!@#$%%$#")
-                .storeOwnerName("testOwner")
-                .storePhoneNumber("01012341234")
-                .storeContactNumber1("01012341235")
-                .storeContactNumber2("01012345678")
-                .storeFaxNumber("010234556")
-                .storeNote("testNote")
-                .build();
+    @Nested
+    @DisplayName("PATCH /stores/harry/{id}/{harry} - 판매처 해리 업데이트")
+    class UpdateHarry {
 
-        setField(storeDto, "storeInfo", storeInfo);
-        setField(storeDto, "addressInfo", originAddressInfo);
-        setField(storeDto, "commonOptionInfo", originCommonOptionInfo);
-        setField(storeDto, "additionalOptionInfo", originAdditionalOptionInfo);
+        @Test
+        @DisplayName("성공")
+        void updateHarry_success() throws Exception {
+            // given
+            String storeId = "1";
+            String harryId = "2";
 
-        mockMvc.perform(post("/store")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Tenant-ID", "test")
-                        .content(new ObjectMapper().writeValueAsString(storeDto)))
-                .andExpect(status().is4xxClientError())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("NO"))
-                .andExpect(jsonPath("$.data['storeInfo.storeName']").value("영어, 한글, 숫자만 허용됩니다."));
+            // when & then
+            mockMvc.perform(patch("/stores/harry/{id}/{harry}", storeId, harryId)
+                            .header("Authorization", "Bearer test-token"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data").value("수정 완료"));
+        }
     }
 
-    @Test
-    void store_createStoreApi_fail_phoneNumber1() throws Exception {
-        StoreDto.StoreRequest storeDto = new StoreDto.StoreRequest();
-        StoreDto.StoreInfo storeInfo = StoreDto.StoreInfo.builder()
-                .storeName("testName")
-                .storeOwnerName("testOwner")
-                .storePhoneNumber("no")
-                .storeContactNumber1("01012341235")
-                .storeContactNumber2("01012345678")
-                .storeFaxNumber("010234556")
-                .storeNote("testNote")
-                .build();
+    @Nested
+    @DisplayName("PATCH /stores/grade/{id}/{grade} - 판매처 등급 업데이트")
+    class UpdateGrade {
 
-        setField(storeDto, "storeInfo", storeInfo);
-        setField(storeDto, "addressInfo", originAddressInfo);
-        setField(storeDto, "commonOptionInfo", originCommonOptionInfo);
-        setField(storeDto, "additionalOptionInfo", originAdditionalOptionInfo);
+        @Test
+        @DisplayName("성공")
+        void updateGrade_success() throws Exception {
+            // given
+            String storeId = "1";
+            String grade = "TWO";
 
-        mockMvc.perform(post("/store")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Tenant-ID", "test")
-                        .content(new ObjectMapper().writeValueAsString(storeDto)))
-                .andExpect(status().is4xxClientError())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("NO"))
-                .andExpect(jsonPath("$.data['storeInfo.storePhoneNumber']").value("숫자만 허용됩니다."));
+            // when & then
+            mockMvc.perform(patch("/stores/grade/{id}/{grade}", storeId, grade)
+                            .header("Authorization", "Bearer test-token"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data").value("수정 완료"));
+        }
     }
 
-    @Test
-    void store_createStoreApi_fail_phoneNumber2() throws Exception {
-        StoreDto.StoreRequest storeDto = new StoreDto.StoreRequest();
-        StoreDto.StoreInfo storeInfo = StoreDto.StoreInfo.builder()
-                .storeName("testName")
-                .storeOwnerName("testOwner")
-                .storePhoneNumber("010-1234-1234")
-                .storeContactNumber1("01012341235")
-                .storeContactNumber2("01012345678")
-                .storeFaxNumber("010234556")
-                .storeNote("testNote")
-                .build();
+    @Nested
+    @DisplayName("GET /api/store/{id} - API 판매처 조회")
+    class GetApiStore {
 
-        setField(storeDto, "storeInfo", storeInfo);
-        setField(storeDto, "addressInfo", originAddressInfo);
-        setField(storeDto, "commonOptionInfo", originCommonOptionInfo);
-        setField(storeDto, "additionalOptionInfo", originAdditionalOptionInfo);
+        @Test
+        @DisplayName("성공")
+        void getApiStoreInfo_success() throws Exception {
+            // given
+            Long storeId = 1L;
+            StoreDto.ApiStoreInfo response = new StoreDto.ApiStoreInfo(1L, "테스트매장", "1급", "1.10", false);
 
-        mockMvc.perform(post("/store")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Tenant-ID", "test")
-                        .content(new ObjectMapper().writeValueAsString(storeDto)))
-                .andExpect(status().is4xxClientError())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("NO"))
-                .andExpect(jsonPath("$.data['storeInfo.storePhoneNumber']").value("숫자만 허용됩니다."));
+            given(storeService.getStoreInfo(storeId)).willReturn(response);
+
+            // when & then
+            mockMvc.perform(get("/api/store/{id}", storeId)
+                            .header("Authorization", "Bearer test-token"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.storeName").value("테스트매장"))
+                    .andExpect(jsonPath("$.data.grade").value("1급"));
+        }
     }
 
-    @Test
-    void store_createStoreApi_fail_note() throws Exception {
-        StoreDto.StoreRequest storeDto = new StoreDto.StoreRequest();
-        StoreDto.StoreInfo storeInfo = StoreDto.StoreInfo.builder()
-                .storeName("testName")
-                .storeOwnerName("testOwner")
-                .storePhoneNumber("01012341234")
-                .storeContactNumber1("01012341235")
-                .storeContactNumber2("01012345678")
-                .storeFaxNumber("010234556")
-                .storeNote("@#$@%#@")
-                .build();
+    @Nested
+    @DisplayName("GET /stores/receivable - 판매처 미수금액 조회")
+    class GetStoreReceivable {
 
-        setField(storeDto, "storeInfo", storeInfo);
-        setField(storeDto, "addressInfo", originAddressInfo);
-        setField(storeDto, "commonOptionInfo", originCommonOptionInfo);
-        setField(storeDto, "additionalOptionInfo", originAdditionalOptionInfo);
-
-        mockMvc.perform(post("/store")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Tenant-ID", "test")
-                        .content(new ObjectMapper().writeValueAsString(storeDto)))
-                .andExpect(status().is4xxClientError())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("NO"))
-                .andExpect(jsonPath("$.data['storeInfo.storeNote']").value("영어, 한글, 숫자만 허용됩니다."));
+        @Test
+        @DisplayName("성공")
+        void getStoreReceivable_success() throws Exception {
+            // when & then
+            mockMvc.perform(get("/stores/receivable")
+                            .param("page", "0")
+                            .param("size", "12")
+                            .header("Authorization", "Bearer test-token"))
+                    .andDo(print())
+                    .andExpect(status().isOk());
+        }
     }
 
+    @Nested
+    @DisplayName("GET /stores/receivable/{id} - 판매처 미수금액 상세조회")
+    class GetStoreReceivableDetail {
+
+        @Test
+        @DisplayName("성공")
+        void getStoreReceivableDetail_success() throws Exception {
+            // given
+            String storeId = "1";
+            AccountDto.AccountResponse response = AccountDto.AccountResponse.builder()
+                    .accountId(1L)
+                    .accountName("테스트매장")
+                    .goldWeight("10.5")
+                    .moneyAmount("100000")
+                    .build();
+
+            given(storeService.getStoreReceivableDetail(storeId)).willReturn(response);
+
+            // when & then
+            mockMvc.perform(get("/stores/receivable/{id}", storeId)
+                            .header("Authorization", "Bearer test-token"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.accountName").value("테스트매장"));
+        }
+    }
 }

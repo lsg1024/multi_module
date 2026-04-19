@@ -12,6 +12,24 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
+/**
+ * API Gateway JWT 검증 필터.
+ *
+ * *Spring Cloud Gateway의 {@link AbstractGatewayFilterFactory}를 확장하여
+ * 인바운드 요청의 Authorization 헤더에 포함된 JWT 액세스 토큰을 검증한다.
+ *
+ * *검증 체인:
+ *
+ *   - 토큰 만료 확인 — {@code ExpiredJwtException} 발생 시 401 반환
+ *   - 테넌트 일치 확인 — 토큰 내 tenantId 와 요청 헤더의 {@code X-Tenant-ID} 비교
+ *   - 디바이스 일치 확인 — 토큰 내 device 와 {@code User-Agent} 헤더 비교
+ *   - IP 일치 확인 — 토큰 내 forward IP 와 {@code X-Forwarded-For} 헤더 비교
+ *   - 모든 검증 통과 시 {@code X-User-ID} 헤더를 추가한 뒤 다음 필터로 전달
+ * 
+ *
+ * *의존성: {@link com.msa.common.global.jwt.JwtUtil} (토큰 파싱 및 클레임 추출),
+ * {@link TenantHeaderFilter} (테넌트 속성 공유)
+ */
 @Slf4j
 @Component
 public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<AuthorizationHeaderFilter.Config> {
@@ -22,6 +40,18 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Auth
         this.jwtUtil = jwtUtil;
     }
 
+    /**
+     * 필터 동작을 제어하는 설정 클래스.
+     *
+     *
+     *   - {@code require} — false 로 설정하면 인증을 건너뜀 (공개 경로용)
+     *   - {@code verifyDevice} — User-Agent 기반 디바이스 검증 활성화 여부
+     *   - {@code verifyForwardedFor} — X-Forwarded-For IP 검증 활성화 여부
+     *   - {@code verifyTenant} — 테넌트 ID 일치 검증 활성화 여부
+     *   - {@code userIdHeader} — 검증 성공 후 하위 서비스에 전달할 사용자 ID 헤더명
+     *   - {@code order} — {@link org.springframework.cloud.gateway.filter.OrderedGatewayFilter} 실행 순서
+     * 
+     */
     @Getter @Setter
     public static class Config {
         private boolean require = true;
@@ -32,6 +62,23 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Auth
         private int order = -1;
     }
 
+    /**
+     * Gateway 필터를 생성하여 JWT 검증 체인을 구성한다.
+     *
+     * *처리 흐름:
+     *
+     *   - {@code config.require == false} 이면 즉시 통과
+     *   - Authorization Bearer 헤더 존재 여부 확인 → 없으면 401
+     *   - {@link com.msa.common.global.jwt.JwtUtil#isExpired} 호출로 만료 확인 → 만료 시 401, 내부 오류 시 500
+     *   - 테넌트 검증: 토큰 tenantId vs {@code X-Tenant-ID} 헤더 불일치 시 401
+     *   - 디바이스 검증: 토큰 device vs {@code User-Agent} 불일치 시 401
+     *   - IP 검증: 토큰 forward IP vs {@code X-Forwarded-For} 첫 번째 IP 불일치 시 401
+     *   - 모든 검증 통과 시 userId를 {@code X-User-ID} 헤더에 추가하고 체인 계속 실행
+     * 
+     *
+     * @param config 필터 설정 (검증 항목 활성화 플래그, 헤더명, 실행 순서)
+     * @return 설정된 {@link org.springframework.cloud.gateway.filter.OrderedGatewayFilter}
+     */
     @Override
     public GatewayFilter apply(Config config) {
         return new OrderedGatewayFilter((exchange, chain) -> {

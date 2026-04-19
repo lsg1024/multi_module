@@ -6,10 +6,7 @@ import com.msa.order.global.feign_client.dto.ProductDetailDto;
 import com.msa.order.global.feign_client.dto.ProductImageDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -41,6 +38,19 @@ public interface ProductFeignClient {
             @PathVariable("materialId") Long materialId
     );
 
+    @GetMapping("/product/name")
+    ResponseEntity<ApiResponse<ProductDetailDto>> getProductInfoByName(
+            @RequestHeader Map<String, Object> headers,
+            @RequestParam("name") String productName
+    );
+
+    @PatchMapping("/product/{productId}/factory-name")
+    ResponseEntity<ApiResponse<String>> updateProductFactoryName(
+            @RequestHeader Map<String, Object> headers,
+            @PathVariable("productId") Long productId,
+            @RequestBody Map<String, String> body
+    );
+
     @GetMapping("/product/{productId}/{grade}")
     ResponseEntity<ApiResponse<ProductDetailDto>> getProductInfo(
             @RequestHeader Map<String, Object> headers,
@@ -58,6 +68,12 @@ public interface ProductFeignClient {
     ResponseEntity<ApiResponse<String>> getSetTypeName(
             @RequestHeader Map<String, Object> headers,
             @PathVariable("setTypeId") Long setTypeId
+    );
+
+    @GetMapping("/product/stones")
+    ResponseEntity<ApiResponse<List<ProductDetailDto.StoneInfo>>> getProductStonesByName(
+            @RequestHeader Map<String, Object> headers,
+            @RequestParam("name") String productName
     );
 
     @GetMapping("/stone/{stoneId}")

@@ -20,6 +20,16 @@ import java.util.List;
 
 import static jakarta.persistence.CascadeType.*;
 
+/**
+ * 주문 엔티티.
+ *
+ * *매장(account-store)과 공장(account-factory) 간의 제품 주문 정보를 담는다.
+ * {@code flowCode}는 TSID 기반의 전역 고유 식별자로, 주문·재고·판매·이력 테이블에서
+ * 동일한 흐름을 추적하는 공통 키로 사용된다.
+ *
+ * *삭제는 소프트 딜리트({@code ORDER_DELETED = TRUE})로 처리되며,
+ * 실제 DB 레코드는 보존된다.
+ */
 @Getter
 @Table(name = "ORDERS")
 @Entity
@@ -30,6 +40,7 @@ public class Orders {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ORDER_ID")
     private Long orderId;
+    /** TSID 기반 전역 고유 흐름 코드 — 주문·재고·판매·이력 테이블의 공통 추적 키. */
     @Tsid @Column(name = "FLOW_CODE")
     private Long flowCode;
     @Column(name = "STORE_ID") //account - store
@@ -63,11 +74,12 @@ public class Orders {
     @JoinColumn(name = "PRIORITY_ID")
     private Priority priority; // 출고 등급
 
-
+    /** 상품의 현재 진행 상태 (예: WAITING, PROGRESS, COMPLETE). */
     @Column(name = "PRODUCT_STATUS", nullable = false)
     @Enumerated(EnumType.STRING)
     private ProductStatus productStatus; // 주문 상태
 
+    /** 주문의 비즈니스 처리 상태 (예: STOCK, RENTAL, SALE 등). */
     @Column(name = "ORDER_STATUS", nullable = false)
     @Enumerated(EnumType.STRING)
     private OrderStatus orderStatus;

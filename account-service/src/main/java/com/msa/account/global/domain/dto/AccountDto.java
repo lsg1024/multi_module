@@ -228,7 +228,6 @@ public class AccountDto {
         @Pattern(regexp = "^[0-9]+$", message = ERR_NUM_ONLY)
         private String accountFaxNumber;
 
-        @Pattern(regexp = "^[A-Za-z0-9가-힣\\s]+$", message = ERR_KO_EN_NUM_ONLY)
         private String accountNote;
     }
 

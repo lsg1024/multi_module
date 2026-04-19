@@ -18,4 +18,6 @@ public interface ProductRepository extends JpaRepository<Product, Long>, CustomP
             "where p.productId = :id")
     Optional<Product> findWithAllOptionsById(@Param("id") Long id);
     Optional<Product> findByProductName(String productName);
+
+    Optional<Product> findByProductNameIgnoreCase(String productName);
 }

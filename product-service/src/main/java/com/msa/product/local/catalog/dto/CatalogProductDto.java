@@ -35,6 +35,8 @@ public class CatalogProductDto {
         private String productNote;
         private ProductImageDto.Response image;
         private List<CatalogStoneDto.PageResponse> productStones;
+        @Setter
+        private int stockCount;
 
         @Builder
         @QueryProjection
@@ -49,6 +51,7 @@ public class CatalogProductDto {
             this.productNote = productNote;
             this.image = image;
             this.productStones = new ArrayList<>();
+            this.stockCount = 0;
         }
     }
 

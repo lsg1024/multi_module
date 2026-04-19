@@ -98,11 +98,11 @@ public class OrdersService {
                 .flowCode(order.getFlowCode().toString())
                 .storeId(order.getStoreId().toString())
                 .storeName(order.getStoreName())
-                .storeHarry(order.getStoreHarry().toPlainString())
+                .storeHarry(order.getStoreHarry() != null ? order.getStoreHarry().toPlainString() : null)
                 .storeGrade(order.getStoreGrade())
-                .factoryId(order.getFactoryId().toString())
+                .factoryId(order.getFactoryId() != null ? order.getFactoryId().toString() : null)
                 .factoryName(order.getFactoryName())
-                .productId(orderProduct.getProductId().toString())
+                .productId(orderProduct.getProductId() != null ? orderProduct.getProductId().toString() : null)
                 .productName(orderProduct.getProductName())
                 .productFactoryName(orderProduct.getProductFactoryName())
                 .productSize(orderProduct.getProductSize())
@@ -539,10 +539,11 @@ public class OrdersService {
 
     // 엑셀 주문장 호출 가변 형태와 당일 값을 호출 가능하게 설정 - 주문, 수리, 출고예정, 삭제 전체에서 사용
     @Transactional(readOnly = true)
-    public List<OrderExcelQueryDto> getExcel(String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String classificationName, String materialName, String orderStatus) {
+    public List<OrderExcelQueryDto> getExcel(String startAt, String endAt, String search, String searchField, String factoryName, String storeName, String setTypeName, String colorName, String classificationName, String materialName, String orderStatus) {
+        OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(search, searchField);
         OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName, classificationName, materialName);
         OrderDto.OrderCondition condition = new OrderDto.OrderCondition(startAt, endAt, optionCondition, orderStatus);
-        return customOrderRepository.findByExcelData(condition);
+        return customOrderRepository.findByExcelData(inputCondition, condition);
 
     }
 
@@ -608,11 +609,11 @@ public class OrdersService {
                     .originalProductStatus(statusHistory.getSourceType().getDisplayName())
                     .storeId(order.getStoreId().toString())
                     .storeName(order.getStoreName())
-                    .storeHarry(order.getStoreHarry().toPlainString())
+                    .storeHarry(order.getStoreHarry() != null ? order.getStoreHarry().toPlainString() : null)
                     .storeGrade(order.getStoreGrade())
-                    .factoryId(order.getFactoryId().toString())
+                    .factoryId(order.getFactoryId() != null ? order.getFactoryId().toString() : null)
                     .factoryName(order.getFactoryName())
-                    .productId(orderProduct.getProductId().toString())
+                    .productId(orderProduct.getProductId() != null ? orderProduct.getProductId().toString() : null)
                     .productName(orderProduct.getProductName())
                     .productSize(orderProduct.getProductSize())
                     .colorId(String.valueOf(orderProduct.getColorId()))

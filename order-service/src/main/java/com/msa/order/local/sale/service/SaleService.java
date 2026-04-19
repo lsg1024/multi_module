@@ -67,6 +67,31 @@ import static com.msa.order.global.util.DateConversionUtil.StringToOffsetDateTim
 import static com.msa.order.local.order.util.StoneUtil.countStoneCost;
 import static com.msa.order.local.order.util.StoneUtil.updateStockStoneInfo;
 
+/**
+ * 판매 관리 서비스.
+ *
+ * *재고 또는 주문을 판매로 전환하고, 판매 수정·취소·결제를 처리한다.
+ * 모든 잔액 변동은 {@link OutboxEvent}를 통해 account-service로 발행되며,
+ * Transactional Outbox 패턴으로 이벤트 유실을 방지한다.
+ *
+ * *주요 의존성:
+ *
+ *   - {@link StockRepository} — 재고 조회 및 상태 전이
+ *   - {@link SaleRepository} / {@link SaleItemRepository} / {@link SalePaymentRepository} — 판매 데이터 저장
+ *   - {@link OutboxEventRepository} + {@link ApplicationEventPublisher} — 잔액 변동 이벤트 발행
+ *   - {@link GoldUtils} — 순금 중량 계산
+ * 
+ * 
+ *
+ * *핵심 흐름:
+ *
+ *   - 재고/주문 → 판매 전환 ({@code stockToSale}, {@code orderToSale})
+ *   - 판매 수정 ({@code updateSale})
+ *   - 판매·결제 취소 ({@code cancelSale})
+ *   - 미수금 결제 ({@code createStorePayment})
+ * 
+ * 
+ */
 @Slf4j
 @Service
 @Transactional
@@ -85,6 +110,7 @@ public class SaleService {
     private final StoreClient storeClient;
     private final ProductClient productClient;
 
+    /** 결제 취소 시 처리 가능한 SaleStatus 집합 (PAYMENT, WG, DISCOUNT, PAYMENT_TO_BANK). */
     private static final EnumSet<SaleStatus> PAYMENT_STATUSES = EnumSet.of(
             SaleStatus.PAYMENT,
             SaleStatus.WG,
@@ -220,11 +246,36 @@ public class SaleService {
     }
 
     /**
-     * 판매 상품 수정
-     * @param accessToken
-     * @param eventId 판매번호
-     * @param flowCode 생성번호
-     * @param updateDto 판매정보
+     * 판매 전체 목록 조회 (페이징 없이 배열 반환).
+     * 메시지 전송 등에서 날짜 범위 내 판매 데이터를 한 번에 조회할 때 사용.
+     */
+    @Transactional(readOnly = true)
+    public List<SaleItemResponse.SaleItem> getAllSales(String startAt, String endAt, String search, String material) {
+        SaleDto.Condition condition = new SaleDto.Condition(search, startAt, endAt, material);
+        return customSaleRepository.findAllSales(condition);
+    }
+
+    /**
+     * 날짜 범위 내 판매된 고유한 거래처 목록 조회 (메시지 전송용).
+     * 상품 정보 없이 거래처 ID/이름만 반환하여 경량화.
+     */
+    @Transactional(readOnly = true)
+    public List<SaleDto.SaleStoreInfo> getSaleStores(String startAt, String endAt) {
+        return customSaleRepository.findSaleStores(startAt, endAt);
+    }
+
+    /**
+     * 판매 상품 수정.
+     *
+     * *델타(차이) 기반으로 순금 중량 변동분({@code pureGoldWeightDelta})과
+     * 현금 잔액 변동분({@code moneyBalanceDelta})만 계산하여 OutboxEvent를 발행한다.
+     * 즉, 기존 금액을 취소하고 새 금액을 재발행하는 방식이 아니라
+     * 변동분 하나만 발행하므로 account-service의 잔액이 이중 반영되지 않는다.
+     *
+     * @param accessToken JWT 액세스 토큰 (tenantId, 닉네임 추출용)
+     * @param eventId     멱등성 키 (중복 처리 방지)
+     * @param flowCode    수정 대상 재고의 고유 식별 코드
+     * @param updateDto   수정 내용 (중량, 원가, 스톤 정보 등)
      */
     public void updateSale(String accessToken, String eventId, Long flowCode, SaleDto.updateRequest updateDto) {
         String tenantId = jwtUtil.getTenantId(accessToken);
@@ -241,11 +292,19 @@ public class SaleService {
         }
     }
     /**
-     * 판매처 상품 미수금 결제 처리
-     * @param accessToken 유저 유효성 체크
-     * @param eventId 멱등성 체크
-     * @param saleDto 상품 결제 정보
-     * @param createNewSheet 주문창 추가 여부 (추가 true/신규 false)
+     * 판매처 미수금 결제 처리.
+     *
+     * *결제 유형이 {@code WG}(금 수거)인 경우 {@code cashAmount ÷ marketPrice}로
+     * 금 중량을 역산한다 ({@link GoldUtils#calculateWeightFromPrice}).
+     * 그 외 결제 유형은 {@code weight × purity × harry}로 순금 중량을 계산한다.
+     *
+     * *멱등성 키({@code eventId}) 중복 시 {@link DataIntegrityViolationException}을 조용히
+     * 무시하여 동일 요청이 두 번 처리되지 않도록 보장한다.
+     *
+     * @param accessToken    JWT 액세스 토큰 (tenantId 추출용)
+     * @param eventId        멱등성 키 — {@code SALE_PAYMENT.EVENT_ID} 유니크 제약으로 중복 방지
+     * @param saleDto        결제 정보 (거래처 ID/명, 금 시세, 중량, 결제 유형 등)
+     * @param createNewSheet 당일 기존 주문장에 추가({@code false}) 또는 신규 주문장 생성({@code true})
      */
     public void createStorePayment(String accessToken, String eventId, SaleDto.Request saleDto, boolean createNewSheet) {
 
@@ -277,12 +336,23 @@ public class SaleService {
     }
 
     /**
-     * 재고 -> 판매 등록
-     * @param accessToken 유저 유효성 체크
-     * @param eventId 멱등성 ID
-     * @param flowCode 고유 주문 상품 번호
-     * @param stockDto 판매 내역
-     * @param createNewSheet 기존 주문창 추가(true) 혹은 신규 생성(false)
+     * 재고 → 판매 전환.
+     *
+     * *재고({@link Stock}) 상태를 {@code SALE}로 전이하고,
+     * 판매처(STORE)와 공장(FACTORY) 각각에 대해 {@link OutboxEvent}를 발행한다.
+     *
+     *
+     *   - STORE 이벤트: {@code SaleStatus.SALE} — 판매가 기준 (매장 해리 적용)
+     *   - FACTORY 이벤트: {@code SaleStatus.PURCHASE} — 매입가 기준 (공장 해리 1.10 고정)
+     * 
+     *
+     * *멱등성: {@code SaleItem}이 이미 존재하면 중복 처리를 방지하고 즉시 반환한다.
+     *
+     * @param accessToken    JWT 액세스 토큰 (tenantId, 닉네임 추출용)
+     * @param eventId        멱등성 키
+     * @param flowCode       재고 고유 식별 코드
+     * @param stockDto       판매 등록 요청 DTO (중량, 스톤 정보, 원가 등)
+     * @param createNewSheet 당일 기존 주문장에 추가({@code false}) 또는 신규 주문장 생성({@code true})
      */
     public void stockToSale(String accessToken, String eventId, Long flowCode, StockDto.stockRequest stockDto, boolean createNewSheet) {
 
@@ -345,6 +415,19 @@ public class SaleService {
         publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.PURCHASE.name(), "FACTORY", factoryId, factoryName, product.getMaterialName(), factoryPureGoldWeight, factoryTotalMoney, transactionDate);
     }
 
+    /**
+     * 주문 → 판매 전환.
+     *
+     * *{@link #stockToSale}과 동일한 패턴으로 동작하지만,
+     * 스톤 정보 갱신 없이 주문({@link Stock}) 상태를 {@code SALE}로 전이한다.
+     * STORE(판매가) 및 FACTORY(매입가) OutboxEvent 2건을 발행한다.
+     *
+     * @param accessToken    JWT 액세스 토큰
+     * @param eventId        멱등성 키
+     * @param flowCode       재고 고유 식별 코드
+     * @param stockDto       판매 등록 요청 DTO
+     * @param createNewSheet 당일 기존 주문장에 추가({@code false}) 또는 신규 주문장 생성({@code true})
+     */
     public void orderToSale(String accessToken, String eventId, Long flowCode, StockDto.StockRegisterRequest stockDto, boolean createNewSheet) {
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = jwtUtil.getTenantId(accessToken);
@@ -387,6 +470,23 @@ public class SaleService {
         publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.PURCHASE.name(), "FACTORY", factoryId, factoryName, stock.getProduct().getMaterialName(), factoryPureGoldWeight, factoryTotalMoney, transactionDate);
     }
 
+    /**
+     * 판매 또는 결제 취소.
+     *
+     * *취소 유형에 따라 처리 방식이 다르다:
+     *
+     *   - {@code SALE} 타입: 상품 반품 — 재고를 {@code STOCK} 상태로 복원하고,
+     *       순금 중량과 현금 금액을 음수로 발행하여 잔액을 감소시킨다.
+     *   - {@code PAYMENT_STATUSES}(PAYMENT/WG/DISCOUNT/PAYMENT_TO_BANK) 타입:
+     *       결제 취소 — 기존 결제 레코드의 순금 중량·현금 금액이 이미 음수로 저장되어 있으므로,
+     *       다시 음수를 취하면(이중 부정) 양수가 되어 미수금이 원상 복귀된다.
+     * 
+     *
+     * @param accessToken JWT 액세스 토큰 (권한 및 tenantId 확인용)
+     * @param eventId     멱등성 키
+     * @param type        취소 대상 SaleStatus 이름 (예: "SALE", "PAYMENT", "WG")
+     * @param flowCode    취소 대상 항목의 flowCode
+     */
     //반품 로직 -> 제품은 다시 재고로, 결제는 다시 원복 -> 마지막 결제일의 경우?
     public void cancelSale(String accessToken, String eventId, String type, String flowCode) {
         String role = jwtUtil.getRole(accessToken);
@@ -553,6 +653,24 @@ public class SaleService {
         publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", stock.getStoreId(), stock.getStoreName(), product.getMaterialName(), pureGoldWeightDelta, moneyBalanceDelta, lastModifiedDate);
     }
 
+    /**
+     * 잔액 변동 OutboxEvent DTO를 구성하여 {@link #publishAccountEvent}에 위임한다.
+     *
+     * *호출 시점마다 하나의 잔액 변동 이벤트를 만들어 account-service의
+     * {@code current-balance-update} 토픽으로 발행할 페이로드를 조립한다.
+     *
+     * @param eventId         멱등성 키
+     * @param saleCode        판매 코드 (TSID 문자열)
+     * @param tenantId        테넌트 식별자
+     * @param saleType        거래 유형 (예: "SALE", "PURCHASE", "RETURN")
+     * @param type            거래 대상 유형 ("STORE" 또는 "FACTORY")
+     * @param id              거래 대상 ID (매장 ID 또는 공장 ID)
+     * @param name            거래 대상 이름
+     * @param material        소재명 (예: "14K", "18K", "24K")
+     * @param pureGoldBalance 순금 중량 변동분 (양수=증가, 음수=감소)
+     * @param moneyBalance    현금 잔액 변동분 (양수=증가, 음수=감소)
+     * @param saleDate        거래 발생 일시
+     */
     private void publishBalanceChange(String eventId, String saleCode, String tenantId, String saleType,
                                       String type, Long id, String name, String material,
                                       BigDecimal pureGoldBalance, Integer moneyBalance, LocalDateTime saleDate) {
@@ -574,6 +692,19 @@ public class SaleService {
         publishAccountEvent(eventId, tenantId, id, dto);
     }
 
+    /**
+     * OutboxEvent 엔티티를 저장하고 Spring 애플리케이션 이벤트를 발행한다.
+     *
+     * *DTO를 JSON으로 직렬화하여 {@link OutboxEvent}에 페이로드로 저장한 뒤,
+     * {@link ApplicationEventPublisher}로 {@link OutboxCreatedEvent}를 발행하면
+     * {@code OutboxRelayService}가 즉시 Kafka로 릴레이한다.
+     * 직렬화 실패 시 트랜잭션 전체가 롤백되도록 {@link IllegalStateException}을 던진다.
+     *
+     * @param eventId   멱등성 키 (로깅용)
+     * @param tenantId  테넌트 식별자 (릴레이 라우팅용)
+     * @param accountId Kafka 메시지 키로 사용될 거래 대상 ID
+     * @param dto       잔액 변동 페이로드 DTO
+     */
     private void publishAccountEvent(String eventId, String tenantId, Long accountId, AccountDto.updateCurrentBalance dto) {
         try {
             String payload = objectMapper.writeValueAsString(dto);

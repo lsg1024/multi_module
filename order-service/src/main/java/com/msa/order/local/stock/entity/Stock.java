@@ -24,6 +24,18 @@ import java.util.List;
 
 import static jakarta.persistence.CascadeType.*;
 
+/**
+ * 재고 엔티티.
+ *
+ * *공장에서 출고된 제품의 재고 정보를 관리하며, 주문({@link Orders})과 연결되거나
+ * 독립 재고로 존재할 수 있다. {@code stockCode}와 {@code flowCode}는 TSID 기반 식별자이며,
+ * 주문 연결 시 {@code flowCode}는 주문의 값을 그대로 사용한다.
+ *
+ * *상태 전이 흐름:
+ * {@code WAITING} → {@code STOCK} → {@code RENTAL} → {@code RETURN} → {@code SALE} 또는 {@code DELETED}
+ *
+ * *삭제는 소프트 딜리트({@code STOCK_DELETED = TRUE})로 처리된다.
+ */
 @Slf4j
 @Getter
 @Table(name = "STOCK")
@@ -35,8 +47,10 @@ public class Stock extends BaseTimeEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "STOCK_ID")
     private Long stockId;
+    /** TSID 기반 재고 고유 코드. 독립 재고 시 flowCode와 동일하게 초기화된다. */
     @Tsid @Column(name = "STOCK_CODE")
     private Long stockCode;
+    /** 주문·재고·판매·이력 테이블의 공통 추적 키. 주문 연결 시 Orders.flowCode를 사용한다. */
     @Column(name = "FLOW_CODE")
     private Long flowCode;
     @Column(name = "STORE_ID") //account - store
@@ -92,6 +106,30 @@ public class Stock extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     private OrderStatus orderStatus;
 
+    /** 마이그레이션 시 원재고구분 값을 임시로 전달하기 위한 필드 (DB 저장 안 됨) */
+    @Transient
+    private String migrationSourceType;
+
+    /** 마이그레이션 시 CSV 등록일을 임시로 전달하기 위한 필드 (DB 저장 안 됨) */
+    @Transient
+    private LocalDateTime migrationCreatedDate;
+
+    /** 마이그레이션 시 CSV 변경일을 임시로 전달하기 위한 필드 (DB 저장 안 됨) */
+    @Transient
+    private LocalDateTime migrationModifiedDate;
+
+    public void setMigrationSourceType(String migrationSourceType) {
+        this.migrationSourceType = migrationSourceType;
+    }
+
+    public void setMigrationCreatedDate(LocalDateTime migrationCreatedDate) {
+        this.migrationCreatedDate = migrationCreatedDate;
+    }
+
+    public void setMigrationModifiedDate(LocalDateTime migrationModifiedDate) {
+        this.migrationModifiedDate = migrationModifiedDate;
+    }
+
     @Builder
     public Stock(Long stockCode, Long flowCode, Long storeId, String storeName, BigDecimal storeHarry, String storeGrade, Long factoryId, String factoryName, BigDecimal factoryHarry, String stockNote, String stockMainStoneNote, String stockAssistanceStoneNote, Integer stoneMainLaborCost, Integer stoneAssistanceLaborCost, Integer stoneAddLaborCost, Integer totalStonePurchaseCost, Integer totalStoneLaborCost, boolean stockDeleted, ProductSnapshot product, Orders orders, List<OrderStone> orderStones, OrderStatus orderStatus) {
         this.stockCode = stockCode;
@@ -114,7 +152,7 @@ public class Stock extends BaseTimeEntity {
         this.stockDeleted = stockDeleted;
         this.product = product;
         this.order = orders;
-        this.orderStones = orderStones;
+        this.orderStones = orderStones != null ? orderStones : new ArrayList<>();
         this.orderStatus = orderStatus;
     }
 
@@ -154,6 +192,15 @@ public class Stock extends BaseTimeEntity {
         this.stockMainStoneNote = rentalRequest.getMainStoneNote();
         this.stockAssistanceStoneNote = rentalRequest.getAssistanceStoneNote();
         this.orderStatus = OrderStatus.RENTAL;
+        // 대여 시 거래처 변경
+        if (rentalRequest.getStoreId() != null && !rentalRequest.getStoreId().isBlank()) {
+            this.storeId = Long.parseLong(rentalRequest.getStoreId());
+            this.storeName = rentalRequest.getStoreName();
+            this.storeGrade = rentalRequest.getStoreGrade();
+            if (rentalRequest.getStoreHarry() != null && !rentalRequest.getStoreHarry().isBlank()) {
+                this.storeHarry = new BigDecimal(rentalRequest.getStoreHarry());
+            }
+        }
     }
 
     public void updateStoneCost(int totalStonePurchaseCost, int totalStoneLaborCost, int mainLaborCost, int assistanceLaborCost, int stoneAddLaborCost) {

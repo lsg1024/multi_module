@@ -47,7 +47,7 @@ public class ProductImageService {
 
             String productName = originalFilename.substring(0, originalFilename.lastIndexOf('.'));
 
-            Optional<Product> productOpt = productRepository.findByProductName(productName);
+            Optional<Product> productOpt = productRepository.findByProductNameIgnoreCase(productName);
 
             if (productOpt.isPresent()) {
                 Product product = productOpt.get();

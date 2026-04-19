@@ -65,7 +65,7 @@ public class ProductItemProcessor implements ItemProcessor<ProductBatchDto, Prod
             } else {
                 factoryCache = factories.stream()
                         .collect(Collectors.toMap(
-                                FactoryDto.ResponseBatch::getFactoryName,
+                                f -> f.getFactoryName().toUpperCase(),
                                 FactoryDto.ResponseBatch::getFactoryId,
                                 (existing, replacement) -> existing
                         ));
@@ -106,23 +106,23 @@ public class ProductItemProcessor implements ItemProcessor<ProductBatchDto, Prod
                 .build();
 
         if (StringUtils.hasText(dto.getSetTypeName())) {
-            setTypeRepository.findBySetTypeName(dto.getSetTypeName().trim())
+            setTypeRepository.findBySetTypeNameIgnoreCase(dto.getSetTypeName().trim())
                     .ifPresent(product::setSetType);
         }
 
         if (StringUtils.hasText(dto.getClassificationName())) {
-            classificationRepository.findByClassificationName(dto.getClassificationName().trim())
+            classificationRepository.findByClassificationNameIgnoreCase(dto.getClassificationName().trim())
                     .ifPresent(product::setClassification);
         }
 
         if (StringUtils.hasText(dto.getMaterialName())) {
-            materialRepository.findByMaterialName(dto.getMaterialName().trim())
+            materialRepository.findByMaterialNameIgnoreCase(dto.getMaterialName().trim())
                     .ifPresent(product::setMaterial);
         }
 
         if (dto.getProductStoneDtos() != null) {
             for (ProductBatchDto.BatchStone stoneDto : dto.getProductStoneDtos()) {
-                stoneRepository.findByStoneName(stoneDto.getStoneName())
+                stoneRepository.findByStoneNameIgnoreCase(stoneDto.getStoneName())
                         .ifPresent(stone -> {
                             ProductStone productStone = ProductStone.builder()
                                     .stone(stone)
@@ -141,7 +141,7 @@ public class ProductItemProcessor implements ItemProcessor<ProductBatchDto, Prod
         if (dto.getProductWorkGradePolicyGroupDto() != null) {
             boolean isFirst = true;
             for (ProductBatchDto.BatchPolicyGroup groupDto : dto.getProductWorkGradePolicyGroupDto()) {
-                Optional<Color> colorOpt = colorRepository.findByColorName(groupDto.getColorName());
+                Optional<Color> colorOpt = colorRepository.findByColorNameIgnoreCase(groupDto.getColorName());
 
                 if (colorOpt.isPresent()) {
                     ProductWorkGradePolicyGroup group = ProductWorkGradePolicyGroup.builder()

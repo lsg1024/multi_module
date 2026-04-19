@@ -65,6 +65,10 @@ public class ProductStone {
         this.stoneQuantity = dto.getStoneQuantity();
     }
 
+    public void updateIncludeQuantity(boolean includeQuantity) {
+        this.includeQuantity = includeQuantity;
+    }
+
     public void setProduct(Product product) {
         this.product = product;
     }

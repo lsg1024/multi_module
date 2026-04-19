@@ -113,9 +113,9 @@ public class FactoryController {
     public ResponseEntity<ApiResponse<String>> createFactoriesForBatch(
             @RequestParam("file") MultipartFile file) {
 
+        Path tempPath = null;
         try {
-            Path tempPath = Files.createTempFile("factory-upload-", ".json");
-
+            tempPath = Files.createTempFile("factory-upload-", ".json");
             file.transferTo(tempPath.toFile());
 
             JobParameters jobParameters = new JobParametersBuilder()
@@ -126,9 +126,13 @@ public class FactoryController {
             jobLauncher.run(factoryImportJob, jobParameters);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Factory batch upload failed", e);
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("저장 실패: " + e.getMessage()));
+        } finally {
+            if (tempPath != null) {
+                try { Files.deleteIfExists(tempPath); } catch (IOException ignored) {}
+            }
         }
 
         return ResponseEntity.ok(ApiResponse.success("저장 중..."));
@@ -187,18 +191,18 @@ public class FactoryController {
     @PatchMapping("/factories/harry/{id}/{harry}")
     public ResponseEntity<ApiResponse<String>> updateHarry(
             @AccessToken String accessToken,
-            @PathVariable("id") String storeId,
+            @PathVariable("id") String factoryId,
             @PathVariable("harry") String harryId) {
-        factoryService.updateFactoryHarry(accessToken, storeId, harryId);
+        factoryService.updateFactoryHarry(accessToken, factoryId, harryId);
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
 
     @PatchMapping("/factories/grade/{id}/{grade}")
     public ResponseEntity<ApiResponse<String>> updateGrade(
             @AccessToken String accessToken,
-            @PathVariable("id") String storeId,
+            @PathVariable("id") String factoryId,
             @PathVariable("grade") String grade) {
-        factoryService.updateFactoryGrade(accessToken, storeId, grade);
+        factoryService.updateFactoryGrade(accessToken, factoryId, grade);
         return ResponseEntity.ok(ApiResponse.success("수정 완료"));
     }
 
@@ -215,8 +219,8 @@ public class FactoryController {
 
     @GetMapping("/factories/grade")
     public ResponseEntity<ApiResponse<String>> getFactoryGrade(
-            @RequestParam(name = "id") String storeId) {
-        String grade = factoryService.getFactoryGrade(storeId);
+            @RequestParam(name = "id") String factoryId) {
+        String grade = factoryService.getFactoryGrade(factoryId);
         return ResponseEntity.ok(ApiResponse.success(grade));
     }
 
@@ -225,6 +229,13 @@ public class FactoryController {
     public ResponseEntity<ApiResponse<FactoryDto.ApiFactoryInfo>> getFactoryInfo(@PathVariable Long id) {
         FactoryDto.ApiFactoryInfo factoryIdAndName = factoryService.getFactoryIdAndName(id);
         return ResponseEntity.ok(ApiResponse.success(factoryIdAndName));
+    }
+
+    @GetMapping("/api/factory/name")
+    public ResponseEntity<ApiResponse<FactoryDto.ApiFactoryInfo>> getFactoryInfoByName(
+            @RequestParam("name") String factoryName) {
+        FactoryDto.ApiFactoryInfo factoryInfo = factoryService.getFactoryInfoByName(factoryName);
+        return ResponseEntity.ok(ApiResponse.success(factoryInfo));
     }
 
     @GetMapping("/api/factories")

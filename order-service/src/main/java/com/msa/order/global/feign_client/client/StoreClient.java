@@ -39,6 +39,9 @@ public class StoreClient {
             throw new IllegalArgumentException(NO_CONNECT_SERVER + e.getMessage());
         }
 
+        if (response.getBody() == null) {
+            throw new IllegalArgumentException(NOT_FOUND + " " + storeId);
+        }
         StoreDto.Response data = response.getBody().getData();
         if (data == null) {
             throw new IllegalArgumentException(NOT_FOUND + " " + storeId);
@@ -63,12 +66,38 @@ public class StoreClient {
             throw new IllegalArgumentException(NO_CONNECT_SERVER + e.getMessage());
         }
 
+        if (response.getBody() == null) {
+            throw new IllegalArgumentException(NOT_FOUND + " " + storeId);
+        }
         StoreDto.accountResponse data = response.getBody().getData();
         if (data == null) {
             throw new IllegalArgumentException(NOT_FOUND + " " + storeId);
         }
 
         return data;
+    }
+
+    public StoreDto.Response getStoreInfoByName(String token, String storeName) {
+        ResponseEntity<ApiResponse<StoreDto.Response>> response;
+
+        Map<String, Object> headers = getStringObjectMap(token);
+
+        try {
+            response = accountFeignClient.getStoreInfoByName(headers, storeName);
+        } catch (FeignException e) {
+            if (e.status() >= 400 && e.status() < 500) {
+                return null;
+            }
+            throw new IllegalArgumentException(NO_CONNECT_SERVER + e.getMessage());
+        } catch (Exception e) {
+            throw new IllegalArgumentException(NO_CONNECT_SERVER + e.getMessage());
+        }
+
+        if (response.getBody() == null || response.getBody().getData() == null) {
+            return null;
+        }
+
+        return response.getBody().getData();
     }
 
     @NotNull

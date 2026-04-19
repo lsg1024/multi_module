@@ -12,6 +12,21 @@ import lombok.NoArgsConstructor;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 
+/**
+ * 상태 변경 이력 감사 추적 엔티티.
+ *
+ * *주문·재고·판매의 모든 비즈니스 상태 전이를 불변 레코드로 기록한다.
+ * {@code flowCode}를 공통 키로 사용하여 동일한 흐름의 이력을 시계열로 조회할 수 있다.
+ *
+ * *주요 필드:
+ *
+ *   - {@code sourceType} — 이력의 출처 유형 (주문/재고/판매 등)
+ *   - {@code phase} — 전이된 비즈니스 단계 ({@link BusinessPhase})
+ *   - {@code kind} — 변경 종류 (생성/수정/삭제 등, {@link Kind})
+ *   - {@code fromValue} / {@code toValue} — 전이 전후 상태 이름
+ * 
+ * 
+ */
 @Getter
 @Table(name = "STATUS_HISTORY", indexes = {
         @Index(name = "idx_hist_flowcode_created", columnList = "FLOW_CODE, CREATED_AT")

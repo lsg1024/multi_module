@@ -14,6 +14,33 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 재고 관리 REST 컨트롤러.
+ *
+ * *재고 생성·조회·수정·삭제, 주문→재고 등록, 재고→대여, 대여→반납, 반납→재고 복구,
+ * 재고 조사 기능 API를 제공한다.
+ *
+ * *제공 엔드포인트 요약:
+ *
+ *   - {@code GET /stock} — 재고 단건 상세 조회
+ *   - {@code GET /stocks} — 재고 목록 페이징 조회 (다중 필터·정렬 지원)
+ *   - {@code POST /stocks} — 재고 직접 생성
+ *   - {@code PATCH /orders/stock-register} — 주문 → 재고 등록
+ *   - {@code PATCH /stock} — 재고 수정
+ *   - {@code GET /stocks/rental/history} — 대여 이력 조회
+ *   - {@code PATCH /stocks/rental} — 재고 → 대여 상태 변경
+ *   - {@code PATCH /stocks/rental/return} — 대여 → 반납 상태 변경
+ *   - {@code PATCH /stocks/rollback} — 반납·삭제 → 재고 복구
+ *   - {@code DELETE /stocks/delete} — 재고 삭제
+ *   - {@code GET /stocks/inventory} — 재고 조사 목록 조회
+ *   - {@code POST /stocks/inventory/prepare} — 재고 조사 초기화
+ *   - {@code POST /stocks/inventory/check} — 재고 항목 조사 확인
+ *   - {@code GET /stocks/inventory/statistics} — 재고 조사 통계 조회
+ *   - {@code GET /stocks/filters/*} — 공장·상점·세트유형·컬러·분류·재질 필터 목록 조회
+ * 
+ *
+ * *의존성: {@link com.msa.order.local.stock.service.StockService}
+ */
 @RestController
 public class StockController {
 
@@ -21,6 +48,18 @@ public class StockController {
 
     public StockController(StockService stockService) {
         this.stockService = stockService;
+    }
+
+    /**
+     * 상품명 기반 재고 수량 일괄 조회 (카탈로그용)
+     * 상품명 목록을 받아 각 상품의 활성 재고(STOCK, NORMAL, RENTAL) 수량을 반환한다.
+     */
+    @PostMapping("/stocks/count-by-names")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Integer>>> getStockCountByProductNames(
+            @RequestBody List<String> productNames) {
+
+        java.util.Map<String, Integer> counts = stockService.getStockCountByProductNames(productNames);
+        return ResponseEntity.ok(ApiResponse.success(counts));
     }
 
     @GetMapping("/stock")
@@ -34,19 +73,22 @@ public class StockController {
     @GetMapping("/stocks")
     public ResponseEntity<ApiResponse<CustomPage<StockDto.Response>>> getStocks(
             @RequestParam(name = "search", required = false) String input,
+            @RequestParam(name = "searchField", required = false) String searchField,
             @RequestParam(name = "start") String startAt,
             @RequestParam(name = "end") String endAt,
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
             @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "classification", required = false) String classificationName,
+            @RequestParam(name = "material", required = false) String materialName,
             @RequestParam(name = "sortField", required = false) String sortField,
             @RequestParam(name = "sortOrder", required = false) String sort,
             @RequestParam(name = "order_status", required = false) String orderStatus,
             @PageableDefault(size = 20) Pageable pageable) {
 
-        CustomPage<StockDto.Response> stocks = stockService.getStocks(input, startAt, endAt, factoryName,
-                storeName, setTypeName, colorName, sortField, sort, orderStatus, pageable);
+        CustomPage<StockDto.Response> stocks = stockService.getStocks(input, searchField, startAt, endAt, factoryName,
+                storeName, setTypeName, colorName, classificationName, materialName, sortField, sort, orderStatus, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(stocks));
     }
@@ -88,18 +130,21 @@ public class StockController {
     @GetMapping("/stocks/rental/history")
     public ResponseEntity<ApiResponse<CustomPage<StockDto.Response>>> getRentalHistory(
             @RequestParam(name = "search", required = false) String input,
+            @RequestParam(name = "searchField", required = false) String searchField,
             @RequestParam(name = "start") String startAt,
             @RequestParam(name = "end") String endAt,
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
             @RequestParam(name = "color", required = false) String colorName,
+            @RequestParam(name = "classification", required = false) String classificationName,
+            @RequestParam(name = "material", required = false) String materialName,
             @RequestParam(name = "sortField", required = false) String sortField,
             @RequestParam(name = "sortOrder", required = false) String sort,
             @PageableDefault(size = 20) Pageable pageable) {
 
-        CustomPage<StockDto.Response> pastRentalHistory = stockService.getPastRentalHistory(input, startAt, endAt, factoryName,
-                storeName, setTypeName, colorName, sortField, sort, pageable);
+        CustomPage<StockDto.Response> pastRentalHistory = stockService.getPastRentalHistory(input, searchField, startAt, endAt, factoryName,
+                storeName, setTypeName, colorName, classificationName, materialName, sortField, sort, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(pastRentalHistory));
     }
@@ -186,6 +231,26 @@ public class StockController {
             @RequestParam(name = "order_status", required = false) String orderStatus) {
         List<String> filterColors = stockService.getFilterColors(startAt, endAt, orderStatus);
         return ResponseEntity.ok(ApiResponse.success(filterColors));
+    }
+
+    // 분류 리스트 배열
+    @GetMapping("/stocks/filters/classification")
+    public ResponseEntity<ApiResponse<List<String>>> getClassificationNames(
+            @RequestParam(name = "start") String startAt,
+            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "order_status", required = false) String orderStatus) {
+        List<String> filterClassifications = stockService.getFilterClassifications(startAt, endAt, orderStatus);
+        return ResponseEntity.ok(ApiResponse.success(filterClassifications));
+    }
+
+    // 재질 리스트 배열
+    @GetMapping("/stocks/filters/material")
+    public ResponseEntity<ApiResponse<List<String>>> getMaterialNames(
+            @RequestParam(name = "start") String startAt,
+            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "order_status", required = false) String orderStatus) {
+        List<String> filterMaterials = stockService.getFilterMaterials(startAt, endAt, orderStatus);
+        return ResponseEntity.ok(ApiResponse.success(filterMaterials));
     }
 
     @GetMapping("/stocks/inventory")

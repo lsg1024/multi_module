@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface StoreRepository extends JpaRepository<Store, Long>, CustomStoreRepository {
@@ -37,6 +38,14 @@ public interface StoreRepository extends JpaRepository<Store, Long>, CustomStore
             "where s.storeId= :storeId " +
             "and s.storeName= :storeName")
     TransactionDto findByStoreIdAndStoreName(@Param("storeId") Long storeId, @Param("storeName") String storeName);
+
+    @Query("""
+      select s
+      from Store s
+      join fetch s.commonOption co
+      where lower(s.storeName) = lower(:storeName) and s.storeDeleted = false
+    """)
+    List<Store> findByStoreNameIgnoreCase(@Param("storeName") String storeName);
 
     // 비관적 락 (동시성 제어)
     @Lock(LockModeType.PESSIMISTIC_WRITE)
