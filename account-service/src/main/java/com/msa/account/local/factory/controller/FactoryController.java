@@ -61,6 +61,9 @@ public class FactoryController {
     @GetMapping("/factories")
     public ResponseEntity<ApiResponse<CustomPage<FactoryDto.FactoryResponse>>> getFactoryList(
             @RequestParam(name = "search", required = false) String name,
+            @RequestParam(name = "searchField", required = false) String searchField,
+            @RequestParam(name = "sortField", required = false) String sortField,
+            @RequestParam(name = "sortOrder", required = false) String sortOrder,
             @RequestParam(name = "un_page", required = false, defaultValue = "false") boolean un_page,
             @PageableDefault(size = 12) Pageable pageable) {
 
@@ -68,7 +71,7 @@ public class FactoryController {
             pageable = Pageable.unpaged();
         }
 
-        CustomPage<FactoryDto.FactoryResponse> factoryList = factoryService.getFactoryList(name, pageable);
+        CustomPage<FactoryDto.FactoryResponse> factoryList = factoryService.getFactoryList(name, searchField, sortField, sortOrder, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(factoryList));
     }

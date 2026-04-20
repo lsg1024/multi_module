@@ -75,4 +75,13 @@ public class MaterialController {
         String materialName = materialService.getMaterialName(id);
         return ResponseEntity.ok(ApiResponse.success(materialName));
     }
+
+    /**
+     * 재질명으로 재질 ID 조회 (마이그레이션용, 대소문자 무시)
+     */
+    @GetMapping("/api/material/name")
+    public ResponseEntity<ApiResponse<Long>> getMaterialIdByName(@RequestParam("name") String name) {
+        Long materialId = materialService.getMaterialIdByName(name);
+        return ResponseEntity.ok(ApiResponse.success(materialId));
+    }
 }

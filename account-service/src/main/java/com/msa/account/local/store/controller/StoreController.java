@@ -90,9 +90,12 @@ public class StoreController {
     @GetMapping("/stores")
     public ResponseEntity<ApiResponse<CustomPage<StoreDto.StoreResponse>>> getStoreList(
             @RequestParam(name = "search", required = false) String name,
+            @RequestParam(name = "searchField", required = false) String searchField,
+            @RequestParam(name = "sortField", required = false) String sortField,
+            @RequestParam(name = "sortOrder", required = false) String sortOrder,
             @PageableDefault(size = 12) Pageable pageable) {
 
-        CustomPage<StoreDto.StoreResponse> storeList = storeService.getStoreList(name, pageable);
+        CustomPage<StoreDto.StoreResponse> storeList = storeService.getStoreList(name, searchField, sortField, sortOrder, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(storeList));
     }

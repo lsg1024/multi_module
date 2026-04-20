@@ -176,10 +176,12 @@ public class ProductRepositoryImpl implements CustomProductRepository {
         JPAQuery<Long> countQuery = query
                 .select(product.countDistinct())
                 .from(product)
+                .leftJoin(productImage).on(productImage.product.eq(product).and(productImage.imageMain.isTrue()))
                 .leftJoin(product.material, material)
                 .leftJoin(product.setType, setType)
                 .leftJoin(product.classification, classification)
                 .leftJoin(product.productWorkGradePolicyGroups, productWorkGradePolicyGroup)
+                .on(productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue())
                 .leftJoin(productWorkGradePolicyGroup.color, color)
                 .where(
                         productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue()

@@ -390,8 +390,8 @@ public class StockRepositoryImpl implements CustomStockRepository {
         if (!StringUtils.hasText(searchField)) {
             searchBuilder.and(
                     stock.product.productName.containsIgnoreCase(searchInput)
-                            .or(stock.storeName.containsIgnoreCase(searchInput))
-                            .or(stock.factoryName.containsIgnoreCase(searchInput))
+                            .or(stock.storeName.eq(searchInput))
+                            .or(stock.factoryName.eq(searchInput))
             );
             return searchBuilder;
         }
@@ -399,18 +399,18 @@ public class StockRepositoryImpl implements CustomStockRepository {
         switch (searchField) {
             case "modelNumber" -> searchBuilder.and(
                     stock.product.productName.containsIgnoreCase(searchInput)
-                            .or(stock.factoryName.containsIgnoreCase(searchInput))
+                            .or(stock.product.productFactoryName.containsIgnoreCase(searchInput))
             );
-            case "factory" -> searchBuilder.and(stock.factoryName.containsIgnoreCase(searchInput));
-            case "store" -> searchBuilder.and(stock.storeName.containsIgnoreCase(searchInput));
-            case "setType" -> searchBuilder.and(stock.product.setTypeName.containsIgnoreCase(searchInput));
-            case "classification" -> searchBuilder.and(stock.product.classificationName.containsIgnoreCase(searchInput));
-            case "material" -> searchBuilder.and(stock.product.materialName.containsIgnoreCase(searchInput));
-            case "color" -> searchBuilder.and(stock.product.colorName.containsIgnoreCase(searchInput));
+            case "factory" -> searchBuilder.and(stock.factoryName.eq(searchInput));
+            case "store" -> searchBuilder.and(stock.storeName.eq(searchInput));
+            case "setType" -> searchBuilder.and(stock.product.setTypeName.eq(searchInput));
+            case "classification" -> searchBuilder.and(stock.product.classificationName.eq(searchInput));
+            case "material" -> searchBuilder.and(stock.product.materialName.eq(searchInput));
+            case "color" -> searchBuilder.and(stock.product.colorName.eq(searchInput));
             default -> searchBuilder.and(
                     stock.product.productName.containsIgnoreCase(searchInput)
-                            .or(stock.storeName.containsIgnoreCase(searchInput))
-                            .or(stock.factoryName.containsIgnoreCase(searchInput))
+                            .or(stock.storeName.eq(searchInput))
+                            .or(stock.factoryName.eq(searchInput))
             );
         }
 

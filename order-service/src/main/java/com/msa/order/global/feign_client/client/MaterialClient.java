@@ -49,4 +49,26 @@ public class MaterialClient {
 
         return data;
     }
+
+    /**
+     * 재질명으로 재질 ID 조회 (마이그레이션용, best-effort)
+     * 조회 실패 시 null 반환
+     */
+    public Long getMaterialIdByName(String token, String materialName) {
+        Map<String, Object> headers = new HashMap<>();
+        headers.put("Authorization", "Bearer " + token);
+        headers.put("X-Forwarded-For", jwtUtil.getForward(token));
+        headers.put("X-Tenant-ID", jwtUtil.getTenantId(token));
+        headers.put("User-Agent", jwtUtil.getDevice(token));
+
+        try {
+            ResponseEntity<ApiResponse<Long>> response = productFeignClient.getMaterialIdByName(headers, materialName);
+            if (response.getBody() != null) {
+                return response.getBody().getData();
+            }
+        } catch (Exception e) {
+            // best-effort: 조회 실패 시 null
+        }
+        return null;
+    }
 }

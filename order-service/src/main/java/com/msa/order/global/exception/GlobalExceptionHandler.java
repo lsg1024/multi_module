@@ -1,14 +1,18 @@
 package com.msa.order.global.exception;
 
 import com.msa.common.global.api.ApiResponse;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -65,6 +69,63 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(errorMessage));
+    }
+
+    /**
+     * HttpMessageNotReadableException 처리
+     * JSON 파싱 오류 시 필드 정보를 포함한 상세 메시지를 반환합니다.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<String>> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+        Throwable cause = ex.getCause();
+        String errorMessage = "요청 JSON 파싱 오류";
+
+        if (cause instanceof InvalidFormatException invalidFormatEx) {
+            String fieldPath = buildFieldPath(invalidFormatEx.getPath());
+            String rootMsg = invalidFormatEx.getOriginalMessage();
+            if (rootMsg != null && rootMsg.contains("from String")) {
+                rootMsg = "타입 불일치";
+            }
+            errorMessage = "요청 JSON 파싱 오류: 필드 '" + fieldPath + "' — " + rootMsg;
+        } else if (cause instanceof JsonMappingException jsonEx) {
+            String fieldPath = buildFieldPath(jsonEx.getPath());
+            errorMessage = "요청 JSON 파싱 오류: 필드 '" + fieldPath + "' — " + jsonEx.getOriginalMessage();
+        }
+
+        ApiResponse<String> body = ApiResponse.error(errorMessage);
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(body);
+    }
+
+    /**
+     * NumberFormatException 처리
+     * 숫자 형식 오류 발생 시 상세 메시지를 반환합니다.
+     */
+    @ExceptionHandler(NumberFormatException.class)
+    public ResponseEntity<ApiResponse<String>> handleNumberFormatException(NumberFormatException ex) {
+        String errorMessage = "숫자 형식 오류: " + ex.getMessage() + " (비어있거나 잘못된 숫자 필드가 있는지 확인하세요)";
+        ApiResponse<String> body = ApiResponse.error(errorMessage);
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(body);
+    }
+
+    /**
+     * JsonMappingException 경로 생성 헬퍼
+     */
+    private String buildFieldPath(List<JsonMappingException.Reference> path) {
+        if (path == null || path.isEmpty()) {
+            return "unknown";
+        }
+        return path.stream()
+                .map(ref -> {
+                    if (ref.getIndex() >= 0) {
+                        return ref.getFieldName() + "[" + ref.getIndex() + "]";
+                    }
+                    return ref.getFieldName();
+                })
+                .collect(Collectors.joining("."));
     }
 
     /**

@@ -44,7 +44,9 @@ public class ProductStoneRepositoryImpl implements CustomProductStoneRepository 
                 .where(productStone.product.productId.eq(productId))
                 .fetch();
 
+        // stoneId가 null인 항목 필터링 (마이그레이션으로 생성된 ProductStone은 stone FK가 없을 수 있음)
         List<Long> stoneIds = productStones.stream()
+                .filter(dto -> dto.getStoneId() != null)
                 .map(dto -> Long.parseLong(dto.getStoneId()))
                 .toList();
 
@@ -63,10 +65,14 @@ public class ProductStoneRepositoryImpl implements CustomProductStoneRepository 
                         Collectors.mapping(StoneWorkGradePolicyDto.Response::fromEntity, Collectors.toList())
                 ));
 
-        // 4. stoneDtos에 정책 리스트 주입
+        // 4. stoneDtos에 정책 리스트 주입 (stoneId가 null인 항목은 빈 정책 리스트)
         productStones.forEach(dto -> {
-            Long stoneId = Long.parseLong(dto.getStoneId());
-            dto.setStoneWorkGradePolicyDtos(policyMap.getOrDefault(stoneId, List.of()));
+            if (dto.getStoneId() != null) {
+                Long stoneId = Long.parseLong(dto.getStoneId());
+                dto.setStoneWorkGradePolicyDtos(policyMap.getOrDefault(stoneId, List.of()));
+            } else {
+                dto.setStoneWorkGradePolicyDtos(List.of());
+            }
         });
 
         return productStones;

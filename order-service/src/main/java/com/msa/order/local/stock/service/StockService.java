@@ -10,6 +10,7 @@ import com.msa.order.global.feign_client.client.AssistantStoneClient;
 import com.msa.order.global.feign_client.dto.AssistantStoneDto;
 import com.msa.order.global.kafka.dto.KafkaStockRequest;
 import com.msa.order.global.util.DateConversionUtil;
+import com.msa.order.global.util.SafeParse;
 import com.msa.order.local.order.dto.OrderDto;
 import com.msa.order.local.order.entity.OrderProduct;
 import com.msa.order.local.order.entity.OrderStone;
@@ -213,8 +214,8 @@ public class StockService {
 
         // 사이즈/중량 변경 추적
         tracker.track("사이즈", product.getSize(), updateStock.getProductSize());
-        tracker.track("금중량", product.getGoldWeight(), new BigDecimal(updateStock.getGoldWeight()));
-        tracker.track("스톤중량", product.getStoneWeight(), new BigDecimal(updateStock.getStoneWeight()));
+        tracker.track("금중량", product.getGoldWeight(), SafeParse.toBigDecimalOrNull(updateStock.getGoldWeight()));
+        tracker.track("스톤중량", product.getStoneWeight(), SafeParse.toBigDecimalOrNull(updateStock.getStoneWeight()));
 
         // 비용 관련 변경 추적
         tracker.track("매입비용", product.getProductPurchaseCost(), updateStock.getProductPurchaseCost());
@@ -228,25 +229,42 @@ public class StockService {
         tracker.track("재고메모", stock.getStockNote(), updateStock.getStockNote());
 
         // 보조석 변경 추적 (ID로 비교, 이름으로 표시)
-        Long assistantId = Long.valueOf(updateStock.getAssistantStoneId());
-        if (!product.getAssistantStoneId().equals(assistantId)) {
+        Long assistantId = SafeParse.toLongOrNull(updateStock.getAssistantStoneId());
+        if (assistantId != null && !product.getAssistantStoneId().equals(assistantId)) {
             tracker.track("보조석", product.getAssistantStoneName(), updateStock.getAssistantStoneName());
         }
 
         // 실제 업데이트 수행
         stock.updateStockNote(updateStock.getMainStoneNote(), updateStock.getAssistanceStoneNote(), updateStock.getStockNote());
         product.updateProductCost(updateStock.getProductPurchaseCost(), updateStock.getProductLaborCost(), updateStock.getProductAddLaborCost());
-        product.updateProductWeightAndSize(updateStock.getProductSize(), new BigDecimal(updateStock.getGoldWeight()), new BigDecimal(updateStock.getStoneWeight()));
+        product.updateProductWeightAndSize(updateStock.getProductSize(), SafeParse.toBigDecimalOrNull(updateStock.getGoldWeight()), SafeParse.toBigDecimalOrNull(updateStock.getStoneWeight()));
 
         int[] countStoneCost = countStoneCost(stock.getOrderStones());
         stock.updateStoneCost(countStoneCost[0], countStoneCost[1], countStoneCost[2], countStoneCost[3], updateStock.getStoneAddLaborCost());
 
-        if (!product.getAssistantStoneId().equals(assistantId)) {
+        if (assistantId != null && !product.getAssistantStoneId().equals(assistantId)) {
             OffsetDateTime assistantStoneCreateAt = null;
             if (StringUtils.hasText(updateStock.getAssistantStoneCreateAt())) {
                 assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(updateStock.getAssistantStoneCreateAt());
             }
             product.updateAssistantStone(updateStock.isAssistantStone(), assistantId, updateStock.getAssistantStoneName(), assistantStoneCreateAt);
+        }
+
+        // 거래처(스토어) 및 제조사(팩토리) 업데이트 (변경되었을 경우)
+        if (StringUtils.hasText(updateStock.getStoreId())) {
+            stock.updateStore(
+                SafeParse.toLongOrNull(updateStock.getStoreId()),
+                updateStock.getStoreName(),
+                updateStock.getStoreGrade(),
+                SafeParse.toBigDecimalOrNull(updateStock.getStoreHarry())
+            );
+        }
+        if (StringUtils.hasText(updateStock.getFactoryId())) {
+            stock.updateFactory(
+                SafeParse.toLongOrNull(updateStock.getFactoryId()),
+                updateStock.getFactoryName(),
+                SafeParse.toBigDecimalOrNull(updateStock.getFactoryHarry())
+            );
         }
 
         updateStockStoneInfo(updateStock.getStoneInfos(), stock);
@@ -274,10 +292,10 @@ public class StockService {
             throw new IllegalArgumentException(READY_TO_EXPECT);
         }
 
-        AssistantStoneDto.Response assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(accessToken, Long.valueOf(stockDto.getAssistantStoneId()));
+        AssistantStoneDto.Response assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(accessToken, SafeParse.toLongOrNull(stockDto.getAssistantStoneId()));
 
-        BigDecimal goldWeight = new BigDecimal(stockDto.getGoldWeight());
-        BigDecimal stoneWeight = new BigDecimal(stockDto.getStoneWeight());
+        BigDecimal goldWeight = SafeParse.toBigDecimalOrNull(stockDto.getGoldWeight());
+        BigDecimal stoneWeight = SafeParse.toBigDecimalOrNull(stockDto.getStoneWeight());
 
         OrderProduct orderProduct = order.getOrderProduct();
         ProductSnapshot product = ProductSnapshot.builder()
@@ -353,13 +371,13 @@ public class StockService {
         String nickname = jwtUtil.getNickname(accessToken);
         String tenantId = jwtUtil.getTenantId(accessToken);
 
-        Long productId = Long.valueOf(stockDto.getProductId());
-        Long storeId = Long.valueOf(stockDto.getStoreId());
-        Long factoryId = Long.valueOf(stockDto.getFactoryId());
-        Long materialId = Long.valueOf(stockDto.getMaterialId());
-        Long classificationId = Long.valueOf(stockDto.getClassificationId());
-        Long colorId = Long.valueOf(stockDto.getColorId());
-        Long setTypeId = Long.valueOf(stockDto.getSetTypeId());
+        Long productId = SafeParse.toLongOrNull(stockDto.getProductId());
+        Long storeId = SafeParse.toLongOrNull(stockDto.getStoreId());
+        Long factoryId = SafeParse.toLongOrNull(stockDto.getFactoryId());
+        Long materialId = SafeParse.toLongOrNull(stockDto.getMaterialId());
+        Long classificationId = SafeParse.toLongOrNull(stockDto.getClassificationId());
+        Long colorId = SafeParse.toLongOrNull(stockDto.getColorId());
+        Long setTypeId = SafeParse.toLongOrNull(stockDto.getSetTypeId());
 
         ProductSnapshot product = ProductSnapshot.builder()
                 .id(productId)
@@ -375,12 +393,12 @@ public class StockService {
                 .materialId(materialId)
                 .materialName(stockDto.getMaterialName())
                 .isProductWeightSale(stockDto.getIsProductWeightSale())
-                .goldWeight(stockDto.getGoldWeight())
-                .stoneWeight(stockDto.getStoneWeight())
+                .goldWeight(SafeParse.toBigDecimalOrNull(String.valueOf(stockDto.getGoldWeight())))
+                .stoneWeight(SafeParse.toBigDecimalOrNull(String.valueOf(stockDto.getStoneWeight())))
                 .productPurchaseCost(stockDto.getProductPurchaseCost())
                 .productLaborCost(stockDto.getProductLaborCost())
                 .productAddLaborCost(stockDto.getProductAddLaborCost())
-                .assistantStoneId(Long.valueOf(stockDto.getAssistantStoneId()))
+                .assistantStoneId(SafeParse.toLongOrNull(stockDto.getAssistantStoneId()))
                 .assistantStoneName(stockDto.getAssistantStoneName())
                 .build();
 
@@ -391,7 +409,7 @@ public class StockService {
                 .storeId(storeId)
                 .storeName(stockDto.getStoreName())
                 .storeGrade(stockDto.getStoreGrade())
-                .storeHarry(new BigDecimal(stockDto.getStoreHarry()))
+                .storeHarry(SafeParse.toBigDecimalOrNull(stockDto.getStoreHarry()))
                 .factoryId(factoryId)
                 .factoryName(stockDto.getFactoryName())
                 .stockNote(stockDto.getStockNote())
@@ -410,9 +428,9 @@ public class StockService {
         List<StoneDto.StoneInfo> stoneInfos = stockDto.getStoneInfos();
         for (StoneDto.StoneInfo stoneInfo : stoneInfos) {
             OrderStone orderStone = OrderStone.builder()
-                    .originStoneId(Long.valueOf(stoneInfo.getStoneId()))
+                    .originStoneId(SafeParse.toLongOrNull(stoneInfo.getStoneId()))
                     .originStoneName(stoneInfo.getStoneName())
-                    .originStoneWeight(new BigDecimal(stoneInfo.getStoneWeight()))
+                    .originStoneWeight(SafeParse.toBigDecimalOrNull(stoneInfo.getStoneWeight()))
                     .stonePurchaseCost(stoneInfo.getPurchaseCost())
                     .stoneLaborCost(stoneInfo.getLaborCost())
                     .stoneQuantity(stoneInfo.getQuantity())
@@ -453,7 +471,7 @@ public class StockService {
                 .setTypeId(setTypeId)
                 .nickname(nickname)
                 .assistantStone(stockDto.isAssistantStone())
-                .assistantStoneId(Long.valueOf(stockDto.getAssistantStoneId()))
+                .assistantStoneId(SafeParse.toLongOrNull(stockDto.getAssistantStoneId()))
                 .assistantStoneCreateAt(assistantStoneCreateAt)
                 .build();
 

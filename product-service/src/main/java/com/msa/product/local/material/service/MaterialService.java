@@ -96,5 +96,15 @@ public class MaterialService {
     public String getMaterialName(Long id) {
         return materialRepository.findByMaterialName(id);
     }
+
+    /**
+     * 재질명으로 재질 ID 조회 (대소문자 무시, 마이그레이션용)
+     */
+    @Transactional(readOnly = true)
+    public Long getMaterialIdByName(String name) {
+        return materialRepository.findByMaterialNameIgnoreCase(name)
+                .map(Material::getMaterialId)
+                .orElse(null);
+    }
 }
 

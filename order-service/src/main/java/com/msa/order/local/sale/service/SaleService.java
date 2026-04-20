@@ -16,6 +16,7 @@ import com.msa.order.global.feign_client.dto.ProductImageDto;
 import com.msa.order.global.kafka.dto.AccountDto;
 import com.msa.order.global.util.DateConversionUtil;
 import com.msa.order.global.util.GoldUtils;
+import com.msa.order.global.util.SafeParse;
 import com.msa.order.local.order.dto.StoreDto;
 import com.msa.order.local.order.entity.OrderStone;
 import com.msa.order.local.order.entity.StatusHistory;
@@ -389,8 +390,8 @@ public class SaleService {
         stock.updateOrderStatus(OrderStatus.SALE);
         stock.updateStockNote(stockDto.getMainStoneNote(), stockDto.getAssistanceStoneNote(), stockDto.getStockNote());
 
-        Long assistantId = Long.valueOf(stockDto.getAssistantStoneId());
-        if (!stock.getProduct().getAssistantStoneId().equals(assistantId)) {
+        Long assistantId = SafeParse.toLongOrNull(stockDto.getAssistantStoneId());
+        if (assistantId != null && !stock.getProduct().getAssistantStoneId().equals(assistantId)) {
             OffsetDateTime assistantStoneCreateAt = null;
             if (StringUtils.hasText(stockDto.getAssistantStoneCreateAt())) {
                 assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(stockDto.getAssistantStoneCreateAt());
@@ -399,7 +400,7 @@ public class SaleService {
         }
 
         product.updateProductAddCost(stockDto.getAddProductLaborCost());
-        product.updateProductWeightAndSize(stockDto.getProductSize(), new BigDecimal(stockDto.getGoldWeight()), new BigDecimal(stockDto.getStoneWeight()));
+        product.updateProductWeightAndSize(stockDto.getProductSize(), SafeParse.toBigDecimalOrNull(stockDto.getGoldWeight()), SafeParse.toBigDecimalOrNull(stockDto.getStoneWeight()));
 
         updateNewHistory(stock.getFlowCode(), nickname, BusinessPhase.SALE, "판매 등록");
 
@@ -625,12 +626,14 @@ public class SaleService {
         int[] countStoneCost = countStoneCost(orderStones);
         stock.updateStoneCost(countStoneCost[0], countStoneCost[1], countStoneCost[2], countStoneCost[3], updateDto.getStoneAddLaborCost());
 
-        Long assistantId = Long.valueOf(updateDto.getAssistantStoneId());
-        stock.getProduct().updateAssistantStone(updateDto.isAssistantStone(), assistantId,
-                updateDto.getAssistantStoneName(), updateDto.isAssistantStone() ? StringToOffsetDateTime(updateDto.getAssistantStoneCreateAt()) : null);
+        Long assistantId = SafeParse.toLongOrNull(updateDto.getAssistantStoneId());
+        if (assistantId != null) {
+            stock.getProduct().updateAssistantStone(updateDto.isAssistantStone(), assistantId,
+                    updateDto.getAssistantStoneName(), updateDto.isAssistantStone() ? StringToOffsetDateTime(updateDto.getAssistantStoneCreateAt()) : null);
+        }
 
         product.updateProductAddCost(updateDto.getProductAddLaborCost());
-        product.updateProductWeightAndSize(updateDto.getProductSize(), new BigDecimal(updateDto.getGoldWeight()), new BigDecimal(updateDto.getStoneWeight()));
+        product.updateProductWeightAndSize(updateDto.getProductSize(), SafeParse.toBigDecimalOrNull(updateDto.getGoldWeight()), SafeParse.toBigDecimalOrNull(updateDto.getStoneWeight()));
 
         updateNewHistory(flowCode, nickname, BusinessPhase.SALE, "판매 수정");
 
@@ -799,7 +802,7 @@ public class SaleService {
         final Integer cashAmount = saleDto.getPayAmount();
         final String material = saleDto.getMaterial();
         BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(saleDto.getGoldWeight(), material, saleDto.getHarry());
-        final BigDecimal goldWeight = new BigDecimal(saleDto.getGoldWeight());
+        final BigDecimal goldWeight = SafeParse.toBigDecimalOrNull(saleDto.getGoldWeight());
         final String note = saleDto.getNote();
 
         SaleStatus saleStatus;

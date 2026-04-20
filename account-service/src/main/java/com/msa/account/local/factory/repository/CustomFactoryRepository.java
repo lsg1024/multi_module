@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public interface CustomFactoryRepository {
     Optional<AccountDto.AccountSingleResponse> findByFactoryId(Long factoryId);
-    CustomPage<FactoryDto.FactoryResponse> findAllFactory(String name, Pageable pageable);
+    CustomPage<FactoryDto.FactoryResponse> findAllFactory(String name, String searchField, String sortField, String sortOrder, Pageable pageable);
     List<AccountExcelDto>  findAllFactoryExcel();
     List<FactoryDto.ApiFactoryInfo> findAllFactory();
     CustomPage<AccountDto.AccountResponse> findAllFactoryAndPurchase(String endAt, Pageable pageable);

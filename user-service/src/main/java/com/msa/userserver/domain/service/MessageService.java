@@ -17,6 +17,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -193,12 +196,28 @@ public class MessageService {
         return results;
     }
 
-    // 전송 이력 조회
+    // 전송 이력 조회 (수신자/전화번호/내용/날짜 범위 선택적 필터)
     @Transactional(readOnly = true)
-    public Page<MessageDto.HistoryResponse> getHistory(String accessToken, Pageable pageable) {
+    public Page<MessageDto.HistoryResponse> getHistory(String accessToken,
+                                                       String receiverName,
+                                                       String receiverPhone,
+                                                       String content,
+                                                       LocalDate startDate,
+                                                       LocalDate endDate,
+                                                       Pageable pageable) {
         String tenantId = jwtUtil.getTenantId(accessToken);
 
-        return messageHistoryRepository.findByTenantIdOrderByCreatedAtDesc(tenantId, pageable)
+        LocalDateTime startDateTime = startDate != null ? startDate.atStartOfDay() : null;
+        LocalDateTime endDateTime = endDate != null ? endDate.atTime(LocalTime.MAX) : null;
+
+        return messageHistoryRepository.searchByTenantId(
+                        tenantId,
+                        trimOrNull(receiverName),
+                        trimOrNull(receiverPhone),
+                        trimOrNull(content),
+                        startDateTime,
+                        endDateTime,
+                        pageable)
                 .map(h -> MessageDto.HistoryResponse.builder()
                         .id(h.getId())
                         .receiverPhone(h.getReceiverPhone())
@@ -209,6 +228,12 @@ public class MessageService {
                         .sentBy(h.getSentBy())
                         .createdAt(h.getCreatedAt())
                         .build());
+    }
+
+    private String trimOrNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private void saveHistory(String tenantId, String phone, String storeName,
