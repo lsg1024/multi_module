@@ -49,4 +49,26 @@ public class ColorClient {
 
         return data;
     }
+
+    /**
+     * 색상명으로 색상 ID 조회 (마이그레이션용, best-effort)
+     * 조회 실패 시 null 반환
+     */
+    public Long getColorIdByName(String token, String colorName) {
+        Map<String, Object> headers = new HashMap<>();
+        headers.put("Authorization", "Bearer " + token);
+        headers.put("X-Forwarded-For", jwtUtil.getForward(token));
+        headers.put("X-Tenant-ID", jwtUtil.getTenantId(token));
+        headers.put("User-Agent", jwtUtil.getDevice(token));
+
+        try {
+            ResponseEntity<ApiResponse<Long>> response = productFeignClient.getColorIdByName(headers, colorName);
+            if (response.getBody() != null) {
+                return response.getBody().getData();
+            }
+        } catch (Exception e) {
+            // best-effort: 조회 실패 시 null
+        }
+        return null;
+    }
 }

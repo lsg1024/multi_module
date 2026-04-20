@@ -1,6 +1,7 @@
 package com.msa.order.local.order.entity;
 
 import com.github.f4b6a3.tsid.TsidCreator;
+import com.msa.order.global.util.SafeParse;
 import com.msa.order.local.order.dto.StoreDto;
 import com.msa.order.local.order.entity.order_enum.OrderStatus;
 import com.msa.order.local.order.entity.order_enum.ProductStatus;
@@ -130,10 +131,22 @@ public class Orders {
         this.storeId = storeDto.getStoreId();
         this.storeName = storeDto.getStoreName();
         this.storeGrade = storeDto.getGrade();
-        this.storeHarry = new BigDecimal(storeDto.getStoreHarry());
+        this.storeHarry = SafeParse.toBigDecimalOrNull(storeDto.getStoreHarry());
+    }
+
+    public void updateStore(Long storeId, String storeName, String storeGrade, BigDecimal storeHarry) {
+        this.storeId = storeId;
+        this.storeName = storeName;
+        this.storeGrade = storeGrade;
+        this.storeHarry = storeHarry;
     }
 
     public void updateFactory(Long factoryId, String factoryName) {
+        this.factoryId = factoryId;
+        this.factoryName = factoryName;
+    }
+
+    public void updateFactory(Long factoryId, String factoryName, BigDecimal factoryHarry) {
         this.factoryId = factoryId;
         this.factoryName = factoryName;
     }

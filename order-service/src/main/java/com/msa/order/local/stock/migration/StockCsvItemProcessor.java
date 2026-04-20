@@ -43,6 +43,8 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
     private final Map<String, FactoryDto.Response> factoryCache = new HashMap<>();
     /** 상품명 → 카탈로그 스톤 목록 캐시 (product-service 호출 최소화) */
     private final Map<String, List<ProductDetailDto.StoneInfo>> productStoneCache = new HashMap<>();
+    /** 상품명(모델명) → 카탈로그 상품 상세 캐시 (productId/productName 조회용) */
+    private final Map<String, ProductDetailDto> productInfoCache = new HashMap<>();
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
@@ -235,6 +237,11 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
 
     /**
      * ProductSnapshot 엔티티 구성
+     * <p>
+     * product-service에서 모델명(CSV의 "모델" 컬럼)으로 카탈로그 상품을 조회하여
+     * productId/productName을 채워준다. 조회 실패 시 productName 은 모델명으로 fallback
+     * (재고조사 UI에서 "-" 로 보이지 않도록).
+     * productFactoryName 은 레거시 모델명 그대로 보존한다.
      */
     private ProductSnapshot buildProductSnapshot(StockCsvRow row) {
         Integer productLaborCost = parseMoneyField(row.getProductLaborCost());
@@ -243,9 +250,49 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
         BigDecimal goldWeight = parseWeight(row.getGoldWeight());
         BigDecimal stoneWeight = parseWeight(row.getStoneWeight());
 
+        String modelName = row.getModelName();
+        Long productId = null;
+        String productName = null;
+        String classificationName = row.getClassification();
+        Long classificationId = null;
+        String setTypeName = null;
+        Long setTypeId = null;
+
+        if (StringUtils.hasText(modelName)) {
+            ProductDetailDto productInfo = lookupProductInfo(modelName);
+            if (productInfo != null) {
+                productId = productInfo.getProductId();
+                if (StringUtils.hasText(productInfo.getProductName())) {
+                    productName = productInfo.getProductName();
+                }
+                if (productInfo.getClassificationId() != null) {
+                    classificationId = productInfo.getClassificationId();
+                }
+                if (StringUtils.hasText(productInfo.getClassificationName())) {
+                    classificationName = productInfo.getClassificationName();
+                }
+                if (productInfo.getSetTypeId() != null) {
+                    setTypeId = productInfo.getSetTypeId();
+                }
+                if (StringUtils.hasText(productInfo.getSetTypeName())) {
+                    setTypeName = productInfo.getSetTypeName();
+                }
+            }
+        }
+
+        // productName fallback: 카탈로그 조회 실패 시 모델명으로 대체 (null 보다는 모델명 표시)
+        if (!StringUtils.hasText(productName)) {
+            productName = modelName;
+        }
+
         return ProductSnapshot.builder()
-                .productFactoryName(row.getModelName())
-                .classificationName(row.getClassification())
+                .id(productId)
+                .productName(productName)
+                .productFactoryName(modelName)
+                .classificationId(classificationId)
+                .classificationName(classificationName)
+                .setTypeId(setTypeId)
+                .setTypeName(setTypeName)
                 .materialName(row.getMaterial())
                 .colorName(row.getColor())
                 .size(row.getSize())
@@ -255,6 +302,26 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
                 .goldWeight(goldWeight)
                 .stoneWeight(stoneWeight)
                 .build();
+    }
+
+    /**
+     * 모델명으로 product-service의 상품 상세를 조회 (캐싱).
+     * 조회 실패/미존재 시 null.
+     */
+    private ProductDetailDto lookupProductInfo(String modelName) {
+        if (productInfoCache.containsKey(modelName)) {
+            return productInfoCache.get(modelName);
+        }
+
+        try {
+            ProductDetailDto info = productClient.getProductInfoByName(token, modelName);
+            productInfoCache.put(modelName, info);
+            return info;
+        } catch (Exception e) {
+            log.debug("상품 조회 실패: {}", modelName, e);
+            productInfoCache.put(modelName, null);
+            return null;
+        }
     }
 
     /**

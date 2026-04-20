@@ -181,9 +181,22 @@ public class Stock extends BaseTimeEntity {
         this.storeName = storeDto.getStoreName();
     }
 
+    public void updateStore(Long storeId, String storeName, String storeGrade, BigDecimal storeHarry) {
+        this.storeId = storeId;
+        this.storeName = storeName;
+        this.storeGrade = storeGrade;
+        this.storeHarry = storeHarry;
+    }
+
     public void updateFactory(FactoryDto.Response factoryDto) {
         this.factoryId = factoryDto.getFactoryId();
         this.factoryName = factoryDto.getFactoryName();
+    }
+
+    public void updateFactory(Long factoryId, String factoryName, BigDecimal factoryHarry) {
+        this.factoryId = factoryId;
+        this.factoryName = factoryName;
+        this.factoryHarry = factoryHarry;
     }
 
     public void moveToRental(StockDto.StockRentalRequest rentalRequest) {

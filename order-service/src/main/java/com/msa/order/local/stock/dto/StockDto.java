@@ -244,6 +244,12 @@ public class StockDto {
         private List<StoneDto.StoneInfo> stoneInfos;
         private Integer stoneAddLaborCost;
         private Integer totalStonePurchaseCost;
+        private String storeId;
+        private String storeName;
+        private String storeGrade;
+        private String factoryId;
+        private String factoryName;
+        private String factoryHarry;
     }
 
     // 재고값 조회 데이터

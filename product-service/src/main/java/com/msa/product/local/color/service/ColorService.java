@@ -94,4 +94,14 @@ public class ColorService {
     public String getColorName(Long id) {
         return colorRepository.findByColorName(id);
     }
+
+    /**
+     * 색상명으로 색상 ID 조회 (대소문자 무시, 마이그레이션용)
+     */
+    @Transactional(readOnly = true)
+    public Long getColorIdByName(String name) {
+        return colorRepository.findByColorNameIgnoreCase(name)
+                .map(Color::getColorId)
+                .orElse(null);
+    }
 }

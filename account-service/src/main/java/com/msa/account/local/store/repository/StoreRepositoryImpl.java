@@ -105,9 +105,10 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
     }
 
     @Override
-    public CustomPage<StoreDto.StoreResponse> findAllStore(String name, Pageable pageable) {
+    public CustomPage<StoreDto.StoreResponse> findAllStore(String name, String searchField, String sortField, String sortOrder, Pageable pageable) {
 
-        BooleanExpression storeName = name != null ? store.storeName.contains(name) : null;
+        BooleanExpression searchCondition = buildStoreSearchCondition(name, searchField);
+        OrderSpecifier<?>[] orderSpecifiers = specifiers(sortField, sortOrder);
 
         List<StoreDto.StoreResponse> content = query
                 .select(new QStoreDto_StoreResponse(
@@ -131,8 +132,8 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                 .from(store)
                 .leftJoin(store.address, address)
                 .leftJoin(store.commonOption, commonOption)
-                .where(store.storeDeleted.isFalse().and(storeName))
-                .orderBy(store.storeName.desc())
+                .where(store.storeDeleted.isFalse().and(searchCondition))
+                .orderBy(orderSpecifiers)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
@@ -140,9 +141,37 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
         JPAQuery<Long> countQuery = query
                 .select(store.count())
                 .from(store)
-                .where(store.storeDeleted.isFalse().and(storeName));
+                .leftJoin(store.address, address)
+                .leftJoin(store.commonOption, commonOption)
+                .where(store.storeDeleted.isFalse().and(searchCondition));
 
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
+    }
+
+    /**
+     * 검색 필드에 따라 동적으로 BooleanExpression을 구성한다.
+     * searchField 미지정 시 storeName(판매처명) 기본 검색.
+     */
+    private BooleanExpression buildStoreSearchCondition(String name, String searchField) {
+        if (!StringUtils.hasText(name)) {
+            return null;
+        }
+
+        if (!StringUtils.hasText(searchField)) {
+            return store.storeName.contains(name);
+        }
+
+        return switch (searchField) {
+            case "accountName", "storeName" -> store.storeName.contains(name);
+            case "accountOwnerName", "ownerName" -> store.storeOwnerName.contains(name);
+            case "phoneNumber" -> store.storePhoneNumber.contains(name);
+            case "faxNumber" -> store.storeFaxNumber.contains(name);
+            case "businessNumber1" -> store.storeContactNumber1.contains(name);
+            case "businessNumber2" -> store.storeContactNumber2.contains(name);
+            case "note" -> store.storeNote.contains(name);
+            case "grade" -> store.commonOption.optionLevel.stringValue().contains(name);
+            default -> store.storeName.contains(name);
+        };
     }
 
     @Override
@@ -426,11 +455,12 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
             Order direction = "ASC".equalsIgnoreCase(sortType) ? Order.ASC : Order.DESC;
 
             switch (sortField) {
-                case "accountName" -> orderSpecifiers.add(new OrderSpecifier<>(direction, store.storeName));
-                case "accountOwnerName" -> orderSpecifiers.add(new OrderSpecifier<>(direction, store.storeOwnerName));
+                case "accountName", "storeName" -> orderSpecifiers.add(new OrderSpecifier<>(direction, store.storeName));
+                case "accountOwnerName", "ownerName" -> orderSpecifiers.add(new OrderSpecifier<>(direction, store.storeOwnerName));
                 case "grade" -> orderSpecifiers.add(new OrderSpecifier<>(direction, store.commonOption.optionLevel));
                 case "gold" -> orderSpecifiers.add(new OrderSpecifier<>(direction, store.currentGoldBalance));
                 case "money" -> orderSpecifiers.add(new OrderSpecifier<>(direction, store.currentMoneyBalance));
+                case "createDate" -> orderSpecifiers.add(new OrderSpecifier<>(direction, store.createDate));
 
                 default -> {
                     orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, store.storeName));

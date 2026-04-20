@@ -32,10 +32,22 @@ public interface ProductFeignClient {
             @PathVariable("colorId") Long colorId
     );
 
+    @GetMapping("/color/name")
+    ResponseEntity<ApiResponse<Long>> getColorIdByName(
+            @RequestHeader Map<String, Object> headers,
+            @RequestParam("name") String name
+    );
+
     @GetMapping("/material/{materialId}")
     ResponseEntity<ApiResponse<String>> getMaterialInfo(
             @RequestHeader Map<String, Object> headers,
             @PathVariable("materialId") Long materialId
+    );
+
+    @GetMapping("/material/name")
+    ResponseEntity<ApiResponse<Long>> getMaterialIdByName(
+            @RequestHeader Map<String, Object> headers,
+            @RequestParam("name") String name
     );
 
     @GetMapping("/product/name")

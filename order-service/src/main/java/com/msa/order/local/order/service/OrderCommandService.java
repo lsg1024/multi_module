@@ -5,6 +5,7 @@ import com.msa.order.global.dto.OutboxCreatedEvent;
 import com.msa.order.global.dto.StoneDto;
 import com.msa.order.global.kafka.dto.OrderAsyncRequested;
 import com.msa.order.global.kafka.dto.OrderUpdateRequest;
+import com.msa.order.global.util.SafeParse;
 import com.msa.order.local.order.dto.OrderDto;
 import com.msa.order.local.order.entity.OrderProduct;
 import com.msa.order.local.order.entity.OrderStone;
@@ -22,12 +23,14 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import static com.msa.order.global.exception.ExceptionMessage.NOT_ACCESS;
@@ -57,12 +60,12 @@ public class OrderCommandService {
     public Orders createOrder(String tenantId, String accessToken, String orderStatus,
                              OrderDto.Request orderDto, String nickname) {
 
-        Long storeId = Long.valueOf(orderDto.getStoreId());
-        Long factoryId = Long.valueOf(orderDto.getFactoryId());
-        Long productId = Long.valueOf(orderDto.getProductId());
-        Long materialId = Long.valueOf(orderDto.getMaterialId());
-        Long colorId = Long.valueOf(orderDto.getColorId());
-        Long assistantId = Long.valueOf(orderDto.getAssistantStoneId());
+        Long storeId = SafeParse.toLongOrNull(orderDto.getStoreId());
+        Long factoryId = SafeParse.toLongOrNull(orderDto.getFactoryId());
+        Long productId = SafeParse.toLongOrNull(orderDto.getProductId());
+        Long materialId = SafeParse.toLongOrNull(orderDto.getMaterialId());
+        Long colorId = SafeParse.toLongOrNull(orderDto.getColorId());
+        Long assistantId = SafeParse.toLongOrNull(orderDto.getAssistantStoneId());
         boolean assistantStone = orderDto.isAssistantStone();
 
         // priority 추가
@@ -73,11 +76,11 @@ public class OrderCommandService {
         OffsetDateTime shippingAt = StringToOffsetDateTime(orderDto.getShippingAt());
 
         Orders order = Orders.builder()
-                .storeId(Long.parseLong(orderDto.getStoreId()))
+                .storeId(storeId)
                 .storeName(orderDto.getStoreName())
                 .storeGrade(orderDto.getStoreGrade())
-                .storeHarry(new BigDecimal(orderDto.getStoreHarry()))
-                .factoryId(Long.parseLong(orderDto.getFactoryId()))
+                .storeHarry(SafeParse.toBigDecimalOrNull(orderDto.getStoreHarry()))
+                .factoryId(factoryId)
                 .factoryName(orderDto.getFactoryName())
                 .orderNote(orderDto.getOrderNote())
                 .productStatus(ProductStatus.RECEIPT)
@@ -90,10 +93,11 @@ public class OrderCommandService {
         List<Long> stoneIds = new ArrayList<>();
         List<StoneDto.StoneInfo> storeInfos = orderDto.getStoneInfos();
         for (StoneDto.StoneInfo stoneInfo : storeInfos) {
+            Long stoneId = SafeParse.toLongOrNull(stoneInfo.getStoneId());
             OrderStone orderStone = OrderStone.builder()
-                    .originStoneId(Long.valueOf(stoneInfo.getStoneId()))
+                    .originStoneId(stoneId)
                     .originStoneName(stoneInfo.getStoneName())
-                    .originStoneWeight(new BigDecimal(stoneInfo.getStoneWeight()))
+                    .originStoneWeight(SafeParse.toBigDecimalOrNull(stoneInfo.getStoneWeight()))
                     .stonePurchaseCost(stoneInfo.getPurchaseCost())
                     .stoneLaborCost(stoneInfo.getLaborCost())
                     .stoneAddLaborCost(stoneInfo.getAddLaborCost())
@@ -102,7 +106,9 @@ public class OrderCommandService {
                     .includeStone(stoneInfo.isIncludeStone())
                     .build();
 
-            stoneIds.add(Long.valueOf(stoneInfo.getStoneId()));
+            if (stoneId != null) {
+                stoneIds.add(stoneId);
+            }
             order.addOrderStone(orderStone);
         }
 
@@ -112,9 +118,9 @@ public class OrderCommandService {
                 .productName(orderDto.getProductName())
                 .productSize(orderDto.getProductSize())
                 .productFactoryName(orderDto.getProductFactoryName())
-                .classificationId(Long.valueOf(orderDto.getClassificationId()))
+                .classificationId(SafeParse.toLongOrNull(orderDto.getClassificationId()))
                 .classificationName(orderDto.getClassificationName())
-                .setTypeId(Long.valueOf(orderDto.getSetTypeId()))
+                .setTypeId(SafeParse.toLongOrNull(orderDto.getSetTypeId()))
                 .setTypeName(orderDto.getSetTypeName())
                 .colorId(colorId)
                 .colorName(orderDto.getColorName())
@@ -166,14 +172,31 @@ public class OrderCommandService {
         order.updateShippingDate(shippingAt);
         order.addPriority(priority);
 
+        // 거래처(스토어) 및 제조사(팩토리) 업데이트 (변경되었을 경우)
+        if (StringUtils.hasText(orderDto.getStoreId())) {
+            order.updateStore(
+                SafeParse.toLongOrNull(orderDto.getStoreId()),
+                orderDto.getStoreName(),
+                orderDto.getStoreGrade(),
+                SafeParse.toBigDecimalOrNull(orderDto.getStoreHarry())
+            );
+        }
+        if (StringUtils.hasText(orderDto.getFactoryId())) {
+            order.updateFactory(
+                SafeParse.toLongOrNull(orderDto.getFactoryId()),
+                orderDto.getFactoryName(),
+                null
+            );
+        }
+
         // 스톤 값을 업데이트 (기존 그대로,추가,삭제)
         List<OrderStone> orderStones = order.getOrderStones();
         updateOrderStoneInfo(orderDto.getStoneInfos(), order, orderStones);
 
-        Long productId = Long.valueOf(orderDto.getProductId());
+        Long productId = SafeParse.toLongOrNull(orderDto.getProductId());
         OrderProduct orderProduct = order.getOrderProduct();
-        Long newProductId = Long.parseLong(orderDto.getProductId());
-        if (newProductId.equals(productId)) {
+        Long newProductId = SafeParse.toLongOrNull(orderDto.getProductId());
+        if (newProductId != null && newProductId.equals(productId)) {
             orderProduct.updateOrderProductInfo(
                     orderDto.getStoneWeight(),
                     orderDto.getProductPurchaseCost(),
@@ -195,6 +218,21 @@ public class OrderCommandService {
                     orderDto.getProductSize()
             );
         }
+
+        // 상품 속성(재질/색상/분류/세트타입)도 수정 반영
+        // setTypeId/classificationId는 선택 필드이므로 null 허용
+        orderProduct.updateOrderProduct(
+                orderDto.getProductName(),
+                orderDto.getProductFactoryName(),
+                SafeParse.toLongOrNull(orderDto.getMaterialId()),
+                orderDto.getMaterialName(),
+                SafeParse.toLongOrNull(orderDto.getColorId()),
+                orderDto.getColorName(),
+                SafeParse.toLongOrNull(orderDto.getClassificationId()),
+                orderDto.getClassificationName(),
+                SafeParse.toLongOrNull(orderDto.getSetTypeId()),
+                orderDto.getSetTypeName()
+        );
 
         ordersRepository.save(order);
 
@@ -279,12 +317,12 @@ public class OrderCommandService {
                                         String orderStatus, OrderProduct orderProduct,
                                         OrderDto.Request orderDto, String nickname) {
 
-        Long storeId = Long.valueOf(orderDto.getStoreId());
-        Long factoryId = Long.valueOf(orderDto.getFactoryId());
-        Long productId = Long.valueOf(orderDto.getProductId());
-        Long materialId = Long.valueOf(orderDto.getMaterialId());
-        Long colorId = Long.valueOf(orderDto.getColorId());
-        Long assistantId = Long.valueOf(orderDto.getAssistantStoneId());
+        Long storeId = SafeParse.toLongOrNull(orderDto.getStoreId());
+        Long factoryId = SafeParse.toLongOrNull(orderDto.getFactoryId());
+        Long productId = SafeParse.toLongOrNull(orderDto.getProductId());
+        Long materialId = SafeParse.toLongOrNull(orderDto.getMaterialId());
+        Long colorId = SafeParse.toLongOrNull(orderDto.getColorId());
+        Long assistantId = SafeParse.toLongOrNull(orderDto.getAssistantStoneId());
 
         OrderUpdateRequest.OrderUpdateRequestBuilder updateRequestBuilder = OrderUpdateRequest.builder()
                 .eventId(UUID.randomUUID().toString())
@@ -295,28 +333,28 @@ public class OrderCommandService {
                 .nickname(nickname);
 
         // productId 변경 시에만 추가
-        Long newProductId = Long.parseLong(orderDto.getProductId());
-        if (!newProductId.equals(productId)) {
+        Long newProductId = SafeParse.toLongOrNull(orderDto.getProductId());
+        if (newProductId != null && productId != null && !newProductId.equals(productId)) {
             updateRequestBuilder.productId(productId);
         }
 
-        // storeId 변경 확인
-        if (!storeId.equals(order.getStoreId())) {
+        // storeId 변경 확인 (null-safe 비교)
+        if (!Objects.equals(storeId, order.getStoreId())) {
             updateRequestBuilder.storeId(storeId);
         }
 
-        // factoryId 변경 확인
-        if (!factoryId.equals(order.getFactoryId())) {
+        // factoryId 변경 확인 (null-safe 비교)
+        if (!Objects.equals(factoryId, order.getFactoryId())) {
             updateRequestBuilder.factoryId(factoryId);
         }
 
-        // materialId 변경 확인
-        if (!materialId.equals(orderProduct.getMaterialId())) {
+        // materialId 변경 확인 (null-safe 비교)
+        if (!Objects.equals(materialId, orderProduct.getMaterialId())) {
             updateRequestBuilder.materialId(materialId);
         }
 
-        // colorId 변경 확인
-        if (!colorId.equals(orderProduct.getColorId())) {
+        // colorId 변경 확인 (null-safe 비교)
+        if (!Objects.equals(colorId, orderProduct.getColorId())) {
             updateRequestBuilder.colorId(colorId);
         }
 

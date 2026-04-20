@@ -13,6 +13,8 @@ import com.msa.account.local.factory.domain.dto.QFactoryDto_FactoryResponse;
 import com.msa.common.global.util.CustomPage;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Order;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
@@ -21,11 +23,13 @@ import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Pageable;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -75,9 +79,10 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
     }
 
     @Override
-    public CustomPage<FactoryDto.FactoryResponse> findAllFactory(String name, Pageable pageable) {
+    public CustomPage<FactoryDto.FactoryResponse> findAllFactory(String name, String searchField, String sortField, String sortOrder, Pageable pageable) {
 
-        BooleanExpression factoryName = name != null ? factory.factoryName.contains(name) : null;
+        BooleanExpression searchCondition = buildFactorySearchCondition(name, searchField);
+        OrderSpecifier<?>[] orderSpecifiers = factorySpecifiers(sortField, sortOrder);
 
         JPAQuery<FactoryDto.FactoryResponse> jpaQuery = query
                 .select(new QFactoryDto_FactoryResponse(
@@ -102,8 +107,8 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
                 .from(factory)
                 .join(factory.address, address)
                 .join(factory.commonOption, commonOption)
-                .where(factory.factoryDeleted.isFalse().and(factoryName))
-                .orderBy(factory.factoryName.desc());
+                .where(factory.factoryDeleted.isFalse().and(searchCondition))
+                .orderBy(orderSpecifiers);
 
         if (pageable.isPaged()) {
             jpaQuery.offset(pageable.getOffset())
@@ -115,9 +120,61 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
         JPAQuery<Long> countQuery = query
                 .select(factory.count())
                 .from(factory)
-                .where(factory.factoryDeleted.isFalse().and(factoryName));
+                .join(factory.commonOption, commonOption)
+                .where(factory.factoryDeleted.isFalse().and(searchCondition));
 
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
+    }
+
+    /**
+     * 매입처(Factory) 검색 필드에 따라 동적으로 BooleanExpression을 구성한다.
+     * searchField 미지정 시 factoryName(제조사명) 기본 검색.
+     */
+    private BooleanExpression buildFactorySearchCondition(String name, String searchField) {
+        if (!StringUtils.hasText(name)) {
+            return null;
+        }
+
+        if (!StringUtils.hasText(searchField)) {
+            return factory.factoryName.contains(name);
+        }
+
+        return switch (searchField) {
+            case "factoryName", "accountName" -> factory.factoryName.contains(name);
+            case "factoryOwnerName", "ownerName", "accountOwnerName" -> factory.factoryOwnerName.contains(name);
+            case "factoryPhoneNumber", "phoneNumber" -> factory.factoryPhoneNumber.contains(name);
+            case "factoryFaxNumber", "faxNumber" -> factory.factoryFaxNumber.contains(name);
+            case "factoryContactNumber1" -> factory.factoryContactNumber1.contains(name);
+            case "factoryContactNumber2" -> factory.factoryContactNumber2.contains(name);
+            case "factoryNote", "note" -> factory.factoryNote.contains(name);
+            case "grade" -> factory.commonOption.optionLevel.stringValue().contains(name);
+            default -> factory.factoryName.contains(name);
+        };
+    }
+
+    /**
+     * 매입처(Factory) 정렬 조건을 구성한다.
+     */
+    private OrderSpecifier<?>[] factorySpecifiers(String sortField, String sortType) {
+        List<OrderSpecifier<?>> orderSpecifiers = new ArrayList<>();
+
+        if (StringUtils.hasText(sortField)) {
+            Order direction = "ASC".equalsIgnoreCase(sortType) ? Order.ASC : Order.DESC;
+
+            switch (sortField) {
+                case "factoryName", "accountName" -> orderSpecifiers.add(new OrderSpecifier<>(direction, factory.factoryName));
+                case "factoryOwnerName", "ownerName", "accountOwnerName" -> orderSpecifiers.add(new OrderSpecifier<>(direction, factory.factoryOwnerName));
+                case "grade" -> orderSpecifiers.add(new OrderSpecifier<>(direction, factory.commonOption.optionLevel));
+                case "gold" -> orderSpecifiers.add(new OrderSpecifier<>(direction, factory.currentGoldBalance));
+                case "money" -> orderSpecifiers.add(new OrderSpecifier<>(direction, factory.currentMoneyBalance));
+                case "createDate" -> orderSpecifiers.add(new OrderSpecifier<>(direction, factory.createDate));
+                default -> orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, factory.factoryName));
+            }
+        } else {
+            orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, factory.factoryName));
+        }
+
+        return orderSpecifiers.toArray(new OrderSpecifier[0]);
     }
 
     @Override

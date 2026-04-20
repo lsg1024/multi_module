@@ -13,7 +13,7 @@ import java.util.Optional;
 public interface CustomStoreRepository {
 
     Optional<AccountDto.AccountSingleResponse> findByStoreId(Long storeId);
-    CustomPage<StoreDto.StoreResponse> findAllStore(String name, Pageable pageable);
+    CustomPage<StoreDto.StoreResponse> findAllStore(String name, String searchField, String sortField, String sortOrder, Pageable pageable);
 
     CustomPage<AccountDto.AccountResponse> findAllStoreAndReceivable(String name, String field, String sort, Pageable pageable);
     AccountDto.AccountResponse findByStoreIdAndReceivable(Long storeId);

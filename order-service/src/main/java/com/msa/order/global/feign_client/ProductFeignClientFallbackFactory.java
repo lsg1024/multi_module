@@ -90,6 +90,18 @@ public class ProductFeignClientFallbackFactory implements FallbackFactory<Produc
                 log.error("[Fallback] getProductStonesByName Name: {}, Error: {}", productName, cause.getMessage());
                 return resolveError(cause, "제품 스톤 목록 조회 중 오류가 발생했습니다.");
             }
+
+            @Override
+            public ResponseEntity<ApiResponse<Long>> getMaterialIdByName(Map<String, Object> headers, String name) {
+                log.error("[Fallback] getMaterialIdByName Name: {}, Error: {}", name, cause.getMessage());
+                return resolveError(cause, "재질명으로 ID 조회 중 오류가 발생했습니다.");
+            }
+
+            @Override
+            public ResponseEntity<ApiResponse<Long>> getColorIdByName(Map<String, Object> headers, String name) {
+                log.error("[Fallback] getColorIdByName Name: {}, Error: {}", name, cause.getMessage());
+                return resolveError(cause, "색상명으로 ID 조회 중 오류가 발생했습니다.");
+            }
         };
     }
 

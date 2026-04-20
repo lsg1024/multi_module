@@ -422,8 +422,8 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         if (!StringUtils.hasText(searchField)) {
             searchBuilder.and(
                     orderProduct.productName.containsIgnoreCase(searchInput)
-                            .or(orders.storeName.containsIgnoreCase(searchInput))
-                            .or(orders.factoryName.containsIgnoreCase(searchInput))
+                            .or(orders.storeName.eq(searchInput))
+                            .or(orders.factoryName.eq(searchInput))
             );
             return searchBuilder;
         }
@@ -433,16 +433,16 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                     orderProduct.productName.containsIgnoreCase(searchInput)
                             .or(orderProduct.productFactoryName.containsIgnoreCase(searchInput))
             );
-            case "factory" -> searchBuilder.and(orders.factoryName.containsIgnoreCase(searchInput));
-            case "store" -> searchBuilder.and(orders.storeName.containsIgnoreCase(searchInput));
-            case "setType" -> searchBuilder.and(orderProduct.setTypeName.containsIgnoreCase(searchInput));
-            case "classification" -> searchBuilder.and(orderProduct.classificationName.containsIgnoreCase(searchInput));
-            case "material" -> searchBuilder.and(orderProduct.materialName.containsIgnoreCase(searchInput));
-            case "color" -> searchBuilder.and(orderProduct.colorName.containsIgnoreCase(searchInput));
+            case "factory" -> searchBuilder.and(orders.factoryName.eq(searchInput));
+            case "store" -> searchBuilder.and(orders.storeName.eq(searchInput));
+            case "setType" -> searchBuilder.and(orderProduct.setTypeName.eq(searchInput));
+            case "classification" -> searchBuilder.and(orderProduct.classificationName.eq(searchInput));
+            case "material" -> searchBuilder.and(orderProduct.materialName.eq(searchInput));
+            case "color" -> searchBuilder.and(orderProduct.colorName.eq(searchInput));
             default -> searchBuilder.and(
                     orderProduct.productName.containsIgnoreCase(searchInput)
-                            .or(orders.storeName.containsIgnoreCase(searchInput))
-                            .or(orders.factoryName.containsIgnoreCase(searchInput))
+                            .or(orders.storeName.eq(searchInput))
+                            .or(orders.factoryName.eq(searchInput))
             );
         }
 
@@ -454,27 +454,27 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanBuilder booleanOption = new BooleanBuilder();
 
         if (StringUtils.hasText(optionCondition.getStoreName())) {
-            booleanOption.and(orders.storeName.containsIgnoreCase(optionCondition.getStoreName()));
+            booleanOption.and(orders.storeName.eq(optionCondition.getStoreName()));
         }
 
         if (StringUtils.hasText(optionCondition.getFactoryName())) {
-            booleanOption.and(orders.factoryName.containsIgnoreCase(optionCondition.getFactoryName()));
+            booleanOption.and(orders.factoryName.eq(optionCondition.getFactoryName()));
         }
 
         if (StringUtils.hasText(optionCondition.getSetTypeName())) {
-            booleanOption.and(orderProduct.setTypeName.containsIgnoreCase(optionCondition.getSetTypeName()));
+            booleanOption.and(orderProduct.setTypeName.eq(optionCondition.getSetTypeName()));
         }
 
         if (StringUtils.hasText(optionCondition.getColorName())) {
-            booleanOption.and(orderProduct.colorName.containsIgnoreCase(optionCondition.getColorName()));
+            booleanOption.and(orderProduct.colorName.eq(optionCondition.getColorName()));
         }
 
         if (StringUtils.hasText(optionCondition.getClassificationName())) {
-            booleanOption.and(orderProduct.classificationName.containsIgnoreCase(optionCondition.getClassificationName()));
+            booleanOption.and(orderProduct.classificationName.eq(optionCondition.getClassificationName()));
         }
 
         if (StringUtils.hasText(optionCondition.getMaterialName())) {
-            booleanOption.and(orderProduct.materialName.containsIgnoreCase(optionCondition.getMaterialName()));
+            booleanOption.and(orderProduct.materialName.eq(optionCondition.getMaterialName()));
         }
 
         return booleanOption;

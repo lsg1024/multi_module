@@ -76,4 +76,13 @@ public class ColorController {
         String colorName = colorService.getColorName(id);
         return ResponseEntity.ok(ApiResponse.success(colorName));
     }
+
+    /**
+     * 색상명으로 색상 ID 조회 (마이그레이션용, 대소문자 무시)
+     */
+    @GetMapping("/api/color/name")
+    public ResponseEntity<ApiResponse<Long>> getColorIdByName(@RequestParam("name") String name) {
+        Long colorId = colorService.getColorIdByName(name);
+        return ResponseEntity.ok(ApiResponse.success(colorId));
+    }
 }
