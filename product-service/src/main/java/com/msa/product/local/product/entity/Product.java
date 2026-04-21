@@ -121,14 +121,35 @@ public class Product extends BaseEntity {
         }
     }
 
+    /**
+     * Product 정보를 부분 업데이트한다.
+     * null/빈 문자열로 전달된 필드는 기존 DB 값을 유지하여 payload 누락 시 데이터가 유실되지 않도록 한다.
+     */
     public void updateProductInfo(ProductDto.Update productDto, String factoryName) {
-        this.factoryId = productDto.getFactoryId();
-        this.factoryName = factoryName;
-        this.productFactoryName = productDto.getProductFactoryName();
-        this.productName = productDto.getProductName();
-        this.standardWeight = new BigDecimal(productDto.getStandardWeight());
-        this.productRelatedNumber = productDto.getProductRelatedNumber();
-        this.productNote = productDto.getProductNote();
+        if (productDto == null) {
+            return;
+        }
+        if (productDto.getFactoryId() != null) {
+            this.factoryId = productDto.getFactoryId();
+        }
+        if (factoryName != null && !factoryName.isEmpty()) {
+            this.factoryName = factoryName;
+        }
+        if (productDto.getProductFactoryName() != null && !productDto.getProductFactoryName().isEmpty()) {
+            this.productFactoryName = productDto.getProductFactoryName();
+        }
+        if (productDto.getProductName() != null && !productDto.getProductName().isEmpty()) {
+            this.productName = productDto.getProductName();
+        }
+        if (productDto.getStandardWeight() != null && !productDto.getStandardWeight().isEmpty()) {
+            this.standardWeight = new BigDecimal(productDto.getStandardWeight());
+        }
+        if (productDto.getProductRelatedNumber() != null) {
+            this.productRelatedNumber = productDto.getProductRelatedNumber();
+        }
+        if (productDto.getProductNote() != null) {
+            this.productNote = productDto.getProductNote();
+        }
     }
 
 }

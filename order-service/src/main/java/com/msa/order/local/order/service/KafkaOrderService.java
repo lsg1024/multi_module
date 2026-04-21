@@ -135,12 +135,15 @@ public class KafkaOrderService {
             ordersRepository.save(order);
 
         } catch (Exception e) {
+            log.error("주문 비동기 처리 실패. flowCode={}, storeId={}, factoryId={}, productId={}, err={}",
+                    evt.getFlowCode(), evt.getStoreId(), evt.getFactoryId(), evt.getProductId(), e.getMessage(), e);
+
             statusHistory = StatusHistory.phaseChange(
                     order.getFlowCode(),
                     lastHistory.getSourceType(),
                     BusinessPhase.valueOf(lastHistory.getToValue()),
                     BusinessPhase.valueOf(evt.getOrderStatus()),
-                    "재고 등록 실패",
+                    "재고 등록 실패: " + e.getMessage(),
                     evt.getNickname()
             );
             statusHistoryRepository.save(statusHistory);

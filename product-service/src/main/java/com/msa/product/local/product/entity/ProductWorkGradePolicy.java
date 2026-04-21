@@ -23,7 +23,7 @@ public class ProductWorkGradePolicy {
     private WorkGrade grade;
 
     @Column(name = "LABOR_COST")
-    private Integer laborCost;
+    private Integer laborCost = 0;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PRODUCT_WORK_GRADE_POLICY_GROUP_ID")
@@ -33,7 +33,7 @@ public class ProductWorkGradePolicy {
     public ProductWorkGradePolicy(Long productWorkGradePolicyId, String grade, Integer laborCost) {
         this.productWorkGradePolicyId = productWorkGradePolicyId;
         this.grade =  WorkGrade.valueOf(grade);
-        this.laborCost = laborCost;
+        this.laborCost = laborCost != null ? laborCost : 0;
     }
 
     public void setWorkGradePolicyGroup(ProductWorkGradePolicyGroup workGradePolicyGroup) {
@@ -41,6 +41,6 @@ public class ProductWorkGradePolicy {
     }
 
     public void updateWorkGradePolicyDto(ProductWorkGradePolicyDto.Request dto) {
-        this.laborCost = dto.getLaborCost();
+        this.laborCost = dto.getLaborCost() != null ? dto.getLaborCost() : 0;
     }
 }

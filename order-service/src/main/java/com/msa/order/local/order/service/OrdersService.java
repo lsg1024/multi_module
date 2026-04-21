@@ -40,6 +40,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -594,47 +595,66 @@ public class OrdersService {
         List<Orders> orders = ordersRepository.findWithDetailsByFlowCodeIn(flowCodes);
         List<StatusHistory> statusHistories = statusHistoryRepository.findTopByFlowCodeOrderByIdDescIn(flowCodes);
 
+        // findTopByFlowCodeOrderByIdDescIn 쿼리는 실제로 flowCode 당 최신 이력 하나가 아닌
+        // 조건에 매칭되는 모든 이력을 반환한다. 따라서 flowCode 별 최신(id 최대) 이력만 선택하도록
+        // 매핑을 구성해 orders 와의 인덱스 오정렬/IndexOutOfBoundsException 을 방지한다.
+        Map<Long, StatusHistory> latestHistoryByFlowCode = new HashMap<>();
+        for (StatusHistory history : statusHistories) {
+            if (history == null || history.getFlowCode() == null) {
+                continue;
+            }
+            StatusHistory current = latestHistoryByFlowCode.get(history.getFlowCode());
+            if (current == null
+                    || (history.getId() != null
+                        && (current.getId() == null || history.getId() > current.getId()))) {
+                latestHistoryByFlowCode.put(history.getFlowCode(), history);
+            }
+        }
+
         List<StockDto.ResponseDetail> responseDetails = new ArrayList<>();
-        for (int i = 0; i < orders.size(); i++) {
-            Orders order = orders.get(i);
-            StatusHistory statusHistory = statusHistories.get(i);
+        for (Orders order : orders) {
+            StatusHistory statusHistory = latestHistoryByFlowCode.get(order.getFlowCode());
 
             OrderProduct orderProduct = order.getOrderProduct();
             List<OrderStone> orderStones = order.getOrderStones();
             List<StoneDto.StoneInfo> stonesDtos = toStoneDtoList(orderStones);
 
+            String originalProductStatus = (statusHistory != null && statusHistory.getSourceType() != null)
+                    ? statusHistory.getSourceType().getDisplayName()
+                    : null;
+
             StockDto.ResponseDetail orderDetail = StockDto.ResponseDetail.builder()
-                    .createAt(order.getCreateAt().toString())
-                    .flowCode(order.getFlowCode().toString())
-                    .originalProductStatus(statusHistory.getSourceType().getDisplayName())
-                    .storeId(order.getStoreId().toString())
+                    .createAt(order.getCreateAt() != null ? order.getCreateAt().toString() : null)
+                    .flowCode(order.getFlowCode() != null ? order.getFlowCode().toString() : null)
+                    .originalProductStatus(originalProductStatus)
+                    .storeId(order.getStoreId() != null ? order.getStoreId().toString() : null)
                     .storeName(order.getStoreName())
                     .storeHarry(order.getStoreHarry() != null ? order.getStoreHarry().toPlainString() : null)
                     .storeGrade(order.getStoreGrade())
                     .factoryId(order.getFactoryId() != null ? order.getFactoryId().toString() : null)
                     .factoryName(order.getFactoryName())
-                    .productId(orderProduct.getProductId() != null ? orderProduct.getProductId().toString() : null)
-                    .productName(orderProduct.getProductName())
-                    .productSize(orderProduct.getProductSize())
-                    .colorId(String.valueOf(orderProduct.getColorId()))
-                    .colorName(orderProduct.getColorName())
-                    .materialId(String.valueOf(orderProduct.getMaterialId()))
-                    .materialName(orderProduct.getMaterialName())
+                    .productId(orderProduct != null && orderProduct.getProductId() != null ? orderProduct.getProductId().toString() : null)
+                    .productName(orderProduct != null ? orderProduct.getProductName() : null)
+                    .productSize(orderProduct != null ? orderProduct.getProductSize() : null)
+                    .colorId(orderProduct != null && orderProduct.getColorId() != null ? String.valueOf(orderProduct.getColorId()) : null)
+                    .colorName(orderProduct != null ? orderProduct.getColorName() : null)
+                    .materialId(orderProduct != null && orderProduct.getMaterialId() != null ? String.valueOf(orderProduct.getMaterialId()) : null)
+                    .materialName(orderProduct != null ? orderProduct.getMaterialName() : null)
                     .note(order.getOrderNote())
-                    .isProductWeightSale(order.getOrderProduct().isProductWeightSale())
-                    .productPurchaseCost(orderProduct.getProductPurchaseCost())
-                    .productLaborCost(orderProduct.getProductLaborCost())
-                    .productAddLaborCost(orderProduct.getProductAddLaborCost())
-                    .goldWeight(String.valueOf(orderProduct.getGoldWeight()))
-                    .stoneWeight(String.valueOf(orderProduct.getStoneWeight()))
-                    .mainStoneNote(orderProduct.getOrderMainStoneNote())
-                    .assistanceStoneNote(orderProduct.getOrderAssistanceStoneNote())
-                    .assistantStone(orderProduct.isAssistantStone())
-                    .assistantStoneId(String.valueOf(orderProduct.getAssistantStoneId()))
-                    .assistantStoneName(orderProduct.getAssistantStoneName())
-                    .assistantStoneCreateAt(orderProduct.getAssistantStoneCreateAt())
+                    .isProductWeightSale(orderProduct != null && orderProduct.isProductWeightSale())
+                    .productPurchaseCost(orderProduct != null ? orderProduct.getProductPurchaseCost() : null)
+                    .productLaborCost(orderProduct != null ? orderProduct.getProductLaborCost() : null)
+                    .productAddLaborCost(orderProduct != null ? orderProduct.getProductAddLaborCost() : null)
+                    .goldWeight(orderProduct != null && orderProduct.getGoldWeight() != null ? orderProduct.getGoldWeight().toPlainString() : null)
+                    .stoneWeight(orderProduct != null && orderProduct.getStoneWeight() != null ? orderProduct.getStoneWeight().toPlainString() : null)
+                    .mainStoneNote(orderProduct != null ? orderProduct.getOrderMainStoneNote() : null)
+                    .assistanceStoneNote(orderProduct != null ? orderProduct.getOrderAssistanceStoneNote() : null)
+                    .assistantStone(orderProduct != null && orderProduct.isAssistantStone())
+                    .assistantStoneId(orderProduct != null && orderProduct.getAssistantStoneId() != null ? String.valueOf(orderProduct.getAssistantStoneId()) : null)
+                    .assistantStoneName(orderProduct != null ? orderProduct.getAssistantStoneName() : null)
+                    .assistantStoneCreateAt(orderProduct != null ? orderProduct.getAssistantStoneCreateAt() : null)
                     .stoneInfos(stonesDtos)
-                    .stoneAddLaborCost(order.getOrderProduct().getStoneAddLaborCost())
+                    .stoneAddLaborCost(orderProduct != null ? orderProduct.getStoneAddLaborCost() : null)
                     .build();
 
             responseDetails.add(orderDetail);

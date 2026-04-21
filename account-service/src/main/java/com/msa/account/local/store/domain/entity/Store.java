@@ -102,14 +102,35 @@ public class Store extends BaseEntity {
         this.additionalOption = additionalOption;
     }
 
+    /**
+     * 매장 정보를 부분 업데이트한다.
+     * null/빈 문자열로 전달된 필드는 기존 DB 값을 유지한다 (payload 누락 시 데이터 유실 방지).
+     */
     public void updateStoreInfo(AccountDto.AccountInfo updateInfo) {
-        this.storeName = updateInfo.getAccountName();
-        this.storeOwnerName = updateInfo.getAccountOwnerName();
-        this.storePhoneNumber = updateInfo.getAccountPhoneNumber();
-        this.storeContactNumber1 = updateInfo.getAccountContactNumber1();
-        this.storeContactNumber2 = updateInfo.getAccountContactNumber2();
-        this.storeFaxNumber = updateInfo.getAccountFaxNumber();
-        this.storeNote = updateInfo.getAccountNote();
+        if (updateInfo == null) {
+            return;
+        }
+        if (updateInfo.getAccountName() != null && !updateInfo.getAccountName().isEmpty()) {
+            this.storeName = updateInfo.getAccountName();
+        }
+        if (updateInfo.getAccountOwnerName() != null) {
+            this.storeOwnerName = updateInfo.getAccountOwnerName();
+        }
+        if (updateInfo.getAccountPhoneNumber() != null) {
+            this.storePhoneNumber = updateInfo.getAccountPhoneNumber();
+        }
+        if (updateInfo.getAccountContactNumber1() != null) {
+            this.storeContactNumber1 = updateInfo.getAccountContactNumber1();
+        }
+        if (updateInfo.getAccountContactNumber2() != null) {
+            this.storeContactNumber2 = updateInfo.getAccountContactNumber2();
+        }
+        if (updateInfo.getAccountFaxNumber() != null) {
+            this.storeFaxNumber = updateInfo.getAccountFaxNumber();
+        }
+        if (updateInfo.getAccountNote() != null) {
+            this.storeNote = updateInfo.getAccountNote();
+        }
     }
 
     public void updateCommonOption(CommonOptionDto.CommonOptionInfo optionInfo, GoldHarry goldHarry) {

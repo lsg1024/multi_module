@@ -33,10 +33,22 @@ public class AdditionalOption {
         this.optionMaterialName = optionMaterialName;
     }
 
-    //optionMaterialId 매핑 수정
+    /**
+     * 부가 옵션을 부분 업데이트한다.
+     * optionMaterialId / optionMaterialName 이 null 이면 기존 값 유지
+     * (payload 누락 시 DB 값이 null 로 덮어써지는 현상 방지).
+     * boolean 필드는 원시 타입이므로 항상 갱신된다.
+     */
     public void update(AdditionalOptionDto.AdditionalOptionInfo info) {
+        if (info == null) {
+            return;
+        }
         this.optionApplyPastSales = info.isAdditionalApplyPastSales();
-        this.optionMaterialId = info.getAdditionalMaterialId();
-        this.optionMaterialName = info.getAdditionalMaterialName();
+        if (info.getAdditionalMaterialId() != null) {
+            this.optionMaterialId = info.getAdditionalMaterialId();
+        }
+        if (info.getAdditionalMaterialName() != null) {
+            this.optionMaterialName = info.getAdditionalMaterialName();
+        }
     }
 }

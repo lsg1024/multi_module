@@ -177,26 +177,59 @@ public class Stock extends BaseTimeEntity {
     }
 
     public void updateStore(StoreDto.Response storeDto) {
-        this.storeId = storeDto.getStoreId();
-        this.storeName = storeDto.getStoreName();
+        if (storeDto == null) {
+            return;
+        }
+        if (storeDto.getStoreId() != null) {
+            this.storeId = storeDto.getStoreId();
+        }
+        if (storeDto.getStoreName() != null && !storeDto.getStoreName().isEmpty()) {
+            this.storeName = storeDto.getStoreName();
+        }
     }
 
+    /**
+     * 거래처 정보 부분 업데이트. null/빈 값이면 기존 값 유지.
+     * payload 에서 이름 필드가 누락되어도 DB 가 null 로 덮어써지는 사고를 방지.
+     */
     public void updateStore(Long storeId, String storeName, String storeGrade, BigDecimal storeHarry) {
-        this.storeId = storeId;
-        this.storeName = storeName;
-        this.storeGrade = storeGrade;
-        this.storeHarry = storeHarry;
+        if (storeId != null) {
+            this.storeId = storeId;
+        }
+        if (storeName != null && !storeName.isEmpty()) {
+            this.storeName = storeName;
+        }
+        if (storeGrade != null && !storeGrade.isEmpty()) {
+            this.storeGrade = storeGrade;
+        }
+        if (storeHarry != null) {
+            this.storeHarry = storeHarry;
+        }
     }
 
     public void updateFactory(FactoryDto.Response factoryDto) {
-        this.factoryId = factoryDto.getFactoryId();
-        this.factoryName = factoryDto.getFactoryName();
+        if (factoryDto == null) {
+            return;
+        }
+        if (factoryDto.getFactoryId() != null) {
+            this.factoryId = factoryDto.getFactoryId();
+        }
+        if (factoryDto.getFactoryName() != null && !factoryDto.getFactoryName().isEmpty()) {
+            this.factoryName = factoryDto.getFactoryName();
+        }
     }
 
+    /** 제조사 정보 부분 업데이트. null/빈 값이면 기존 값 유지. */
     public void updateFactory(Long factoryId, String factoryName, BigDecimal factoryHarry) {
-        this.factoryId = factoryId;
-        this.factoryName = factoryName;
-        this.factoryHarry = factoryHarry;
+        if (factoryId != null) {
+            this.factoryId = factoryId;
+        }
+        if (factoryName != null && !factoryName.isEmpty()) {
+            this.factoryName = factoryName;
+        }
+        if (factoryHarry != null) {
+            this.factoryHarry = factoryHarry;
+        }
     }
 
     public void moveToRental(StockDto.StockRentalRequest rentalRequest) {
@@ -228,10 +261,20 @@ public class Stock extends BaseTimeEntity {
         this.orderStatus = orderStatus;
     }
 
+    /**
+     * 재고 메모 부분 업데이트. null 이면 기존 값 유지.
+     * 빈 문자열("")은 사용자가 의도적으로 비웠을 수 있으므로 허용.
+     */
     public void updateStockNote(String stockMainStoneNote, String stockAssistanceStoneNote, String stockNote) {
-        this.stockMainStoneNote = stockMainStoneNote;
-        this.stockAssistanceStoneNote = stockAssistanceStoneNote;
-        this.stockNote = stockNote;
+        if (stockMainStoneNote != null) {
+            this.stockMainStoneNote = stockMainStoneNote;
+        }
+        if (stockAssistanceStoneNote != null) {
+            this.stockAssistanceStoneNote = stockAssistanceStoneNote;
+        }
+        if (stockNote != null) {
+            this.stockNote = stockNote;
+        }
     }
 
     @PrePersist

@@ -27,8 +27,8 @@ public class ProductDetailDto {
         this.classificationName = classificationName;
         this.setTypeId = setTypeId;
         this.setTypeName = setTypeName;
-        this.purchaseCost = purchaseCost;
-        this.laborCost = laborCost;
+        this.purchaseCost = purchaseCost != null ? purchaseCost : 0;
+        this.laborCost = laborCost != null ? laborCost : 0;
     }
 
     @Getter

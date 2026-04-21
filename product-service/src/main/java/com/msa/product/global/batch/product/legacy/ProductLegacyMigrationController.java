@@ -63,7 +63,7 @@ public class ProductLegacyMigrationController {
     public ResponseEntity<ApiResponse<String>> migrateProducts(
             @AccessToken String accessToken,
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "encoding", defaultValue = "CP949") String encoding) {
+            @RequestParam(value = "encoding", defaultValue = "UTF-8") String encoding) {
 
         try {
             failureCollector.clear();
@@ -169,7 +169,7 @@ public class ProductLegacyMigrationController {
     public ResponseEntity<ApiResponse<String>> migrateProductStones(
             @AccessToken String accessToken,
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "encoding", defaultValue = "CP949") String encoding) {
+            @RequestParam(value = "encoding", defaultValue = "UTF-8") String encoding) {
 
         try {
             stoneFailureCollector.clear();
