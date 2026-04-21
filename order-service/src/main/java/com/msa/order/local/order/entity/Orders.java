@@ -128,33 +128,79 @@ public class Orders {
     }
 
     public void updateStore(StoreDto.Response storeDto) {
-        this.storeId = storeDto.getStoreId();
-        this.storeName = storeDto.getStoreName();
-        this.storeGrade = storeDto.getGrade();
-        this.storeHarry = SafeParse.toBigDecimalOrNull(storeDto.getStoreHarry());
+        if (storeDto == null) {
+            return;
+        }
+        if (storeDto.getStoreId() != null) {
+            this.storeId = storeDto.getStoreId();
+        }
+        if (storeDto.getStoreName() != null && !storeDto.getStoreName().isEmpty()) {
+            this.storeName = storeDto.getStoreName();
+        }
+        if (storeDto.getGrade() != null && !storeDto.getGrade().isEmpty()) {
+            this.storeGrade = storeDto.getGrade();
+        }
+        BigDecimal harry = SafeParse.toBigDecimalOrNull(storeDto.getStoreHarry());
+        if (harry != null) {
+            this.storeHarry = harry;
+        }
     }
 
+    /**
+     * 거래처 정보를 부분 업데이트한다. 각 파라미터가 null/빈 값이면 기존 값을 유지한다.
+     * 클라이언트가 name/grade 를 payload 에서 누락했을 때 DB 값이 null 로 덮어써지는 사고를 방지.
+     */
     public void updateStore(Long storeId, String storeName, String storeGrade, BigDecimal storeHarry) {
-        this.storeId = storeId;
-        this.storeName = storeName;
-        this.storeGrade = storeGrade;
-        this.storeHarry = storeHarry;
+        if (storeId != null) {
+            this.storeId = storeId;
+        }
+        if (storeName != null && !storeName.isEmpty()) {
+            this.storeName = storeName;
+        }
+        if (storeGrade != null && !storeGrade.isEmpty()) {
+            this.storeGrade = storeGrade;
+        }
+        if (storeHarry != null) {
+            this.storeHarry = storeHarry;
+        }
     }
 
     public void updateFactory(Long factoryId, String factoryName) {
-        this.factoryId = factoryId;
-        this.factoryName = factoryName;
+        if (factoryId != null) {
+            this.factoryId = factoryId;
+        }
+        if (factoryName != null && !factoryName.isEmpty()) {
+            this.factoryName = factoryName;
+        }
     }
 
     public void updateFactory(Long factoryId, String factoryName, BigDecimal factoryHarry) {
-        this.factoryId = factoryId;
-        this.factoryName = factoryName;
+        // factoryHarry 파라미터는 Orders 엔티티에 저장 필드가 없어 무시됨.
+        // (storeHarry 와 달리 Orders.factoryHarry 는 존재하지 않음 — 필요 시 컬럼 추가 후 반영)
+        if (factoryId != null) {
+            this.factoryId = factoryId;
+        }
+        if (factoryName != null && !factoryName.isEmpty()) {
+            this.factoryName = factoryName;
+        }
     }
 
-    public void updateOrderNote(String orderNote) {this.orderNote = orderNote;}
-    public void updateCreateDate(OffsetDateTime createAt) {this.createAt = createAt;}
+    public void updateOrderNote(String orderNote) {
+        if (orderNote != null) {
+            this.orderNote = orderNote;
+        }
+    }
+
+    public void updateCreateDate(OffsetDateTime createAt) {
+        if (createAt != null) {
+            this.createAt = createAt;
+        }
+    }
+
     public void updateShippingDate(OffsetDateTime shippingAt) {
-        this.shippingAt = shippingAt;
+        if (shippingAt != null) {
+            this.shippingAt = shippingAt;
+        }
     }
 
     public void deletedOrder(OffsetDateTime orderExpectDate) {

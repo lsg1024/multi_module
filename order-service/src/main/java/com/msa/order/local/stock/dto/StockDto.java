@@ -262,6 +262,7 @@ public class StockDto {
         private String originStatus;
         private String currentStatus;
         private String storeName;
+        private String factoryName;
         private String productId;
         private String productName;
         private String productFactoryName;
@@ -296,13 +297,14 @@ public class StockDto {
         }
 
         @QueryProjection
-        public Response(String flowCode, String createAt, String shippingAt, String originStatus, String currentStatus, String storeName, String productId, String productName, String productFactoryName, String productSize, String stockNote, String materialName, String classificationName, String colorName, Integer productLaborCost, Integer productAddLaborCost, String assistantStoneName, boolean assistantStone, Integer mainStoneLaborCost, Integer assistanceStoneLaborCost, Integer stoneAddLaborCost, String mainStoneNote, String assistanceStoneNote, Integer mainStoneQuantity, Integer assistanceStoneQuantity, String stoneWeight, String goldWeight, Integer productPurchaseCost, Integer stonePurchaseCost) {
+        public Response(String flowCode, String createAt, String shippingAt, String originStatus, String currentStatus, String storeName, String factoryName, String productId, String productName, String productFactoryName, String productSize, String stockNote, String materialName, String classificationName, String colorName, Integer productLaborCost, Integer productAddLaborCost, String assistantStoneName, boolean assistantStone, Integer mainStoneLaborCost, Integer assistanceStoneLaborCost, Integer stoneAddLaborCost, String mainStoneNote, String assistanceStoneNote, Integer mainStoneQuantity, Integer assistanceStoneQuantity, String stoneWeight, String goldWeight, Integer productPurchaseCost, Integer stonePurchaseCost) {
             this.flowCode = flowCode;
             this.createAt = createAt;
             this.shippingAt = shippingAt;
             this.originStatus = originStatus;
             this.currentStatus = currentStatus;
             this.storeName = storeName;
+            this.factoryName = factoryName;
             this.productId = productId;
             this.productName = productName;
             this.productFactoryName = productFactoryName;

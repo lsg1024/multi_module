@@ -45,10 +45,10 @@ public class StockMigrationController {
     public ResponseEntity<?> migrateStocks(
             @AccessToken String accessToken,
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "encoding", defaultValue = "CP949") String encoding) {
+            @RequestParam(value = "encoding", defaultValue = "UTF-8") String encoding) {
 
         try {
-            // 1. CSV → UTF-8 변환 후 임시 파일 저장 (기본: CP949, UTF-8 지정 가능)
+            // 1. CSV → UTF-8 변환 후 임시 파일 저장 (기본: UTF-8, CP949 지정 가능)
             Path tempPath = convertToUtf8(file, Charset.forName(encoding));
 
             // 2. 실패 수집기 초기화

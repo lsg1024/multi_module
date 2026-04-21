@@ -28,7 +28,7 @@ public class ProductWorkGradePolicyDto {
         public Response(String workGradePolicyId, String grade, Integer laborCost, Long groupId) {
             this.workGradePolicyId = workGradePolicyId;
             this.grade = grade;
-            this.laborCost = laborCost;
+            this.laborCost = laborCost != null ? laborCost : 0;
             this.groupId = groupId;
         }
     }

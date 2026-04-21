@@ -74,14 +74,35 @@ public class Factory extends BaseEntity {
         this.address = address;
         this.commonOption = commonOption;
     }
+    /**
+     * 제조처 정보를 부분 업데이트한다.
+     * null/빈 문자열로 전달된 필드는 기존 DB 값을 유지한다 (payload 누락 시 데이터 유실 방지).
+     */
     public void updateFactoryInfo(AccountDto.AccountInfo factoryInfo) {
-        this.factoryName = factoryInfo.getAccountName();
-        this.factoryOwnerName = factoryInfo.getAccountOwnerName();
-        this.factoryPhoneNumber = factoryInfo.getAccountPhoneNumber();
-        this.factoryContactNumber1 = factoryInfo.getAccountContactNumber1();
-        this.factoryContactNumber2 = factoryInfo.getAccountContactNumber2();
-        this.factoryFaxNumber = factoryInfo.getAccountFaxNumber();
-        this.factoryNote = factoryInfo.getAccountNote();
+        if (factoryInfo == null) {
+            return;
+        }
+        if (factoryInfo.getAccountName() != null && !factoryInfo.getAccountName().isEmpty()) {
+            this.factoryName = factoryInfo.getAccountName();
+        }
+        if (factoryInfo.getAccountOwnerName() != null) {
+            this.factoryOwnerName = factoryInfo.getAccountOwnerName();
+        }
+        if (factoryInfo.getAccountPhoneNumber() != null) {
+            this.factoryPhoneNumber = factoryInfo.getAccountPhoneNumber();
+        }
+        if (factoryInfo.getAccountContactNumber1() != null) {
+            this.factoryContactNumber1 = factoryInfo.getAccountContactNumber1();
+        }
+        if (factoryInfo.getAccountContactNumber2() != null) {
+            this.factoryContactNumber2 = factoryInfo.getAccountContactNumber2();
+        }
+        if (factoryInfo.getAccountFaxNumber() != null) {
+            this.factoryFaxNumber = factoryInfo.getAccountFaxNumber();
+        }
+        if (factoryInfo.getAccountNote() != null) {
+            this.factoryNote = factoryInfo.getAccountNote();
+        }
     }
     public void updateAddressInfo(AddressDto.AddressInfo addressInfo) {
         if (addressInfo == null) {

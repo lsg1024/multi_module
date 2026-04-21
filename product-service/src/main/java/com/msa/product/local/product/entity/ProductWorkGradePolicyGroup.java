@@ -21,7 +21,7 @@ public class ProductWorkGradePolicyGroup {
     private Long productWorkGradePolicyGroupId;
 
     @Column(name = "PRODUCT_PURCHASE_PRICE")
-    private Integer productPurchasePrice;
+    private Integer productPurchasePrice = 0;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PRODUCT_ID")
@@ -43,7 +43,7 @@ public class ProductWorkGradePolicyGroup {
     @Builder
     public ProductWorkGradePolicyGroup(Long productWorkGradePolicyGroupId, Integer productPurchasePrice, Product product, Color color, boolean productWorkGradePolicyGroupDefault, List<ProductWorkGradePolicy> gradePolicies, String note) {
         this.productWorkGradePolicyGroupId = productWorkGradePolicyGroupId;
-        this.productPurchasePrice = productPurchasePrice;
+        this.productPurchasePrice = productPurchasePrice != null ? productPurchasePrice : 0;
         this.product = product;
         this.color = color;
         this.productWorkGradePolicyGroupDefault = productWorkGradePolicyGroupDefault;
@@ -62,7 +62,7 @@ public class ProductWorkGradePolicyGroup {
         this.color = color;
     }
     public void updateProductPurchasePrice(Integer productPurchasePrice, String note) {
-        this.productPurchasePrice = productPurchasePrice;
+        this.productPurchasePrice = productPurchasePrice != null ? productPurchasePrice : 0;
         this.note = note;
     }
 }

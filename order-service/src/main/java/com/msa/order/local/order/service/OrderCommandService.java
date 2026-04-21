@@ -193,10 +193,13 @@ public class OrderCommandService {
         List<OrderStone> orderStones = order.getOrderStones();
         updateOrderStoneInfo(orderDto.getStoneInfos(), order, orderStones);
 
-        Long productId = SafeParse.toLongOrNull(orderDto.getProductId());
+        // 변경 감지: DB 의 현재 productId 와 payload 의 신규 productId 를 비교한다.
+        // (이전 구현은 동일 orderDto.getProductId() 를 두 번 파싱해 비교가 항상 true 였음 — 버그)
         OrderProduct orderProduct = order.getOrderProduct();
+        Long currentProductId = orderProduct.getProductId();
         Long newProductId = SafeParse.toLongOrNull(orderDto.getProductId());
-        if (newProductId != null && newProductId.equals(productId)) {
+        if (newProductId == null || Objects.equals(newProductId, currentProductId)) {
+            // productId 가 변하지 않았으므로 상세값만 갱신
             orderProduct.updateOrderProductInfo(
                     orderDto.getStoneWeight(),
                     orderDto.getProductPurchaseCost(),
@@ -207,8 +210,9 @@ public class OrderCommandService {
                     orderDto.getProductSize()
             );
         } else {
+            // productId 가 변경되었으므로 함께 갱신
             orderProduct.updateOrderProductInfo(
-                    productId,
+                    newProductId,
                     orderDto.getStoneWeight(),
                     orderDto.getProductPurchaseCost(),
                     orderDto.getProductLaborCost(),

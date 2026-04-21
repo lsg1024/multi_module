@@ -85,6 +85,7 @@ public class StockRepositoryImpl implements CustomStockRepository {
                         statusHistory.sourceType.stringValue(),
                         stock.orderStatus.stringValue(),
                         stock.storeName,
+                        stock.factoryName,
                         stock.product.id.stringValue(),
                         stock.product.productName,
                         stock.product.productFactoryName,
@@ -186,6 +187,7 @@ public class StockRepositoryImpl implements CustomStockRepository {
                         statusHistory.sourceType.stringValue(),
                         stock.orderStatus.stringValue(),
                         stock.storeName,
+                        stock.factoryName,
                         stock.product.id.stringValue(),
                         stock.product.productName,
                         stock.product.productFactoryName,
@@ -376,6 +378,15 @@ public class StockRepositoryImpl implements CustomStockRepository {
         );
     }
 
+    /**
+     * 재고 검색 조건 빌더.
+     *
+     * 정책:
+     *   - 검색 필터 미선택(기본값, {@code searchField} 가 비어있음) → 모든 대상 필드에 대해
+     *     부분 일치({@code containsIgnoreCase}) LIKE 검색을 수행한다. (원활한 검색)
+     *   - 검색 필터 선택됨 → 해당 필드에 대해 정확히 일치({@code eq}) 검색만 수행한다.
+     *     (modelNumber 는 productName / productFactoryName 둘 중 하나가 정확히 일치해야 함)
+     */
     @NotNull
     private static BooleanBuilder getSearchBuilder(OrderDto.InputCondition inputCondition) {
         BooleanBuilder searchBuilder = new BooleanBuilder();
@@ -388,18 +399,21 @@ public class StockRepositoryImpl implements CustomStockRepository {
         }
 
         if (!StringUtils.hasText(searchField)) {
+            // 기본값(전체): 모든 주요 필드에 대해 LIKE (부분 일치, 대소문자 무시)
             searchBuilder.and(
                     stock.product.productName.containsIgnoreCase(searchInput)
-                            .or(stock.storeName.eq(searchInput))
-                            .or(stock.factoryName.eq(searchInput))
+                            .or(stock.product.productFactoryName.containsIgnoreCase(searchInput))
+                            .or(stock.storeName.containsIgnoreCase(searchInput))
+                            .or(stock.factoryName.containsIgnoreCase(searchInput))
             );
             return searchBuilder;
         }
 
+        // 필터 선택 시: 해당 필드에 대해 정확히 일치(eq)
         switch (searchField) {
             case "modelNumber" -> searchBuilder.and(
-                    stock.product.productName.containsIgnoreCase(searchInput)
-                            .or(stock.product.productFactoryName.containsIgnoreCase(searchInput))
+                    stock.product.productName.eq(searchInput)
+                            .or(stock.product.productFactoryName.eq(searchInput))
             );
             case "factory" -> searchBuilder.and(stock.factoryName.eq(searchInput));
             case "store" -> searchBuilder.and(stock.storeName.eq(searchInput));
@@ -409,8 +423,9 @@ public class StockRepositoryImpl implements CustomStockRepository {
             case "color" -> searchBuilder.and(stock.product.colorName.eq(searchInput));
             default -> searchBuilder.and(
                     stock.product.productName.containsIgnoreCase(searchInput)
-                            .or(stock.storeName.eq(searchInput))
-                            .or(stock.factoryName.eq(searchInput))
+                            .or(stock.product.productFactoryName.containsIgnoreCase(searchInput))
+                            .or(stock.storeName.containsIgnoreCase(searchInput))
+                            .or(stock.factoryName.containsIgnoreCase(searchInput))
             );
         }
 

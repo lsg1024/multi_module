@@ -408,6 +408,15 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
     }
 
+    /**
+     * 주문 검색 조건 빌더.
+     *
+     * 정책:
+     *   - 검색 필터 미선택(기본값, {@code searchField} 가 비어있음) → 모든 대상 필드에 대해
+     *     부분 일치({@code containsIgnoreCase}) LIKE 검색을 수행한다. (원활한 검색)
+     *   - 검색 필터 선택됨 → 해당 필드에 대해 정확히 일치({@code eq}) 검색만 수행한다.
+     *     (modelNumber 는 productName / productFactoryName 둘 중 하나가 정확히 일치해야 함)
+     */
     @NotNull
     private static BooleanBuilder getSearchBuilder(OrderDto.InputCondition orderCondition) {
         BooleanBuilder searchBuilder = new BooleanBuilder();
@@ -420,18 +429,21 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         }
 
         if (!StringUtils.hasText(searchField)) {
+            // 기본값(전체): 모든 주요 필드에 대해 LIKE (부분 일치, 대소문자 무시)
             searchBuilder.and(
                     orderProduct.productName.containsIgnoreCase(searchInput)
-                            .or(orders.storeName.eq(searchInput))
-                            .or(orders.factoryName.eq(searchInput))
+                            .or(orderProduct.productFactoryName.containsIgnoreCase(searchInput))
+                            .or(orders.storeName.containsIgnoreCase(searchInput))
+                            .or(orders.factoryName.containsIgnoreCase(searchInput))
             );
             return searchBuilder;
         }
 
+        // 필터 선택 시: 해당 필드에 대해 정확히 일치(eq)
         switch (searchField) {
             case "modelNumber" -> searchBuilder.and(
-                    orderProduct.productName.containsIgnoreCase(searchInput)
-                            .or(orderProduct.productFactoryName.containsIgnoreCase(searchInput))
+                    orderProduct.productName.eq(searchInput)
+                            .or(orderProduct.productFactoryName.eq(searchInput))
             );
             case "factory" -> searchBuilder.and(orders.factoryName.eq(searchInput));
             case "store" -> searchBuilder.and(orders.storeName.eq(searchInput));
@@ -441,8 +453,9 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
             case "color" -> searchBuilder.and(orderProduct.colorName.eq(searchInput));
             default -> searchBuilder.and(
                     orderProduct.productName.containsIgnoreCase(searchInput)
-                            .or(orders.storeName.eq(searchInput))
-                            .or(orders.factoryName.eq(searchInput))
+                            .or(orderProduct.productFactoryName.containsIgnoreCase(searchInput))
+                            .or(orders.storeName.containsIgnoreCase(searchInput))
+                            .or(orders.factoryName.containsIgnoreCase(searchInput))
             );
         }
 

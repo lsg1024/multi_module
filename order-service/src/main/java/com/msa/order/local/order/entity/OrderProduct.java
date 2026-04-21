@@ -107,17 +107,45 @@ public class OrderProduct {
         this.order = order;
     }
 
+    /**
+     * 주문 상품의 속성(이름/재질/색/분류/세트타입 등)을 부분 업데이트한다.
+     * <p>
+     * 각 파라미터가 {@code null} 이면 기존 값을 유지한다.
+     * 빈 문자열("")도 덮어쓰지 않는다 — 클라이언트가 이름 필드를 payload 에서 누락했을 때
+     * 기존 productName 이 공백으로 초기화되는 사고를 막기 위함.
+     * 명시적으로 값을 지우고 싶으면 별도 전용 메서드를 추가할 것.
+     */
     public void updateOrderProduct(String productName, String productFactoryName, Long materialId, String materialName, Long colorId, String colorName, Long classificationId, String classificationName, Long setTypeId, String setTypeName) {
-        this.productName = productName;
-        this.productFactoryName = productFactoryName;
-        this.materialId = materialId;
-        this.materialName = materialName;
-        this.colorId = colorId;
-        this.colorName = colorName;
-        this.classificationId = classificationId;
-        this.classificationName = classificationName;
-        this.setTypeId = setTypeId;
-        this.setTypeName = setTypeName;
+        if (productName != null && !productName.isEmpty()) {
+            this.productName = productName;
+        }
+        if (productFactoryName != null && !productFactoryName.isEmpty()) {
+            this.productFactoryName = productFactoryName;
+        }
+        if (materialId != null) {
+            this.materialId = materialId;
+        }
+        if (materialName != null && !materialName.isEmpty()) {
+            this.materialName = materialName;
+        }
+        if (colorId != null) {
+            this.colorId = colorId;
+        }
+        if (colorName != null && !colorName.isEmpty()) {
+            this.colorName = colorName;
+        }
+        if (classificationId != null) {
+            this.classificationId = classificationId;
+        }
+        if (classificationName != null && !classificationName.isEmpty()) {
+            this.classificationName = classificationName;
+        }
+        if (setTypeId != null) {
+            this.setTypeId = setTypeId;
+        }
+        if (setTypeName != null && !setTypeName.isEmpty()) {
+            this.setTypeName = setTypeName;
+        }
     }
 
     public void updateOrderProductAssistantStone(boolean assistantStone, Long assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt) {

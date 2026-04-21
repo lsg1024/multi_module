@@ -76,13 +76,33 @@ public class OrderStone {
         this.stock = stock;
     }
 
+    /**
+     * StoneInfo 로부터 값을 갱신한다. null / 빈 문자열 필드는 기존 값을 유지.
+     * ({@code Long.valueOf(null)}, {@code new BigDecimal(null)} 로 인한 NPE 및
+     *  payload 누락 시 DB 값이 지워지는 현상을 동시에 방지한다)
+     */
     public void updateFrom(StoneDto.StoneInfo s) {
-        this.originStoneId = Long.valueOf(s.getStoneId());
-        this.originStoneName = s.getStoneName();
-        this.originStoneWeight = new BigDecimal(s.getStoneWeight());
-        this.stonePurchaseCost = s.getPurchaseCost();
-        this.stoneLaborCost = s.getLaborCost();
-        this.stoneQuantity = s.getQuantity();
+        if (s == null) {
+            return;
+        }
+        if (s.getStoneId() != null && !s.getStoneId().isEmpty()) {
+            this.originStoneId = Long.valueOf(s.getStoneId());
+        }
+        if (s.getStoneName() != null && !s.getStoneName().isEmpty()) {
+            this.originStoneName = s.getStoneName();
+        }
+        if (s.getStoneWeight() != null && !s.getStoneWeight().isEmpty()) {
+            this.originStoneWeight = new BigDecimal(s.getStoneWeight());
+        }
+        if (s.getPurchaseCost() != null) {
+            this.stonePurchaseCost = s.getPurchaseCost();
+        }
+        if (s.getLaborCost() != null) {
+            this.stoneLaborCost = s.getLaborCost();
+        }
+        if (s.getQuantity() != null) {
+            this.stoneQuantity = s.getQuantity();
+        }
         this.mainStone = s.isMainStone();
         this.includeStone = s.isIncludeStone();
     }

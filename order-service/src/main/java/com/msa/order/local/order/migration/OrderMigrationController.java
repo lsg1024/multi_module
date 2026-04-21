@@ -44,26 +44,26 @@ public class OrderMigrationController {
 
     /**
      * 일반 주문 마이그레이션 (주문리스트.csv, 수리관리.csv)
-     * 인코딩: CP949
+     * 인코딩: UTF-8 (기본값, CP949 지정 가능)
      */
     @PostMapping("/api/migration/orders")
     public ResponseEntity<?> migrateOrders(
             @AccessToken String accessToken,
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "encoding", defaultValue = "CP949") String encoding) {
+            @RequestParam(value = "encoding", defaultValue = "UTF-8") String encoding) {
         return executeMigration(accessToken, file, orderImportJob, encoding, false, false, "주문");
     }
 
     /**
      * 수리 주문 마이그레이션 (수리관리.csv)
-     * 인코딩: CP949 (기본값, UTF-8 지정 가능)
+     * 인코딩: UTF-8 (기본값, CP949 지정 가능)
      * orderStatus = FIX 로 저장
      */
     @PostMapping("/api/migration/orders/fix")
     public ResponseEntity<?> migrateFixOrders(
             @AccessToken String accessToken,
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "encoding", defaultValue = "CP949") String encoding) {
+            @RequestParam(value = "encoding", defaultValue = "UTF-8") String encoding) {
         return executeMigration(accessToken, file, orderImportJob, encoding, false, true, "수리");
     }
 

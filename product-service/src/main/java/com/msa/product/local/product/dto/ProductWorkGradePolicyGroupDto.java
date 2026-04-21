@@ -38,7 +38,7 @@ public class ProductWorkGradePolicyGroupDto {
         @QueryProjection
         public Response(String productGroupId, Integer productPurchasePrice, String colorId, String colorName, boolean defaultProductPolicy, List<ProductWorkGradePolicyDto.Response> policyDtos, String note) {
             this.productGroupId = productGroupId;
-            this.productPurchasePrice = productPurchasePrice;
+            this.productPurchasePrice = productPurchasePrice != null ? productPurchasePrice : 0;
             this.colorId = colorId;
             this.colorName = colorName;
             this.defaultProductPolicy = defaultProductPolicy;

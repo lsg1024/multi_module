@@ -101,44 +101,66 @@ public class StockService {
         List<Stock> stocks = stockRepository.findByFlowCodeIn(flowCodes);
         List<StatusHistory> statusHistories = statusHistoryRepository.findTopByFlowCodeOrderByIdDescIn(flowCodes);
 
+        // findTopByFlowCodeOrderByIdDescIn 은 실제로는 조건에 해당하는 모든 StatusHistory 를 반환한다.
+        // 따라서 flowCode 별로 가장 최신(id 가 가장 큰) 이력만 선택하도록 매핑을 구성한다.
+        // 또한 대여/반납 이력이 여러 개 누적된 재고에서 stocks 와 statusHistories 의 크기/순서가
+        // 맞지 않아 발생하던 IndexOutOfBoundsException 및 오정렬 문제를 해결한다.
+        Map<Long, StatusHistory> latestHistoryByFlowCode = new HashMap<>();
+        for (StatusHistory history : statusHistories) {
+            if (history == null || history.getFlowCode() == null) {
+                continue;
+            }
+            StatusHistory current = latestHistoryByFlowCode.get(history.getFlowCode());
+            if (current == null
+                    || (history.getId() != null
+                        && (current.getId() == null || history.getId() > current.getId()))) {
+                latestHistoryByFlowCode.put(history.getFlowCode(), history);
+            }
+        }
+
         List<StockDto.ResponseDetail> responseDetails = new ArrayList<>();
-        for (int i = 0; i < stocks.size(); i++) {
-            Stock stock = stocks.get(i);
-            StatusHistory statusHistory = statusHistories.get(i);
+        for (Stock stock : stocks) {
+            StatusHistory statusHistory = latestHistoryByFlowCode.get(stock.getFlowCode());
 
             List<OrderStone> orderStones = stock.getOrderStones();
             List<StoneDto.StoneInfo> stonesDtos = toStoneDtoList(orderStones);
 
+            ProductSnapshot product = stock.getProduct();
+
+            String originalProductStatus = (statusHistory != null && statusHistory.getSourceType() != null)
+                    ? statusHistory.getSourceType().getDisplayName()
+                    : null;
+
             StockDto.ResponseDetail stockDetail = StockDto.ResponseDetail.builder()
-                    .createAt(stock.getCreateDate().toString())
-                    .flowCode(stock.getFlowCode().toString())
-                    .originalProductStatus(statusHistory.getSourceType().getDisplayName())
-                    .storeId(String.valueOf(stock.getStoreId()))
+                    .createAt(stock.getCreateDate() != null ? stock.getCreateDate().toString() : null)
+                    .flowCode(stock.getFlowCode() != null ? stock.getFlowCode().toString() : null)
+                    .originalProductStatus(originalProductStatus)
+                    .storeId(stock.getStoreId() != null ? String.valueOf(stock.getStoreId()) : null)
                     .storeName(stock.getStoreName())
-                    .storeHarry(stock.getStoreHarry().toPlainString())
+                    .storeHarry(stock.getStoreHarry() != null ? stock.getStoreHarry().toPlainString() : null)
                     .storeGrade(stock.getStoreGrade())
-                    .factoryId(String.valueOf(stock.getFactoryId()))
+                    .factoryId(stock.getFactoryId() != null ? String.valueOf(stock.getFactoryId()) : null)
                     .factoryName(stock.getFactoryName())
-                    .productId(String.valueOf(stock.getProduct().getId()))
-                    .productName(stock.getProduct().getProductName())
-                    .productSize(stock.getProduct().getSize())
-                    .colorId(String.valueOf(stock.getProduct().getColorId()))
-                    .colorName(stock.getProduct().getColorName())
-                    .materialId(String.valueOf(stock.getProduct().getMaterialId()))
-                    .materialName(stock.getProduct().getMaterialName())
+                    .productId(product != null && product.getId() != null ? String.valueOf(product.getId()) : null)
+                    .productName(product != null ? product.getProductName() : null)
+                    .productSize(product != null ? product.getSize() : null)
+                    .colorId(product != null && product.getColorId() != null ? String.valueOf(product.getColorId()) : null)
+                    .colorName(product != null ? product.getColorName() : null)
+                    .materialId(product != null && product.getMaterialId() != null ? String.valueOf(product.getMaterialId()) : null)
+                    .materialName(product != null ? product.getMaterialName() : null)
                     .note(stock.getStockNote())
-                    .isProductWeightSale(stock.getProduct().isProductWeightSale())
-                    .productPurchaseCost(stock.getProduct().getProductPurchaseCost())
-                    .productLaborCost(stock.getProduct().getProductLaborCost())
-                    .productAddLaborCost(stock.getProduct().getProductAddLaborCost())
-                    .goldWeight(stock.getProduct().getGoldWeight().toPlainString())
-                    .stoneWeight(stock.getProduct().getStoneWeight().toPlainString())
+                    .isProductWeightSale(product != null && product.isProductWeightSale())
+                    .productPurchaseCost(product != null ? product.getProductPurchaseCost() : null)
+                    .productLaborCost(product != null ? product.getProductLaborCost() : null)
+                    .productAddLaborCost(product != null ? product.getProductAddLaborCost() : null)
+                    .goldWeight(product != null && product.getGoldWeight() != null ? product.getGoldWeight().toPlainString() : null)
+                    .stoneWeight(product != null && product.getStoneWeight() != null ? product.getStoneWeight().toPlainString() : null)
                     .mainStoneNote(stock.getStockMainStoneNote())
                     .assistanceStoneNote(stock.getStockAssistanceStoneNote())
-                    .assistantStone(stock.getProduct().isAssistantStone())
-                    .assistantStoneId(String.valueOf(stock.getProduct().getAssistantStoneId()))
-                    .assistantStoneName(stock.getProduct().getAssistantStoneName())
-                    .assistantStoneCreateAt(stock.getProduct().getAssistantStoneCreateAt())
+                    .assistantStone(product != null && product.isAssistantStone())
+                    .assistantStoneId(product != null && product.getAssistantStoneId() != null ? String.valueOf(product.getAssistantStoneId()) : null)
+                    .assistantStoneName(product != null ? product.getAssistantStoneName() : null)
+                    .assistantStoneCreateAt(product != null ? product.getAssistantStoneCreateAt() : null)
                     .stoneInfos(stonesDtos)
                     .stoneAddLaborCost(stock.getStoneAddLaborCost())
                     .build();

@@ -52,13 +52,23 @@ public class Users extends BaseTimeEntity {
         this.storeId = storeId;
     }
 
+    /**
+     * 사용자 정보를 부분 업데이트한다.
+     * null/빈 문자열로 전달된 필드는 기존 DB 값을 유지한다 (payload 누락 시 데이터 유실 방지).
+     */
     public void updateInfo(UserDto.Update updateDto) {
-        this.nickname = updateDto.getNickname();
-
-        try {
-            this.role = Role.valueOf(updateDto.getRole());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("올바르지 않은 권한 값입니다: " + updateDto.getRole());
+        if (updateDto == null) {
+            return;
+        }
+        if (updateDto.getNickname() != null && !updateDto.getNickname().isEmpty()) {
+            this.nickname = updateDto.getNickname();
+        }
+        if (updateDto.getRole() != null && !updateDto.getRole().isEmpty()) {
+            try {
+                this.role = Role.valueOf(updateDto.getRole());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("올바르지 않은 권한 값입니다: " + updateDto.getRole());
+            }
         }
     }
 

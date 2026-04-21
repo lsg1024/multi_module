@@ -99,27 +99,55 @@ public class ProductSnapshot {
         this.assistantStoneCreateAt = assistantStoneCreateAt;
     }
 
+    /**
+     * 사이즈/중량 정보를 부분 업데이트한다.
+     * null 로 전달된 필드는 기존 값을 유지한다 (payload 누락 시 덮어쓰기 방지).
+     */
     public void updateProductWeightAndSize(String size, BigDecimal productWeight, BigDecimal stoneWeight) {
-        this.size = size;
-        this.goldWeight = productWeight;
-        this.stoneWeight = stoneWeight;
+        if (size != null) {
+            this.size = size;
+        }
+        if (productWeight != null) {
+            this.goldWeight = productWeight;
+        }
+        if (stoneWeight != null) {
+            this.stoneWeight = stoneWeight;
+        }
     }
 
+    /**
+     * 보조석 관련 필드를 업데이트한다. boolean 필드는 항상 갱신되며,
+     * 문자열/ID/날짜는 null 이 아닐 때만 덮어쓴다.
+     */
     public void updateAssistantStone(boolean assistantStone, Long assistantStoneId, String assistantStoneName, OffsetDateTime assistantStoneCreateAt) {
         this.assistantStone = assistantStone;
-        this.assistantStoneId = assistantStoneId;
-        this.assistantStoneName = assistantStoneName;
-        this.assistantStoneCreateAt = assistantStoneCreateAt;
+        if (assistantStoneId != null) {
+            this.assistantStoneId = assistantStoneId;
+        }
+        if (assistantStoneName != null) {
+            this.assistantStoneName = assistantStoneName;
+        }
+        if (assistantStoneCreateAt != null) {
+            this.assistantStoneCreateAt = assistantStoneCreateAt;
+        }
     }
 
     public void updateProductCost(Integer productPurchaseCost, Integer productLaborCost, Integer productAddLaborCost) {
-        this.productPurchaseCost = productPurchaseCost;
-        this.productLaborCost = productLaborCost;
-        this.productAddLaborCost = productAddLaborCost;
+        if (productPurchaseCost != null) {
+            this.productPurchaseCost = productPurchaseCost;
+        }
+        if (productLaborCost != null) {
+            this.productLaborCost = productLaborCost;
+        }
+        if (productAddLaborCost != null) {
+            this.productAddLaborCost = productAddLaborCost;
+        }
     }
 
     public void updateProductAddCost(Integer addProductLaborCost) {
-        this.productAddLaborCost = addProductLaborCost;
+        if (addProductLaborCost != null) {
+            this.productAddLaborCost = addProductLaborCost;
+        }
     }
 
 }
