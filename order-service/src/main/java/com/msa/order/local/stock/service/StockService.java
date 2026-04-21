@@ -415,8 +415,10 @@ public class StockService {
                 .materialId(materialId)
                 .materialName(stockDto.getMaterialName())
                 .isProductWeightSale(stockDto.getIsProductWeightSale())
-                .goldWeight(SafeParse.toBigDecimalOrNull(String.valueOf(stockDto.getGoldWeight())))
-                .stoneWeight(SafeParse.toBigDecimalOrNull(String.valueOf(stockDto.getStoneWeight())))
+                // StockDto.Request.getGoldWeight() 이미 String 타입 → String.valueOf 로 감싸면
+                //    null 인 경우 리터럴 "null" 이 들어가므로 바로 넘긴다.
+                .goldWeight(SafeParse.toBigDecimalOrNull(stockDto.getGoldWeight()))
+                .stoneWeight(SafeParse.toBigDecimalOrNull(stockDto.getStoneWeight()))
                 .productPurchaseCost(stockDto.getProductPurchaseCost())
                 .productLaborCost(stockDto.getProductLaborCost())
                 .productAddLaborCost(stockDto.getProductAddLaborCost())
