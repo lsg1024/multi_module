@@ -12,6 +12,7 @@ import com.msa.account.global.exception.NotFoundException;
 import com.msa.account.local.factory.domain.dto.FactoryDto;
 import com.msa.account.local.factory.domain.entity.Factory;
 import com.msa.account.local.factory.repository.FactoryRepository;
+import com.msa.account.local.transaction_history.repository.TransactionHistoryRepository;
 import com.msa.common.global.util.AuthorityUserRoleUtil;
 import com.msa.common.global.util.CustomPage;
 import org.springframework.data.domain.Pageable;
@@ -28,11 +29,25 @@ public class FactoryService {
     private final AuthorityUserRoleUtil authorityUserRoleUtil;
     private final FactoryRepository factoryRepository;
     private final GoldHarryRepository goldHarryRepository;
+    private final TransactionHistoryRepository transactionHistoryRepository;
 
-    public FactoryService(AuthorityUserRoleUtil authorityUserRoleUtil, FactoryRepository factoryRepository, GoldHarryRepository goldHarryRepository) {
+    public FactoryService(AuthorityUserRoleUtil authorityUserRoleUtil, FactoryRepository factoryRepository, GoldHarryRepository goldHarryRepository, TransactionHistoryRepository transactionHistoryRepository) {
         this.authorityUserRoleUtil = authorityUserRoleUtil;
         this.factoryRepository = factoryRepository;
         this.goldHarryRepository = goldHarryRepository;
+        this.transactionHistoryRepository = transactionHistoryRepository;
+    }
+
+    /**
+     * Task 4-3 / 4-4 — 제조사 최근 활동(거래 + 결제) 상세.
+     * FactoryPage 에서 최근거래일/최근결제일 셀 클릭 시 모달에서 사용.
+     */
+    @Transactional(readOnly = true)
+    public AccountDto.RecentActivityResponse getFactoryRecentActivity(Long factoryId, int limit) {
+        return new AccountDto.RecentActivityResponse(
+                transactionHistoryRepository.findRecentSalesByFactory(factoryId, limit),
+                transactionHistoryRepository.findPaymentSummaryByFactory(factoryId)
+        );
     }
     @Transactional(readOnly = true)
     public AccountDto.AccountSingleResponse getFactoryInfo(String factoryId) {

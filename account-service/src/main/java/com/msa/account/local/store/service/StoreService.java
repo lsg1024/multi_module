@@ -15,6 +15,7 @@ import com.msa.account.local.store.domain.entity.Store;
 import com.msa.account.local.store.repository.StoreRepository;
 import com.msa.account.local.transaction_history.domain.entity.SaleLog;
 import com.msa.account.local.transaction_history.repository.SaleLogRepository;
+import com.msa.account.local.transaction_history.repository.TransactionHistoryRepository;
 import com.msa.common.global.util.AuthorityUserRoleUtil;
 import com.msa.common.global.util.CustomPage;
 import lombok.extern.slf4j.Slf4j;
@@ -35,12 +36,26 @@ public class StoreService {
     private final StoreRepository storeRepository;
     private final SaleLogRepository saleLogRepository;
     private final GoldHarryRepository goldHarryRepository;
+    private final TransactionHistoryRepository transactionHistoryRepository;
 
-    public StoreService(AuthorityUserRoleUtil authorityUserRoleUtil, StoreRepository storeRepository, SaleLogRepository saleLogRepository, GoldHarryRepository goldHarryRepository) {
+    public StoreService(AuthorityUserRoleUtil authorityUserRoleUtil, StoreRepository storeRepository, SaleLogRepository saleLogRepository, GoldHarryRepository goldHarryRepository, TransactionHistoryRepository transactionHistoryRepository) {
         this.authorityUserRoleUtil = authorityUserRoleUtil;
         this.storeRepository = storeRepository;
         this.saleLogRepository = saleLogRepository;
         this.goldHarryRepository = goldHarryRepository;
+        this.transactionHistoryRepository = transactionHistoryRepository;
+    }
+
+    /**
+     * Task 4-3 / 4-4 — 거래처 최근 활동(거래 + 결제) 상세.
+     * StorePage 에서 최근거래일/최근결제일 셀 클릭 시 모달에서 사용.
+     */
+    @Transactional(readOnly = true)
+    public AccountDto.RecentActivityResponse getStoreRecentActivity(Long storeId, int limit) {
+        return new AccountDto.RecentActivityResponse(
+                transactionHistoryRepository.findRecentSalesByStore(storeId, limit),
+                transactionHistoryRepository.findPaymentSummaryByStore(storeId)
+        );
     }
 
     //상점 호출(info)

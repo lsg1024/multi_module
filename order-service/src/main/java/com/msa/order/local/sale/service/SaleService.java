@@ -169,7 +169,8 @@ public class SaleService {
 
             return SaleDto.Response.builder()
                     .flowCode(saleItem.getFlowCode())
-                    .createAt(String.valueOf(saleItem.getCreateDate()))
+                    // ⚠ String.valueOf(null) = "null" → PATCH 재전송 시 Long 파싱 실패를 유발하므로 모두 null-safe
+                    .createAt(saleItem.getCreateDate() != null ? saleItem.getCreateDate().toString() : null)
                     .saleType(saleItem.getItemStatus().name())
                     .name(stock.getStoreName())
                     .grade(stock.getStoreGrade())
@@ -188,7 +189,7 @@ public class SaleService {
                     .productAddLaborCost(product.getProductAddLaborCost())
                     .addStoneLaborCost(stock.getStoneAddLaborCost())
                     .assistantStone(product.isAssistantStone())
-                    .assistantStoneId(String.valueOf(product.getAssistantStoneId()))
+                    .assistantStoneId(product.getAssistantStoneId() != null ? product.getAssistantStoneId().toString() : null)
                     .assistantStoneName(product.getAssistantStoneName())
                     .assistantStoneCreateAt(assistantStoneCreateAt)
                     .stoneInfos(stonesDtos)
@@ -202,7 +203,7 @@ public class SaleService {
 
         return SaleDto.Response.builder()
                 .flowCode(salePayment.getFlowCode())
-                .createAt(String.valueOf(salePayment.getCreateDate()))
+                .createAt(salePayment.getCreateDate() != null ? salePayment.getCreateDate().toString() : null)
                 .saleType(salePayment.getSaleStatus().name())
                 .id(sale.getAccountId().toString())
                 .name(sale.getAccountName())

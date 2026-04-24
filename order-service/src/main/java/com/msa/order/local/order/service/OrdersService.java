@@ -109,13 +109,16 @@ public class OrdersService {
                 .productSize(orderProduct.getProductSize())
                 .productLaborCost(orderProduct.getProductLaborCost())
                 .productAddLaborCost(orderProduct.getProductAddLaborCost())
-                .classificationId(String.valueOf(orderProduct.getClassificationId()))
+                // ⚠ String.valueOf(null) 은 리터럴 "null" 을 반환해 PATCH 재전송 시
+                //    SafeParse.toLongOrNull("null") 에서 NumberFormatException 을 유발한다.
+                //    선택 필드는 반드시 null-safe 로 문자열화해야 한다.
+                .classificationId(orderProduct.getClassificationId() != null ? orderProduct.getClassificationId().toString() : null)
                 .classificationName(orderProduct.getClassificationName())
-                .materialId(String.valueOf(orderProduct.getMaterialId()))
+                .materialId(orderProduct.getMaterialId() != null ? orderProduct.getMaterialId().toString() : null)
                 .materialName(orderProduct.getMaterialName())
-                .colorId(String.valueOf(orderProduct.getColorId()))
+                .colorId(orderProduct.getColorId() != null ? orderProduct.getColorId().toString() : null)
                 .colorName(orderProduct.getColorName())
-                .setTypeId(String.valueOf(orderProduct.getSetTypeId()))
+                .setTypeId(orderProduct.getSetTypeId() != null ? orderProduct.getSetTypeId().toString() : null)
                 .setTypeName(orderProduct.getSetTypeName())
                 .orderNote(order.getOrderNote())
                 .mainStoneNote(orderProduct.getOrderMainStoneNote())
@@ -124,9 +127,9 @@ public class OrdersService {
                 .productStatus(order.getProductStatus().getDisplayName())
                 .orderStatus(order.getOrderStatus().getDisplayName())
                 .stoneInfos(stonesDtos)
-                .stoneAddLaborCost(String.valueOf(orderProduct.getStoneAddLaborCost()))
+                .stoneAddLaborCost(orderProduct.getStoneAddLaborCost() != null ? orderProduct.getStoneAddLaborCost().toString() : null)
                 .assistantStone(orderProduct.isAssistantStone())
-                .assistantStoneId(String.valueOf(orderProduct.getAssistantStoneId()))
+                .assistantStoneId(orderProduct.getAssistantStoneId() != null ? orderProduct.getAssistantStoneId().toString() : null)
                 .assistantStoneName(orderProduct.getAssistantStoneName())
                 .assistantStoneCreateAt(orderProduct.getAssistantStoneCreateAt())
                 .build();

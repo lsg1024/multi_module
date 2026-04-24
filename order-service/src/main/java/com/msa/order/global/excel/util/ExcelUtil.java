@@ -82,8 +82,11 @@ public class ExcelUtil {
             createCell(excelRow, 2, dto.getMaterial(), defaultStyle);
             createCell(excelRow, 3, dto.getColor(), defaultStyle);
 
-            // 메인스톤/보조스톤 조합 및 10pt 스타일 적용
-            String combinedStoneNote = dto.getOrderMainStoneNote() + "\n" + dto.getOrderAssistanceStoneNote();
+            // 메인스톤/보조스톤 조합 및 10pt 스타일 적용.
+            // null 값을 그대로 concat 하면 "null" 문자열이 셀에 출력되므로 빈 문자열로 치환한다.
+            String mainNote = (dto.getOrderMainStoneNote() == null) ? "" : dto.getOrderMainStoneNote();
+            String subNote = (dto.getOrderAssistanceStoneNote() == null) ? "" : dto.getOrderAssistanceStoneNote();
+            String combinedStoneNote = mainNote + "\n" + subNote;
             createCell(excelRow, multiLineColumnIndex, combinedStoneNote, multiLineStyle);
 
             createCell(excelRow, 5, dto.getProductSize(), defaultStyle);
