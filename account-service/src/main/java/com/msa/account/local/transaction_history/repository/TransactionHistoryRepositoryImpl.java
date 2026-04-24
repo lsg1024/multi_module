@@ -1,21 +1,28 @@
 package com.msa.account.local.transaction_history.repository;
 
+import com.msa.account.global.domain.dto.AccountDto;
+import com.msa.account.global.domain.dto.QAccountDto_PaymentSummary;
+import com.msa.account.global.domain.dto.QAccountDto_TransactionItem;
 import com.msa.account.local.transaction_history.domain.dto.QTransactionPage;
 import com.msa.account.local.transaction_history.domain.dto.TransactionPage;
 import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import com.msa.common.global.util.CustomPage;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Coalesce;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.StringExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Pageable;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 
 import static com.msa.account.local.factory.domain.entity.QFactory.factory;
 import static com.msa.account.local.store.domain.entity.QStore.store;
@@ -188,6 +195,85 @@ public class TransactionHistoryRepositoryImpl implements CustomTransactionHistor
             return null;
         }
         return factory.factoryName.contains(accountName);
+    }
+
+    /* ========================================================================
+     * Task 4-3 / 4-4 — 최근거래일/최근결제일 클릭 시 상세 조회용 쿼리.
+     * 거래(SALE) 내역과 결제(PAYMENT) 집계를 별도 메서드로 노출하고,
+     * 서비스 레이어에서 둘을 합쳐 RecentActivityResponse 로 조립한다.
+     * ======================================================================== */
+
+    @Override
+    public List<AccountDto.TransactionItem> findRecentSalesByStore(Long storeId, int limit) {
+        return fetchRecentSales(storeTransactionCondition(storeId, SaleStatus.SALE), limit);
+    }
+
+    @Override
+    public List<AccountDto.TransactionItem> findRecentSalesByFactory(Long factoryId, int limit) {
+        return fetchRecentSales(factoryTransactionCondition(factoryId, SaleStatus.SALE), limit);
+    }
+
+    @Override
+    public AccountDto.PaymentSummary findPaymentSummaryByStore(Long storeId) {
+        return fetchPaymentSummary(storeTransactionCondition(storeId, SaleStatus.PAYMENT));
+    }
+
+    @Override
+    public AccountDto.PaymentSummary findPaymentSummaryByFactory(Long factoryId) {
+        return fetchPaymentSummary(factoryTransactionCondition(factoryId, SaleStatus.PAYMENT));
+    }
+
+    private List<AccountDto.TransactionItem> fetchRecentSales(BooleanExpression where, int limit) {
+        int safeLimit = (limit <= 0) ? 20 : Math.min(limit, 200);
+        return query
+                .select(new QAccountDto_TransactionItem(
+                        transactionHistory.transactionDate.stringValue(),
+                        transactionHistory.transactionType.stringValue(),
+                        transactionHistory.material,
+                        transactionHistory.goldAmount.stringValue(),
+                        transactionHistory.moneyAmount.stringValue(),
+                        transactionHistory.accountSaleCode.stringValue(),
+                        transactionHistory.transactionHistoryNote
+                ))
+                .from(transactionHistory)
+                .where(where)
+                .orderBy(transactionHistory.transactionDate.desc(), transactionHistory.transactionId.desc())
+                .limit(safeLimit)
+                .fetch();
+    }
+
+    private AccountDto.PaymentSummary fetchPaymentSummary(BooleanExpression where) {
+        StringExpression lastPaymentDateStr = Expressions.stringTemplate(
+                "TO_CHAR(MAX({0}), 'YYYY-MM-DD HH24:MI:SS')",
+                transactionHistory.transactionDate
+        );
+
+        AccountDto.PaymentSummary result = query
+                .select(new QAccountDto_PaymentSummary(
+                        transactionHistory.goldAmount.sum()
+                                .coalesce(BigDecimal.ZERO).stringValue(),
+                        transactionHistory.moneyAmount.sum()
+                                .coalesce(0L).stringValue(),
+                        transactionHistory.transactionId.count(),
+                        lastPaymentDateStr
+                ))
+                .from(transactionHistory)
+                .where(where)
+                .fetchOne();
+        return Optional.ofNullable(result)
+                .orElseGet(() -> new AccountDto.PaymentSummary("0", "0", 0L, null));
+    }
+
+    private BooleanExpression storeTransactionCondition(Long storeId, SaleStatus type) {
+        return transactionHistory.store.storeId.eq(storeId)
+                .and(transactionHistory.transactionDeleted.isFalse())
+                .and(transactionHistory.transactionType.eq(type));
+    }
+
+    private BooleanExpression factoryTransactionCondition(Long factoryId, SaleStatus type) {
+        return transactionHistory.factory.factoryId.eq(factoryId)
+                .and(transactionHistory.transactionDeleted.isFalse())
+                .and(transactionHistory.transactionType.eq(type));
     }
 
 }

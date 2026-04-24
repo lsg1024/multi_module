@@ -15,8 +15,10 @@ import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
+import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.StringExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
@@ -38,6 +40,7 @@ import static com.msa.account.global.domain.entity.QCommonOption.commonOption;
 import static com.msa.account.global.domain.entity.QGoldHarry.goldHarry;
 import static com.msa.account.local.factory.domain.entity.QFactory.factory;
 import static com.msa.account.local.transaction_history.domain.entity.QSaleLog.saleLog;
+import static com.msa.account.local.transaction_history.domain.entity.QTransactionHistory.transactionHistory;
 
 public class FactoryRepositoryImpl implements CustomFactoryRepository {
 
@@ -84,6 +87,28 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
         BooleanExpression searchCondition = buildFactorySearchCondition(name, searchField);
         OrderSpecifier<?>[] orderSpecifiers = factorySpecifiers(sortField, sortOrder);
 
+        // Task 4-2: 제조사 목록에 최근 거래일 / 최근 결제일 서브쿼리 추가.
+        // transactionHistory 에는 store 와 factory 양쪽 FK 가 존재하며, 제조사 트랜잭션은
+        // factory 컬럼으로 필터링한다. SALE = 주문/거래, PAYMENT = 결제.
+        StringExpression latestTransactionDateString = Expressions.stringTemplate(
+                "TO_CHAR(MAX(transactionHistory.transactionDate), 'YYYY-MM-DD HH24:MI:SS')",
+                transactionHistory.transactionDate.max()
+        );
+
+        JPQLQuery<String> lastPaymentDateQuery = JPAExpressions
+                .select(latestTransactionDateString)
+                .from(transactionHistory)
+                .where(transactionHistory.factory.eq(factory)
+                        .and(transactionHistory.transactionDeleted.isFalse())
+                        .and(transactionHistory.transactionType.eq(SaleStatus.PAYMENT)));
+
+        JPQLQuery<String> lastSaleDateQuery = JPAExpressions
+                .select(latestTransactionDateString)
+                .from(transactionHistory)
+                .where(transactionHistory.factory.eq(factory)
+                        .and(transactionHistory.transactionDeleted.isFalse())
+                        .and(transactionHistory.transactionType.eq(SaleStatus.SALE)));
+
         JPAQuery<FactoryDto.FactoryResponse> jpaQuery = query
                 .select(new QFactoryDto_FactoryResponse(
                         factory.factoryId,
@@ -102,7 +127,9 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
                         ),
                         factory.commonOption.optionTradeType.stringValue(),
                         factory.commonOption.optionLevel.stringValue(),
-                        factory.commonOption.goldHarryLoss
+                        factory.commonOption.goldHarryLoss,
+                        lastSaleDateQuery,
+                        lastPaymentDateQuery
                 ))
                 .from(factory)
                 .join(factory.address, address)

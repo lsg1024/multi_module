@@ -131,6 +131,17 @@ public class StoreController {
     }
 
 
+    /**
+     * Task 4-3 / 4-4 — 거래처 최근 활동(거래 내역 + 결제 집계) 조회.
+     * StorePage 의 최근거래일/최근결제일 셀 클릭 시 모달에서 사용.
+     */
+    @GetMapping("/stores/{id}/recent-activity")
+    public ResponseEntity<ApiResponse<AccountDto.RecentActivityResponse>> getStoreRecentActivity(
+            @PathVariable(name = "id") Long storeId,
+            @RequestParam(name = "limit", required = false, defaultValue = "20") int limit) {
+        return ResponseEntity.ok(ApiResponse.success(storeService.getStoreRecentActivity(storeId, limit)));
+    }
+
     //상점 생성
     @PostMapping("/store")
     public ResponseEntity<ApiResponse<String>> createStore(

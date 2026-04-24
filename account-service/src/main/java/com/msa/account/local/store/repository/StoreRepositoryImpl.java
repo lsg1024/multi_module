@@ -110,6 +110,27 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
         BooleanExpression searchCondition = buildStoreSearchCondition(name, searchField);
         OrderSpecifier<?>[] orderSpecifiers = specifiers(sortField, sortOrder);
 
+        // Task 4-2: 거래처 목록에 최근 거래일 / 최근 결제일 서브쿼리 추가.
+        // (findAllStoreAndReceivable 에서 이미 검증된 패턴을 그대로 재사용한다.)
+        StringExpression latestTransactionDateString = Expressions.stringTemplate(
+                "TO_CHAR(MAX(transactionHistory.transactionDate), 'YYYY-MM-DD HH24:MI:SS')",
+                transactionHistory.transactionDate.max()
+        );
+
+        JPQLQuery<String> lastPaymentDateQuery = JPAExpressions
+                .select(latestTransactionDateString)
+                .from(transactionHistory)
+                .where(transactionHistory.store.eq(store)
+                        .and(transactionHistory.transactionDeleted.isFalse())
+                        .and(transactionHistory.transactionType.eq(SaleStatus.PAYMENT)));
+
+        JPQLQuery<String> lastSaleDateQuery = JPAExpressions
+                .select(latestTransactionDateString)
+                .from(transactionHistory)
+                .where(transactionHistory.store.eq(store)
+                        .and(transactionHistory.transactionDeleted.isFalse())
+                        .and(transactionHistory.transactionType.eq(SaleStatus.SALE)));
+
         List<StoreDto.StoreResponse> content = query
                 .select(new QStoreDto_StoreResponse(
                         store.storeId,
@@ -128,7 +149,9 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                         ),
                         store.commonOption.optionTradeType.stringValue(),
                         store.commonOption.optionLevel.stringValue(),
-                        store.commonOption.goldHarryLoss))
+                        store.commonOption.goldHarryLoss,
+                        lastSaleDateQuery,
+                        lastPaymentDateQuery))
                 .from(store)
                 .leftJoin(store.address, address)
                 .leftJoin(store.commonOption, commonOption)
@@ -197,13 +220,19 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                         .and(transactionHistory.transactionDeleted.isFalse())
                         .and(transactionHistory.transactionType.eq(SaleStatus.SALE)));
 
+        // 버그 수정: QueryDSL 메서드 체이닝은 좌→우로 평가되므로 기존
+        //   store.eq(store).and(deleted.isFalse()).or(type.eq(PAYMENT)).or(type.eq(SALE))
+        // 은 "((store AND !deleted) OR PAYMENT) OR SALE" 로 해석되어 OR 분기가
+        // store 필터를 우회. DB에 PAYMENT/SALE 이력이 하나라도 존재하면 모든 store
+        // 에 대해 항상 TRUE 가 되었다. 의도는 "해당 store 의 삭제되지 않은 트랜잭션
+        // 중 PAYMENT 또는 SALE 유형이 존재하는가" 이므로 IN 조건으로 정정한다.
         BooleanExpression hasHistory = JPAExpressions
                 .selectOne()
                 .from(transactionHistory)
                 .where(transactionHistory.store.eq(store)
                         .and(transactionHistory.transactionDeleted.isFalse())
-                        .or(transactionHistory.transactionType.eq(SaleStatus.PAYMENT))
-                        .or(transactionHistory.transactionType.eq(SaleStatus.SALE)))
+                        .and(transactionHistory.transactionType.in(
+                                SaleStatus.PAYMENT, SaleStatus.SALE)))
                 .exists();
 
         OrderSpecifier<?>[] specifiers = specifiers(field, sort);
@@ -416,13 +445,19 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                         .and(transactionHistory.transactionDeleted.isFalse())
                         .and(transactionHistory.transactionType.eq(SaleStatus.SALE)));
 
+        // 버그 수정: QueryDSL 메서드 체이닝은 좌→우로 평가되므로 기존
+        //   store.eq(store).and(deleted.isFalse()).or(type.eq(PAYMENT)).or(type.eq(SALE))
+        // 은 "((store AND !deleted) OR PAYMENT) OR SALE" 로 해석되어 OR 분기가
+        // store 필터를 우회. DB에 PAYMENT/SALE 이력이 하나라도 존재하면 모든 store
+        // 에 대해 항상 TRUE 가 되었다. 의도는 "해당 store 의 삭제되지 않은 트랜잭션
+        // 중 PAYMENT 또는 SALE 유형이 존재하는가" 이므로 IN 조건으로 정정한다.
         BooleanExpression hasHistory = JPAExpressions
                 .selectOne()
                 .from(transactionHistory)
                 .where(transactionHistory.store.eq(store)
                         .and(transactionHistory.transactionDeleted.isFalse())
-                        .or(transactionHistory.transactionType.eq(SaleStatus.PAYMENT))
-                        .or(transactionHistory.transactionType.eq(SaleStatus.SALE)))
+                        .and(transactionHistory.transactionType.in(
+                                SaleStatus.PAYMENT, SaleStatus.SALE)))
                 .exists();
 
         return query

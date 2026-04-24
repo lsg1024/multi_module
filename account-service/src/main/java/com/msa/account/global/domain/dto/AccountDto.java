@@ -191,6 +191,69 @@ public class AccountDto {
         }
     }
 
+    /**
+     * Task 4-3 / 4-4 — 최근거래일/최근결제일 클릭 시 상세 팝업 응답.
+     *
+     * - recentTransactions : 최근 SALE 트랜잭션 내역(최대 N건, 기본 20). 거래일 desc.
+     * - paymentSummary     : PAYMENT 트랜잭션 집계(총 순금 중량, 총 결제 금액, 건수, 최근 결제일).
+     *
+     * 한 API 로 두 탭(거래/결제)의 데이터를 동시에 내려줘 프론트에서 한 번의 요청으로
+     * 팝업을 채울 수 있게 한다. 거래 상품의 상세(모델번호·사이즈 등)는 order-service 영역이라
+     * 이 단계에서는 transaction_history 가 보유한 필드(material, goldAmount, moneyAmount,
+     * accountSaleCode, transactionDate, transactionHistoryNote)만 노출한다.
+     */
+    @Getter
+    @NoArgsConstructor
+    public static class RecentActivityResponse {
+        private java.util.List<TransactionItem> recentTransactions;
+        private PaymentSummary paymentSummary;
+
+        public RecentActivityResponse(java.util.List<TransactionItem> recentTransactions, PaymentSummary paymentSummary) {
+            this.recentTransactions = recentTransactions;
+            this.paymentSummary = paymentSummary;
+        }
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class TransactionItem {
+        private String transactionDate;
+        private String transactionType; // SALE / PAYMENT / DISCOUNT / WG / 등
+        private String material;
+        private String goldAmount;
+        private String moneyAmount;
+        private String saleCode;
+        private String note;
+
+        @QueryProjection
+        public TransactionItem(String transactionDate, String transactionType, String material, String goldAmount, String moneyAmount, String saleCode, String note) {
+            this.transactionDate = transactionDate;
+            this.transactionType = transactionType;
+            this.material = material;
+            this.goldAmount = goldAmount;
+            this.moneyAmount = moneyAmount;
+            this.saleCode = saleCode;
+            this.note = note;
+        }
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class PaymentSummary {
+        private String totalGoldWeight;   // PAYMENT 누적 순금 중량
+        private String totalMoneyAmount;  // PAYMENT 누적 결제 금액 (공임 포함)
+        private Long paymentCount;        // PAYMENT 건수
+        private String lastPaymentDate;   // 최근 결제일
+
+        @QueryProjection
+        public PaymentSummary(String totalGoldWeight, String totalMoneyAmount, Long paymentCount, String lastPaymentDate) {
+            this.totalGoldWeight = totalGoldWeight;
+            this.totalMoneyAmount = totalMoneyAmount;
+            this.paymentCount = paymentCount;
+            this.lastPaymentDate = lastPaymentDate;
+        }
+    }
+
     @Getter
     @NoArgsConstructor
     public static class AccountUpdate {

@@ -101,6 +101,17 @@ public class FactoryController {
 //        return null;
 //    }
 
+    /**
+     * Task 4-3 / 4-4 — 제조사 최근 활동(거래 내역 + 결제 집계) 조회.
+     * FactoryPage 의 최근거래일/최근결제일 셀 클릭 시 모달에서 사용.
+     */
+    @GetMapping("/factories/{id}/recent-activity")
+    public ResponseEntity<ApiResponse<AccountDto.RecentActivityResponse>> getFactoryRecentActivity(
+            @PathVariable(name = "id") Long factoryId,
+            @RequestParam(name = "limit", required = false, defaultValue = "20") int limit) {
+        return ResponseEntity.ok(ApiResponse.success(factoryService.getFactoryRecentActivity(factoryId, limit)));
+    }
+
     //생성
     @PostMapping("/factory")
     public ResponseEntity<ApiResponse<String>> createFactory(

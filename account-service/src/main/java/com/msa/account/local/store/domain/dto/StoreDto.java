@@ -41,9 +41,19 @@ public class StoreDto {
         private String tradeType;
         private String grade;
         private String goldHarryLoss;
+        /**
+         * 최근 거래일 — 해당 거래처(Store)의 가장 최신 SALE 트랜잭션 일자.
+         * (findAllStore 에서 JPQLQuery 서브쿼리로 계산. Task 4-2.)
+         */
+        private String lastSaleDate;
+        /**
+         * 최근 결제일 — 해당 거래처(Store)의 가장 최신 PAYMENT 트랜잭션 일자.
+         * (findAllStore 에서 JPQLQuery 서브쿼리로 계산. Task 4-2.)
+         */
+        private String lastPaymentDate;
 
         @QueryProjection
-        public StoreResponse(Long accountId, String accountName, String businessOwnerName, String businessOwnerNumber, String businessNumber1, String businessNumber2, String faxNumber, String note, String address, String tradeType, String grade, String goldHarryLoss) {
+        public StoreResponse(Long accountId, String accountName, String businessOwnerName, String businessOwnerNumber, String businessNumber1, String businessNumber2, String faxNumber, String note, String address, String tradeType, String grade, String goldHarryLoss, String lastSaleDate, String lastPaymentDate) {
             this.accountId = accountId;
             this.accountName = accountName;
             this.businessOwnerName = businessOwnerName;
@@ -56,6 +66,8 @@ public class StoreDto {
             this.tradeType = getTradeTypeTitle(tradeType);
             this.grade = getLevelTypeTitle(grade);
             this.goldHarryLoss = goldHarryLoss;
+            this.lastSaleDate = lastSaleDate;
+            this.lastPaymentDate = lastPaymentDate;
         }
     }
 

@@ -38,9 +38,19 @@ public class FactoryDto {
         private String tradeType;
         private String grade;
         private String goldHarryLoss;
+        /**
+         * 최근 거래일 — 해당 제조사(Factory)와의 가장 최신 SALE 트랜잭션 일자.
+         * (findAllFactory 에서 JPQLQuery 서브쿼리로 계산. Task 4-2.)
+         */
+        private String lastSaleDate;
+        /**
+         * 최근 결제일 — 해당 제조사(Factory)와의 가장 최신 PAYMENT 트랜잭션 일자.
+         * (findAllFactory 에서 JPQLQuery 서브쿼리로 계산. Task 4-2.)
+         */
+        private String lastPaymentDate;
 
         @QueryProjection
-        public FactoryResponse(Long factoryId, String factoryName, String factoryOwnerName, String factoryPhoneNumber, String factoryContactNumber1, String factoryContactNumber2, String factoryFaxNumber, String factoryNote, String address, String tradeType, String grade, String goldHarryLoss) {
+        public FactoryResponse(Long factoryId, String factoryName, String factoryOwnerName, String factoryPhoneNumber, String factoryContactNumber1, String factoryContactNumber2, String factoryFaxNumber, String factoryNote, String address, String tradeType, String grade, String goldHarryLoss, String lastSaleDate, String lastPaymentDate) {
             this.factoryId = factoryId;
             this.factoryName = factoryName;
             this.factoryOwnerName = factoryOwnerName;
@@ -53,6 +63,8 @@ public class FactoryDto {
             this.tradeType = getTradeTypeTitle(tradeType);
             this.grade = getLevelTypeTitle(grade);
             this.goldHarryLoss = goldHarryLoss;
+            this.lastSaleDate = lastSaleDate;
+            this.lastPaymentDate = lastPaymentDate;
         }
     }
 
