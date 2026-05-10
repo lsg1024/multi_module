@@ -1,0 +1,15 @@
+package com.msa.jewelry.product.internal.set.repository;
+
+import com.msa.jewelry.product.internal.set.entity.SetType;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+
+import java.util.Optional;
+
+public interface SetTypeRepository extends JpaRepository<SetType, Long>, CustomSetTypeRepository {
+    boolean existsBySetTypeName(String setTypeName);
+    @Query("select s.setTypeName from SetType s where s.setTypeId= :id")
+    String findByMaterialName(Long id);
+    Optional<SetType> findBySetTypeName(String setTypeName);
+    Optional<SetType> findBySetTypeNameIgnoreCase(String setTypeName);
+}

@@ -69,3 +69,5 @@ bin/
 /.omc/state/idle-notif-cooldown.json
 /.idea/sqldialects.xml
 /.claude/settings.local.json
+/jewelry_emp/src/main/resources/bootstrap.yml
+/jewelry_emp/src/main/resources/application-local.yml

@@ -1,0 +1,3 @@
+-- StatusHistory CONTENT 컬럼을 TEXT로 변경 (상세 변경 이력 저장을 위해)
+ALTER TABLE STATUS_HISTORY
+ALTER COLUMN CONTENT TYPE TEXT;

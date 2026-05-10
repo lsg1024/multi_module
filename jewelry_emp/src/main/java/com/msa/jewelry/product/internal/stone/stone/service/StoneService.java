@@ -1,0 +1,157 @@
+package com.msa.jewelry.product.internal.stone.stone.service;
+
+import com.msa.common.global.jwt.JwtUtil;
+import com.msa.common.global.util.CustomPage;
+import com.msa.jewelry.product.internal.global.excel.dto.StoneExcelDto;
+import com.msa.jewelry.product.internal.global.excel.util.StoneExcelUtil;
+import com.msa.jewelry.product.internal.stone.stone.dto.StoneDto;
+import com.msa.jewelry.product.internal.stone.stone.dto.StoneWorkGradePolicyDto;
+import com.msa.jewelry.product.internal.stone.stone.entity.Stone;
+import com.msa.jewelry.product.internal.stone.stone.entity.StoneWorkGradePolicy;
+import com.msa.jewelry.product.internal.stone.stone.repository.StoneRepository;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static com.msa.jewelry.product.internal.global.exception.ExceptionMessage.*;
+
+@Service
+@Transactional
+public class StoneService {
+
+    private final JwtUtil jwtUtil;
+    private final StoneRepository stoneRepository;
+
+    public StoneService(JwtUtil jwtUtil, StoneRepository stoneRepository) {
+        this.jwtUtil = jwtUtil;
+        this.stoneRepository = stoneRepository;
+    }
+
+    //생성
+    public void saveStone(StoneDto stoneDto) {
+        boolean existsByStoneName = stoneRepository.existsByStoneName(stoneDto.getStoneName());
+        if (existsByStoneName) {
+            throw new IllegalArgumentException(IS_EXIST);
+        }
+
+        BigDecimal weight = Optional.ofNullable(stoneDto.getStoneWeight())
+                .filter(s -> !s.isBlank())
+                .map(BigDecimal::new)
+                .orElse(BigDecimal.ZERO);
+
+        String note = Optional.ofNullable(stoneDto.getStoneNote())
+                .orElse("");
+
+        Integer purchasePrice = Optional.ofNullable(stoneDto.getStonePurchasePrice())
+                .orElse(0);
+
+        Stone stone = Stone.builder()
+                .stoneName(stoneDto.getStoneName())
+                .stoneNote(note)
+                .stoneWeight(weight)
+                .stonePurchasePrice(purchasePrice)
+                .gradePolicies(new ArrayList<>())
+                .build();
+
+        for (StoneWorkGradePolicyDto dto : stoneDto.getStoneWorkGradePolicyDto()) {
+            Integer laborCost = Optional.ofNullable(dto.getLaborCost())
+                    .orElse(0);
+
+            StoneWorkGradePolicy stoneWorkGradePolicy = StoneWorkGradePolicy.builder()
+                    .grade(dto.getGrade())
+                    .laborCost(laborCost)
+                    .build();
+
+            stone.addGradePolicy(stoneWorkGradePolicy);
+        }
+
+        stoneRepository.save(stone);
+    }
+
+    //단건조회
+    public StoneDto.ResponseSingle getStone(Long stoneId) {
+        Stone stone = getStoneEntity(stoneRepository.findFetchJoinById(stoneId));
+
+        List<StoneWorkGradePolicyDto.Response> policyDtos = stone.getGradePolicies().stream()
+                .map(StoneWorkGradePolicyDto.Response::fromEntity)
+                .collect(Collectors.toList());
+
+        return StoneDto.ResponseSingle.builder()
+                .stoneId(String.valueOf(stoneId))
+                .stoneName(stone.getStoneName())
+                .stoneNote(stone.getStoneNote())
+                .stoneWeight(stone.getStoneWeight().stripTrailingZeros().toPlainString())
+                .stonePurchasePrice(stone.getStonePurchasePrice())
+                .stoneWorkGradePolicyDto(policyDtos)
+                .build();
+    }
+
+    public CustomPage<StoneDto.PageDto> getStones(String search, String searchField, String searchMin, String searchMax, String sortField, String sortOrder, Pageable pageable) {
+        return stoneRepository.findAllStones(search, searchField, searchMin, searchMax, sortField, sortOrder, pageable);
+    }
+
+    //수정
+    public void updateStone(Long stoneId, StoneDto stoneDto) {
+        Stone stone = getStoneEntity(stoneRepository.findById(stoneId));
+
+        boolean existsByStoneName = stoneRepository.existsByStoneName(stoneDto.getStoneName());
+
+        if (stoneDto.getStoneName().equals(stone.getStoneName()) || !existsByStoneName) {
+            stone.updateStone(stoneDto);
+            stone.getGradePolicies().clear();
+
+            for (StoneWorkGradePolicyDto dto : stoneDto.getStoneWorkGradePolicyDto()) {
+                StoneWorkGradePolicy policy = StoneWorkGradePolicy.builder()
+                        .grade(dto.getGrade())
+                        .laborCost(dto.getLaborCost())
+                        .build();
+                stone.addGradePolicy(policy);
+            }
+            return;
+        }
+        throw new IllegalArgumentException(IS_EXIST);
+    }
+
+    //삭제
+    public void deletedStone(String accessToken, Long stoneId) {
+        String role = jwtUtil.getRole(accessToken);
+
+        if (!role.equals("ADMIN")) {
+            throw new IllegalArgumentException(NOT_ACCESS);
+        }
+
+        Stone stone = getStoneEntity(stoneRepository.findById(stoneId));
+
+        stoneRepository.delete(stone);
+    }
+
+    private Stone getStoneEntity(Optional<Stone> stoneRepository) {
+        return stoneRepository
+                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+    }
+
+    public Boolean getExistStoneId(Long id) {
+        return stoneRepository.existsByStoneId(id);
+    }
+
+    public Boolean getExistStoneName(String stoneTypeName, String stoneShapeName, String stoneSize) {
+        String stoneName = stoneTypeName + "/" + stoneShapeName + "/" + stoneSize;
+        return stoneRepository.existsByStoneName(stoneName);
+    }
+
+    /**
+     * 스톤 목록 엑셀 다운로드
+     */
+    @Transactional(readOnly = true)
+    public byte[] getStonesExcel(String stoneName, String stoneShape, String stoneType) throws IOException {
+        List<StoneExcelDto> stoneExcelDtos = stoneRepository.findStonesForExcel(stoneName, stoneShape, stoneType);
+        return StoneExcelUtil.createStoneWorkSheet(stoneExcelDtos);
+    }
+}

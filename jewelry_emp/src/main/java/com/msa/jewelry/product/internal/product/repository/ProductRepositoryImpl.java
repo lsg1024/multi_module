@@ -1,0 +1,445 @@
+package com.msa.jewelry.product.internal.product.repository;
+
+import com.msa.common.global.util.CustomPage;
+import com.msa.jewelry.product.internal.classification.dto.QClassificationDto_ResponseSingle;
+import com.msa.jewelry.product.internal.grade.WorkGrade;
+import com.msa.jewelry.product.internal.material.dto.QMaterialDto_ResponseSingle;
+import com.msa.jewelry.product.internal.product.dto.*;
+import com.msa.jewelry.product.internal.set.dto.QSetTypeDto_ResponseSingle;
+import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Order;
+import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.impl.JPAQuery;
+import com.querydsl.jpa.impl.JPAQueryFactory;
+import jakarta.persistence.EntityManager;
+import org.springframework.data.domain.Pageable;
+import org.springframework.util.StringUtils;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
+
+import static com.msa.jewelry.product.internal.classification.entity.QClassification.classification;
+import static com.msa.jewelry.product.internal.color.entity.QColor.color;
+import static com.msa.jewelry.product.internal.material.entity.QMaterial.material;
+import static com.msa.jewelry.product.internal.product.entity.QProduct.product;
+import static com.msa.jewelry.product.internal.product.entity.QProductImage.productImage;
+import static com.msa.jewelry.product.internal.product.entity.QProductStone.productStone;
+import static com.msa.jewelry.product.internal.product.entity.QProductWorkGradePolicy.productWorkGradePolicy;
+import static com.msa.jewelry.product.internal.product.entity.QProductWorkGradePolicyGroup.productWorkGradePolicyGroup;
+import static com.msa.jewelry.product.internal.set.entity.QSetType.setType;
+import static com.msa.jewelry.product.internal.stone.stone.entity.QStone.stone;
+import static com.msa.jewelry.product.internal.stone.stone.entity.QStoneWorkGradePolicy.stoneWorkGradePolicy;
+
+/**
+ * 상품 QueryDSL 쿼리 구현체.
+ *
+ * *상품 단건 조회, 페이징 목록 조회, 관련 상품 조회 등 다양한 쿼리를 제공한다.
+ *
+ * *주요 특징:
+ *
+ *   - 2단계 로딩 — 1단계에서 상품 목록을 페이징 조회하고,
+ *       2단계에서 추출한 productId 목록으로 보석 정보를 배치 조회하여
+ *       Java Map 기반으로 각 DTO에 중첩 설정
+ *   - Map 기반 중첩 결합 — {@code Map<Long, List<ProductStoneDto.PageResponse>>}를
+ *       {@code computeIfAbsent}로 구성한 뒤 DTO에 주입
+ *   - 등급 정책 — {@link WorkGrade} 열거형의 서수(ordinal) 범위를 이용하여
+ *       요청 등급 이하의 후보 등급 목록을 구성하고,
+ *       가장 가까운 등급의 공임비를 {@code ORDER BY grade DESC LIMIT 1} 로 조회
+ *   - 기본 등급 그룹 필터 — {@code productWorkGradePolicyGroupDefault = true} 조건으로
+ *       기본 가격 정책 그룹만 조회
+ * 
+ *
+ * *의존성: {@link JPAQueryFactory}, {@code product}, {@code setType},
+ * {@code classification}, {@code material}, {@code color},
+ * {@code productWorkGradePolicyGroup}, {@code productWorkGradePolicy},
+ * {@code productStone}, {@code stone}, {@code stoneWorkGradePolicy},
+ * {@code productImage} Q클래스
+ */
+public class ProductRepositoryImpl implements CustomProductRepository {
+
+    private final JPAQueryFactory query;
+
+    public ProductRepositoryImpl(EntityManager em) {
+        this.query = new JPAQueryFactory(em);
+    }
+
+    @Override
+    public ProductDto.Detail findByProductId(Long productId) {
+        return query
+                .select(new QProductDto_Detail(
+                        product.productId.stringValue(),
+                        product.factoryId,
+                        product.factoryName,
+                        product.productFactoryName,
+                        product.productName,
+                        product.standardWeight.stringValue(),
+                        product.productRelatedNumber,
+                        product.productNote,
+                        new QSetTypeDto_ResponseSingle(
+                                setType.setTypeId.stringValue(),
+                                setType.setTypeName,
+                                setType.setTypeNote
+                        ),
+                        new QClassificationDto_ResponseSingle(
+                                classification.classificationId.stringValue(),
+                                classification.classificationName,
+                                classification.classificationNote
+                        ),
+                        new QMaterialDto_ResponseSingle(
+                                material.materialId.stringValue(),
+                                material.materialName,
+                                material.materialGoldPurityPercent.stringValue()
+                        ),
+                        Expressions.constant(Collections.emptyList()), // gradePolicyDtos
+                        Expressions.constant(Collections.emptyList()), // productStoneDtos
+                        Expressions.constant(Collections.emptyList())  // productImageDtos
+                ))
+                .from(product)
+                .leftJoin(product.setType, setType)
+                .leftJoin(product.classification, classification)
+                .leftJoin(product.material, material)
+                .where(product.productId.eq(productId))
+                .fetchOne();
+    }
+
+    @Override
+    public CustomPage<ProductDto.Page> findByAllProductName(String search, String searchField, String searchMin, String searchMax, String grade, String sortField, String sortOrder, String setTypeFilter, String classificationFilter, String factoryFilter, Pageable pageable) {
+
+        BooleanBuilder builder = buildProductSearchConditions(search, searchField, searchMin, searchMax);
+        buildFilterConditions(builder, setTypeFilter, classificationFilter, factoryFilter);
+
+        WorkGrade targetGrade;
+        if (!StringUtils.hasText(grade)) {
+            targetGrade = WorkGrade.GRADE_1;
+        } else {
+            targetGrade = WorkGrade.fromLevel(grade);
+        }
+
+        QProductImageDto_Response image = new QProductImageDto_Response(
+                productImage.imageId.max().stringValue(),
+                productImage.imagePath.max()
+        );
+
+        OrderSpecifier<?>[] orderSpecifiers = createOrderSpecifiers(sortField, sortOrder);
+
+        List<ProductDto.Page> content = query
+                .select(new QProductDto_Page(
+                        product.productId.stringValue(),
+                        product.productName,
+                        product.productFactoryName,
+                        product.standardWeight.stringValue(),
+                        product.material.materialName,
+                        color.colorName,
+                        product.productNote,
+                        productWorkGradePolicyGroup.productPurchasePrice.stringValue(),
+                        productWorkGradePolicy.laborCost.coalesce(0).stringValue(),
+                        product.factoryId.stringValue(),
+                        product.factoryName,
+                        image
+                ))
+                .from(product)
+                .leftJoin(productImage).on(productImage.product.eq(product).and(productImage.imageMain.isTrue()))
+                .leftJoin(product.material, material)
+                .leftJoin(product.setType, setType)
+                .leftJoin(product.classification, classification)
+                .leftJoin(product.productWorkGradePolicyGroups, productWorkGradePolicyGroup)
+                .on(productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue())
+                .leftJoin(productWorkGradePolicyGroup.color, color)
+                .leftJoin(productWorkGradePolicyGroup.gradePolicies, productWorkGradePolicy)
+                .on(productWorkGradePolicy.grade.eq(targetGrade))
+                .where(
+                        productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue()
+                                .and(builder)
+                )
+                .groupBy(
+                        product.productId,
+                        product.productName,
+                        product.productFactoryName,
+                        product.standardWeight,
+                        material.materialName,
+                        product.productNote,
+                        productWorkGradePolicyGroup.productPurchasePrice,
+                        productWorkGradePolicy.laborCost,
+                        product.factoryId,
+                        product.factoryName,
+                        color.colorName
+                )
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .orderBy(orderSpecifiers)
+                .fetch();
+
+        JPAQuery<Long> countQuery = query
+                .select(product.countDistinct())
+                .from(product)
+                .leftJoin(productImage).on(productImage.product.eq(product).and(productImage.imageMain.isTrue()))
+                .leftJoin(product.material, material)
+                .leftJoin(product.setType, setType)
+                .leftJoin(product.classification, classification)
+                .leftJoin(product.productWorkGradePolicyGroups, productWorkGradePolicyGroup)
+                .on(productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue())
+                .leftJoin(productWorkGradePolicyGroup.color, color)
+                .where(
+                        productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue()
+                                .and(builder)
+                );
+
+        if (!content.isEmpty()) {
+            List<Long> productIds = content.stream()
+                    .map(p -> Long.valueOf(p.getProductId()))
+                    .toList();
+
+            Map<Long, List<ProductStoneDto.PageResponse>> stonesMap = loadStonesByProductIds(productIds, targetGrade);
+
+            for (ProductDto.Page dto : content) {
+                Long pid = Long.valueOf(dto.getProductId());
+                List<ProductStoneDto.PageResponse> stones = stonesMap.getOrDefault(pid, Collections.emptyList());
+                dto.getProductStones().addAll(stones);
+            }
+        }
+
+        return new CustomPage<>(content, pageable, countQuery.fetchOne());
+    }
+
+    private Map<Long, List<ProductStoneDto.PageResponse>> loadStonesByProductIds(List<Long> productIds, WorkGrade grade) {
+
+        List<Tuple> rows = query
+                .select(
+                        product.productId,
+                        productStone.productStoneId,
+                        stone.stoneId,
+                        stone.stoneName,
+                        productStone.stoneQuantity,
+                        productStone.mainStone,
+                        productStone.includeStone,
+                        productStone.includeQuantity,
+                        productStone.includePrice,
+                        stone.stonePurchasePrice,
+                        stoneWorkGradePolicy.stoneWorkGradePolicyId,
+                        stoneWorkGradePolicy.grade,
+                        stoneWorkGradePolicy.laborCost
+                )
+                .from(productStone)
+                .join(productStone.product, product)
+                .join(productStone.stone, stone)
+                .leftJoin(stone.gradePolicies, stoneWorkGradePolicy).on(stoneWorkGradePolicy.grade.eq(grade))
+                .where(
+                        product.productId.in(productIds)
+                        .and(productStone.includeStone.isTrue()))
+                .orderBy(product.productId.asc(), productStone.productStoneId.asc())
+                .fetch();
+
+        Map<Long, List<ProductStoneDto.PageResponse>> result = new LinkedHashMap<>();
+
+        for (Tuple t : rows) {
+            Long productId = t.get(product.productId);
+            Long productStoneId = t.get(productStone.productStoneId);
+            Long stoneId = t.get(stone.stoneId);
+            String stoneName = t.get(stone.stoneName);
+            Integer quantity = Optional.ofNullable(t.get(productStone.stoneQuantity)).orElse(0);
+            boolean main = Optional.ofNullable(t.get(productStone.mainStone)).orElse(false);
+            boolean include = Optional.ofNullable(t.get(productStone.includeStone)).orElse(false);
+            boolean includeQty = Optional.ofNullable(t.get(productStone.includeQuantity)).orElse(true);
+            boolean includePrc = Optional.ofNullable(t.get(productStone.includePrice)).orElse(true);
+            Integer cost = t.get(stoneWorkGradePolicy.laborCost);
+            Integer purchasePrice = t.get(stone.stonePurchasePrice);
+
+            ProductStoneDto.PageResponse resp = new ProductStoneDto.PageResponse(
+                    productStoneId != null ? productStoneId.toString() : null,
+                    stoneId != null ? stoneId.toString() : null,
+                    stoneName != null ? stoneName : "",
+                    main, include, includeQty, includePrc, quantity, cost,
+                    purchasePrice);
+
+            result.computeIfAbsent(productId, k -> new ArrayList<>()).add(resp);
+        }
+
+        return result;
+    }
+    @Override
+    public ProductDetailDto findProductDetail(Long productId, WorkGrade grade) {
+
+        List<WorkGrade> candidateGrades = Arrays.stream(WorkGrade.values())
+                .filter(g -> g.ordinal() <= grade.ordinal())
+                .toList();
+
+        return query
+                .select(new QProductDetailDto(
+                        product.productId,
+                        product.productName,
+                        product.productFactoryName,
+                        classification.classificationId,
+                        classification.classificationName,
+                        setType.setTypeId,
+                        setType.setTypeName,
+                        productWorkGradePolicyGroup.productPurchasePrice,
+                        productWorkGradePolicy.laborCost
+                ))
+                .from(product)
+                .leftJoin(product.classification, classification)
+                .leftJoin(product.setType, setType)
+                .leftJoin(product.productWorkGradePolicyGroups, productWorkGradePolicyGroup)
+                .leftJoin(productWorkGradePolicyGroup.color, color)
+                .leftJoin(productWorkGradePolicyGroup.gradePolicies, productWorkGradePolicy)
+                .where(
+                        product.productId.eq(productId),
+                        productWorkGradePolicyGroup.productWorkGradePolicyGroupDefault.isTrue(),
+                        productWorkGradePolicy.grade.in(candidateGrades)
+                )
+                .orderBy(productWorkGradePolicy.grade.desc())
+                .limit(1)
+                .fetchOne();
+
+    }
+
+    private BooleanBuilder buildProductSearchConditions(String search, String searchField, String searchMin, String searchMax) {
+        BooleanBuilder builder = new BooleanBuilder();
+
+        // searchField가 없으면 기본적으로 modelNumber(상품명/공장번호) 검색
+        if (!StringUtils.hasText(searchField)) {
+            if (StringUtils.hasText(search)) {
+                builder.and(
+                        product.productName.containsIgnoreCase(search)
+                                .or(product.productFactoryName.containsIgnoreCase(search))
+                );
+            }
+            return builder;
+        }
+
+        // searchField에 따른 조건 분기
+        switch (searchField) {
+            // 텍스트 검색
+            case "modelNumber" -> {
+                if (StringUtils.hasText(search)) {
+                    builder.and(
+                            product.productName.containsIgnoreCase(search)
+                                    .or(product.productFactoryName.containsIgnoreCase(search))
+                    );
+                }
+            }
+            case "factory" -> {
+                if (StringUtils.hasText(search)) {
+                    builder.and(product.factoryName.containsIgnoreCase(search));
+                }
+            }
+            case "note" -> {
+                if (StringUtils.hasText(search)) {
+                    builder.and(product.productNote.containsIgnoreCase(search));
+                }
+            }
+            // 텍스트 검색 (옵션)
+            case "setType" -> {
+                if (StringUtils.hasText(search)) {
+                    builder.and(setType.setTypeName.containsIgnoreCase(search));
+                }
+            }
+            case "classification" -> {
+                if (StringUtils.hasText(search)) {
+                    builder.and(classification.classificationName.containsIgnoreCase(search));
+                }
+            }
+            case "material" -> {
+                if (StringUtils.hasText(search)) {
+                    builder.and(material.materialName.containsIgnoreCase(search));
+                }
+            }
+            // 범위 검색
+            case "standardWeight" -> {
+                if (StringUtils.hasText(searchMin)) {
+                    builder.and(product.standardWeight.goe(new BigDecimal(searchMin)));
+                }
+                if (StringUtils.hasText(searchMax)) {
+                    builder.and(product.standardWeight.loe(new BigDecimal(searchMax)));
+                }
+            }
+            case "createDate" -> {
+                if (StringUtils.hasText(searchMin)) {
+                    LocalDateTime startDate = LocalDate.parse(searchMin).atStartOfDay();
+                    builder.and(product.createDate.goe(startDate));
+                }
+                if (StringUtils.hasText(searchMax)) {
+                    LocalDateTime endDate = LocalDate.parse(searchMax).atTime(23, 59, 59);
+                    builder.and(product.createDate.loe(endDate));
+                }
+            }
+            // Boolean 검색
+            case "hasImage" -> {
+                if (StringUtils.hasText(search)) {
+                    if ("true".equalsIgnoreCase(search)) {
+                        builder.and(productImage.imageId.isNotNull());
+                    } else if ("false".equalsIgnoreCase(search)) {
+                        builder.and(productImage.imageId.isNull());
+                    }
+                }
+            }
+        }
+
+        return builder;
+    }
+
+    private void buildFilterConditions(BooleanBuilder builder, String setTypeFilter, String classificationFilter, String factoryFilter) {
+        if (StringUtils.hasText(setTypeFilter)) {
+            builder.and(product.setType.setTypeId.eq(Long.parseLong(setTypeFilter)));
+        }
+        if (StringUtils.hasText(classificationFilter)) {
+            builder.and(product.classification.classificationId.eq(Long.parseLong(classificationFilter)));
+        }
+        if (StringUtils.hasText(factoryFilter)) {
+            builder.and(product.factoryId.eq(Long.parseLong(factoryFilter)));
+        }
+    }
+
+    private OrderSpecifier<?>[] createOrderSpecifiers(String sortField, String sort) {
+        List<OrderSpecifier<?>> orderSpecifiers = new ArrayList<>();
+
+        if (sort != null && StringUtils.hasText(sortField)) {
+            Order direction = "ASC".equalsIgnoreCase(sort) ? Order.ASC : Order.DESC;
+
+            switch (sortField) {
+                case "factory" -> orderSpecifiers.add(new OrderSpecifier<>(direction, product.factoryName));
+                case "setType" -> orderSpecifiers.add(new OrderSpecifier<>(direction, product.setType.setTypeName));
+                case "classification" -> orderSpecifiers.add(new OrderSpecifier<>(direction, product.classification.classificationName));
+                case "productName" -> orderSpecifiers.add(new OrderSpecifier<>(direction, product.productName));
+
+                default -> {
+                    orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, product.createDate));
+                    orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, product.productId));
+                }
+            }
+        } else {
+            orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, product.createDate));
+            orderSpecifiers.add(new OrderSpecifier<>(Order.DESC, product.productId));
+        }
+        return orderSpecifiers.toArray(new OrderSpecifier[0]);
+    }
+
+    @Override
+    public List<ProductDto.RelatedProduct> findRelatedProducts(Long productId, String relatedNumber) {
+        if (relatedNumber == null || relatedNumber.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        return query
+                .select(new QProductDto_RelatedProduct(
+                        product.productId,
+                        product.productName,
+                        productImage.imagePath.coalesce("")
+                ))
+                .from(product)
+                .leftJoin(productImage).on(
+                        productImage.product.eq(product)
+                                .and(productImage.imageMain.isTrue())
+                )
+                .where(
+                        product.productRelatedNumber.eq(relatedNumber),
+                        product.productId.ne(productId),
+                        product.productDeleted.isFalse()
+                )
+                .orderBy(product.productName.asc())
+                .fetch();
+    }
+}

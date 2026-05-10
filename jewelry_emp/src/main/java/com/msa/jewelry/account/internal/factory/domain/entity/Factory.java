@@ -1,0 +1,136 @@
+package com.msa.jewelry.account.internal.factory.domain.entity;
+
+import com.msa.jewelry.account.internal.global.domain.dto.AccountDto;
+import com.msa.jewelry.account.internal.global.domain.dto.AddressDto;
+import com.msa.jewelry.account.internal.global.domain.dto.CommonOptionDto;
+import com.msa.jewelry.account.internal.global.domain.entity.Address;
+import com.msa.jewelry.account.internal.global.domain.entity.CommonOption;
+import com.msa.jewelry.account.internal.global.domain.entity.GoldHarry;
+import com.msa.common.global.domain.BaseEntity;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+import org.hibernate.annotations.SQLDelete;
+
+import java.math.BigDecimal;
+
+@Getter
+@Entity
+@Table(name = "FACTORY")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@SQLDelete(sql = "UPDATE FACTORY SET FACTORY_DELETED = TRUE WHERE FACTORY_ID = ?")
+public class Factory extends BaseEntity {
+
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "FACTORY_ID")
+    private Long factoryId;
+
+    @Column(name = "FACTORY_NAME", unique = true, nullable = false, length = 30)
+    private String factoryName;
+    @Column(name = "FACTORY_OWNER_NAME", length = 30)
+    private String factoryOwnerName;
+    @Column(name = "FACTORY_PHONE_NUMBER", length = 13)
+    private String factoryPhoneNumber;
+    @Column(name = "FACTORY_CONTACT_NUMBER_1", length = 13)
+    private String factoryContactNumber1;
+    @Column(name = "FACTORY_CONTACT_NUMBER_2", length = 13)
+    private String factoryContactNumber2;
+    @Column(name = "FACTORY_FAX_NUMBER", length = 16)
+    private String factoryFaxNumber;
+    @Column(name = "FACTORY_NOTE")
+    private String factoryNote;
+    @Column(name = "FACTORY_DELETED", nullable = false)
+    private boolean factoryDeleted = false;
+
+    @Column(name = "CURRENT_GOLD_BALANCE", nullable = false, precision = 10, scale = 3)
+    private BigDecimal currentGoldBalance = BigDecimal.ZERO;
+    @Column(name = "CURRENT_MONEY_BALANCE", nullable = false)
+    private Long currentMoneyBalance = 0L;
+
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "ADDRESS_ID")
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private Address address;
+
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "COMMON_OPTION_ID")
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private CommonOption commonOption;
+
+    @Builder
+    public Factory(String factoryName, String factoryOwnerName, String factoryPhoneNumber, String factoryContactNumber1, String factoryContactNumber2, String factoryFaxNumber, String factoryNote, boolean factoryDeleted, Address address, CommonOption commonOption) {
+        this.factoryName = factoryName;
+        this.factoryOwnerName = factoryOwnerName;
+        this.factoryPhoneNumber = factoryPhoneNumber;
+        this.factoryContactNumber1 = factoryContactNumber1;
+        this.factoryContactNumber2 = factoryContactNumber2;
+        this.factoryFaxNumber = factoryFaxNumber;
+        this.factoryNote = factoryNote;
+        this.factoryDeleted = factoryDeleted;
+        this.address = address;
+        this.commonOption = commonOption;
+    }
+    /**
+     * 제조처 정보를 부분 업데이트한다.
+     * null/빈 문자열로 전달된 필드는 기존 DB 값을 유지한다 (payload 누락 시 데이터 유실 방지).
+     */
+    public void updateFactoryInfo(AccountDto.AccountInfo factoryInfo) {
+        if (factoryInfo == null) {
+            return;
+        }
+        if (factoryInfo.getAccountName() != null && !factoryInfo.getAccountName().isEmpty()) {
+            this.factoryName = factoryInfo.getAccountName();
+        }
+        if (factoryInfo.getAccountOwnerName() != null) {
+            this.factoryOwnerName = factoryInfo.getAccountOwnerName();
+        }
+        if (factoryInfo.getAccountPhoneNumber() != null) {
+            this.factoryPhoneNumber = factoryInfo.getAccountPhoneNumber();
+        }
+        if (factoryInfo.getAccountContactNumber1() != null) {
+            this.factoryContactNumber1 = factoryInfo.getAccountContactNumber1();
+        }
+        if (factoryInfo.getAccountContactNumber2() != null) {
+            this.factoryContactNumber2 = factoryInfo.getAccountContactNumber2();
+        }
+        if (factoryInfo.getAccountFaxNumber() != null) {
+            this.factoryFaxNumber = factoryInfo.getAccountFaxNumber();
+        }
+        if (factoryInfo.getAccountNote() != null) {
+            this.factoryNote = factoryInfo.getAccountNote();
+        }
+    }
+    public void updateAddressInfo(AddressDto.AddressInfo addressInfo) {
+        if (addressInfo == null) {
+            return;
+        }
+
+        if (this.address == null) {
+            this.address = Address.builder()
+                    .addressAdd(addressInfo.getAddressAdd())
+                    .addressBasic(addressInfo.getAddressBasic())
+                    .addressZipCode(addressInfo.getAddressZipCode())
+                    .build();
+        } else {
+            this.address.update(addressInfo);
+        }
+    }
+
+    public void updateCommonOption(CommonOptionDto.CommonOptionInfo optionInfo, GoldHarry goldHarry) {
+        this.commonOption.updateTradeTypeAndOptionLevel(optionInfo);
+        this.commonOption.updateGoldHarry(goldHarry);
+    }
+
+    public void updateBalance(BigDecimal goldAmount, Long moneyAmount) {
+        this.currentGoldBalance = this.currentGoldBalance.add(goldAmount);
+        this.currentMoneyBalance += moneyAmount;
+    }
+
+    public boolean isNameChanged(String factoryName) {
+        return !this.factoryName.equals(factoryName);
+    }
+}

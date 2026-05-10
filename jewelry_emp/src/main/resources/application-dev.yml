@@ -1,0 +1,30 @@
+# dev profile defaults.
+#
+# bootstrap.yml sets spring.profiles.active=dev so this file is always loaded
+# alongside the values pushed down by the config-server (jewelry-dev.properties).
+# Keys defined here act as a safety net when the config-server entry is missing.
+#
+# Override priority (high -> low):
+#   1) Environment variable (e.g. FILE_UPLOAD_PATH=...)
+#   2) config-server jewelry-dev.properties
+#   3) this file (application-dev.yml)
+#   4) application.yml
+#   5) @Value default in code
+
+# File upload root.
+# Override per environment via env var or config-server.
+FILE_UPLOAD_PATH: ${FILE_UPLOAD_PATH:/tmp/jewelry/uploads}
+
+# Image search service config (ConfigurationProperties prefix=imagesearch).
+imagesearch:
+  base-url: ${IMAGE_SEARCH_BASE_URL:http://localhost:8081}
+  api-key: ${IMAGE_SEARCH_API_KEY:dev-api-key}
+  enabled: ${IMAGE_SEARCH_ENABLED:false}
+  connect-timeout: 2s
+  read-timeout: 5s
+  default-top-k: 20
+  candidate-top-k: 200
+  scoring:
+    similarity-weight: 0.7
+    material-weight: 0.15
+    color-weight: 0.15

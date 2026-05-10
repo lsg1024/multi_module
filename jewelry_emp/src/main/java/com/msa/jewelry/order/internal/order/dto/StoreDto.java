@@ -1,0 +1,58 @@
+package com.msa.jewelry.order.internal.order.dto;
+
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+public class StoreDto {
+
+    @Getter
+    @NoArgsConstructor
+    public static class Request {
+        private Long storeId;
+        private String storeName;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class Response {
+        private Long storeId;
+        private String storeName;
+        private String grade;
+        private String storeHarry;
+        private boolean optionApplyPastSales;
+
+        @Builder
+        public Response(Long storeId, String storeName, String grade, String storeHarry, boolean optionApplyPastSales) {
+            this.storeId = storeId;
+            this.storeName = storeName;
+            this.grade = grade;
+            this.storeHarry = storeHarry;
+            this.optionApplyPastSales = optionApplyPastSales;
+        }
+
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class accountResponse {
+        private Long accountId;
+        private String accountName;
+        private String tradeType;
+        private String grade;
+        private String goldHarryLoss;
+        private String previousGoldBalance;
+        private String previousMoneyBalance;
+        private String afterGoldBalance;
+        private String afterMoneyBalance;
+        private String lastSaleDate;
+        private String lastPaymentDate;
+        private String businessOwnerName;
+        private String businessOwnerNumber;
+        private String businessNumber1;
+        private String businessNumber2;
+        private String faxNumber;
+        private String address;
+        private String note;
+    }
+}

@@ -409,7 +409,9 @@ public class SaleService {
         Integer storeTotalMoney = stock.getTotalStoneLaborCost() + stockDto.getStoneAddLaborCost() +
                 product.getProductLaborCost() + stockDto.getAddProductLaborCost();
 
-        BigDecimal factoryHarry = new BigDecimal("1.10");
+        // 공장 harry: 주문 시점에 Stock 으로 스냅샷된 값을 우선 사용 (storeHarry 패턴 동일).
+        // 과거 데이터 등으로 null 인 경우 기본값 1.10 fallback.
+        BigDecimal factoryHarry = stock.getFactoryHarry() != null ? stock.getFactoryHarry() : new BigDecimal("1.10");
         BigDecimal factoryPureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), product.getMaterialName().toUpperCase(), factoryHarry);
         Integer factoryTotalMoney = stock.getTotalStonePurchaseCost() + product.getProductPurchaseCost();
 
@@ -463,8 +465,8 @@ public class SaleService {
         Integer storeTotalMoney = stock.getTotalStoneLaborCost() + stockDto.getStoneAddLaborCost() +
                 stock.getProduct().getProductLaborCost() + stockDto.getProductAddLaborCost();
 
-        // 공장 정산 (매입가) - 공장 해리는 1.10 고정
-        BigDecimal factoryHarry = new BigDecimal("1.10");
+        // 공장 정산 (매입가) - Stock 에 스냅샷된 factoryHarry 우선 사용. null 이면 1.10 fallback.
+        BigDecimal factoryHarry = stock.getFactoryHarry() != null ? stock.getFactoryHarry() : new BigDecimal("1.10");
         BigDecimal factoryPureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), stockDto.getMaterialName().toUpperCase(), factoryHarry);
         Integer factoryTotalMoney = stock.getTotalStonePurchaseCost() + stock.getProduct().getProductPurchaseCost();
 

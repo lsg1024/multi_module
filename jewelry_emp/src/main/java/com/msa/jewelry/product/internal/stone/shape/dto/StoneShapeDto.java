@@ -1,0 +1,31 @@
+package com.msa.jewelry.product.internal.stone.shape.dto;
+
+import com.querydsl.core.annotations.QueryProjection;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+public class StoneShapeDto {
+    private String stoneShapeName;
+    private String stoneShapeNote;
+
+    @Getter
+    @NoArgsConstructor
+    public static class ResponseSingle {
+        private String stoneShapeId;
+        private String stoneShapeName;
+        private String stoneShapeNote;
+
+        @Builder
+        @QueryProjection
+        public ResponseSingle(String stoneShapeId, String stoneShapeName, String stoneShapeNote) {
+            this.stoneShapeId = stoneShapeId;
+            this.stoneShapeName = stoneShapeName;
+            this.stoneShapeNote = stoneShapeNote;
+        }
+    }
+}

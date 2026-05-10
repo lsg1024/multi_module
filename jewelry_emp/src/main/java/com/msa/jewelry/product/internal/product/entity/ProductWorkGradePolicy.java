@@ -1,0 +1,46 @@
+package com.msa.jewelry.product.internal.product.entity;
+
+import com.msa.jewelry.product.internal.grade.WorkGrade;
+import com.msa.jewelry.product.internal.product.dto.ProductWorkGradePolicyDto;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@Entity
+@Table(name = "PRODUCT_WORK_GRADE_POLICY") // 상품 판매 공임 (stone X)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class ProductWorkGradePolicy {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "PRODUCT_WORK_GRADE_POLICY_ID")
+    private Long productWorkGradePolicyId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "GRADE", nullable = false)
+    private WorkGrade grade;
+
+    @Column(name = "LABOR_COST")
+    private Integer laborCost = 0;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "PRODUCT_WORK_GRADE_POLICY_GROUP_ID")
+    private ProductWorkGradePolicyGroup workGradePolicyGroup;
+
+    @Builder
+    public ProductWorkGradePolicy(Long productWorkGradePolicyId, String grade, Integer laborCost) {
+        this.productWorkGradePolicyId = productWorkGradePolicyId;
+        this.grade =  WorkGrade.valueOf(grade);
+        this.laborCost = laborCost != null ? laborCost : 0;
+    }
+
+    public void setWorkGradePolicyGroup(ProductWorkGradePolicyGroup workGradePolicyGroup) {
+        this.workGradePolicyGroup = workGradePolicyGroup;
+    }
+
+    public void updateWorkGradePolicyDto(ProductWorkGradePolicyDto.Request dto) {
+        this.laborCost = dto.getLaborCost() != null ? dto.getLaborCost() : 0;
+    }
+}

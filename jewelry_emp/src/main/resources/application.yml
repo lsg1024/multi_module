@@ -1,0 +1,101 @@
+spring:
+  application:
+    name: jewelry
+  profiles:
+    active: dev
+
+  config:
+    import: optional:application-secret.yml
+
+  main:
+    allow-bean-definition-overriding: true
+    allow-circular-references: true
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+      naming:
+        implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 30
+          time_zone: Asia/Seoul
+        format_sql: true
+        default_batch_fetch_size: 100
+
+  flyway:
+    enabled: false
+
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: never
+
+FILE_UPLOAD_PATH: ${FILE_UPLOAD_PATH2:/tmp/jewelry/uploads}
+
+server:
+  port: ${server.port:8023}
+  shutdown: graceful
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+  tomcat:
+    max-threads: 200
+    accept-count: 50
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: refresh, health, info, metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+custom:
+  flyway:
+    business:
+      locations: classpath:db/migration
+      baseline-on-migrate: true
+    batch:
+      locations: classpath:db/migration_batch
+      baseline-on-migrate: true
+  jpa:
+    entity-scan-packages:
+      - com.msa.jewelry
+
+migration:
+  failure-log-dir: ${MIGRATION_FAILURE_LOG_DIR:src/main/resources/logs}
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+    org.hibernate.orm.jdbc.bind: trace
+    org.springframework.kafka.retrytopic: debug
+    org.apache.kafka.clients.consumer: WARN
+    org.apache.kafka.clients.NetworkClient: WARN
+    org.springframework.kafka: WARN
+    com.netflix.discovery.shared.resolver.aws.ConfigClusterResolver: WARN
+
+
+eureka:
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port:8023}
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${EUREKA_DEFAULT_ZONE:http://LIMJAESEONG:vycp8PzEe9iVnUw@localhost:8761/eureka}

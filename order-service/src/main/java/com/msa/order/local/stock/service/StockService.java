@@ -354,6 +354,7 @@ public class StockService {
                 .storeGrade(order.getStoreGrade())
                 .factoryId(order.getFactoryId())
                 .factoryName(order.getFactoryName())
+                .factoryHarry(order.getFactoryHarry())
                 .stockMainStoneNote(stockDto.getMainStoneNote()) // 수정 가능
                 .stockAssistanceStoneNote(stockDto.getAssistanceStoneNote()) // 수정 가능
                 .stockNote(stockDto.getOrderNote()) // 수정 가능
@@ -434,6 +435,7 @@ public class StockService {
                 .storeHarry(SafeParse.toBigDecimalOrNull(stockDto.getStoreHarry()))
                 .factoryId(factoryId)
                 .factoryName(stockDto.getFactoryName())
+                .factoryHarry(SafeParse.toBigDecimalOrNull(stockDto.getFactoryHarry()))
                 .stockNote(stockDto.getStockNote())
                 .orderStatus(OrderStatus.WAIT)
                 .stockMainStoneNote(stockDto.getMainStoneNote())

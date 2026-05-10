@@ -1,0 +1,209 @@
+# ====================================================================
+# api-gateway 의 jewelry 라우팅 프로파일.
+# 사용법: gateway 시동 시 SPRING_PROFILES_ACTIVE=dev,jewelry 로 활성화
+#
+# 기존 application.yml 의 lb://account, lb://product, lb://order, lb://users
+# 라우트를 모두 lb://jewelry 로 일괄 덮어쓴다.
+# auth 라우트는 jewelry 가 아니라 별도 auth-service 그대로 유지.
+#
+# Eureka 가용 시 lb://jewelry 사용. Eureka 없이 테스트하려면
+# uri 를 http://localhost:8023 으로 직접 지정 (주석 처리된 부분 참고).
+# ====================================================================
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        # auth 만 lb://auth 그대로
+        - id: auth
+          uri: lb://auth
+          predicates:
+            - Path=/auth/**
+          filters:
+            - StripPrefix=1
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - name: UserAgentHeaderFilter
+            - RemoveRequestHeader=X-User-ID
+            - name: AuthorizationHeaderFilter
+              args:
+                require: false
+
+        # users-signup → jewelry (UsersController @PostMapping("/signup"))
+        - id: users-signup
+          uri: lb://jewelry
+          # uri: http://localhost:8023      # Eureka 우회 시 주석 해제
+          predicates:
+            - Path=/users/signup
+            - Method=POST,OPTIONS
+          filters:
+            - StripPrefix=1
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+
+        # users 전체 → jewelry
+        - id: users
+          uri: lb://jewelry
+          # uri: http://localhost:8023
+          predicates:
+            - Path=/users/**
+          filters:
+            - StripPrefix=1
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - name: UserAgentHeaderFilter
+            - name: AuthorizationHeaderFilter
+              args:
+                require: true
+                verifyDevice: true
+                verifyForwardedFor: false
+
+        # account → jewelry (account 모듈의 controller path 들이 그대로)
+        - id: account
+          uri: lb://jewelry
+          # uri: http://localhost:8023
+          predicates:
+            - Path=/account/**
+          filters:
+            - StripPrefix=1
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - name: UserAgentHeaderFilter
+            - name: AuthorizationHeaderFilter
+              args:
+                require: true
+                verifyDevice: true
+                verifyForwardedFor: true
+
+        # product → jewelry
+        - id: product
+          uri: lb://jewelry
+          # uri: http://localhost:8023
+          predicates:
+            - Path=/product/**
+          filters:
+            - StripPrefix=1
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - name: UserAgentHeaderFilter
+            - name: AuthorizationHeaderFilter
+              args:
+                require: true
+                verifyDevice: true
+                verifyForwardedFor: true
+
+        # catalog → jewelry (StripPrefix 없음 — controller 가 /catalog 로 매핑됨)
+        - id: catalog
+          uri: lb://jewelry
+          # uri: http://localhost:8023
+          predicates:
+            - Path=/catalog/**
+          filters:
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - name: UserAgentHeaderFilter
+            - name: AuthorizationHeaderFilter
+              args:
+                require: true
+                verifyDevice: true
+                verifyForwardedFor: true
+
+        # order → jewelry
+        - id: order
+          uri: lb://jewelry
+          # uri: http://localhost:8023
+          predicates:
+            - Path=/order/**
+          filters:
+            - StripPrefix=1
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - name: UserAgentHeaderFilter
+            - name: AuthorizationHeaderFilter
+              args:
+                require: true
+                verifyDevice: true
+                verifyForwardedFor: true
+
+        # ========== 내부 라우팅 ==========
+        - id: users-internal
+          uri: lb://jewelry
+          # uri: http://localhost:8023
+          predicates:
+            - Path=/internal/users/**
+          filters:
+            - StripPrefix=2
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - name: UserAgentHeaderFilter
+            - RemoveRequestHeader=Cookie
+            - RemoveRequestHeader=X-User-ID
+            - name: AuthorizationHeaderFilter
+              args:
+                require: false
+                verifyDevice: false
+                verifyForwardedFor: false
+
+        - id: account-internal
+          uri: lb://jewelry
+          # uri: http://localhost:8023
+          predicates:
+            - Path=/internal/account/**
+          filters:
+            - StripPrefix=2
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - RemoveRequestHeader=Cookie
+            - RemoveRequestHeader=X-User-ID
+            - name: UserAgentHeaderFilter
+            - name: AuthorizationHeaderFilter
+              args:
+                require: false
+                verifyDevice: false
+                verifyForwardedFor: false
+
+        - id: product-internal
+          uri: lb://jewelry
+          # uri: http://localhost:8023
+          predicates:
+            - Path=/internal/product/**
+          filters:
+            - StripPrefix=2
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - RemoveRequestHeader=Cookie
+            - RemoveRequestHeader=X-User-ID
+            - name: UserAgentHeaderFilter
+            - name: AuthorizationHeaderFilter
+              args:
+                require: false
+                verifyDevice: false
+                verifyForwardedFor: false
+
+        - id: order-internal
+          uri: lb://jewelry
+          # uri: http://localhost:8023
+          predicates:
+            - Path=/internal/order/**
+          filters:
+            - StripPrefix=2
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - RemoveRequestHeader=Cookie
+            - RemoveRequestHeader=X-User-ID
+            - name: UserAgentHeaderFilter
+            - name: AuthorizationHeaderFilter
+              args:
+                require: false
+                verifyDevice: false
+                verifyForwardedFor: false

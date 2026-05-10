@@ -87,4 +87,43 @@ public class StockMigrationService {
         }
         return s;
     }
+
+    /**
+     * 모든 row 처리 결과(SUCCESS/SKIP/ERROR)를 CSV byte[] 로 변환.
+     * UTF-8 + BOM (엑셀에서 한글 호환).
+     * 컬럼: seq, outcome, csvNo, modelName, storeName, currentStockType,
+     *      orderStatus, stockId, flowCode, reason, recordedAt
+     */
+    public byte[] generateRecordsCsv(List<StockMigrationRecordCollector.Record> records) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        // UTF-8 BOM
+        baos.write(0xEF);
+        baos.write(0xBB);
+        baos.write(0xBF);
+
+        try (OutputStreamWriter osw = new OutputStreamWriter(baos, java.nio.charset.StandardCharsets.UTF_8);
+             BufferedWriter writer = new BufferedWriter(osw)) {
+
+            writer.write("seq,outcome,csvNo,modelName,storeName,currentStockType,orderStatus,stockId,flowCode,reason,recordedAt");
+            writer.newLine();
+
+            for (StockMigrationRecordCollector.Record r : records) {
+                writer.write(String.join(",",
+                        String.valueOf(r.sequenceNo()),
+                        r.outcome().name(),
+                        csvEscape(r.csvNo()),
+                        csvEscape(r.modelName()),
+                        csvEscape(r.storeName()),
+                        csvEscape(r.currentStockType()),
+                        csvEscape(r.orderStatus()),
+                        r.stockId() != null ? r.stockId().toString() : "",
+                        csvEscape(r.flowCode()),
+                        csvEscape(r.reason()),
+                        r.recordedAt() != null ? r.recordedAt().toString() : ""
+                ));
+                writer.newLine();
+            }
+        }
+        return baos.toByteArray();
+    }
 }

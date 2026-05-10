@@ -37,6 +37,7 @@ public class StockDto {
         @Pattern(regexp = "\\d+", message = "공장을 선택해주세요.")
         private String factoryId;
         private String factoryName;
+        private String factoryHarry;
 
         @NotBlank(message = "상품 ID는 필수입니다.")
         @Pattern(regexp = "\\d+", message = "상품을 선택해주세요.")

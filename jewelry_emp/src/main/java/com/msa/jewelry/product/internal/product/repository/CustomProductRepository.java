@@ -1,0 +1,19 @@
+package com.msa.jewelry.product.internal.product.repository;
+
+import com.msa.jewelry.product.internal.grade.WorkGrade;
+import com.msa.jewelry.product.internal.product.dto.ProductDetailDto;
+import com.msa.jewelry.product.internal.product.dto.ProductDto;
+import com.msa.common.global.util.CustomPage;
+import org.springframework.data.domain.Pageable;
+
+public interface CustomProductRepository {
+    ProductDto.Detail findByProductId(Long productId);
+    CustomPage<ProductDto.Page> findByAllProductName(String search, String searchField, String searchMin, String searchMax, String grade, String sortField, String sortOrder, String setTypeFilter, String classificationFilter, String factoryFilter, Pageable pageable);
+
+    ProductDetailDto findProductDetail(Long productId, WorkGrade grade);
+
+    /**
+     * 관련번호로 관련 상품 목록 조회 (본인 제외)
+     */
+    java.util.List<ProductDto.RelatedProduct> findRelatedProducts(Long productId, String relatedNumber);
+}

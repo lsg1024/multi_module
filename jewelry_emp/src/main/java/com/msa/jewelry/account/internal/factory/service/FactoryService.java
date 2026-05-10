@@ -1,0 +1,202 @@
+package com.msa.jewelry.account.internal.factory.service;
+
+import com.msa.jewelry.account.internal.global.domain.dto.AccountDto;
+import com.msa.jewelry.account.internal.global.domain.entity.GoldHarry;
+import com.msa.jewelry.account.internal.global.domain.entity.OptionLevel;
+import com.msa.jewelry.account.internal.global.domain.repository.GoldHarryRepository;
+import com.msa.jewelry.account.internal.global.excel.dto.AccountExcelDto;
+import com.msa.jewelry.account.internal.global.excel.dto.PurchaseExcelDto;
+import com.msa.jewelry.account.internal.global.excel.util.PurchaseExcelUtil;
+import com.msa.jewelry.account.internal.global.exception.NotAuthorityException;
+import com.msa.jewelry.account.internal.global.exception.NotFoundException;
+import com.msa.jewelry.account.internal.factory.domain.dto.FactoryDto;
+import com.msa.jewelry.account.internal.factory.domain.entity.Factory;
+import com.msa.jewelry.account.internal.factory.repository.FactoryRepository;
+import com.msa.jewelry.account.internal.transaction_history.repository.TransactionHistoryRepository;
+import com.msa.common.global.util.AuthorityUserRoleUtil;
+import com.msa.common.global.util.CustomPage;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+import static com.msa.jewelry.account.internal.global.exception.ExceptionMessage.*;
+
+@Service
+@Transactional
+public class FactoryService {
+    private final AuthorityUserRoleUtil authorityUserRoleUtil;
+    private final FactoryRepository factoryRepository;
+    private final GoldHarryRepository goldHarryRepository;
+    private final TransactionHistoryRepository transactionHistoryRepository;
+
+    public FactoryService(AuthorityUserRoleUtil authorityUserRoleUtil, FactoryRepository factoryRepository, GoldHarryRepository goldHarryRepository, TransactionHistoryRepository transactionHistoryRepository) {
+        this.authorityUserRoleUtil = authorityUserRoleUtil;
+        this.factoryRepository = factoryRepository;
+        this.goldHarryRepository = goldHarryRepository;
+        this.transactionHistoryRepository = transactionHistoryRepository;
+    }
+
+    /**
+     * Task 4-3 / 4-4 — 제조사 최근 활동(거래 + 결제) 상세.
+     * FactoryPage 에서 최근거래일/최근결제일 셀 클릭 시 모달에서 사용.
+     */
+    @Transactional(readOnly = true)
+    public AccountDto.RecentActivityResponse getFactoryRecentActivity(Long factoryId, int limit) {
+        return new AccountDto.RecentActivityResponse(
+                transactionHistoryRepository.findRecentSalesByFactory(factoryId, limit),
+                transactionHistoryRepository.findPaymentSummaryByFactory(factoryId)
+        );
+    }
+    @Transactional(readOnly = true)
+    public AccountDto.AccountSingleResponse getFactoryInfo(String factoryId) {
+        return factoryRepository.findByFactoryId(Long.valueOf(factoryId))
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_STORE));
+    }
+
+    @Transactional(readOnly = true)
+    public CustomPage<FactoryDto.FactoryResponse> getFactoryList(String name, String searchField, String sortField, String sortOrder, Pageable pageable) {
+        return factoryRepository.findAllFactory(name, searchField, sortField, sortOrder, pageable);
+    }
+
+    public void createFactory(FactoryDto.FactoryRequest factoryInfo) throws NotFoundException {
+        if (factoryRepository.existsByFactoryName(factoryInfo.getAccountInfo().getAccountName())) {
+            throw new NotFoundException(ALREADY_EXIST_FACTORY);
+        }
+
+        GoldHarry goldHarry = goldHarryRepository.findById(Long.valueOf(factoryInfo.getCommonOptionInfo().getGoldHarryId()))
+                .orElseThrow(() -> new NotFoundException(WRONG_HARRY));
+
+        Factory newfactory = factoryInfo.toEntity(goldHarry);
+
+        factoryRepository.save(newfactory);
+    }
+
+    public void updateFactory(String token, String factoryId, AccountDto.AccountUpdate updateInfo) {
+
+        Factory factory = factoryRepository.findWithAllOptionById(Long.valueOf(factoryId))
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_FACTORY));
+
+        if (authorityUserRoleUtil.verification(token)) {
+            AccountDto.AccountInfo factoryInfo = updateInfo.getAccountInfo();
+
+            if (factory.isNameChanged(factoryInfo.getAccountName())) {
+                if (factoryRepository.existsByFactoryName(factoryInfo.getAccountName())) {
+                    throw new NotFoundException(ALREADY_EXIST_FACTORY);
+                }
+            }
+
+            GoldHarry goldHarry = goldHarryRepository.findById(Long.valueOf(updateInfo.getCommonOptionInfo().getGoldHarryId()))
+                    .orElseThrow(() -> new NotFoundException(WRONG_HARRY));
+
+            factory.updateFactoryInfo(factoryInfo);
+            factory.updateCommonOption(updateInfo.getCommonOptionInfo(), goldHarry);
+
+            if (updateInfo.getAddressInfo() != null) {
+                factory.updateAddressInfo(updateInfo.getAddressInfo());
+            }
+
+            return;
+        }
+
+        throw new NotAuthorityException(NO_ROLE);
+    }
+
+    public void deleteFactory(String token, String factoryId) {
+        Factory factory = factoryRepository.findById(Long.valueOf(factoryId))
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_FACTORY));
+
+        if (authorityUserRoleUtil.verification(token)) {
+            factoryRepository.delete(factory);
+            return;
+        }
+
+        throw new NotAuthorityException(NO_ROLE);
+    }
+
+    public FactoryDto.ApiFactoryInfo getFactoryIdAndName(Long id) {
+        Factory factory = factoryRepository.findWithAllOptionById(id)
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_FACTORY));
+
+        return new FactoryDto.ApiFactoryInfo(factory.getFactoryId(), factory.getFactoryName(), factory.getCommonOption().getGoldHarryLoss());
+    }
+
+    public String getFactoryGrade(String storeId) {
+        OptionLevel grade = factoryRepository.findByCommonOptionOptionLevel(Long.valueOf(storeId));
+        return grade.getGrade();
+    }
+
+    public void updateFactoryHarry(String accessToken, String factoryId, String harryId) {
+        Factory factory = factoryRepository.findById(Long.valueOf(factoryId))
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_FACTORY));
+
+        if (authorityUserRoleUtil.verification(accessToken)) {
+            GoldHarry goldHarry = goldHarryRepository.findById(Long.valueOf(harryId))
+                    .orElseThrow(() -> new NotFoundException(WRONG_HARRY));
+
+            factory.getCommonOption().updateGoldHarry(goldHarry);
+            return;
+        }
+
+        throw new NotAuthorityException(NO_ROLE);
+    }
+
+    public void updateFactoryGrade(String accessToken, String factoryId, String grade) {
+        Factory factory = factoryRepository.findById(Long.valueOf(factoryId))
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_FACTORY));
+
+        if (authorityUserRoleUtil.verification(accessToken)) {
+            factory.getCommonOption().updateOptionLevel(grade);
+            return;
+        }
+
+        throw new NotAuthorityException(NO_ROLE);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AccountExcelDto> getExcel(String accessToken) {
+        if (authorityUserRoleUtil.verification(accessToken)) {
+            return factoryRepository.findAllFactoryExcel();
+        }
+        throw new NotAuthorityException(NO_ROLE);
+    }
+
+    @Transactional(readOnly = true)
+    public FactoryDto.ApiFactoryInfo getFactoryInfoByName(String factoryName) {
+        List<Factory> factories = factoryRepository.findByFactoryNameIgnoreCase(factoryName);
+        if (factories.isEmpty()) {
+            throw new NotFoundException(NOT_FOUND_FACTORY);
+        }
+        Factory factory = factories.get(0);
+
+        return new FactoryDto.ApiFactoryInfo(factory.getFactoryId(), factory.getFactoryName(), factory.getCommonOption().getGoldHarryLoss());
+    }
+
+    public List<FactoryDto.ApiFactoryInfo> findAllFactory() {
+        return factoryRepository.findAllFactory();
+    }
+
+    @Transactional(readOnly = true)
+    public CustomPage<AccountDto.AccountResponse> getFactoryPurchase(String endAt, Pageable pageable) {
+        return factoryRepository.findAllFactoryAndPurchase(endAt, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] getPurchaseExcel(String accessToken, String endAt) throws java.io.IOException {
+        if (authorityUserRoleUtil.verification(accessToken)) {
+            List<PurchaseExcelDto> purchaseList = factoryRepository.findAllPurchaseExcel(endAt);
+            return PurchaseExcelUtil.createPurchaseWorkSheet(purchaseList, "매입잔액");
+        }
+        throw new NotAuthorityException(NO_ROLE);
+    }
+
+//    @Transactional(readOnly = true)
+//    public AccountDto.AccountResponse getFactoryPurchaseDetail(String factoryId) {
+//        return factoryRepository.findByFactoryIdAndPurchase(Long.valueOf(factoryId));
+//    }
+//
+//    @Transactional(readOnly = true)
+//    public void getFactoryPurchaseLogDetail(String factoryId, String saleCode) {
+//    }
+}

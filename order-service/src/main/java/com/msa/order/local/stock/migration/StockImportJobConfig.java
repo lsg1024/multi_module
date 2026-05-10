@@ -40,6 +40,7 @@ public class StockImportJobConfig {
     private final FactoryClient factoryClient;
     private final ProductClient productClient;
     private final StockMigrationFailureCollector failureCollector;
+    private final StockMigrationRecordCollector recordCollector;
 
     private static final int CHUNK_SIZE = 50;
     private static final Charset CP949 = Charset.forName("CP949");
@@ -66,7 +67,7 @@ public class StockImportJobConfig {
                 .<StockCsvRow, Stock>chunk(CHUNK_SIZE, transactionManager)
                 .reader(stockCsvReader(null, null))
                 .processor(stockCsvProcessor(null))
-                .writer(stockMigrationWriter())
+                .writer(stockMigrationWriter(null))
                 .faultTolerant()
                 .skip(FlatFileParseException.class)   // Reader CSV 파싱 오류 skip
                 .skip(Exception.class)                 // Processor/Writer 예외도 skip
@@ -144,14 +145,22 @@ public class StockImportJobConfig {
     @StepScope
     public StockCsvItemProcessor stockCsvProcessor(
             @Value("#{jobParameters['accessToken']}") String token) {
-        return new StockCsvItemProcessor(token, storeClient, factoryClient, productClient, failureCollector);
+        return new StockCsvItemProcessor(token, storeClient, factoryClient, productClient,
+                failureCollector, recordCollector);
     }
 
     /**
      * 마이그레이션 전용 Writer: Stock persist 후 StatusHistory 자동 생성.
+     *
+     * <p>JobParameter "userName" 을 통해 StatusHistory.userName 값을 주입한다.
+     * 미지정 시 기존 동작과 호환되도록 "LEGACY_MIGRATION" 으로 기본 설정된다.
+     * 크롤링 등 별도 출처 데이터는 호출 측에서 다른 값(예: "CRAWL_MIGRATION") 을 지정하여
+     * StatusHistory 기준으로 추후 식별/분류가 가능하다.</p>
      */
     @Bean
-    public ItemWriter<Stock> stockMigrationWriter() {
-        return new StockMigrationItemWriter(entityManagerFactory, failureCollector);
+    @StepScope
+    public ItemWriter<Stock> stockMigrationWriter(
+            @Value("#{jobParameters['userName'] ?: 'LEGACY_MIGRATION'}") String userName) {
+        return new StockMigrationItemWriter(entityManagerFactory, failureCollector, recordCollector, userName);
     }
 }
