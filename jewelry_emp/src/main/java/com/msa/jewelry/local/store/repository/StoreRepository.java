@@ -1,0 +1,53 @@
+package com.msa.jewelry.local.store.repository;
+
+import com.msa.jewelry.local.common_option.entity.OptionLevel;
+import com.msa.jewelry.local.store.entity.Store;
+import com.msa.jewelry.local.transaction_history.dto.TransactionDto;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface StoreRepository extends JpaRepository<Store, Long>, CustomStoreRepository {
+    @Query("""
+      select s
+      from Store s
+      join fetch s.commonOption co
+      where s.storeId = :id and s.storeDeleted = false
+    """)
+    Optional<Store> findByStoreInfo(@Param("id") Long id);
+    boolean existsByStoreName(String storeName);
+    @Query("select s from Store s " +
+            "left join fetch s.commonOption co " +
+            "left join fetch co.goldHarry gh " +
+            "left join fetch s.additionalOption ao " +
+            "left join fetch s.address a " +
+            "where s.storeId = :storeId")
+    Optional<Store> findWithAllOptionsById(@Param("storeId") Long storeId);
+    @Query("select s.commonOption.optionLevel " +
+            "from Store s " +
+            "where s.storeId = :storeId")
+    OptionLevel findByCommonOptionOptionLevel(@Param("storeId") Long storeId);
+
+    @Query("select s.currentGoldBalance, s.currentMoneyBalance from Store s " +
+            "where s.storeId= :storeId " +
+            "and s.storeName= :storeName")
+    TransactionDto findByStoreIdAndStoreName(@Param("storeId") Long storeId, @Param("storeName") String storeName);
+
+    @Query("""
+      select s
+      from Store s
+      join fetch s.commonOption co
+      where lower(s.storeName) = lower(:storeName) and s.storeDeleted = false
+    """)
+    List<Store> findByStoreNameIgnoreCase(@Param("storeName") String storeName);
+
+    // 비관적 락 (동시성 제어)
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select s from Store s where s.storeId = :id")
+    Optional<Store> findByIdWithLock(@Param("id") Long id);
+}

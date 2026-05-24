@@ -1,0 +1,207 @@
+package com.msa.jewelry.global.batch.product;
+
+import com.msa.common.global.tenant.TenantContext;
+import com.msa.jewelry.local.product.entity.Product;
+import com.msa.jewelry.local.product.entity.ProductImage;
+import com.msa.jewelry.local.product.repository.ProductRepository;
+import com.msa.jewelry.local.product.repository.image.ProductImageRepository;
+import lombok.*;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.Step;
+import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.StepExecutionListener;
+import org.springframework.batch.core.configuration.annotation.JobScope;
+import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.support.ListItemReader;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.util.StringUtils;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.*;
+
+@Slf4j
+@Configuration
+@RequiredArgsConstructor
+public class ProductImageBatch {
+
+    private final ProductRepository productRepository;
+    private final ProductImageRepository productImageRepository;
+
+    @Value("${FILE_UPLOAD_PATH2:/tmp/jewelry/uploads}")
+    private String baseUploadPath;
+
+    @Bean
+    public Job imageMigrationJob(JobRepository jobRepository, Step imageMigrationStep) {
+        return new JobBuilder("imageMigrationJob", jobRepository)
+                .start(imageMigrationStep)
+                .build();
+    }
+
+    @Bean
+    @JobScope
+    public Step imageMigrationStep(
+            JobRepository jobRepository,
+            PlatformTransactionManager transactionManager,
+            ItemReader<File> tempFileReader,
+            ProductImageProcessor tempImageProcessor,
+            ItemWriter<ImageMoveDto> tempImageWriter) {
+
+        return new StepBuilder("imageMigrationStep", jobRepository)
+                .<File, ImageMoveDto>chunk(100, transactionManager)
+                .reader(tempFileReader)
+                .processor(tempImageProcessor)
+                .listener(tempImageProcessor)
+                .writer(tempImageWriter)
+                .build();
+    }
+
+    // 1. Reader
+    @Bean
+    @StepScope
+    public ListItemReader<File> tempFileReader() {
+        Path sourcePath = Paths.get(baseUploadPath, "temp");
+        File sourceDir = sourcePath.toFile();
+
+        if (!sourceDir.exists() || !sourceDir.isDirectory()) {
+            log.error("Temp 디렉토리가 존재하지 않습니다: {}", sourcePath);
+            return new ListItemReader<>(Collections.emptyList());
+        }
+
+        File[] files = sourceDir.listFiles(File::isFile);
+        List<File> fileList = (files != null) ? Arrays.asList(files) : Collections.emptyList();
+
+        log.info(">>>> [Batch] Temp 폴더에서 {}개의 파일을 발견했습니다.", fileList.size());
+        return new ListItemReader<>(fileList);
+    }
+
+    @Bean
+    @StepScope
+    public ProductImageProcessor tempImageProcessor() {
+        return new ProductImageProcessor(productRepository);
+    }
+
+    @Bean
+    @StepScope
+    public ItemWriter<ImageMoveDto> tempImageWriter() {
+        return items -> {
+            for (ImageMoveDto item : items) {
+                try {
+                    TenantContext.setTenant(item.getTenant());
+
+                    Product product = productRepository.findById(item.getProductId())
+                            .orElse(null);
+
+                    if (product == null) {
+                        log.warn("상품 ID {}를 찾을 수 없어 이미지를 저장하지 않습니다.", item.getProductId());
+                        continue;
+                    }
+
+                    String uuid = UUID.randomUUID().toString();
+                    String savedFileName = uuid + item.getExtension();
+
+                    String dbRelativePath = "/products/" + product.getProductId() + "/" + savedFileName;
+
+                    Path productDir = Paths.get(baseUploadPath, item.getTenant(), "products", String.valueOf(item.getProductId()));
+                    if (!Files.exists(productDir)) {
+                        Files.createDirectories(productDir);
+                    }
+                    Path targetPath = productDir.resolve(savedFileName);
+
+                    Files.copy(item.getFile().toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+                    boolean existsMain = productImageRepository.existsByProduct_ProductId(product.getProductId());
+
+                    ProductImage image = ProductImage.builder()
+                            .imagePath(dbRelativePath)
+                            .imageOriginName(item.getFile().getName())
+                            .imageName(savedFileName)
+                            .product(product)
+                            .imageMain(!existsMain)
+                            .build();
+
+                    product.addImage(image);
+                    productImageRepository.save(image);
+
+                } catch (Exception e) {
+                    log.error("이미지 저장 실패: " + item.getFile().getName(), e);
+                } finally {
+                    TenantContext.clear();
+                }
+            }
+        };
+    }
+
+    @Getter
+    @Setter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ImageMoveDto {
+        private File file;
+        private Long productId;
+        private String extension;
+        private String tenant;
+    }
+
+    @RequiredArgsConstructor
+    public static class ProductImageProcessor implements ItemProcessor<File, ImageMoveDto>, StepExecutionListener {
+
+        private final ProductRepository productRepository;
+        private Map<String, Long> productCache;
+        private String tenant;
+
+        @Override
+        public void beforeStep(StepExecution stepExecution) {
+            this.tenant = stepExecution.getJobParameters().getString("tenant");
+
+            if (!StringUtils.hasText(this.tenant)) {
+                this.tenant = TenantContext.getTenant();
+            }
+
+            if (!StringUtils.hasText(this.tenant)) {
+                throw new IllegalArgumentException("Tenant 정보가 없습니다.");
+            }
+
+            log.info(">>>> [Batch] 상품 데이터 캐싱 시작 (Tenant: {})", this.tenant);
+            try {
+                // 대소문자 무시 TreeMap으로 캐시 구성 (파일명과 상품명 대소문자 불일치 방지)
+                productCache = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+                productRepository.findAll().forEach(p ->
+                        productCache.putIfAbsent(p.getProductName(), p.getProductId()));
+                log.info(">>>> [Batch] 캐싱 완료. 상품 수: {}", productCache.size());
+            } finally {
+                TenantContext.clear();
+            }
+        }
+
+        @Override
+        public ImageMoveDto process(File file) {
+            String fileName = file.getName();
+            int dotIndex = fileName.lastIndexOf('.');
+            String productName = (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
+            String extension = (dotIndex == -1) ? ".jpg" : fileName.substring(dotIndex);
+
+            Long productId = productCache.get(productName.trim());
+
+            if (productId == null) {
+                log.warn("매칭되는 상품 없음 (Skip): {}", fileName);
+                return null;
+            }
+
+            return new ImageMoveDto(file, productId, extension, tenant);
+        }
+    }
+}
