@@ -1,6 +1,7 @@
 package com.msa.jewelry.local.common_option.entity;
 
 import com.msa.jewelry.local.common_option.dto.CommonOptionDto;
+import com.msa.jewelry.local.goldharry.entity.GoldHarry;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -9,22 +10,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
 
-/**
- * Store(매장) 및 Factory(공장)의 거래 옵션 엔티티.
- *
- * *각 계정(Store/Factory)은 하나의 {@code CommonOption}을 가지며, 다음 정보를 포함한다:
- *
- *   - {@link GoldHarry} 연결 — 실시간 손모율 참조용 외래키
- *   - {@code goldHarryLoss} 문자열 사본 — 조인 없이 빠른 조회가 필요한 경우 사용
- *   - {@link OptionTradeType} — 거래 유형 (예: 매입/매출)
- *   - {@link OptionLevel} — 거래 등급
- * 
- *
- * *{@code goldHarryLoss} 필드는 {@link GoldHarry#getGoldHarryLoss()}의 사본으로,
- * 해리 손모율 변경 시 {@code UpdateGoldHarryLossBatchJob}에 의해 일괄 동기화된다.
- *
- * *소프트 삭제 방식을 사용한다 ({@code deleted = true}).
- */
 @Getter
 @Entity
 @Table(name = "COMMON_OPTION")
@@ -52,11 +37,6 @@ public class CommonOption {
     @JoinColumn(name = "GOLD_HARRY_ID", nullable = false)
     @Schema(description = "금시세 정책 (FK) — 실시간 손모율 참조용")
     private GoldHarry goldHarry;
-    /**
-     * {@link GoldHarry#getGoldHarryLoss()} 값의 문자열 사본.
-     * 조인 없이 손모율을 빠르게 조회하기 위해 비정규화하여 보관한다.
-     * 해리 손모율 변경 시 배치 잡에 의해 자동 동기화된다.
-     */
     @Column(name = "GOLD_HARRY_LOSS")
     @Schema(description = "금 손모율(가공 시 손실 비율) 문자열 사본 — 배치로 GoldHarry 와 동기화", example = "1.5")
     private String goldHarryLoss;
