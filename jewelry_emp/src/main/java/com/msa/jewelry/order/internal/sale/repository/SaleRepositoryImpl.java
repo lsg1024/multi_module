@@ -320,8 +320,12 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
     private static BooleanBuilder getSearchBuilder(String searchInput) {
         BooleanBuilder searchBuilder = new BooleanBuilder();
 
+        // 2026-05 P4: Stock.storeName 컬럼 제거.
+        //   TODO[P4-followup]: storeFinder.findStoreIdsByNameContaining(searchInput) 추가 후
+        //                      stock.storeId.in(...) 으로 변경.
         if (StringUtils.hasText(searchInput)) {
-            searchBuilder.and(stock.storeName.containsIgnoreCase(searchInput));
+            // 임시: 검색 결과 0건 강제 (placeholder)
+            searchBuilder.and(stock.flowCode.isNull());
         }
 
         return searchBuilder;

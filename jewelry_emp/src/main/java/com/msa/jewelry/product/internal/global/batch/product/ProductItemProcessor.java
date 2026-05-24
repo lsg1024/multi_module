@@ -1,11 +1,11 @@
 package com.msa.jewelry.product.internal.global.batch.product;
 
-import com.msa.jewelry.product.internal.global.feign_legacy.client.FactoryClient;
+import com.msa.jewelry.account.api.FactoryFinder;
+import com.msa.jewelry.account.api.FactoryView;
 import com.msa.jewelry.product.internal.classification.repository.ClassificationRepository;
 import com.msa.jewelry.product.internal.color.entity.Color;
 import com.msa.jewelry.product.internal.color.repository.ColorRepository;
 import com.msa.jewelry.product.internal.material.repository.MaterialRepository;
-import com.msa.jewelry.product.internal.product.dto.FactoryDto;
 import com.msa.jewelry.product.internal.product.dto.ProductBatchDto;
 import com.msa.jewelry.product.internal.product.dto.ProductWorkGradePolicyDto;
 import com.msa.jewelry.product.internal.product.entity.Product;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProductItemProcessor implements ItemProcessor<ProductBatchDto, Product> {
 
-    private final FactoryClient factoryClient;
+    private final FactoryFinder factoryFinder;
 
     private final ProductRepository productRepository;
     private final SetTypeRepository setTypeRepository;
@@ -46,27 +46,20 @@ public class ProductItemProcessor implements ItemProcessor<ProductBatchDto, Prod
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
-
-        String accessToken = stepExecution.getJobParameters().getString("accessToken");
-        if (!StringUtils.hasText(accessToken)) {
-            throw new IllegalArgumentException("JobParameters에 'accessToken'이 없습니다. 배치 실행 시 토큰을 전달해주세요.");
-        }
-
+        // 같은 JVM 안 호출이므로 accessToken 검사 불필요. 모듈 API 만 호출.
         try {
-
-            List<FactoryDto.ResponseBatch> factories = factoryClient.getFactories(accessToken);
+            List<FactoryView> factories = factoryFinder.findAll();
 
             log.info(">>>> [Batch] 공장 개수 = {}", factories.size());
 
             if (factories.isEmpty()) {
                 log.warn(">>>> [Batch] 공장 데이터가 비어있습니다.");
                 factoryCache = new HashMap<>();
-
             } else {
                 factoryCache = factories.stream()
                         .collect(Collectors.toMap(
-                                f -> f.getFactoryName().toUpperCase(),
-                                FactoryDto.ResponseBatch::getFactoryId,
+                                f -> f.factoryName().toUpperCase(),
+                                FactoryView::factoryId,
                                 (existing, replacement) -> existing
                         ));
                 log.info(">>>> [Batch] 공장 데이터 캐싱 완료. 총 개수: {}", factoryCache.size());

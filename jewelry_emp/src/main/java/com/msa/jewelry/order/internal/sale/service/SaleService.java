@@ -1,19 +1,21 @@
 package com.msa.jewelry.order.internal.sale.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.util.CustomPage;
-import com.msa.jewelry.order.internal.global.dto.OutboxCreatedEvent;
 import com.msa.jewelry.order.internal.global.dto.StatusHistoryDto;
 import com.msa.jewelry.order.internal.global.dto.StoneDto;
 import com.msa.jewelry.order.internal.global.excel.dto.SaleExcelDto;
 import com.msa.jewelry.order.internal.global.excel.util.SaleExcelUtil;
-import com.msa.jewelry.order.internal.global.feign_legacy.client.ProductClient;
-import com.msa.jewelry.order.internal.global.feign_legacy.client.StoreClient;
-import com.msa.jewelry.order.internal.global.feign_legacy.dto.ProductImageDto;
-import com.msa.jewelry.order.internal.global.kafka_dto_legacy.AccountDto;
+import com.msa.jewelry.account.api.FactoryBalanceUpdater;
+import com.msa.jewelry.account.api.StoreBalanceUpdater;
+import com.msa.jewelry.account.api.FactoryFinder;
+import com.msa.jewelry.account.api.StoreFinder;
+import com.msa.jewelry.account.api.StoreReceivableFinder;
+import com.msa.jewelry.account.api.StoreReceivableLogView;
+import com.msa.jewelry.account.api.StoreView;
+import com.msa.jewelry.product.api.ProductFinder;
+import com.msa.jewelry.product.api.ProductImageView;
 import com.msa.jewelry.order.internal.global.util.DateConversionUtil;
 import com.msa.jewelry.order.internal.global.util.GoldUtils;
 import com.msa.jewelry.order.internal.global.util.SafeParse;
@@ -24,8 +26,6 @@ import com.msa.jewelry.order.internal.order.entity.order_enum.BusinessPhase;
 import com.msa.jewelry.order.internal.order.entity.order_enum.OrderStatus;
 import com.msa.jewelry.order.internal.order.repository.CustomOrderStoneRepository;
 import com.msa.jewelry.order.internal.order.repository.StatusHistoryRepository;
-import com.msa.jewelry.order.internal.outbox.domain.entity.OutboxEvent;
-import com.msa.jewelry.order.internal.outbox.repository.OutboxEventRepository;
 import com.msa.jewelry.order.internal.sale.entity.Sale;
 import com.msa.jewelry.order.internal.sale.entity.SaleItem;
 import com.msa.jewelry.order.internal.sale.entity.SalePayment;
@@ -42,7 +42,6 @@ import com.msa.jewelry.order.internal.stock.entity.Stock;
 import com.msa.jewelry.order.internal.stock.repository.StockRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -54,7 +53,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -64,7 +63,7 @@ import java.util.stream.Collectors;
 
 import static com.msa.jewelry.order.internal.global.exception.ExceptionMessage.NOT_ACCESS;
 import static com.msa.jewelry.order.internal.global.exception.ExceptionMessage.NOT_FOUND;
-import static com.msa.jewelry.order.internal.global.util.DateConversionUtil.StringToOffsetDateTime;
+import static com.msa.jewelry.order.internal.global.util.DateConversionUtil.StringToLocalDateTime;
 import static com.msa.jewelry.order.internal.order.util.StoneUtil.countStoneCost;
 import static com.msa.jewelry.order.internal.order.util.StoneUtil.updateStockStoneInfo;
 
@@ -72,14 +71,14 @@ import static com.msa.jewelry.order.internal.order.util.StoneUtil.updateStockSto
  * 판매 관리 서비스.
  *
  * *재고 또는 주문을 판매로 전환하고, 판매 수정·취소·결제를 처리한다.
- * 모든 잔액 변동은 {@link OutboxEvent}를 통해 account-service로 발행되며,
- * Transactional Outbox 패턴으로 이벤트 유실을 방지한다.
+ * 모든 잔액 변동은 같은 트랜잭션 안에서 {@link StoreBalanceUpdater} /
+ * {@link FactoryBalanceUpdater} 를 통해 account 모듈로 즉시 반영된다 (2026-05 P3).
  *
  * *주요 의존성:
  *
  *   - {@link StockRepository} — 재고 조회 및 상태 전이
  *   - {@link SaleRepository} / {@link SaleItemRepository} / {@link SalePaymentRepository} — 판매 데이터 저장
- *   - {@link OutboxEventRepository} + {@link ApplicationEventPublisher} — 잔액 변동 이벤트 발행
+ *   - {@link StoreBalanceUpdater} / {@link FactoryBalanceUpdater} — 잔액 변동 즉시 반영 (같은 트랜잭션)
  *   - {@link GoldUtils} — 순금 중량 계산
  * 
  * 
@@ -98,9 +97,8 @@ import static com.msa.jewelry.order.internal.order.util.StoneUtil.updateStockSto
 @Transactional
 public class SaleService {
     private final JwtUtil jwtUtil;
-    private final ObjectMapper objectMapper;
-    private final ApplicationEventPublisher eventPublisher;
-    private final OutboxEventRepository outboxEventRepository;
+    private final StoreBalanceUpdater storeBalanceUpdater;
+    private final FactoryBalanceUpdater factoryBalanceUpdater;
     private final StockRepository stockRepository;
     private final SaleRepository saleRepository;
     private final CustomOrderStoneRepository customOrderStoneRepository;
@@ -108,8 +106,10 @@ public class SaleService {
     private final SalePaymentRepository salePaymentRepository;
     private final CustomSaleRepository customSaleRepository;
     private final StatusHistoryRepository statusHistoryRepository;
-    private final StoreClient storeClient;
-    private final ProductClient productClient;
+    private final StoreFinder storeFinder;
+    private final FactoryFinder factoryFinder;
+    private final StoreReceivableFinder storeReceivableFinder;
+    private final ProductFinder productFinder;
 
     /** 결제 취소 시 처리 가능한 SaleStatus 집합 (PAYMENT, WG, DISCOUNT, PAYMENT_TO_BANK). */
     private static final EnumSet<SaleStatus> PAYMENT_STATUSES = EnumSet.of(
@@ -119,11 +119,10 @@ public class SaleService {
             SaleStatus.PAYMENT_TO_BANK
     );
 
-    public SaleService(JwtUtil jwtUtil, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, OutboxEventRepository outboxEventRepository, StockRepository stockRepository, SaleRepository saleRepository, CustomOrderStoneRepository customOrderStoneRepository, SaleItemRepository saleItemRepository, SalePaymentRepository salePaymentRepository, CustomSaleRepository customSaleRepository, StatusHistoryRepository statusHistoryRepository, StoreClient storeClient, ProductClient productClient) {
+    public SaleService(JwtUtil jwtUtil, StoreBalanceUpdater storeBalanceUpdater, FactoryBalanceUpdater factoryBalanceUpdater, StockRepository stockRepository, SaleRepository saleRepository, CustomOrderStoneRepository customOrderStoneRepository, SaleItemRepository saleItemRepository, SalePaymentRepository salePaymentRepository, CustomSaleRepository customSaleRepository, StatusHistoryRepository statusHistoryRepository, StoreFinder storeFinder, FactoryFinder factoryFinder, StoreReceivableFinder storeReceivableFinder, ProductFinder productFinder) {
         this.jwtUtil = jwtUtil;
-        this.objectMapper = objectMapper;
-        this.eventPublisher = eventPublisher;
-        this.outboxEventRepository = outboxEventRepository;
+        this.storeBalanceUpdater = storeBalanceUpdater;
+        this.factoryBalanceUpdater = factoryBalanceUpdater;
         this.stockRepository = stockRepository;
         this.saleRepository = saleRepository;
         this.customOrderStoneRepository = customOrderStoneRepository;
@@ -131,8 +130,10 @@ public class SaleService {
         this.salePaymentRepository = salePaymentRepository;
         this.customSaleRepository = customSaleRepository;
         this.statusHistoryRepository = statusHistoryRepository;
-        this.storeClient = storeClient;
-        this.productClient = productClient;
+        this.storeFinder = storeFinder;
+        this.factoryFinder = factoryFinder;
+        this.storeReceivableFinder = storeReceivableFinder;
+        this.productFinder = productFinder;
     }
 
     @Transactional(readOnly = true)
@@ -167,12 +168,16 @@ public class SaleService {
                 assistantStoneCreateAt = String.valueOf(product.getAssistantStoneCreateAt());
             }
 
+            // 2026-05 P4: Stock 의 storeName 컬럼 제거. storeId 로 storeFinder 조회.
+            String stockStoreName = stock.getStoreId() != null
+                    ? storeFinder.getStoreInfo(stock.getStoreId()).storeName()
+                    : null;
             return SaleDto.Response.builder()
                     .flowCode(saleItem.getFlowCode())
                     // ⚠ String.valueOf(null) = "null" → PATCH 재전송 시 Long 파싱 실패를 유발하므로 모두 null-safe
                     .createAt(saleItem.getCreateDate() != null ? saleItem.getCreateDate().toString() : null)
                     .saleType(saleItem.getItemStatus().name())
-                    .name(stock.getStoreName())
+                    .name(stockStoreName)
                     .grade(stock.getStoreGrade())
                     .harry(stock.getStoreHarry())
                     .productName(product.getProductName())
@@ -270,7 +275,7 @@ public class SaleService {
      * 판매 상품 수정.
      *
      * *델타(차이) 기반으로 순금 중량 변동분({@code pureGoldWeightDelta})과
-     * 현금 잔액 변동분({@code moneyBalanceDelta})만 계산하여 OutboxEvent를 발행한다.
+     * 현금 잔액 변동분({@code moneyBalanceDelta})만 계산하여 잔고 갱신을 즉시 반영한다.
      * 즉, 기존 금액을 취소하고 새 금액을 재발행하는 방식이 아니라
      * 변동분 하나만 발행하므로 account-service의 잔액이 이중 반영되지 않는다.
      *
@@ -341,7 +346,7 @@ public class SaleService {
      * 재고 → 판매 전환.
      *
      * *재고({@link Stock}) 상태를 {@code SALE}로 전이하고,
-     * 판매처(STORE)와 공장(FACTORY) 각각에 대해 {@link OutboxEvent}를 발행한다.
+     * 판매처(STORE)와 공장(FACTORY) 각각에 대해 같은 트랜잭션 안에서 잔고를 갱신한다.
      *
      *
      *   - STORE 이벤트: {@code SaleStatus.SALE} — 판매가 기준 (매장 해리 적용)
@@ -379,12 +384,15 @@ public class SaleService {
 
         LocalDateTime transactionDate = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
         Long storeId = stock.getStoreId();
-        String storeName = stock.getStoreName();
+        // 2026-05 P4: Stock 의 storeName/factoryName 컬럼 제거. storeFinder/factoryFinder 로 조회.
+        String storeName = storeId != null
+                ? storeFinder.getStoreInfo(storeId).storeName() : null;
         BigDecimal storeHarry = stock.getStoreHarry();
         String grade = stock.getStoreGrade();
 
         Long factoryId = stock.getFactoryId();
-        String factoryName = stock.getFactoryName();
+        String factoryName = factoryId != null
+                ? factoryFinder.getFactoryInfo(factoryId).factoryName() : null;
 
         Sale sale = createOrAddToSale(stock, transactionDate, storeId, storeName, storeHarry, grade, createNewSheet);
         ProductSnapshot product = stock.getProduct();
@@ -393,9 +401,9 @@ public class SaleService {
 
         Long assistantId = SafeParse.toLongOrNull(stockDto.getAssistantStoneId());
         if (assistantId != null && !stock.getProduct().getAssistantStoneId().equals(assistantId)) {
-            OffsetDateTime assistantStoneCreateAt = null;
+            LocalDateTime assistantStoneCreateAt = null;
             if (StringUtils.hasText(stockDto.getAssistantStoneCreateAt())) {
-                assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(stockDto.getAssistantStoneCreateAt());
+                assistantStoneCreateAt = DateConversionUtil.StringToLocalDateTime(stockDto.getAssistantStoneCreateAt());
             }
             stock.getProduct().updateAssistantStone(stockDto.isAssistantStone(), assistantId, stockDto.getAssistantStoneName(), assistantStoneCreateAt);
         }
@@ -424,7 +432,7 @@ public class SaleService {
      *
      * *{@link #stockToSale}과 동일한 패턴으로 동작하지만,
      * 스톤 정보 갱신 없이 주문({@link Stock}) 상태를 {@code SALE}로 전이한다.
-     * STORE(판매가) 및 FACTORY(매입가) OutboxEvent 2건을 발행한다.
+     * STORE(판매가) 및 FACTORY(매입가) 잔고 갱신 2건을 같은 트랜잭션 안에서 즉시 반영한다.
      *
      * @param accessToken    JWT 액세스 토큰
      * @param eventId        멱등성 키
@@ -448,12 +456,15 @@ public class SaleService {
 
         LocalDateTime transactionDate = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
         Long storeId = stock.getStoreId();
-        String storeName = stock.getStoreName();
+        // 2026-05 P4: Stock 의 storeName/factoryName 컬럼 제거. finder 로 조회.
+        String storeName = storeId != null
+                ? storeFinder.getStoreInfo(storeId).storeName() : null;
         BigDecimal storeHarry = stock.getStoreHarry();
         String grade = stock.getStoreGrade();
 
         Long factoryId = stock.getFactoryId();
-        String factoryName = stock.getFactoryName();
+        String factoryName = factoryId != null
+                ? factoryFinder.getFactoryInfo(factoryId).factoryName() : null;
 
         Sale sale = createOrAddToSale(stock, transactionDate, storeId, storeName, storeHarry, grade, createNewSheet);
         stock.updateOrderStatus(OrderStatus.SALE);
@@ -530,7 +541,9 @@ public class SaleService {
             cleanupEmptySaleIfNeeded(sale);
 
             Long storeId = saleItem.getStock().getStoreId();
-            String storeName = saleItem.getStock().getStoreName();
+            // 2026-05 P4: Stock.storeName 컬럼 제거. storeFinder 조회.
+            String storeName = storeId != null
+                    ? storeFinder.getStoreInfo(storeId).storeName() : null;
             BigDecimal goldWeight = saleItem.getStock().getProduct().getGoldWeight();
             String materialName = saleItem.getStock().getProduct().getMaterialName();
             BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(goldWeight.toPlainString(), materialName.toUpperCase(), sale.getAccountHarry());
@@ -560,9 +573,9 @@ public class SaleService {
     }
 
     public List<SaleDto.SaleDetailDto> findSaleProductNameAndMaterial(String accessToken, Long storeId, Long productId, String materialName) {
-        StoreDto.Response storeInfo = storeClient.getStoreInfo(accessToken, storeId);
+        StoreView storeInfo = storeFinder.getStoreInfo(storeId);
 
-        if (!storeInfo.isOptionApplyPastSales()) {
+        if (!storeInfo.applyPastSales()) {
             return List.of();
         }
 
@@ -632,7 +645,7 @@ public class SaleService {
         Long assistantId = SafeParse.toLongOrNull(updateDto.getAssistantStoneId());
         if (assistantId != null) {
             stock.getProduct().updateAssistantStone(updateDto.isAssistantStone(), assistantId,
-                    updateDto.getAssistantStoneName(), updateDto.isAssistantStone() ? StringToOffsetDateTime(updateDto.getAssistantStoneCreateAt()) : null);
+                    updateDto.getAssistantStoneName(), updateDto.isAssistantStone() ? StringToLocalDateTime(updateDto.getAssistantStoneCreateAt()) : null);
         }
 
         product.updateProductAddCost(updateDto.getProductAddLaborCost());
@@ -656,11 +669,14 @@ public class SaleService {
 
         Sale sale = saleItem.getSale();
         LocalDateTime lastModifiedDate = sale.getCreateDate();
-        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", stock.getStoreId(), stock.getStoreName(), product.getMaterialName(), pureGoldWeightDelta, moneyBalanceDelta, lastModifiedDate);
+        // 2026-05 P4: Stock.storeName 컬럼 제거. storeFinder 로 조회.
+        String stockStoreName = stock.getStoreId() != null
+                ? storeFinder.getStoreInfo(stock.getStoreId()).storeName() : null;
+        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", stock.getStoreId(), stockStoreName, product.getMaterialName(), pureGoldWeightDelta, moneyBalanceDelta, lastModifiedDate);
     }
 
     /**
-     * 잔액 변동 OutboxEvent DTO를 구성하여 {@link #publishAccountEvent}에 위임한다.
+     * 잔액 변동을 type 에 따라 Store/Factory BalanceUpdater 로 직접 위임한다.
      *
      * *호출 시점마다 하나의 잔액 변동 이벤트를 만들어 account-service의
      * {@code current-balance-update} 토픽으로 발행할 페이로드를 조립한다.
@@ -677,56 +693,39 @@ public class SaleService {
      * @param moneyBalance    현금 잔액 변동분 (양수=증가, 음수=감소)
      * @param saleDate        거래 발생 일시
      */
+    /**
+     * 잔액 변동을 같은 트랜잭션 안에서 즉시 반영한다.
+     *
+     * <p>2026-05 P3 단계에서 단순화: 기존 Outbox→Kafka(stub)→ApplicationEvent 경로가
+     * 모두 사라지고, type 에 따라 {@link StoreBalanceUpdater} 또는
+     * {@link FactoryBalanceUpdater} 를 직접 호출한다. Propagation REQUIRED 로
+     * 호출자 트랜잭션에 합류하므로 판매 등록과 잔고 갱신이 함께 commit/rollback 된다.
+     *
+     * <p>{@code saleDate} 파라미터는 더 이상 외부로 발행할 필요가 없으나 (TransactionHistory 가
+     * {@code @PrePersist} 로 자동 기록), 시그니처 안정성을 위해 그대로 유지한다.
+     */
     private void publishBalanceChange(String eventId, String saleCode, String tenantId, String saleType,
                                       String type, Long id, String name, String material,
                                       BigDecimal pureGoldBalance, Integer moneyBalance, LocalDateTime saleDate) {
-        AccountDto.updateCurrentBalance dto = AccountDto.updateCurrentBalance.builder()
-                .eventId(eventId)
-                .saleCode(saleCode)
-                .tenantId(tenantId)
-                .saleType(saleType)
-                .type(type)
-                .id(id)
-                .name(name)
-                .material(material)
-                .pureGoldBalance(pureGoldBalance)
-                .moneyBalance(moneyBalance)
-                .saleDate(saleDate)
-                .build();
+        Long moneyDelta = moneyBalance != null ? moneyBalance.longValue() : 0L;
+        Long accountSaleCode = SafeParse.toLongOrNull(saleCode);
+        String note = String.format("[%s] %s", saleType, name);
 
-        log.info("publishBalanceChange start = {}",dto.toString());
-        publishAccountEvent(eventId, tenantId, id, dto);
-    }
+        log.info("publishBalanceChange type={} id={} gold={} money={} eventId={}",
+                type, id, pureGoldBalance, moneyDelta, eventId);
 
-    /**
-     * OutboxEvent 엔티티를 저장하고 Spring 애플리케이션 이벤트를 발행한다.
-     *
-     * *DTO를 JSON으로 직렬화하여 {@link OutboxEvent}에 페이로드로 저장한 뒤,
-     * {@link ApplicationEventPublisher}로 {@link OutboxCreatedEvent}를 발행하면
-     * {@code OutboxRelayService}가 즉시 Kafka로 릴레이한다.
-     * 직렬화 실패 시 트랜잭션 전체가 롤백되도록 {@link IllegalStateException}을 던진다.
-     *
-     * @param eventId   멱등성 키 (로깅용)
-     * @param tenantId  테넌트 식별자 (릴레이 라우팅용)
-     * @param accountId Kafka 메시지 키로 사용될 거래 대상 ID
-     * @param dto       잔액 변동 페이로드 DTO
-     */
-    private void publishAccountEvent(String eventId, String tenantId, Long accountId, AccountDto.updateCurrentBalance dto) {
-        try {
-            String payload = objectMapper.writeValueAsString(dto);
-
-            OutboxEvent outboxEvent = new OutboxEvent(
-                    "current-balance-update",
-                    accountId.toString(),
-                    payload,
-                    "STOCK_CREATED"
+        if ("STORE".equalsIgnoreCase(type)) {
+            storeBalanceUpdater.applyDelta(
+                    id, pureGoldBalance, moneyDelta,
+                    eventId, saleType, material, accountSaleCode, note
             );
-
-            outboxEventRepository.save(outboxEvent);
-            eventPublisher.publishEvent(new OutboxCreatedEvent(tenantId));
-        } catch (JsonProcessingException e) {
-            log.error("DTO 직렬화 실패 eventId: {}", eventId);
-            throw new IllegalStateException("주문 변경 실패");
+        } else if ("FACTORY".equalsIgnoreCase(type)) {
+            factoryBalanceUpdater.applyDelta(
+                    id, pureGoldBalance, moneyDelta,
+                    eventId, saleType, material, accountSaleCode, note
+            );
+        } else {
+            throw new IllegalArgumentException("지원하지 않는 잔고 갱신 type: " + type);
         }
     }
 
@@ -929,7 +928,7 @@ public class SaleService {
             productIds.addAll(ids);
         }
 
-        Map<Long, ProductImageDto> productImages = productClient.getProductImages(token, productIds);
+        Map<Long, ProductImageView> productImages = productFinder.getProductImages(productIds);
 
         for (SaleItemResponse printSale : printSales) {
             for (SaleItemResponse.SaleItem item : printSale.getSaleItems()) {
@@ -937,7 +936,7 @@ public class SaleService {
                     Long key = Long.parseLong(item.getStoreId());
 
                     if (productImages.containsKey(key)) {
-                        item.updateImagePath(productImages.get(key).getImagePath());
+                        item.updateImagePath(productImages.get(key).imagePath());
                     }
                 }
             }
@@ -945,14 +944,15 @@ public class SaleService {
 
         //미수금액 조회
         if (StringUtils.hasText(saleItemResponse.getStoreName())) {
-            StoreDto.accountResponse storeAttemptDetail = storeClient.getStoreReceivableDetailLog(token, saleItemResponse.getStoreId(), saleCode);
+            Long storeIdLong = Long.valueOf(saleItemResponse.getStoreId());
+            StoreReceivableLogView storeAttemptDetail = storeReceivableFinder.getReceivableLog(storeIdLong, saleCode);
 
             return SalePrintResponse.builder()
-                    .lastPaymentDate(storeAttemptDetail.getLastSaleDate())
-                    .previousMoneyBalance(storeAttemptDetail.getPreviousMoneyBalance())
-                    .previousGoldBalance(storeAttemptDetail.getPreviousGoldBalance())
-                    .afterMoneyBalance(storeAttemptDetail.getAfterMoneyBalance())
-                    .afterGoldBalance(storeAttemptDetail.getAfterGoldBalance())
+                    .lastPaymentDate(storeAttemptDetail.lastSaleDate())
+                    .previousMoneyBalance(storeAttemptDetail.previousMoneyBalance())
+                    .previousGoldBalance(storeAttemptDetail.previousGoldBalance())
+                    .afterMoneyBalance(storeAttemptDetail.afterMoneyBalance())
+                    .afterGoldBalance(storeAttemptDetail.afterGoldBalance())
                     .saleItemResponses(printSales)
                     .build();
         }

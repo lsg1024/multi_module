@@ -1,5 +1,7 @@
 package com.msa.jewelry.account.api;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * 다른 모듈(order, product 등)이 거래처 정보를 조회할 때 사용하는 공개 API.
  *
@@ -10,6 +12,7 @@ package com.msa.jewelry.account.api;
  * <p>구현체는 {@code com.msa.jewelry.account.internal} 패키지에 위치하며
  * 다른 모듈에서 직접 import 가 금지된다 (Spring Modulith 가 검증).
  */
+@Schema(description = "거래처(매장) 정보 조회 공개 API — 다른 모듈에서 단건/이름으로 조회 시 사용")
 public interface StoreFinder {
 
     /**

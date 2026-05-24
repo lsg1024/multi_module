@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 /**
  * {@link FactoryFinder} 의 같은 JVM 동기 구현체.
  *
@@ -35,6 +37,13 @@ public class FactoryFinderImpl implements FactoryFinder {
                 .findFirst()
                 .map(FactoryFinderImpl::toView)
                 .orElse(null);
+    }
+
+    @Override
+    public List<FactoryView> findAll() {
+        return factoryRepository.findAll().stream()
+                .map(FactoryFinderImpl::toView)
+                .toList();
     }
 
     private static FactoryView toView(Factory entity) {

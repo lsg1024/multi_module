@@ -57,9 +57,10 @@ public class StockMigrationSkipListener implements SkipListener<StockCsvRow, Sto
      */
     @Override
     public void onSkipInWrite(Stock item, Throwable t) {
-        log.error("Writer skip [모델={}, 매장={}]: {}",
+        // 2026-05 P4: Stock.storeName 컬럼 제거. 로깅용 storeId 만 출력.
+        log.error("Writer skip [모델={}, storeId={}]: {}",
                 item.getProduct() != null ? item.getProduct().getProductFactoryName() : "N/A",
-                item.getStoreName(),
+                item.getStoreId() != null ? item.getStoreId().toString() : "N/A",
                 t.getMessage());
     }
 

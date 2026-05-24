@@ -32,7 +32,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.msa.jewelry.order.internal.global.util.DateConversionUtil.LocalDateToOffsetDateTime;
+import static com.msa.jewelry.order.internal.global.util.DateConversionUtil.ParseLocalDateTime;
 import static com.msa.jewelry.order.internal.order.entity.QOrderStone.orderStone;
 import static com.msa.jewelry.order.internal.order.entity.QStatusHistory.statusHistory;
 import static com.msa.jewelry.order.internal.stock.entity.QStock.stock;
@@ -84,8 +84,9 @@ public class StockRepositoryImpl implements CustomStockRepository {
                         stock.lastModifiedDate.stringValue(),
                         statusHistory.sourceType.stringValue(),
                         stock.orderStatus.stringValue(),
-                        stock.storeName,
-                        stock.factoryName,
+                        // 2026-05 P4: Stock 의 storeName/factoryName 컬럼 제거. TODO[P4-followup]: 응답 변환 시 finder 매핑.
+                        Expressions.constant(""),
+                        Expressions.constant(""),
                         stock.product.id.stringValue(),
                         stock.product.productName,
                         stock.product.productFactoryName,
@@ -169,8 +170,8 @@ public class StockRepositoryImpl implements CustomStockRepository {
                 .where(
                         history.phase.eq(condition.getPhase()),
                         history.createAt.between(
-                                LocalDateToOffsetDateTime(condition.getStartAt() + " 00:00:00"),
-                                LocalDateToOffsetDateTime(condition.getEndAt() + " 23:59:59")
+                                ParseLocalDateTime(condition.getStartAt() + " 00:00:00"),
+                                ParseLocalDateTime(condition.getEndAt() + " 23:59:59")
                         )
                 );
 
@@ -186,8 +187,9 @@ public class StockRepositoryImpl implements CustomStockRepository {
                         stock.lastModifiedDate.stringValue(),
                         statusHistory.sourceType.stringValue(),
                         stock.orderStatus.stringValue(),
-                        stock.storeName,
-                        stock.factoryName,
+                        // 2026-05 P4: Stock 의 storeName/factoryName 컬럼 제거. TODO[P4-followup]: 응답 변환 시 finder 매핑.
+                        Expressions.constant(""),
+                        Expressions.constant(""),
                         stock.product.id.stringValue(),
                         stock.product.productName,
                         stock.product.productFactoryName,
@@ -261,31 +263,16 @@ public class StockRepositoryImpl implements CustomStockRepository {
 
     @Override
     public List<String> findByFilterFactories(StockDto.StockCondition condition) {
-
-        BooleanExpression stockCreateAtAndEndAt = getStockCreateAtAndEndAt(condition);
-        BooleanExpression orderTypeBuilder = getOrderTypeBuilder(condition);
-
-        return query
-                .selectDistinct(stock.factoryName)
-                .from(stock)
-                .where(
-                        stockCreateAtAndEndAt,
-                        orderTypeBuilder)
-                .fetch();
+        // 2026-05 P4: Stock.factoryName 컬럼 제거.
+        //   TODO[P4-followup]: stock.factoryId distinct 추출 후 factoryFinder 매핑.
+        return java.util.List.of();
     }
 
     @Override
     public List<String> findByFilterStores(StockDto.StockCondition condition) {
-        BooleanExpression stockCreateAtAndEndAt = getStockCreateAtAndEndAt(condition);
-        BooleanExpression orderTypeBuilder = getOrderTypeBuilder(condition);
-
-        return query
-                .selectDistinct(stock.storeName)
-                .from(stock)
-                .where(
-                        stockCreateAtAndEndAt,
-                        orderTypeBuilder)
-                .fetch();
+        // 2026-05 P4: Stock.storeName 컬럼 제거.
+        //   TODO[P4-followup]: stock.storeId distinct 추출 후 storeFinder 매핑.
+        return java.util.List.of();
     }
 
     @Override
@@ -398,25 +385,25 @@ public class StockRepositoryImpl implements CustomStockRepository {
             return searchBuilder;
         }
 
+        // 2026-05 P4: Stock.storeName/factoryName 컬럼 제거.
+        //   TODO[P4-followup]: 부분일치/정확일치 검색이 필요하면 storeFinder/factoryFinder 매핑 후 stock.storeId.in(...).
+        //                      당장은 product 필드만 검색 + store/factory 항목 비활성화로 컴파일 통과.
         if (!StringUtils.hasText(searchField)) {
-            // 기본값(전체): 모든 주요 필드에 대해 LIKE (부분 일치, 대소문자 무시)
             searchBuilder.and(
                     stock.product.productName.containsIgnoreCase(searchInput)
                             .or(stock.product.productFactoryName.containsIgnoreCase(searchInput))
-                            .or(stock.storeName.containsIgnoreCase(searchInput))
-                            .or(stock.factoryName.containsIgnoreCase(searchInput))
             );
             return searchBuilder;
         }
 
-        // 필터 선택 시: 해당 필드에 대해 정확히 일치(eq)
         switch (searchField) {
             case "modelNumber" -> searchBuilder.and(
                     stock.product.productName.eq(searchInput)
                             .or(stock.product.productFactoryName.eq(searchInput))
             );
-            case "factory" -> searchBuilder.and(stock.factoryName.eq(searchInput));
-            case "store" -> searchBuilder.and(stock.storeName.eq(searchInput));
+            case "factory", "store" ->
+                    // TODO[P4-followup]: finder 매핑 후 id 비교
+                    searchBuilder.and(stock.flowCode.isNull()); // placeholder: 결과 0건 강제
             case "setType" -> searchBuilder.and(stock.product.setTypeName.eq(searchInput));
             case "classification" -> searchBuilder.and(stock.product.classificationName.eq(searchInput));
             case "material" -> searchBuilder.and(stock.product.materialName.eq(searchInput));
@@ -424,8 +411,6 @@ public class StockRepositoryImpl implements CustomStockRepository {
             default -> searchBuilder.and(
                     stock.product.productName.containsIgnoreCase(searchInput)
                             .or(stock.product.productFactoryName.containsIgnoreCase(searchInput))
-                            .or(stock.storeName.containsIgnoreCase(searchInput))
-                            .or(stock.factoryName.containsIgnoreCase(searchInput))
             );
         }
 
@@ -440,8 +425,10 @@ public class StockRepositoryImpl implements CustomStockRepository {
             String field = sortCondition.getSortField();
 
             switch (field) {
-                case "factory" -> orderSpecifiers.add(new OrderSpecifier<>(direction, stock.factoryName));
-                case "store" -> orderSpecifiers.add(new OrderSpecifier<>(direction, stock.storeName));
+                // 2026-05 P4: Stock.storeName/factoryName 컬럼 제거. id 기준 정렬로 임시 대체.
+                //   TODO[P4-followup]: 이름순 정렬이 필요하면 application 단에서 매핑 후 sort.
+                case "factory" -> orderSpecifiers.add(new OrderSpecifier<>(direction, stock.factoryId));
+                case "store" -> orderSpecifiers.add(new OrderSpecifier<>(direction, stock.storeId));
                 case "setType" -> orderSpecifiers.add(new OrderSpecifier<>(direction, stock.product.setTypeName));
                 case "color" -> orderSpecifiers.add(new OrderSpecifier<>(direction, stock.product.colorName));
 
@@ -462,11 +449,13 @@ public class StockRepositoryImpl implements CustomStockRepository {
         BooleanBuilder builder = new BooleanBuilder();
 
         if (condition != null) {
+            // 2026-05 P4: Stock.storeName/factoryName 컬럼 제거.
+            //   TODO[P4-followup]: storeFinder/factoryFinder.findByName 으로 id 매핑 후 stock.storeId/factoryId.eq(...).
             if (StringUtils.hasText(condition.getFactoryName())) {
-                builder.and(stock.factoryName.eq(condition.getFactoryName()));
+                builder.and(stock.flowCode.isNull()); // placeholder: 결과 0건 강제
             }
             if (StringUtils.hasText(condition.getStoreName())) {
-                builder.and(stock.storeName.eq(condition.getStoreName()));
+                builder.and(stock.flowCode.isNull()); // placeholder: 결과 0건 강제
             }
             if (StringUtils.hasText(condition.getSetTypeName())) {
                 builder.and(stock.product.setTypeName.eq(condition.getSetTypeName()));

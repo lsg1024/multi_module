@@ -1,7 +1,5 @@
 package com.msa.jewelry.order.internal.order.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.msa.jewelry.order.internal.global.dto.OutboxCreatedEvent;
 import com.msa.jewelry.order.internal.global.dto.StoneDto;
 import com.msa.jewelry.order.internal.global.kafka_dto_legacy.OrderAsyncRequested;
 import com.msa.jewelry.order.internal.global.kafka_dto_legacy.OrderUpdateRequest;
@@ -13,13 +11,10 @@ import com.msa.jewelry.order.internal.order.entity.Orders;
 import com.msa.jewelry.order.internal.order.entity.order_enum.OrderStatus;
 import com.msa.jewelry.order.internal.order.entity.order_enum.ProductStatus;
 import com.msa.jewelry.order.internal.order.repository.OrdersRepository;
-import com.msa.jewelry.order.internal.outbox.domain.entity.OutboxEvent;
-import com.msa.jewelry.order.internal.outbox.repository.OutboxEventRepository;
 import com.msa.jewelry.order.internal.priority.entitiy.Priority;
 import com.msa.jewelry.order.internal.priority.repository.PriorityRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +22,7 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -35,7 +30,7 @@ import java.util.UUID;
 
 import static com.msa.jewelry.order.internal.global.exception.ExceptionMessage.NOT_ACCESS;
 import static com.msa.jewelry.order.internal.global.exception.ExceptionMessage.NOT_FOUND;
-import static com.msa.jewelry.order.internal.global.util.DateConversionUtil.StringToOffsetDateTime;
+import static com.msa.jewelry.order.internal.global.util.DateConversionUtil.StringToLocalDateTime;
 import static com.msa.jewelry.order.internal.order.util.StoneUtil.updateOrderStoneInfo;
 
 /**
@@ -49,9 +44,7 @@ public class OrderCommandService {
 
     private final OrdersRepository ordersRepository;
     private final PriorityRepository priorityRepository;
-    private final OutboxEventRepository outboxEventRepository;
-    private final ObjectMapper objectMapper;
-    private final ApplicationEventPublisher eventPublisher;
+    private final KafkaOrderService kafkaOrderService;
 
     /**
      * 주문 생성
@@ -72,16 +65,15 @@ public class OrderCommandService {
         Priority priority = priorityRepository.findByPriorityName(orderDto.getPriorityName())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
-        OffsetDateTime createAt = StringToOffsetDateTime(orderDto.getCreateAt());
-        OffsetDateTime shippingAt = StringToOffsetDateTime(orderDto.getShippingAt());
+        LocalDateTime createAt = StringToLocalDateTime(orderDto.getCreateAt());
+        LocalDateTime shippingAt = StringToLocalDateTime(orderDto.getShippingAt());
 
+        // 2026-05 P4: Orders 엔티티에서 storeName/factoryName 컬럼 제거. id 만 저장.
         Orders order = Orders.builder()
                 .storeId(storeId)
-                .storeName(orderDto.getStoreName())
                 .storeGrade(orderDto.getStoreGrade())
                 .storeHarry(SafeParse.toBigDecimalOrNull(orderDto.getStoreHarry()))
                 .factoryId(factoryId)
-                .factoryName(orderDto.getFactoryName())
                 .factoryHarry(SafeParse.toBigDecimalOrNull(orderDto.getFactoryHarry()))
                 .orderNote(orderDto.getOrderNote())
                 .productStatus(ProductStatus.RECEIPT)
@@ -144,7 +136,7 @@ public class OrderCommandService {
 
         ordersRepository.save(order);
 
-        // Outbox 이벤트 발행
+        // 주문 후처리 (KafkaOrderService 직접 호출)
         publishOrderCreateEvent(order, tenantId, accessToken, storeId, factoryId,
                                 productId, materialId, colorId, nickname, stoneIds,
                                 assistantStone, assistantId, orderStatus, orderDto);
@@ -162,8 +154,8 @@ public class OrderCommandService {
         Priority priority = priorityRepository.findByPriorityName(orderDto.getPriorityName())
                 .orElseThrow(() -> new IllegalArgumentException("등급: " + NOT_FOUND));
 
-        OffsetDateTime createAt = StringToOffsetDateTime(orderDto.getCreateAt());
-        OffsetDateTime shippingAt = StringToOffsetDateTime(orderDto.getShippingAt());
+        LocalDateTime createAt = StringToLocalDateTime(orderDto.getCreateAt());
+        LocalDateTime shippingAt = StringToLocalDateTime(orderDto.getShippingAt());
 
         Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException("주문 수정: " + NOT_FOUND));
@@ -174,10 +166,10 @@ public class OrderCommandService {
         order.addPriority(priority);
 
         // 거래처(스토어) 및 제조사(팩토리) 업데이트 (변경되었을 경우)
+        // 2026-05 P4: storeName/factoryName 파라미터 제거. id 만 저장.
         if (StringUtils.hasText(orderDto.getStoreId())) {
             order.updateStore(
                 SafeParse.toLongOrNull(orderDto.getStoreId()),
-                orderDto.getStoreName(),
                 orderDto.getStoreGrade(),
                 SafeParse.toBigDecimalOrNull(orderDto.getStoreHarry())
             );
@@ -185,7 +177,6 @@ public class OrderCommandService {
         if (StringUtils.hasText(orderDto.getFactoryId())) {
             order.updateFactory(
                 SafeParse.toLongOrNull(orderDto.getFactoryId()),
-                orderDto.getFactoryName(),
                 SafeParse.toBigDecimalOrNull(orderDto.getFactoryHarry())
             );
         }
@@ -241,7 +232,7 @@ public class OrderCommandService {
 
         ordersRepository.save(order);
 
-        // Outbox 이벤트 발행
+        // 주문 후처리 (KafkaOrderService 직접 호출)
         publishOrderUpdateEvent(order, tenantId, accessToken, orderStatus, orderProduct, orderDto, nickname);
 
         return order;
@@ -260,11 +251,13 @@ public class OrderCommandService {
                 .orElseThrow(() -> new IllegalArgumentException("flowCode: " + NOT_FOUND));
 
         order.updateOrderStatus(OrderStatus.DELETED);
-        order.deletedOrder(OffsetDateTime.now());
+        order.deletedOrder(LocalDateTime.now());
     }
 
     /**
-     * 주문 생성 Outbox 이벤트 발행
+     * 주문 생성 후처리 (2026-05 P3): Outbox→Kafka(stub)→ApplicationEvent 경로 제거.
+     * 같은 트랜잭션 안에서 {@link KafkaOrderService#createHandle} 을 직접 호출하여
+     * 최신 store/factory/product/material/color/assistantStone 정보로 주문을 보강한다.
      */
     private void publishOrderCreateEvent(Orders order, String tenantId, String accessToken,
                                         Long storeId, Long factoryId, Long productId,
@@ -272,7 +265,7 @@ public class OrderCommandService {
                                         List<Long> stoneIds, boolean assistantStone,
                                         Long assistantId, String orderStatus, OrderDto.Request orderDto) {
 
-        OrderAsyncRequested.OrderAsyncRequestedBuilder orderAsyncRequestedBuilder = OrderAsyncRequested.builder()
+        OrderAsyncRequested.OrderAsyncRequestedBuilder builder = OrderAsyncRequested.builder()
                 .eventId(UUID.randomUUID().toString())
                 .flowCode(order.getFlowCode())
                 .tenantId(tenantId)
@@ -288,35 +281,16 @@ public class OrderCommandService {
                 .assistantStoneId(assistantId)
                 .orderStatus(orderStatus);
 
-        // 보조석 관련 - assistantStone 플래그와 관계없이 값이 있으면 설정
         if (orderDto.getAssistantStoneCreateAt() != null && !orderDto.getAssistantStoneCreateAt().isEmpty()) {
-            OffsetDateTime assistantStoneCreateAt = StringToOffsetDateTime(orderDto.getAssistantStoneCreateAt());
-            orderAsyncRequestedBuilder.assistantStoneCreateAt(assistantStoneCreateAt);
+            builder.assistantStoneCreateAt(StringToLocalDateTime(orderDto.getAssistantStoneCreateAt()));
         }
 
-        try {
-            OutboxEvent outboxEvent = new OutboxEvent(
-                    "order.create.requested",
-                    order.getFlowCode().toString(),
-                    objectMapper.writeValueAsString(orderAsyncRequestedBuilder.build()),
-                    "ORDER_CREATE"
-            );
-
-            outboxEventRepository.save(outboxEvent);
-
-            log.info("주문 생성 및 Outbox 저장 완료. OrderFlowCode: {}, EventID: {}",
-                    order.getFlowCode(), outboxEvent.getId());
-
-            eventPublisher.publishEvent(new OutboxCreatedEvent(tenantId));
-
-        } catch (Exception e) {
-            log.error("Outbox 저장 실패. OrderFlowCode: {}", order.getFlowCode(), e);
-            throw new IllegalStateException("주문 생성 이벤트 저장 실패", e);
-        }
+        kafkaOrderService.createHandle(builder.build());
+        log.info("주문 생성 후처리 완료. OrderFlowCode: {}", order.getFlowCode());
     }
 
     /**
-     * 주문 수정 Outbox 이벤트 발행
+     * 주문 수정 후처리 (2026-05 P3): KafkaOrderService.updateHandle 을 같은 트랜잭션 안에서 직접 호출.
      */
     private void publishOrderUpdateEvent(Orders order, String tenantId, String accessToken,
                                         String orderStatus, OrderProduct orderProduct,
@@ -329,7 +303,7 @@ public class OrderCommandService {
         Long colorId = SafeParse.toLongOrNull(orderDto.getColorId());
         Long assistantId = SafeParse.toLongOrNull(orderDto.getAssistantStoneId());
 
-        OrderUpdateRequest.OrderUpdateRequestBuilder updateRequestBuilder = OrderUpdateRequest.builder()
+        OrderUpdateRequest.OrderUpdateRequestBuilder builder = OrderUpdateRequest.builder()
                 .eventId(UUID.randomUUID().toString())
                 .tenantId(tenantId)
                 .token(accessToken)
@@ -337,61 +311,32 @@ public class OrderCommandService {
                 .flowCode(order.getFlowCode())
                 .nickname(nickname);
 
-        // productId 변경 시에만 추가
         Long newProductId = SafeParse.toLongOrNull(orderDto.getProductId());
         if (newProductId != null && productId != null && !newProductId.equals(productId)) {
-            updateRequestBuilder.productId(productId);
+            builder.productId(productId);
         }
 
-        // storeId 변경 확인 (null-safe 비교)
         if (!Objects.equals(storeId, order.getStoreId())) {
-            updateRequestBuilder.storeId(storeId);
+            builder.storeId(storeId);
         }
-
-        // factoryId 변경 확인 (null-safe 비교)
         if (!Objects.equals(factoryId, order.getFactoryId())) {
-            updateRequestBuilder.factoryId(factoryId);
+            builder.factoryId(factoryId);
         }
-
-        // materialId 변경 확인 (null-safe 비교)
         if (!Objects.equals(materialId, orderProduct.getMaterialId())) {
-            updateRequestBuilder.materialId(materialId);
+            builder.materialId(materialId);
         }
-
-        // colorId 변경 확인 (null-safe 비교)
         if (!Objects.equals(colorId, orderProduct.getColorId())) {
-            updateRequestBuilder.colorId(colorId);
+            builder.colorId(colorId);
         }
 
-        // assistantStone 처리 - 플래그와 관계없이 값이 있으면 설정
         boolean assistantStone = orderDto.isAssistantStone();
-        updateRequestBuilder
-                .assistantStone(assistantStone)
-                .assistantStoneId(assistantId);
+        builder.assistantStone(assistantStone).assistantStoneId(assistantId);
 
         if (orderDto.getAssistantStoneCreateAt() != null && !orderDto.getAssistantStoneCreateAt().isEmpty()) {
-            OffsetDateTime assistantStoneCreateAt = StringToOffsetDateTime(orderDto.getAssistantStoneCreateAt());
-            updateRequestBuilder.assistantStoneCreateAt(assistantStoneCreateAt);
+            builder.assistantStoneCreateAt(StringToLocalDateTime(orderDto.getAssistantStoneCreateAt()));
         }
 
-        try {
-            OutboxEvent outboxEvent = new OutboxEvent(
-                    "order.update.requested",
-                    order.getFlowCode().toString(),
-                    objectMapper.writeValueAsString(updateRequestBuilder.build()),
-                    "ORDER_UPDATE"
-            );
-
-            outboxEventRepository.save(outboxEvent);
-
-            log.info("주문 수정 및 Outbox 저장 완료. OrderFlowCode: {}, EventID: {}",
-                    order.getFlowCode(), outboxEvent.getId());
-
-            eventPublisher.publishEvent(new OutboxCreatedEvent(tenantId));
-
-        } catch (Exception e) {
-            log.error("Outbox 저장 실패. OrderFlowCode: {}", order.getFlowCode(), e);
-            throw new IllegalStateException("주문 수정 이벤트 저장 실패", e);
-        }
+        kafkaOrderService.updateHandle(builder.build());
+        log.info("주문 수정 후처리 완료. OrderFlowCode: {}", order.getFlowCode());
     }
 }

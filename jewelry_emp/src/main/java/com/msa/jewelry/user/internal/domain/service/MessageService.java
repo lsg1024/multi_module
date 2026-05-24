@@ -1,19 +1,17 @@
 package com.msa.jewelry.user.internal.domain.service;
 
-import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.domain.dto.MessageDto;
 import com.msa.common.global.jwt.JwtUtil;
-import com.msa.common.global.tenant.TenantContext;
+import com.msa.jewelry.account.api.StorePhoneFinder;
+import com.msa.jewelry.account.api.StorePhoneView;
 import com.msa.jewelry.user.internal.domain.entity.MessageHistory;
 import com.msa.jewelry.user.internal.domain.entity.SensConfig;
-import com.msa.jewelry.user.internal.feign_legacy.AccountClient;
 import com.msa.jewelry.user.internal.domain.respository.MessageHistoryRepository;
 import com.msa.jewelry.user.internal.domain.respository.SensConfigRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,9 +19,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * SMS 전송 서비스.
@@ -33,8 +29,8 @@ import java.util.Map;
  * *주요 동작:
  *
  *   - SENS 설정 관리 — 테넌트ID 기준으로 {@link SensConfig}를 upsert 처리한다.
- *   - SMS 전송 — Feign 클라이언트({@link com.msa.jewelry.user.internal.feign_legacy.AccountClient})로
- *       account-service에서 매장 전화번호를 일괄 조회한 뒤,
+ *   - SMS 전송 — 모듈 API({@link com.msa.jewelry.account.api.StorePhoneFinder}) 로
+ *       account 모듈에서 매장 전화번호를 일괄 조회한 뒤,
  *       각 매장에 대해 {@link NaverSensApi#sendSms}를 호출하고 성공/실패 결과를 수집한다.
  *   - 전송 이력 관리 — 전송 성공·실패 여부와 관계없이 모든 전송 시도를
  *       {@link com.msa.jewelry.user.internal.domain.entity.MessageHistory}로 저장한다.
@@ -44,7 +40,7 @@ import java.util.Map;
  *
  *   - {@link com.msa.jewelry.user.internal.domain.respository.SensConfigRepository}
  *   - {@link com.msa.jewelry.user.internal.domain.respository.MessageHistoryRepository}
- *   - {@link com.msa.jewelry.user.internal.feign_legacy.AccountClient} — Feign으로 Store 전화번호 조회
+ *   - {@link com.msa.jewelry.account.api.StorePhoneFinder} — 모듈 API 로 Store 전화번호 조회
  *   - {@link NaverSensApi} — SENS API 실제 호출
  *   - {@link com.msa.common.global.jwt.JwtUtil} — 액세스 토큰에서 tenantId·nickname 추출
  * 
@@ -56,7 +52,7 @@ public class MessageService {
 
     private final SensConfigRepository sensConfigRepository;
     private final MessageHistoryRepository messageHistoryRepository;
-    private final AccountClient accountClient;
+    private final StorePhoneFinder storePhoneFinder;
     private final NaverSensApi naverSensApi;
     private final JwtUtil jwtUtil;
 
@@ -131,31 +127,26 @@ public class MessageService {
             throw new IllegalArgumentException("SENS 서비스가 비활성화 상태입니다.");
         }
 
-        // Feign으로 Store 전화번호 조회
-        Map<String, Object> headers = new HashMap<>();
-        headers.put("X-Tenant-ID", TenantContext.getTenant());
-        ResponseEntity<ApiResponse<List<MessageDto.StorePhoneInfo>>> response =
-                accountClient.getStorePhones(headers, request.getStoreIds());
-
-        if (response.getBody() == null || !response.getBody().isSuccess() || response.getBody().getData() == null) {
+        // 모듈 API 로 Store 전화번호 일괄 조회 (같은 JVM 내부 호출)
+        List<StorePhoneView> storePhones = storePhoneFinder.getStorePhones(request.getStoreIds());
+        if (storePhones == null) {
             throw new IllegalArgumentException("거래처 정보를 가져올 수 없습니다.");
         }
 
-        List<MessageDto.StorePhoneInfo> storePhones = response.getBody().getData();
         List<MessageDto.SendResult> results = new ArrayList<>();
 
-        for (MessageDto.StorePhoneInfo store : storePhones) {
-            String phone = store.getStorePhoneNumber();
+        for (StorePhoneView store : storePhones) {
+            String phone = store.storePhoneNumber();
 
             if (phone == null || phone.isBlank()) {
                 results.add(MessageDto.SendResult.builder()
-                        .storeName(store.getStoreName())
+                        .storeName(store.storeName())
                         .phone("")
                         .status("FAILED")
                         .errorMessage("전화번호가 등록되어 있지 않습니다.")
                         .build());
 
-                saveHistory(tenantId, "", store.getStoreName(), request.getContent(),
+                saveHistory(tenantId, "", store.storeName(), request.getContent(),
                         "FAILED", "전화번호 미등록", null, nickname);
                 continue;
             }
@@ -169,26 +160,26 @@ public class MessageService {
                 String requestId = smsResponse != null ? smsResponse.getRequestId() : null;
 
                 results.add(MessageDto.SendResult.builder()
-                        .storeName(store.getStoreName())
+                        .storeName(store.storeName())
                         .phone(phone)
                         .status("SUCCESS")
                         .build());
 
-                saveHistory(tenantId, phone, store.getStoreName(), request.getContent(),
+                saveHistory(tenantId, phone, store.storeName(), request.getContent(),
                         "SUCCESS", null, requestId, nickname);
 
             } catch (Exception e) {
                 log.error("SMS 전송 실패 - Store: {}, Phone: {}, Error: {}",
-                        store.getStoreName(), phone, e.getMessage());
+                        store.storeName(), phone, e.getMessage());
 
                 results.add(MessageDto.SendResult.builder()
-                        .storeName(store.getStoreName())
+                        .storeName(store.storeName())
                         .phone(phone)
                         .status("FAILED")
                         .errorMessage(e.getMessage())
                         .build());
 
-                saveHistory(tenantId, phone, store.getStoreName(), request.getContent(),
+                saveHistory(tenantId, phone, store.storeName(), request.getContent(),
                         "FAILED", e.getMessage(), null, nickname);
             }
         }

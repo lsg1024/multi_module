@@ -2,13 +2,12 @@ package com.msa.jewelry.order.internal.stock.entity;
 
 import com.github.f4b6a3.tsid.TsidCreator;
 import com.msa.common.global.domain.BaseTimeEntity;
-import com.msa.jewelry.order.internal.order.dto.FactoryDto;
-import com.msa.jewelry.order.internal.order.dto.StoreDto;
 import com.msa.jewelry.order.internal.order.entity.OrderStone;
 import com.msa.jewelry.order.internal.order.entity.Orders;
 import com.msa.jewelry.order.internal.order.entity.order_enum.OrderStatus;
 import com.msa.jewelry.order.internal.stock.dto.StockDto;
 import io.hypersistence.utils.hibernate.id.Tsid;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -42,80 +41,106 @@ import static jakarta.persistence.CascadeType.*;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SQLDelete(sql = "UPDATE STOCK SET STOCK_DELETED = TRUE WHERE STOCK_ID = ?")
+@Schema(description = "재고 엔티티 — 공장 출고 후 매장이 보유한 제품 단위 재고. flowCode 로 주문/판매/이력과 연결.")
 public class Stock extends BaseTimeEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "STOCK_ID")
+    @Schema(description = "재고 PK", example = "3001")
     private Long stockId;
     /** TSID 기반 재고 고유 코드. 독립 재고 시 flowCode와 동일하게 초기화된다. */
     @Tsid @Column(name = "STOCK_CODE")
+    @Schema(description = "TSID 기반 재고 고유 코드. 독립 재고 시 flowCode 와 동일.", example = "445823472384938240")
     private Long stockCode;
     /** 주문·재고·판매·이력 테이블의 공통 추적 키. 주문 연결 시 Orders.flowCode를 사용한다. */
     @Column(name = "FLOW_CODE")
+    @Schema(description = "주문·재고·판매·이력 공통 추적 키. 주문 연결 시 Orders.flowCode 값을 그대로 사용.", example = "445823472384938240")
     private Long flowCode;
-    @Column(name = "STORE_ID") //account - store
+    @Column(name = "STORE_ID") //account - store (이름은 storeFinder 로 조회)
+    @Schema(description = "거래처(매장) ID. account 모듈 Store FK. 이름은 storeFinder 로 조회.", example = "10")
     private Long storeId;
-    @Column(name = "STORE_NAME") //account - store
-    private String storeName;
+    /** 거래 당시 거래처 수수료 (스냅샷, 2026-05 P4 유지). */
     @Column(name = "STORE_HARRY", precision = 10, scale = 2)
+    @Schema(description = "거래 당시 거래처 수수료(허리) 스냅샷", example = "1.50")
     private BigDecimal storeHarry;
+    /** 거래 당시 거래처 등급 (스냅샷, 2026-05 P4 유지). */
     @Column(name = "STORE_GRADE") //account - store
+    @Schema(description = "거래 당시 거래처 등급 스냅샷", example = "A")
     private String storeGrade;
-    @Column(name = "FACTORY_ID") //account - factory
+    @Column(name = "FACTORY_ID") //account - factory (이름은 factoryFinder 로 조회)
+    @Schema(description = "제조사 ID. account 모듈 Factory FK. 이름은 factoryFinder 로 조회.", example = "5")
     private Long factoryId;
-    @Column(name = "FACTORY_NAME")
-    private String factoryName;
+    /** 거래 당시 제조사 수수료 (스냅샷, 2026-05 P4 유지). */
     @Column(name = "FACTORY_HARRY", precision = 10, scale = 2)
+    @Schema(description = "거래 당시 제조사 수수료(허리) 스냅샷", example = "1.20")
     private BigDecimal factoryHarry;
     @Column(name = "STOCK_NOTE")
+    @Schema(description = "재고 비고", example = "샘플로 들어온 제품")
     private String stockNote;
     @Column(name = "STOCK_MAIN_STONE_NOTE")
+    @Schema(description = "메인 스톤 비고", example = "1.0ct VS1")
     private String stockMainStoneNote;
     @Column(name = "STOCK_ASSISTANCE_STONE_NOTE")
+    @Schema(description = "보조 스톤 비고", example = "0.05ct x 12")
     private String stockAssistanceStoneNote;
     @Column(name = "STONE_MAIN_LABOR_COST") // 스톤 메인 매출 비용
+    @Schema(description = "메인 스톤 매출 공임", example = "200000")
     private Integer stoneMainLaborCost;
     @Column(name = "STONE_ASSISTANCE_LABOR_COST") // 스톤 보조 매출 비용
+    @Schema(description = "보조 스톤 매출 공임", example = "50000")
     private Integer stoneAssistanceLaborCost;
     @Column(name = "STONE_ADD_LABOR_COST") // 추가 스톤 매출 비용
+    @Schema(description = "추가 스톤 매출 공임", example = "30000")
     private Integer stoneAddLaborCost;
     @Column(name = "TOTAL_STONE_PURCHASE_COST") // 총 스톤 매입 비용
+    @Schema(description = "총 스톤 매입 비용 합계", example = "150000")
     private Integer totalStonePurchaseCost;
     @Column(name = "TOTAL_STONE_LABOR_COST")
+    @Schema(description = "총 스톤 공임 합계", example = "280000")
     private Integer totalStoneLaborCost;
     @Column(name = "STOCK_DELETED", nullable = false)
+    @Schema(description = "소프트 삭제 플래그 (TRUE 이면 노출 제외)", example = "false")
     private boolean stockDeleted = false;
 
     @Column(name = "STOCK_CHECKED")
+    @Schema(description = "재고 조사 완료 여부", example = "false")
     private Boolean stockChecked = false;
 
     @Column(name = "STOCK_CHECKED_AT")
+    @Schema(description = "재고 조사 처리 시각", example = "2026-05-16T10:00:00")
     private LocalDateTime stockCheckedAt;
 
     @Embedded
+    @Schema(description = "재고에 박힌 상품 스냅샷 (가격/이름/재질 등 거래 당시 박제값)")
     private ProductSnapshot product;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ORDER_ID")
+    @Schema(description = "연결된 주문 (Orders). 독립 재고면 null.")
     private Orders order;
 
     @OneToMany(mappedBy = "stock", cascade = {PERSIST, MERGE, REMOVE}, orphanRemoval = true)
+    @Schema(description = "재고에 연결된 주문 스톤 목록")
     private List<OrderStone> orderStones = new ArrayList<>();
 
     @Column(name = "ORDER_STATUS", nullable = false)
     @Enumerated(EnumType.STRING)
+    @Schema(description = "재고 비즈니스 상태 (WAITING/STOCK/RENTAL/RETURN/SALE/DELETED 등)", example = "STOCK")
     private OrderStatus orderStatus;
 
     /** 마이그레이션 시 원재고구분 값을 임시로 전달하기 위한 필드 (DB 저장 안 됨) */
     @Transient
+    @Schema(description = "마이그레이션 임시 필드 — 원재고구분 (DB 저장 안 됨)", hidden = true)
     private String migrationSourceType;
 
     /** 마이그레이션 시 CSV 등록일을 임시로 전달하기 위한 필드 (DB 저장 안 됨) */
     @Transient
+    @Schema(description = "마이그레이션 임시 필드 — CSV 등록일 (DB 저장 안 됨)", hidden = true)
     private LocalDateTime migrationCreatedDate;
 
     /** 마이그레이션 시 CSV 변경일을 임시로 전달하기 위한 필드 (DB 저장 안 됨) */
     @Transient
+    @Schema(description = "마이그레이션 임시 필드 — CSV 변경일 (DB 저장 안 됨)", hidden = true)
     private LocalDateTime migrationModifiedDate;
 
     public void setMigrationSourceType(String migrationSourceType) {
@@ -131,15 +156,13 @@ public class Stock extends BaseTimeEntity {
     }
 
     @Builder
-    public Stock(Long stockCode, Long flowCode, Long storeId, String storeName, BigDecimal storeHarry, String storeGrade, Long factoryId, String factoryName, BigDecimal factoryHarry, String stockNote, String stockMainStoneNote, String stockAssistanceStoneNote, Integer stoneMainLaborCost, Integer stoneAssistanceLaborCost, Integer stoneAddLaborCost, Integer totalStonePurchaseCost, Integer totalStoneLaborCost, boolean stockDeleted, ProductSnapshot product, Orders orders, List<OrderStone> orderStones, OrderStatus orderStatus) {
+    public Stock(Long stockCode, Long flowCode, Long storeId, BigDecimal storeHarry, String storeGrade, Long factoryId, BigDecimal factoryHarry, String stockNote, String stockMainStoneNote, String stockAssistanceStoneNote, Integer stoneMainLaborCost, Integer stoneAssistanceLaborCost, Integer stoneAddLaborCost, Integer totalStonePurchaseCost, Integer totalStoneLaborCost, boolean stockDeleted, ProductSnapshot product, Orders orders, List<OrderStone> orderStones, OrderStatus orderStatus) {
         this.stockCode = stockCode;
         this.flowCode = flowCode;
         this.storeId = storeId;
-        this.storeName = storeName;
         this.storeHarry = storeHarry;
         this.storeGrade = storeGrade;
         this.factoryId = factoryId;
-        this.factoryName = factoryName;
         this.factoryHarry = factoryHarry;
         this.stockNote = stockNote;
         this.stockMainStoneNote = stockMainStoneNote;
@@ -176,28 +199,13 @@ public class Stock extends BaseTimeEntity {
         orderStone.setStock(this);
     }
 
-    public void updateStore(StoreDto.Response storeDto) {
-        if (storeDto == null) {
-            return;
-        }
-        if (storeDto.getStoreId() != null) {
-            this.storeId = storeDto.getStoreId();
-        }
-        if (storeDto.getStoreName() != null && !storeDto.getStoreName().isEmpty()) {
-            this.storeName = storeDto.getStoreName();
-        }
-    }
-
     /**
-     * 거래처 정보 부분 업데이트. null/빈 값이면 기존 값 유지.
-     * payload 에서 이름 필드가 누락되어도 DB 가 null 로 덮어써지는 사고를 방지.
+     * 거래처 정보 부분 업데이트.
+     * <p>2026-05 P4: storeName 파라미터 제거. 이름은 응답 시점에 storeFinder 로 조회.
      */
-    public void updateStore(Long storeId, String storeName, String storeGrade, BigDecimal storeHarry) {
+    public void updateStore(Long storeId, String storeGrade, BigDecimal storeHarry) {
         if (storeId != null) {
             this.storeId = storeId;
-        }
-        if (storeName != null && !storeName.isEmpty()) {
-            this.storeName = storeName;
         }
         if (storeGrade != null && !storeGrade.isEmpty()) {
             this.storeGrade = storeGrade;
@@ -207,25 +215,13 @@ public class Stock extends BaseTimeEntity {
         }
     }
 
-    public void updateFactory(FactoryDto.Response factoryDto) {
-        if (factoryDto == null) {
-            return;
-        }
-        if (factoryDto.getFactoryId() != null) {
-            this.factoryId = factoryDto.getFactoryId();
-        }
-        if (factoryDto.getFactoryName() != null && !factoryDto.getFactoryName().isEmpty()) {
-            this.factoryName = factoryDto.getFactoryName();
-        }
-    }
-
-    /** 제조사 정보 부분 업데이트. null/빈 값이면 기존 값 유지. */
-    public void updateFactory(Long factoryId, String factoryName, BigDecimal factoryHarry) {
+    /**
+     * 제조사 정보 부분 업데이트.
+     * <p>2026-05 P4: factoryName 파라미터 제거. 이름은 응답 시점에 factoryFinder 로 조회.
+     */
+    public void updateFactory(Long factoryId, BigDecimal factoryHarry) {
         if (factoryId != null) {
             this.factoryId = factoryId;
-        }
-        if (factoryName != null && !factoryName.isEmpty()) {
-            this.factoryName = factoryName;
         }
         if (factoryHarry != null) {
             this.factoryHarry = factoryHarry;
@@ -238,10 +234,9 @@ public class Stock extends BaseTimeEntity {
         this.stockMainStoneNote = rentalRequest.getMainStoneNote();
         this.stockAssistanceStoneNote = rentalRequest.getAssistanceStoneNote();
         this.orderStatus = OrderStatus.RENTAL;
-        // 대여 시 거래처 변경
+        // 대여 시 거래처 변경 (2026-05 P4: storeName 제거)
         if (rentalRequest.getStoreId() != null && !rentalRequest.getStoreId().isBlank()) {
             this.storeId = Long.parseLong(rentalRequest.getStoreId());
-            this.storeName = rentalRequest.getStoreName();
             this.storeGrade = rentalRequest.getStoreGrade();
             if (rentalRequest.getStoreHarry() != null && !rentalRequest.getStoreHarry().isBlank()) {
                 this.storeHarry = new BigDecimal(rentalRequest.getStoreHarry());

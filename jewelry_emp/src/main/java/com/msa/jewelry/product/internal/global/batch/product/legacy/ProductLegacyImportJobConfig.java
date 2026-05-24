@@ -1,10 +1,10 @@
 package com.msa.jewelry.product.internal.global.batch.product.legacy;
 
-import com.msa.jewelry.product.internal.global.feign_legacy.client.FactoryClient;
+import com.msa.jewelry.account.api.FactoryFinder;
+import com.msa.jewelry.account.api.FactoryView;
 import com.msa.jewelry.product.internal.classification.repository.ClassificationRepository;
 import com.msa.jewelry.product.internal.color.repository.ColorRepository;
 import com.msa.jewelry.product.internal.material.repository.MaterialRepository;
-import com.msa.jewelry.product.internal.product.dto.FactoryDto;
 import com.msa.jewelry.product.internal.product.entity.Product;
 import com.msa.jewelry.product.internal.product.repository.ProductRepository;
 import com.msa.jewelry.product.internal.set.repository.SetTypeRepository;
@@ -55,7 +55,7 @@ public class ProductLegacyImportJobConfig {
     private final ClassificationRepository classificationRepository;
     private final MaterialRepository materialRepository;
     private final ColorRepository colorRepository;
-    private final FactoryClient factoryClient;
+    private final FactoryFinder factoryFinder;
     private final ProductMigrationFailureCollector failureCollector;
 
     private static final int CHUNK_SIZE = 100;
@@ -144,12 +144,12 @@ public class ProductLegacyImportJobConfig {
     public ProductLegacyCsvItemProcessor productLegacyCsvProcessor(
             @Value("#{jobParameters['accessToken']}") String accessToken) {
 
-        // Factory 캐시 구성 (기존 ProductItemProcessor와 동일한 패턴)
-        Map<String, FactoryDto.ResponseBatch> factoryCache = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        // Factory 캐시 구성 (factoryName → factoryId 의 단순 매핑)
+        Map<String, Long> factoryCache = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         try {
-            List<FactoryDto.ResponseBatch> factories = factoryClient.getFactories(accessToken);
-            for (FactoryDto.ResponseBatch f : factories) {
-                factoryCache.putIfAbsent(f.getFactoryName(), f);
+            List<FactoryView> factories = factoryFinder.findAll();
+            for (FactoryView f : factories) {
+                factoryCache.putIfAbsent(f.factoryName(), f.factoryId());
             }
             log.info("[레거시 상품 배치] 공장 캐시 로드 완료: {}건", factoryCache.size());
         } catch (Exception e) {

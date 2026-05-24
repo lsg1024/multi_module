@@ -113,8 +113,9 @@ public class DashboardRepositoryImpl implements DashboardRepository {
                         stock.product.size,
                         stock.product.goldWeight,
                         stock.product.stoneWeight,
-                        stock.factoryName,
-                        stock.storeName,
+                        // 2026-05 P4: Stock 의 storeName/factoryName 컬럼 제거. TODO[P4-followup]: 응답 변환 시 finder 매핑.
+                        Expressions.constant(""),
+                        Expressions.constant(""),
                         stock.orderStatus.stringValue()
                 ))
                 .from(stock)
@@ -154,8 +155,10 @@ public class DashboardRepositoryImpl implements DashboardRepository {
         if (StringUtils.isNotBlank(condition.getColorName())) {
             builder.and(stock.product.colorName.eq(condition.getColorName()));
         }
+        // 2026-05 P4: Stock.storeName 컬럼 제거.
+        //   TODO[P4-followup]: storeFinder.findStoreByName(...).storeId() 로 변환 후 stock.storeId.eq(...)
         if (StringUtils.isNotBlank(condition.getStoreName())) {
-            builder.and(stock.storeName.eq(condition.getStoreName()));
+            builder.and(stock.flowCode.isNull()); // placeholder: 결과 0건 강제
         }
 
         List<DashboardDto.StockDetail> content = query
@@ -168,8 +171,9 @@ public class DashboardRepositoryImpl implements DashboardRepository {
                         stock.product.size,
                         stock.product.goldWeight,
                         stock.product.stoneWeight,
-                        stock.factoryName,
-                        stock.storeName,
+                        // 2026-05 P4: Stock 의 storeName/factoryName 컬럼 제거. TODO[P4-followup]: 응답 변환 시 finder 매핑.
+                        Expressions.constant(""),
+                        Expressions.constant(""),
                         stock.orderStatus.stringValue()
                 ))
                 .from(stock)
@@ -209,13 +213,9 @@ public class DashboardRepositoryImpl implements DashboardRepository {
                 .orderBy(stock.product.colorName.asc())
                 .fetch();
 
-        List<String> stores = query
-                .select(stock.storeName)
-                .distinct()
-                .from(stock)
-                .where(baseCondition, stock.storeName.isNotNull())
-                .orderBy(stock.storeName.asc())
-                .fetch();
+        // 2026-05 P4: Stock.storeName 컬럼 제거.
+        //   TODO[P4-followup]: stock.storeId distinct 추출 후 storeFinder 로 이름 매핑, 이름순 정렬.
+        List<String> stores = java.util.List.of();
 
         return DashboardDto.StockFilterOption.builder()
                 .materials(materials)
@@ -362,7 +362,8 @@ public class DashboardRepositoryImpl implements DashboardRepository {
         }
         // 매입처구분
         if (StringUtils.isNotBlank(condition.getFactoryName())) {
-            saleCondition.and(stock.factoryName.eq(condition.getFactoryName()));
+            // 2026-05 P4: Stock.factoryName 컬럼 제거. TODO[P4-followup]: factoryFinder 매핑.
+            saleCondition.and(stock.flowCode.isNull()); // placeholder: 결과 0건 강제
         }
         // 관리자구분
         if (StringUtils.isNotBlank(condition.getCreatedBy())) {
@@ -428,7 +429,8 @@ public class DashboardRepositoryImpl implements DashboardRepository {
             stoneCondition.and(stock.product.classificationName.eq(condition.getClassificationName()));
         }
         if (StringUtils.isNotBlank(condition.getFactoryName())) {
-            stoneCondition.and(stock.factoryName.eq(condition.getFactoryName()));
+            // 2026-05 P4: Stock.factoryName 컬럼 제거. TODO[P4-followup]: factoryFinder 매핑.
+            stoneCondition.and(stock.flowCode.isNull()); // placeholder: 결과 0건 강제
         }
 
         List<Tuple> stoneResults = query
@@ -539,14 +541,9 @@ public class DashboardRepositoryImpl implements DashboardRepository {
                 .fetch();
 
         // 매입처구분 목록
-        List<String> factories = query
-                .select(stock.factoryName)
-                .distinct()
-                .from(saleItem)
-                .join(saleItem.stock, stock)
-                .where(stock.factoryName.isNotNull())
-                .orderBy(stock.factoryName.asc())
-                .fetch();
+        // 2026-05 P4: Stock.factoryName 컬럼 제거.
+        //   TODO[P4-followup]: stock.factoryId distinct 추출 후 factoryFinder 매핑.
+        List<String> factories = java.util.List.of();
 
         // 관리자구분 목록
         List<String> managers = query
@@ -654,10 +651,11 @@ public class DashboardRepositoryImpl implements DashboardRepository {
                 .add(stock.stoneAssistanceLaborCost.coalesce(0))
                 .add(stock.stoneAddLaborCost.coalesce(0));
 
+        // 2026-05 P4: Stock.storeName 컬럼 제거. TODO[P4-followup]: 응답 변환 시 storeFinder 매핑.
         return query
                 .select(new QDashboardDto_RentalDetail(
                         stock.storeId,
-                        stock.storeName,
+                        Expressions.constant(""),
                         stock.product.goldWeight.sum(),
                         laborCost.sum(),
                         stock.count(),
@@ -669,8 +667,8 @@ public class DashboardRepositoryImpl implements DashboardRepository {
                         stock.stockDeleted.isFalse(),
                         stock.orderStatus.eq(OrderStatus.RENTAL)
                 )
-                .groupBy(stock.storeId, stock.storeName)
-                .orderBy(stock.storeName.asc())
+                .groupBy(stock.storeId)
+                .orderBy(stock.storeId.asc())
                 .fetch();
     }
 

@@ -2,7 +2,8 @@ package com.msa.jewelry.product.internal.product.service;
 
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.util.CustomPage;
-import com.msa.jewelry.product.internal.global.feign_legacy.client.FactoryClient;
+import com.msa.jewelry.account.api.FactoryFinder;
+import com.msa.jewelry.account.api.FactoryView;
 import com.msa.jewelry.product.internal.classification.entity.Classification;
 import com.msa.jewelry.product.internal.classification.repository.ClassificationRepository;
 import com.msa.jewelry.product.internal.color.entity.Color;
@@ -44,7 +45,7 @@ import static com.msa.jewelry.product.internal.global.exception.ExceptionMessage
 @Transactional
 public class ProductService {
     private final JwtUtil jwtUtil;
-    private final FactoryClient factoryClient;
+    private final FactoryFinder factoryFinder;
     private final SetTypeRepository setTypeRepository;
     private final MaterialRepository materialRepository;
     private final ClassificationRepository classificationRepository;
@@ -57,9 +58,9 @@ public class ProductService {
     private final ProductWorkGradePolicyGroupRepository productWorkGradePolicyGroupRepository;
     private final CustomProductWorkGradePolicyGroup customProductWorkGradePolicyGroupRepository;
 
-    public ProductService(JwtUtil jwtUtil, FactoryClient factoryClient, SetTypeRepository setTypeRepository, MaterialRepository materialRepository, ClassificationRepository classificationRepository, ColorRepository colorRepository, StoneRepository stoneRepository, ProductRepository productRepository, GoldRepository goldRepository, ProductStoneRepository productStoneRepository, ProductImageRepository productImageRepository, ProductWorkGradePolicyGroupRepository productWorkGradePolicyGroupRepository, CustomProductWorkGradePolicyGroup customProductWorkGradePolicyGroupRepository) {
+    public ProductService(JwtUtil jwtUtil, FactoryFinder factoryFinder, SetTypeRepository setTypeRepository, MaterialRepository materialRepository, ClassificationRepository classificationRepository, ColorRepository colorRepository, StoneRepository stoneRepository, ProductRepository productRepository, GoldRepository goldRepository, ProductStoneRepository productStoneRepository, ProductImageRepository productImageRepository, ProductWorkGradePolicyGroupRepository productWorkGradePolicyGroupRepository, CustomProductWorkGradePolicyGroup customProductWorkGradePolicyGroupRepository) {
         this.jwtUtil = jwtUtil;
-        this.factoryClient = factoryClient;
+        this.factoryFinder = factoryFinder;
         this.setTypeRepository = setTypeRepository;
         this.materialRepository = materialRepository;
         this.classificationRepository = classificationRepository;
@@ -259,11 +260,11 @@ public class ProductService {
     }
 
     private String validFactory(String token, Long productDto) {
-        FactoryDto.Response factoryInfo = factoryClient.getFactoryInfo(token, productDto);
-        if (factoryInfo.getFactoryName() == null || factoryInfo.getFactoryName().isBlank()) {
+        FactoryView factoryInfo = factoryFinder.getFactoryInfo(productDto);
+        if (factoryInfo.factoryName() == null || factoryInfo.factoryName().isBlank()) {
             throw new IllegalArgumentException(productDto + " " + NOT_FOUND);
         }
-        return factoryInfo.getFactoryName();
+        return factoryInfo.factoryName();
     }
 
     private void extractedProductStone(ProductDto.Update productDto, Product product) {

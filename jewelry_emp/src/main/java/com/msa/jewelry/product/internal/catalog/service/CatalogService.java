@@ -4,7 +4,7 @@ import com.msa.common.global.util.AuthorityUserRoleUtil;
 import com.msa.common.global.util.CustomPage;
 import com.msa.jewelry.product.internal.global.excel.dto.CatalogExcelDto;
 import com.msa.jewelry.product.internal.global.excel.util.CatalogExcelUtil;
-import com.msa.jewelry.product.internal.global.feign_legacy.client.StockClient;
+import com.msa.jewelry.order.api.StockFinder;
 import com.msa.jewelry.product.internal.catalog.dto.CatalogProductDto;
 import com.msa.jewelry.product.internal.catalog.repository.CatalogRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ public class CatalogService {
 
     private final CatalogRepository catalogRepository;
     private final AuthorityUserRoleUtil authorityUserRoleUtil;
-    private final StockClient stockClient;
+    private final StockFinder stockFinder;
 
     /**
      * 판매처 권한 검증
@@ -64,7 +64,7 @@ public class CatalogService {
                 .map(CatalogProductDto.Page::getProductName)
                 .toList();
         if (!productNames.isEmpty()) {
-            Map<String, Integer> stockCounts = stockClient.getStockCountByProductNames(accessToken, productNames);
+            Map<String, Integer> stockCounts = stockFinder.getStockCountByProductNames(productNames);
             page.getContent().forEach(p ->
                     p.setStockCount(stockCounts.getOrDefault(p.getProductName(), 0))
             );

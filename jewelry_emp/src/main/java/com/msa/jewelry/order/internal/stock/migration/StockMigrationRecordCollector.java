@@ -75,7 +75,8 @@ public class StockMigrationRecordCollector {
                 Outcome.SUCCESS,
                 null,                                                       // csvNo: Writer에는 row 없음
                 stock.getProduct() != null ? stock.getProduct().getProductFactoryName() : null,
-                stock.getStoreName(),
+                // 2026-05 P4: Stock.storeName 컬럼 제거. 마이그레이션 로그용으로 storeId 만 출력.
+                stock.getStoreId() != null ? "store#" + stock.getStoreId() : null,
                 null,                                                       // CSV 원본 currentStockType은 Writer에서 모름
                 stock.getOrderStatus() != null ? stock.getOrderStatus().name() : null,
                 stock.getStockId(),
@@ -126,7 +127,8 @@ public class StockMigrationRecordCollector {
                 Outcome.ERROR_PERSIST,
                 null,
                 stock.getProduct() != null ? stock.getProduct().getProductFactoryName() : null,
-                stock.getStoreName(),
+                // 2026-05 P4: Stock.storeName 컬럼 제거. 마이그레이션 로그용으로 storeId 만 출력.
+                stock.getStoreId() != null ? "store#" + stock.getStoreId() : null,
                 null,
                 stock.getOrderStatus() != null ? stock.getOrderStatus().name() : null,
                 stock.getStockId(),

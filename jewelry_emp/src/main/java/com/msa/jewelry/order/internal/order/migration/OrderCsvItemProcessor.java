@@ -1,11 +1,11 @@
 package com.msa.jewelry.order.internal.order.migration;
 
-import com.msa.jewelry.order.internal.global.feign_legacy.client.FactoryClient;
-import com.msa.jewelry.order.internal.global.feign_legacy.client.ProductClient;
-import com.msa.jewelry.order.internal.global.feign_legacy.client.StoreClient;
-import com.msa.jewelry.order.internal.global.feign_legacy.dto.ProductDetailDto;
-import com.msa.jewelry.order.internal.order.dto.FactoryDto;
-import com.msa.jewelry.order.internal.order.dto.StoreDto;
+import com.msa.jewelry.account.api.FactoryFinder;
+import com.msa.jewelry.account.api.FactoryView;
+import com.msa.jewelry.account.api.StoreFinder;
+import com.msa.jewelry.account.api.StoreView;
+import com.msa.jewelry.product.api.ProductDetailView;
+import com.msa.jewelry.product.api.ProductFinder;
 import com.msa.jewelry.order.internal.order.entity.OrderProduct;
 import com.msa.jewelry.order.internal.order.entity.Orders;
 import com.msa.jewelry.order.internal.order.entity.order_enum.OrderStatus;
@@ -18,7 +18,7 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -34,16 +34,16 @@ import java.util.Map;
 public class OrderCsvItemProcessor implements ItemProcessor<OrderCsvRow, Orders> {
 
     private final String token;
-    private final StoreClient storeClient;
-    private final FactoryClient factoryClient;
-    private final ProductClient productClient;
+    private final StoreFinder storeFinder;
+    private final FactoryFinder factoryFinder;
+    private final ProductFinder productFinder;
     private final MigrationFailureCollector failureCollector;
     private final boolean deletedOrder;
     private final boolean fixOrder;
     private final PriorityRepository priorityRepository;
 
-    private final Map<String, StoreDto.Response> storeCache = new HashMap<>();
-    private final Map<Object, Object> factoryCache = new HashMap<>();
+    private final Map<String, StoreView> storeCache = new HashMap<>();
+    private final Map<Object, FactoryView> factoryCache = new HashMap<>();
 
     /** 기본 Priority 캐시 (일반) — 첫 호출 시 조회 */
     private Priority cachedDefaultPriority;
@@ -53,36 +53,36 @@ public class OrderCsvItemProcessor implements ItemProcessor<OrderCsvRow, Orders>
     private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
 
     public OrderCsvItemProcessor(String token,
-                                  StoreClient storeClient,
-                                  FactoryClient factoryClient,
-                                  ProductClient productClient,
+                                  StoreFinder storeFinder,
+                                  FactoryFinder factoryFinder,
+                                  ProductFinder productFinder,
                                   MigrationFailureCollector failureCollector,
                                   PriorityRepository priorityRepository) {
-        this(token, storeClient, factoryClient, productClient, failureCollector, priorityRepository, false, false);
+        this(token, storeFinder, factoryFinder, productFinder, failureCollector, priorityRepository, false, false);
     }
 
     public OrderCsvItemProcessor(String token,
-                                  StoreClient storeClient,
-                                  FactoryClient factoryClient,
-                                  ProductClient productClient,
+                                  StoreFinder storeFinder,
+                                  FactoryFinder factoryFinder,
+                                  ProductFinder productFinder,
                                   MigrationFailureCollector failureCollector,
                                   PriorityRepository priorityRepository,
                                   boolean deletedOrder) {
-        this(token, storeClient, factoryClient, productClient, failureCollector, priorityRepository, deletedOrder, false);
+        this(token, storeFinder, factoryFinder, productFinder, failureCollector, priorityRepository, deletedOrder, false);
     }
 
     public OrderCsvItemProcessor(String token,
-                                  StoreClient storeClient,
-                                  FactoryClient factoryClient,
-                                  ProductClient productClient,
+                                  StoreFinder storeFinder,
+                                  FactoryFinder factoryFinder,
+                                  ProductFinder productFinder,
                                   MigrationFailureCollector failureCollector,
                                   PriorityRepository priorityRepository,
                                   boolean deletedOrder,
                                   boolean fixOrder) {
         this.token = token;
-        this.storeClient = storeClient;
-        this.factoryClient = factoryClient;
-        this.productClient = productClient;
+        this.storeFinder = storeFinder;
+        this.factoryFinder = factoryFinder;
+        this.productFinder = productFinder;
         this.failureCollector = failureCollector;
         this.priorityRepository = priorityRepository;
         this.deletedOrder = deletedOrder;
@@ -116,48 +116,46 @@ public class OrderCsvItemProcessor implements ItemProcessor<OrderCsvRow, Orders>
 
             // 2. Store 매핑 (거 래 처) — best-effort
             String storeName = row.getTradingPartner();
-            StoreDto.Response storeInfo = null;
+            StoreView storeInfo = null;
             Long storeId = null;
 
             if (StringUtils.hasText(storeName)) {
                 storeInfo = lookupStore(storeName);
                 if (storeInfo != null) {
-                    storeId = storeInfo.getStoreId();
-                    storeName = storeInfo.getStoreName();
+                    storeId = storeInfo.storeId();
+                    storeName = storeInfo.storeName();
                 }
                 // Store not found: use storeName only, storeId = null (no skip)
             }
 
             // 3. Factory 매핑 (제조사) — name-based lookup (best-effort)
             String factoryName = row.getManufacturer();
-            FactoryDto.Response factoryInfo = null;
+            FactoryView factoryInfo = null;
             Long factoryId = null;
 
             if (StringUtils.hasText(factoryName) && !"NONE".equalsIgnoreCase(factoryName.trim())) {
                 factoryInfo = lookupFactoryByName(factoryName);
                 if (factoryInfo != null) {
-                    factoryId = factoryInfo.getFactoryId();
-                    factoryName = factoryInfo.getFactoryName();
+                    factoryId = factoryInfo.factoryId();
+                    factoryName = factoryInfo.factoryName();
                 }
                 // Factory not found: use factoryName only, factoryId = null (no skip)
             }
 
             // 4. 날짜 파싱
-            OffsetDateTime createAt = parseDate(row.getReceiptDate());
-            OffsetDateTime shippingAt = parseDate(row.getShippingDate());
+            LocalDateTime createAt = parseDate(row.getReceiptDate());
+            LocalDateTime shippingAt = parseDate(row.getShippingDate());
 
             // 5. 비고 + 레거시 접수번호 조합
             String orderNote = buildOrderNote(row.getReceiptNumber(), row.getCategory(), row.getNote(), deletedOrder, fixOrder);
 
-            // 6. Orders 엔티티 생성
+            // 6. Orders 엔티티 생성 (2026-05 P4: storeName/factoryName 컬럼 제거됨)
             Orders order = Orders.builder()
                     .storeId(storeId)
-                    .storeName(storeName)
-                    .storeGrade(storeInfo != null ? storeInfo.getGrade() : null)
-                    .storeHarry(storeInfo != null && storeInfo.getStoreHarry() != null
-                            ? new BigDecimal(storeInfo.getStoreHarry()) : null)
+                    .storeGrade(storeInfo != null ? storeInfo.storeGrade() : null)
+                    .storeHarry(storeInfo != null && storeInfo.storeHarry() != null
+                            ? new BigDecimal(storeInfo.storeHarry()) : null)
                     .factoryId(factoryId)
-                    .factoryName(factoryName)
                     .orderNote(orderNote)
                     .createAt(createAt)
                     .shippingAt(shippingAt)
@@ -179,10 +177,10 @@ public class OrderCsvItemProcessor implements ItemProcessor<OrderCsvRow, Orders>
 
             if (StringUtils.hasText(modelNumber)) {
                 try {
-                    ProductDetailDto productInfo = productClient.getProductInfoByName(token, modelNumber);
-                    if (productInfo != null && productInfo.getProductId() != null) {
-                        productId = productInfo.getProductId();
-                        productName = productInfo.getProductName();
+                    ProductDetailView productInfo = productFinder.findProductDetailByName(modelNumber);
+                    if (productInfo != null && productInfo.productId() != null) {
+                        productId = productInfo.productId();
+                        productName = productInfo.productName();
                     }
                 } catch (Exception e) {
                     log.warn("Product 조회 중 오류 (modelNumber={}, skip): {}", modelNumber, e.getMessage());
@@ -219,10 +217,10 @@ public class OrderCsvItemProcessor implements ItemProcessor<OrderCsvRow, Orders>
 
     // ── Store/Factory 캐시 조회 ──
 
-    private StoreDto.Response lookupStore(String storeName) {
+    private StoreView lookupStore(String storeName) {
         if (!storeCache.containsKey(storeName)) {
             try {
-                storeCache.put(storeName, storeClient.getStoreInfoByName(token, storeName));
+                storeCache.put(storeName, storeFinder.findStoreByName(storeName));
             } catch (Exception e) {
                 log.warn("Store 조회 실패: {}", storeName, e);
                 storeCache.put(storeName, null);
@@ -231,28 +229,29 @@ public class OrderCsvItemProcessor implements ItemProcessor<OrderCsvRow, Orders>
         return storeCache.get(storeName);
     }
 
-    private FactoryDto.Response lookupFactory(Long factoryId) {
+    @SuppressWarnings("unused")
+    private FactoryView lookupFactory(Long factoryId) {
         if (!factoryCache.containsKey(factoryId)) {
             try {
-                factoryCache.put(factoryId, factoryClient.getFactoryInfo(token, factoryId));
+                factoryCache.put(factoryId, factoryFinder.getFactoryInfo(factoryId));
             } catch (Exception e) {
                 log.warn("Factory 조회 실패 (id={}): {}", factoryId, e.getMessage());
                 factoryCache.put(factoryId, null);
             }
         }
-        return (FactoryDto.Response) factoryCache.get(factoryId);
+        return factoryCache.get(factoryId);
     }
 
-    private FactoryDto.Response lookupFactoryByName(String factoryName) {
+    private FactoryView lookupFactoryByName(String factoryName) {
         if (!factoryCache.containsKey(factoryName)) {
             try {
-                factoryCache.put(factoryName, factoryClient.getFactoryInfoByName(token, factoryName));
+                factoryCache.put(factoryName, factoryFinder.findFactoryByName(factoryName));
             } catch (Exception e) {
                 log.warn("Factory 조회 실패 (name={}): {}", factoryName, e.getMessage());
                 factoryCache.put(factoryName, null);
             }
         }
-        return (FactoryDto.Response) factoryCache.get(factoryName);
+        return factoryCache.get(factoryName);
     }
 
     // ── Priority 조회 (캐시) ──
@@ -306,11 +305,12 @@ public class OrderCsvItemProcessor implements ItemProcessor<OrderCsvRow, Orders>
         };
     }
 
-    private OffsetDateTime parseDate(String dateStr) {
+    private LocalDateTime parseDate(String dateStr) {
         if (!StringUtils.hasText(dateStr)) return null;
         try {
             LocalDate date = LocalDate.parse(dateStr.trim(), DATE_FMT);
-            return date.atStartOfDay(ZONE).toOffsetDateTime();
+            // 애플리케이션·DB 가 KST 기준이므로 별도 ZoneId 변환 없이 그대로 사용
+            return date.atStartOfDay();
         } catch (DateTimeParseException e) {
             log.warn("날짜 파싱 실패: {}", dateStr);
             return null;

@@ -6,7 +6,6 @@ import com.msa.jewelry.product.internal.color.entity.Color;
 import com.msa.jewelry.product.internal.color.repository.ColorRepository;
 import com.msa.jewelry.product.internal.material.entity.Material;
 import com.msa.jewelry.product.internal.material.repository.MaterialRepository;
-import com.msa.jewelry.product.internal.product.dto.FactoryDto;
 import com.msa.jewelry.product.internal.product.entity.Product;
 import com.msa.jewelry.product.internal.product.entity.ProductWorkGradePolicy;
 import com.msa.jewelry.product.internal.product.entity.ProductWorkGradePolicyGroup;
@@ -41,7 +40,8 @@ public class ProductLegacyCsvItemProcessor implements ItemProcessor<ProductLegac
     private final ProductMigrationFailureCollector failureCollector;
 
     /** Factory 캐시: name → (factoryId, factoryName) */
-    private final Map<String, FactoryDto.ResponseBatch> factoryCache;
+    /** factoryName → factoryId 의 단순 매핑 (2026-05 P2: Feign wrapper 제거 시 단순화). */
+    private final Map<String, Long> factoryCache;
 
     // 엔티티 캐시 (이름 기반 반복 조회 방지)
     private final Map<String, Optional<SetType>> setTypeCache = new HashMap<>();
@@ -58,7 +58,7 @@ public class ProductLegacyCsvItemProcessor implements ItemProcessor<ProductLegac
             MaterialRepository materialRepository,
             ColorRepository colorRepository,
             ProductMigrationFailureCollector failureCollector,
-            Map<String, FactoryDto.ResponseBatch> factoryCache) {
+            Map<String, Long> factoryCache) {
         this.productRepository = productRepository;
         this.setTypeRepository = setTypeRepository;
         this.classificationRepository = classificationRepository;
@@ -98,12 +98,12 @@ public class ProductLegacyCsvItemProcessor implements ItemProcessor<ProductLegac
             String factoryName = trim(row.getManufacturer());
             Long factoryId = null;
             if (StringUtils.hasText(factoryName)) {
-                FactoryDto.ResponseBatch factory = factoryCache.get(factoryName);
-                if (factory == null) {
+                Long cachedFactoryId = factoryCache.get(factoryName);
+                if (cachedFactoryId == null) {
                     failureCollector.add(row, "DB에 존재하지 않는 제조사: " + factoryName);
                     return null;
                 }
-                factoryId = factory.getFactoryId();
+                factoryId = cachedFactoryId;
             } else {
                 failureCollector.add(row, "제조사가 비어있습니다");
                 return null;

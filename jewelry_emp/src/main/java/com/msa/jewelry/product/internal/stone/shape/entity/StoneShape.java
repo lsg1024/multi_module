@@ -1,6 +1,7 @@
 package com.msa.jewelry.product.internal.stone.shape.entity;
 
 import com.msa.jewelry.product.internal.stone.shape.dto.StoneShapeDto;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -9,14 +10,18 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "STONE_SHAPE")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Schema(description = "스톤 모양 마스터 — 원형/사각형/하트 등 보석 컷팅 모양")
 public class StoneShape {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "STONE_SHAPE_ID")
+    @Schema(description = "스톤 모양 PK", example = "1")
     private Long stoneShapeId;
     @Column(name = "STONE_SHAPE_NAME", unique = true)
+    @Schema(description = "스톤 모양명 (고유)", example = "라운드")
     private String stoneShapeName;
     @Column(name = "STONE_SHAPE_NOTE")
+    @Schema(description = "스톤 모양 비고", example = "원형 브릴리언트 컷")
     private String stoneShapeNote;
 
     @Builder

@@ -1,6 +1,5 @@
 package com.msa.jewelry.order.internal.order.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.tenant.TenantContext;
 import com.msa.common.global.util.CustomPage;
@@ -9,10 +8,13 @@ import com.msa.jewelry.order.internal.global.dto.StoneDto;
 import com.msa.jewelry.order.internal.global.excel.dto.OrderExcelQueryDto;
 import com.msa.jewelry.order.internal.global.exception.InvalidOrderStatusException;
 import com.msa.jewelry.order.internal.global.exception.OrderNotFoundException;
-import com.msa.jewelry.order.internal.global.feign_legacy.client.FactoryClient;
-import com.msa.jewelry.order.internal.global.feign_legacy.client.ProductClient;
-import com.msa.jewelry.order.internal.global.feign_legacy.client.StoreClient;
-import com.msa.jewelry.order.internal.global.feign_legacy.dto.ProductImageDto;
+import com.msa.jewelry.account.api.FactoryFinder;
+import com.msa.jewelry.account.api.FactoryView;
+import com.msa.jewelry.account.api.StoreFinder;
+import com.msa.jewelry.account.api.StoreView;
+import com.msa.jewelry.product.api.ProductFinder;
+import com.msa.jewelry.product.api.ProductImageView;
+import com.msa.jewelry.order.internal.global.util.SafeParse;
 import com.msa.jewelry.order.internal.order.dto.*;
 import com.msa.jewelry.order.internal.order.entity.OrderProduct;
 import com.msa.jewelry.order.internal.order.entity.OrderStone;
@@ -27,17 +29,14 @@ import com.msa.jewelry.order.internal.order.repository.OrdersRepository;
 import com.msa.jewelry.order.internal.order.repository.StatusHistoryRepository;
 import com.msa.jewelry.order.internal.order.util.ChangeTracker;
 import com.msa.jewelry.order.internal.order.util.StatusHistoryHelper;
-import com.msa.jewelry.order.internal.outbox.repository.OutboxEventRepository;
 import com.msa.jewelry.order.internal.priority.repository.PriorityRepository;
 import com.msa.jewelry.order.internal.stock.dto.StockDto;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -53,12 +52,9 @@ import static com.msa.jewelry.order.internal.order.util.StoneUtil.toStoneDtoList
 @Transactional
 public class OrdersService {
     private final JwtUtil jwtUtil;
-    private final FactoryClient factoryClient;
-    private final StoreClient storeClient;
-    private final ProductClient productClient;
-    private final ObjectMapper objectMapper;
-    private final ApplicationEventPublisher eventPublisher;
-    private final OutboxEventRepository outboxEventRepository;
+    private final FactoryFinder factoryFinder;
+    private final StoreFinder storeFinder;
+    private final ProductFinder productFinder;
     private final OrdersRepository ordersRepository;
     private final CustomOrderRepository customOrderRepository;
     private final StatusHistoryRepository statusHistoryRepository;
@@ -66,14 +62,11 @@ public class OrdersService {
     private final StatusHistoryHelper statusHistoryHelper;
     private final OrderCommandService orderCommandService;
 
-    public OrdersService(JwtUtil jwtUtil, FactoryClient factoryClient, StoreClient storeClient, ProductClient productClient, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, OutboxEventRepository outboxEventRepository, OrdersRepository ordersRepository, CustomOrderRepository customOrderRepository, StatusHistoryRepository statusHistoryRepository, PriorityRepository priorityRepository, StatusHistoryHelper statusHistoryHelper, OrderCommandService orderCommandService) {
+    public OrdersService(JwtUtil jwtUtil, FactoryFinder factoryFinder, StoreFinder storeFinder, ProductFinder productFinder, OrdersRepository ordersRepository, CustomOrderRepository customOrderRepository, StatusHistoryRepository statusHistoryRepository, PriorityRepository priorityRepository, StatusHistoryHelper statusHistoryHelper, OrderCommandService orderCommandService) {
         this.jwtUtil = jwtUtil;
-        this.factoryClient = factoryClient;
-        this.storeClient = storeClient;
-        this.productClient = productClient;
-        this.objectMapper = objectMapper;
-        this.eventPublisher = eventPublisher;
-        this.outboxEventRepository = outboxEventRepository;
+        this.factoryFinder = factoryFinder;
+        this.storeFinder = storeFinder;
+        this.productFinder = productFinder;
         this.ordersRepository = ordersRepository;
         this.customOrderRepository = customOrderRepository;
         this.statusHistoryRepository = statusHistoryRepository;
@@ -93,16 +86,24 @@ public class OrdersService {
 
         OrderProduct orderProduct = order.getOrderProduct();
 
+        // 2026-05 P4: storeName/factoryName 는 storeFinder/factoryFinder 로 매번 조회.
+        String storeName = order.getStoreId() != null
+                ? storeFinder.getStoreInfo(order.getStoreId()).storeName()
+                : null;
+        String factoryName = order.getFactoryId() != null
+                ? factoryFinder.getFactoryInfo(order.getFactoryId()).factoryName()
+                : null;
+
         return OrderDto.ResponseDetail.builder()
                 .createAt(order.getCreateAt().toString())
                 .shippingAt(order.getShippingAt().toString())
                 .flowCode(order.getFlowCode().toString())
                 .storeId(order.getStoreId().toString())
-                .storeName(order.getStoreName())
+                .storeName(storeName)
                 .storeHarry(order.getStoreHarry() != null ? order.getStoreHarry().toPlainString() : null)
                 .storeGrade(order.getStoreGrade())
                 .factoryId(order.getFactoryId() != null ? order.getFactoryId().toString() : null)
-                .factoryName(order.getFactoryName())
+                .factoryName(factoryName)
                 .productId(orderProduct.getProductId() != null ? orderProduct.getProductId().toString() : null)
                 .productName(orderProduct.getProductName())
                 .productFactoryName(orderProduct.getProductFactoryName())
@@ -156,7 +157,7 @@ public class OrdersService {
                 .map(dto -> Long.valueOf(dto.getFlowCode()))
                 .toList();
 
-        Map<Long, ProductImageDto> productImages = productClient.getProductImages(accessToken, productIds);
+        Map<Long, ProductImageView> productImages = productFinder.getProductImages(productIds);
 
         List<StatusHistory> allHistories = statusHistoryRepository.findAllByFlowCodeInOrderByCreateAtAsc(flowCodes);
 
@@ -166,8 +167,8 @@ public class OrdersService {
 
         List<OrderDto.Response> finalResponse = queryDtos.stream()
                 .map(queryDto -> {
-                    ProductImageDto image = productImages.get(queryDto.getProductId());
-                    String imagePath = (image != null) ? image.getImagePath() : null;
+                    ProductImageView image = productImages.get(queryDto.getProductId());
+                    String imagePath = (image != null) ? image.imagePath() : null;
 
                     Long flowCode = Long.valueOf(queryDto.getFlowCode());
                     List<StatusHistory> statusHistories = historyMap.getOrDefault(flowCode, new ArrayList<>());
@@ -312,15 +313,22 @@ public class OrdersService {
         Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new OrderNotFoundException(flowCode));
 
-        String beforeStoreName = order.getStoreName();
+        // 2026-05 P4: order.storeName 제거. 변경 전 이름은 storeId 로 조회.
+        String beforeStoreName = order.getStoreId() != null
+                ? storeFinder.getStoreInfo(order.getStoreId()).storeName()
+                : null;
 
-        StoreDto.Response storeInfo = storeClient.getStoreInfo(accessToken, storeDto.getStoreId());
+        StoreView storeInfo = storeFinder.getStoreInfo(storeDto.getStoreId());
 
-        order.updateStore(storeInfo);
+        order.updateStore(
+                storeInfo.storeId(),
+                storeInfo.storeGrade(),
+                SafeParse.toBigDecimalOrNull(storeInfo.storeHarry())
+        );
 
         // statusHistory 추가 (ChangeTracker 사용)
         ChangeTracker tracker = new ChangeTracker("판매처 변경");
-        tracker.track("판매처", beforeStoreName, storeInfo.getStoreName());
+        tracker.track("판매처", beforeStoreName, storeInfo.storeName());
 
         statusHistoryHelper.savePhaseChangeFromLast(
                 order.getFlowCode(),
@@ -336,15 +344,21 @@ public class OrdersService {
         Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new OrderNotFoundException(flowCode));
 
-        String beforeFactoryName = order.getFactoryName();
+        // 2026-05 P4: order.factoryName 제거. 변경 전 이름은 factoryId 로 조회.
+        String beforeFactoryName = order.getFactoryId() != null
+                ? factoryFinder.getFactoryInfo(order.getFactoryId()).factoryName()
+                : null;
 
-        FactoryDto.Response factoryInfo = factoryClient.getFactoryInfo(accessToken, factoryDto.getFactoryId());
+        FactoryView factoryInfo = factoryFinder.getFactoryInfo(factoryDto.getFactoryId());
 
-        order.updateFactory(factoryInfo.getFactoryId(), factoryInfo.getFactoryName());
+        order.updateFactory(
+                factoryInfo.factoryId(),
+                SafeParse.toBigDecimalOrNull(factoryInfo.goldHarryLoss())
+        );
 
         // statusHistory 추가 (ChangeTracker 사용)
         ChangeTracker tracker = new ChangeTracker("제조사 변경");
-        tracker.track("제조사", beforeFactoryName, factoryInfo.getFactoryName());
+        tracker.track("제조사", beforeFactoryName, factoryInfo.factoryName());
 
         statusHistoryHelper.savePhaseChangeFromLast(
                 order.getFlowCode(),
@@ -361,10 +375,10 @@ public class OrdersService {
         Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new OrderNotFoundException(flowCode));
 
-        OffsetDateTime beforeShippingAt = order.getShippingAt();
+        LocalDateTime beforeShippingAt = order.getShippingAt();
 
-        OffsetDateTime received = newDate.getDeliveryDate();
-        OffsetDateTime receivedKst  = received.withOffsetSameInstant(ZoneOffset.ofHours(9));
+        // 애플리케이션·DB 가 모두 KST 기준이므로 추가 offset 변환 없이 그대로 사용한다.
+        LocalDateTime receivedKst = newDate.getDeliveryDate();
 
         order.updateShippingDate(receivedKst);
 
@@ -418,7 +432,7 @@ public class OrdersService {
                 .distinct()
                 .toList();
 
-        Map<Long, ProductImageDto> productImages = productClient.getProductImages(accessToken, productIds);
+        Map<Long, ProductImageView> productImages = productFinder.getProductImages(productIds);
 
         List<Long> flowCodes = fixOrders.stream()
                 .map(dto -> Long.valueOf(dto.getFlowCode()))
@@ -432,8 +446,8 @@ public class OrdersService {
 
         List<OrderDto.Response> finalResponse = fixOrders.stream()
                 .map(queryDto -> {
-                    ProductImageDto imageDto = productImages.get(queryDto.getProductId());
-                    String imagePath = (imageDto != null) ? imageDto.getImagePath() : null;
+                    ProductImageView imageDto = productImages.get(queryDto.getProductId());
+                    String imagePath = (imageDto != null) ? imageDto.imagePath() : null;
 
                     Long flowCode = Long.valueOf(queryDto.getFlowCode());
                     List<StatusHistory> statusHistories = historyMap.getOrDefault(flowCode, new ArrayList<>());
@@ -464,7 +478,7 @@ public class OrdersService {
                 .distinct()
                 .toList();
 
-        Map<Long, ProductImageDto> productImages = productClient.getProductImages(accessToken, productIds);
+        Map<Long, ProductImageView> productImages = productFinder.getProductImages(productIds);
 
         List<Long> flowCodes = expectOrderPages.stream()
                 .map(dto -> Long.valueOf(dto.getFlowCode()))
@@ -478,8 +492,8 @@ public class OrdersService {
 
         List<OrderDto.Response> finalResponse = expectOrderPages.stream()
                 .map(queryDto -> {
-                    ProductImageDto imageDto = productImages.get(queryDto.getProductId());
-                    String imagePath = (imageDto != null) ? imageDto.getImagePath() : null;
+                    ProductImageView imageDto = productImages.get(queryDto.getProductId());
+                    String imagePath = (imageDto != null) ? imageDto.imagePath() : null;
 
                     Long flowCode = Long.valueOf(queryDto.getFlowCode());
                     List<StatusHistory> statusHistories = historyMap.getOrDefault(flowCode, new ArrayList<>());
@@ -510,7 +524,7 @@ public class OrdersService {
                 .distinct()
                 .toList();
 
-        Map<Long, ProductImageDto> productImages = productClient.getProductImages(accessToken, productIds);
+        Map<Long, ProductImageView> productImages = productFinder.getProductImages(productIds);
 
         List<Long> flowCodes = expectOrderPages.stream()
                 .map(dto -> Long.valueOf(dto.getFlowCode()))
@@ -524,8 +538,8 @@ public class OrdersService {
 
         List<OrderDto.Response> finalResponse = expectOrderPages.stream()
                 .map(queryDto -> {
-                    ProductImageDto imageDto = productImages.get(queryDto.getProductId());
-                    String imagePath = (imageDto != null) ? imageDto.getImagePath() : null;
+                    ProductImageView imageDto = productImages.get(queryDto.getProductId());
+                    String imagePath = (imageDto != null) ? imageDto.imagePath() : null;
 
                     Long flowCode = Long.valueOf(queryDto.getFlowCode());
                     List<StatusHistory> statusHistories = historyMap.getOrDefault(flowCode, new ArrayList<>());
@@ -626,16 +640,24 @@ public class OrdersService {
                     ? statusHistory.getSourceType().getDisplayName()
                     : null;
 
+            // 2026-05 P4: storeName/factoryName 매번 조회
+            String orderStoreName = order.getStoreId() != null
+                    ? storeFinder.getStoreInfo(order.getStoreId()).storeName()
+                    : null;
+            String orderFactoryName = order.getFactoryId() != null
+                    ? factoryFinder.getFactoryInfo(order.getFactoryId()).factoryName()
+                    : null;
+
             StockDto.ResponseDetail orderDetail = StockDto.ResponseDetail.builder()
                     .createAt(order.getCreateAt() != null ? order.getCreateAt().toString() : null)
                     .flowCode(order.getFlowCode() != null ? order.getFlowCode().toString() : null)
                     .originalProductStatus(originalProductStatus)
                     .storeId(order.getStoreId() != null ? order.getStoreId().toString() : null)
-                    .storeName(order.getStoreName())
+                    .storeName(orderStoreName)
                     .storeHarry(order.getStoreHarry() != null ? order.getStoreHarry().toPlainString() : null)
                     .storeGrade(order.getStoreGrade())
                     .factoryId(order.getFactoryId() != null ? order.getFactoryId().toString() : null)
-                    .factoryName(order.getFactoryName())
+                    .factoryName(orderFactoryName)
                     .productId(orderProduct != null && orderProduct.getProductId() != null ? orderProduct.getProductId().toString() : null)
                     .productName(orderProduct != null ? orderProduct.getProductName() : null)
                     .productSize(orderProduct != null ? orderProduct.getProductSize() : null)

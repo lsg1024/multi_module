@@ -61,8 +61,11 @@ public class TransactionHistoryService {
                 .transactionHistoryNote(purchaseDto.getTransactionNote())
                 .build();
 
-        if (purchaseDto.getTransactionDate() == null) {
-            LocalDateTime dateTime = purchaseDto.getTransactionDate().toLocalDateTime();
+        // NOTE: 원본 코드의 if 조건이 `== null` 이어서 들어가는 즉시 NPE 가 나는 구조였음.
+        //       OffsetDateTime → LocalDateTime 전환과 별개로 원래 의도 재확인 필요 (TODO).
+        //       PurchaseDto.transactionDate 가 LocalDateTime 으로 변경됐으므로 toLocalDateTime() 호출은 제거.
+        if (purchaseDto.getTransactionDate() != null) {
+            LocalDateTime dateTime = purchaseDto.getTransactionDate();
             transactionHistory.updateTransactionDate(dateTime);
         }
 

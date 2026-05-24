@@ -1,8 +1,8 @@
 package com.msa.jewelry.order.internal.stock.migration;
 
-import com.msa.jewelry.order.internal.global.feign_legacy.client.FactoryClient;
-import com.msa.jewelry.order.internal.global.feign_legacy.client.ProductClient;
-import com.msa.jewelry.order.internal.global.feign_legacy.client.StoreClient;
+import com.msa.jewelry.account.api.FactoryFinder;
+import com.msa.jewelry.account.api.StoreFinder;
+import com.msa.jewelry.product.api.ProductFinder;
 import com.msa.jewelry.order.internal.stock.entity.Stock;
 import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
@@ -36,9 +36,9 @@ public class StockImportJobConfig {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
     private final EntityManagerFactory entityManagerFactory;
-    private final StoreClient storeClient;
-    private final FactoryClient factoryClient;
-    private final ProductClient productClient;
+    private final StoreFinder storeFinder;
+    private final FactoryFinder factoryFinder;
+    private final ProductFinder productFinder;
     private final StockMigrationFailureCollector failureCollector;
     private final StockMigrationRecordCollector recordCollector;
 
@@ -145,7 +145,7 @@ public class StockImportJobConfig {
     @StepScope
     public StockCsvItemProcessor stockCsvProcessor(
             @Value("#{jobParameters['accessToken']}") String token) {
-        return new StockCsvItemProcessor(token, storeClient, factoryClient, productClient,
+        return new StockCsvItemProcessor(token, storeFinder, factoryFinder, productFinder,
                 failureCollector, recordCollector);
     }
 

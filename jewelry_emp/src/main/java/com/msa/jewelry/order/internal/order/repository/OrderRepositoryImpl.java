@@ -15,6 +15,7 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
@@ -28,12 +29,10 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static com.msa.jewelry.order.internal.order.entity.QOrderProduct.orderProduct;
@@ -64,10 +63,16 @@ import static java.util.stream.Collectors.*;
 public class OrderRepositoryImpl implements CustomOrderRepository {
 
     private final JPAQueryFactory query;
+    private final com.msa.jewelry.account.api.StoreFinder storeFinder;
+    private final com.msa.jewelry.account.api.FactoryFinder factoryFinder;
     private final static Long DEFAULT_STORE_STOCK_ID = 1L; // 매장 재고 고정 아이디
 
-    public OrderRepositoryImpl(EntityManager em) {
+    public OrderRepositoryImpl(EntityManager em,
+                               com.msa.jewelry.account.api.StoreFinder storeFinder,
+                               com.msa.jewelry.account.api.FactoryFinder factoryFinder) {
         this.query = new JPAQueryFactory(em);
+        this.storeFinder = storeFinder;
+        this.factoryFinder = factoryFinder;
     }
 
     @Override
@@ -119,11 +124,25 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
             ordersStatusBuilder = getOrdersStatusBuilder(condition);
         }
 
-        return query
-                .selectDistinct(orders.factoryName)
+        // 2026-05 P4: orders.factoryName 컬럼 제거. factoryId 추출 후 finder 로 이름 매핑.
+        List<Long> factoryIds = query
+                .selectDistinct(orders.factoryId)
                 .from(orders)
                 .where(ordersStatusBuilder)
                 .fetch();
+        return factoryIds.stream()
+                .filter(Objects::nonNull)
+                .map(id -> {
+                    try {
+                        com.msa.jewelry.account.api.FactoryView v = factoryFinder.getFactoryInfo(id);
+                        return v != null ? v.factoryName() : null;
+                    } catch (RuntimeException e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
     }
 
     @Override
@@ -138,11 +157,25 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
             ordersStatusBuilder = getOrdersStatusBuilder(condition);
         }
 
-        return query
-                .selectDistinct(orders.storeName)
+        // 2026-05 P4: orders.storeName 컬럼 제거. storeId 추출 후 finder 로 이름 매핑.
+        List<Long> storeIds = query
+                .selectDistinct(orders.storeId)
                 .from(orders)
                 .where(ordersStatusBuilder)
                 .fetch();
+        return storeIds.stream()
+                .filter(Objects::nonNull)
+                .map(id -> {
+                    try {
+                        com.msa.jewelry.account.api.StoreView v = storeFinder.getStoreInfo(id);
+                        return v != null ? v.storeName() : null;
+                    } catch (RuntimeException e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
     }
 
     @Override
@@ -229,9 +262,12 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         BooleanBuilder optionBuilder = getOptionBuilder(condition.getOptionCondition());
         BooleanExpression ordersReceiptStatusBuilder = getOrdersReceiptStatusBuilder(condition);
 
+        // 2026-05 P4: orders.factoryName 컬럼 제거.
+        //   TODO[P4-followup]: ExcelUtil 호출자 측에서 factoryFinder.getFactoryInfo(factoryId).factoryName() 로 매핑하도록 변경.
+        //                      여기서는 빈 문자열 placeholder 로 채워 컴파일 통과. 정렬은 factoryId 순으로 임시 변경.
         return query
                 .select(new QOrderExcelQueryDto(
-                        orders.factoryName,
+                        Expressions.constant(""),
                         orderProduct.productFactoryName, // productFactoryName으로 업데이트 필요
                         orderProduct.materialName,
                         orderProduct.colorName,
@@ -247,7 +283,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                         optionBuilder,
                         ordersReceiptStatusBuilder
                 )
-                .orderBy(orders.factoryName.asc())
+                .orderBy(orders.factoryId.asc())
                 .fetch();
     }
 
@@ -292,13 +328,16 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
         OrderSpecifier<?>[] orderSpecifiers = createOrderSpecifiers(sortCondition);
 
+        // 2026-05 P4: orders.storeName / factoryName 컬럼 제거.
+        //   TODO[P4-followup]: 응답 변환(OrderDto.Response) 시점에 storeFinder.getStoreInfo(storeId) / factoryFinder.getFactoryInfo(factoryId) 호출하여
+        //                      storeName / factoryName 을 매핑. 여기서는 빈 문자열 placeholder 로 통과시킨다.
         List<OrderQueryDto> content = query
                 .select(new QOrderQueryDto(
                         orders.orderProduct.productId,
                         orders.createAt.stringValue(),
                         orders.shippingAt.stringValue(),
                         orders.flowCode.stringValue(),
-                        orders.storeName,
+                        Expressions.constant(""),
                         orders.orderProduct.productName,
                         orders.orderProduct.productFactoryName,
                         orders.orderProduct.materialName,
@@ -312,7 +351,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                         orderProduct.assistantStoneName,
                         orderProduct.assistantStoneCreateAt.stringValue(),
                         orders.orderNote,
-                        orders.factoryName,
+                        Expressions.constant(""),
                         priority.priorityName,
                         orders.productStatus,
                         orders.orderStatus
@@ -428,13 +467,15 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
             return searchBuilder;
         }
 
+        // 2026-05 P4: orders.storeName / factoryName 컬럼 제거.
+        //   TODO[P4-followup]: store/factory 부분일치 검색이 필요하면 StoreFinder/FactoryFinder 에
+        //                      findStoreIdsByNameContaining(...) 같은 메서드를 추가하고 그 결과를 orders.storeId.in(...) 으로 필터.
+        //                      당장은 store/factory 검색 항목을 비활성화하여 컴파일만 통과시킨다.
         if (!StringUtils.hasText(searchField)) {
-            // 기본값(전체): 모든 주요 필드에 대해 LIKE (부분 일치, 대소문자 무시)
+            // 기본값(전체): productName / productFactoryName 만 LIKE 검색
             searchBuilder.and(
                     orderProduct.productName.containsIgnoreCase(searchInput)
                             .or(orderProduct.productFactoryName.containsIgnoreCase(searchInput))
-                            .or(orders.storeName.containsIgnoreCase(searchInput))
-                            .or(orders.factoryName.containsIgnoreCase(searchInput))
             );
             return searchBuilder;
         }
@@ -445,8 +486,9 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                     orderProduct.productName.eq(searchInput)
                             .or(orderProduct.productFactoryName.eq(searchInput))
             );
-            case "factory" -> searchBuilder.and(orders.factoryName.eq(searchInput));
-            case "store" -> searchBuilder.and(orders.storeName.eq(searchInput));
+            case "factory", "store" ->
+                    // TODO[P4-followup]: storeFinder/factoryFinder.findByName 으로 id 매핑 후 orders.storeId/factoryId.eq(id)
+                    searchBuilder.and(orders.flowCode.isNull()); // 일시 검색 결과 0건 강제 (placeholder)
             case "setType" -> searchBuilder.and(orderProduct.setTypeName.eq(searchInput));
             case "classification" -> searchBuilder.and(orderProduct.classificationName.eq(searchInput));
             case "material" -> searchBuilder.and(orderProduct.materialName.eq(searchInput));
@@ -454,8 +496,6 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
             default -> searchBuilder.and(
                     orderProduct.productName.containsIgnoreCase(searchInput)
                             .or(orderProduct.productFactoryName.containsIgnoreCase(searchInput))
-                            .or(orders.storeName.containsIgnoreCase(searchInput))
-                            .or(orders.factoryName.containsIgnoreCase(searchInput))
             );
         }
 
@@ -463,15 +503,27 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
     }
 
     @NotNull
-    private static BooleanBuilder getOptionBuilder(OrderDto.OptionCondition optionCondition) {
+    private BooleanBuilder getOptionBuilder(OrderDto.OptionCondition optionCondition) {
         BooleanBuilder booleanOption = new BooleanBuilder();
 
+        // 2026-05 P4: Orders 에 storeName/factoryName 컬럼 제거. 이름 → id 로 변환 후 검색.
         if (StringUtils.hasText(optionCondition.getStoreName())) {
-            booleanOption.and(orders.storeName.eq(optionCondition.getStoreName()));
+            com.msa.jewelry.account.api.StoreView view = storeFinder.findStoreByName(optionCondition.getStoreName());
+            if (view != null && view.storeId() != null) {
+                booleanOption.and(orders.storeId.eq(view.storeId()));
+            } else {
+                // 매칭되는 거래처 없음 → 결과 0건 보장
+                booleanOption.and(orders.storeId.eq(-1L));
+            }
         }
 
         if (StringUtils.hasText(optionCondition.getFactoryName())) {
-            booleanOption.and(orders.factoryName.eq(optionCondition.getFactoryName()));
+            com.msa.jewelry.account.api.FactoryView view = factoryFinder.findFactoryByName(optionCondition.getFactoryName());
+            if (view != null && view.factoryId() != null) {
+                booleanOption.and(orders.factoryId.eq(view.factoryId()));
+            } else {
+                booleanOption.and(orders.factoryId.eq(-1L));
+            }
         }
 
         if (StringUtils.hasText(optionCondition.getSetTypeName())) {
@@ -500,8 +552,8 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         LocalDateTime start = LocalDate.parse(startAt).atStartOfDay(); // 예: 2025-08-04 00:00:00
         LocalDateTime end = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
 
-        OffsetDateTime startDateTime = start.atOffset(ZoneId.of("Asia/Seoul").getRules().getOffset(start));
-        OffsetDateTime endDateTime = end.atOffset(ZoneId.of("Asia/Seoul").getRules().getOffset(end));
+        LocalDateTime startDateTime = start;
+        LocalDateTime endDateTime = end;
 
         BooleanExpression createdBetween =
                 orders.createAt.between(startDateTime, endDateTime);
@@ -518,7 +570,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
         LocalDateTime end = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
 
-        OffsetDateTime endDateTime = end.atOffset(ZoneId.of("Asia/Seoul").getRules().getOffset(end));
+        LocalDateTime endDateTime = end;
 
         BooleanExpression shippingAt =
                 orders.shippingAt.loe(endDateTime);
@@ -535,8 +587,8 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         LocalDateTime start = LocalDate.parse(startAt).atStartOfDay(); // 예: 2025-08-04 00:00:00
         LocalDateTime end = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
 
-        OffsetDateTime startDateTime = start.atOffset(ZoneId.of("Asia/Seoul").getRules().getOffset(start));
-        OffsetDateTime endDateTime = end.atOffset(ZoneId.of("Asia/Seoul").getRules().getOffset(end));
+        LocalDateTime startDateTime = start;
+        LocalDateTime endDateTime = end;
 
         BooleanExpression createdBetween =
                 orders.createAt.between(startDateTime, endDateTime);
@@ -553,8 +605,8 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         LocalDateTime start = LocalDate.parse(startAt).atStartOfDay(); // 예: 2025-08-04 00:00:00
         LocalDateTime end = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
 
-        OffsetDateTime startDateTime = start.atOffset(ZoneId.of("Asia/Seoul").getRules().getOffset(start));
-        OffsetDateTime endDateTime = end.atOffset(ZoneId.of("Asia/Seoul").getRules().getOffset(end));
+        LocalDateTime startDateTime = start;
+        LocalDateTime endDateTime = end;
 
         BooleanExpression createdBetween =
                 orders.createAt.between(startDateTime, endDateTime);
@@ -576,7 +628,7 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
         LocalDateTime end = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
 
-        OffsetDateTime endDateTime = end.atOffset(ZoneId.of("Asia/Seoul").getRules().getOffset(end));
+        LocalDateTime endDateTime = end;
 
         BooleanExpression shippingAt =
                 orders.shippingAt.loe(endDateTime);
@@ -594,8 +646,11 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
             String field = sortCondition.getSortField();
 
             switch (field) {
-                case "factory" -> orderSpecifiers.add(new OrderSpecifier<>(direction, orders.factoryName));
-                case "store" -> orderSpecifiers.add(new OrderSpecifier<>(direction, orders.storeName));
+                // 2026-05 P4: orders.storeName/factoryName 컬럼 제거. id 기준 정렬로 임시 대체.
+                //   TODO[P4-followup]: 이름순 정렬이 필요하면 application 단에서 전체 목록 fetch 후
+                //                      storeFinder/factoryFinder 매핑 후 sort.
+                case "factory" -> orderSpecifiers.add(new OrderSpecifier<>(direction, orders.factoryId));
+                case "store" -> orderSpecifiers.add(new OrderSpecifier<>(direction, orders.storeId));
                 case "setType" -> orderSpecifiers.add(new OrderSpecifier<>(direction, orderProduct.setTypeName));
                 case "color" -> orderSpecifiers.add(new OrderSpecifier<>(direction, orderProduct.colorName));
 

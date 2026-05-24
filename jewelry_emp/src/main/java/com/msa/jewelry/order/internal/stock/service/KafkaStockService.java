@@ -1,11 +1,11 @@
 package com.msa.jewelry.order.internal.stock.service;
 
-import com.msa.jewelry.order.internal.global.feign_legacy.client.*;
-import com.msa.jewelry.order.internal.global.feign_legacy.dto.AssistantStoneDto;
-import com.msa.jewelry.order.internal.global.feign_legacy.dto.ProductDetailDto;
+import com.msa.jewelry.account.api.FactoryFinder;
+import com.msa.jewelry.account.api.FactoryView;
+import com.msa.jewelry.account.api.StoreFinder;
+import com.msa.jewelry.account.api.StoreView;
 import com.msa.jewelry.order.internal.global.kafka_dto_legacy.KafkaStockRequest;
-import com.msa.jewelry.order.internal.order.dto.FactoryDto;
-import com.msa.jewelry.order.internal.order.dto.StoreDto;
+import com.msa.jewelry.order.internal.global.util.SafeParse;
 import com.msa.jewelry.order.internal.order.entity.StatusHistory;
 import com.msa.jewelry.order.internal.order.entity.order_enum.BusinessPhase;
 import com.msa.jewelry.order.internal.order.entity.order_enum.OrderStatus;
@@ -13,6 +13,14 @@ import com.msa.jewelry.order.internal.order.repository.StatusHistoryRepository;
 import com.msa.jewelry.order.internal.stock.entity.ProductSnapshot;
 import com.msa.jewelry.order.internal.stock.entity.Stock;
 import com.msa.jewelry.order.internal.stock.repository.StockRepository;
+import com.msa.jewelry.product.api.AssistantStoneFinder;
+import com.msa.jewelry.product.api.AssistantStoneView;
+import com.msa.jewelry.product.api.ClassificationFinder;
+import com.msa.jewelry.product.api.ColorFinder;
+import com.msa.jewelry.product.api.MaterialFinder;
+import com.msa.jewelry.product.api.ProductDetailView;
+import com.msa.jewelry.product.api.ProductFinder;
+import com.msa.jewelry.product.api.SetTypeFinder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,33 +33,32 @@ import static com.msa.jewelry.order.internal.global.exception.ExceptionMessage.N
 @Service
 public class KafkaStockService {
 
-    private final StoreClient storeClient;
-    private final FactoryClient factoryClient;
-    private final ProductClient productClient;
-    private final MaterialClient materialClient;
-    private final ColorClient colorClient;
-    private final SetTypeClient setTypeClient;
-    private final ClassificationClient classificationClient;
-    private final AssistantStoneClient assistantStoneClient;
+    private final StoreFinder storeFinder;
+    private final FactoryFinder factoryFinder;
+    private final ProductFinder productFinder;
+    private final MaterialFinder materialFinder;
+    private final ColorFinder colorFinder;
+    private final SetTypeFinder setTypeFinder;
+    private final ClassificationFinder classificationFinder;
+    private final AssistantStoneFinder assistantStoneFinder;
     private final StockRepository stockRepository;
     private final StatusHistoryRepository statusHistoryRepository;
 
-    public KafkaStockService(StoreClient storeClient, FactoryClient factoryClient, ProductClient productClient, MaterialClient materialClient, ColorClient colorClient, SetTypeClient setTypeClient, ClassificationClient classificationClient, AssistantStoneClient assistantStoneClient, StockRepository stockRepository, StatusHistoryRepository statusHistoryRepository) {
-        this.storeClient = storeClient;
-        this.factoryClient = factoryClient;
-        this.productClient = productClient;
-        this.materialClient = materialClient;
-        this.colorClient = colorClient;
-        this.setTypeClient = setTypeClient;
-        this.classificationClient = classificationClient;
-        this.assistantStoneClient = assistantStoneClient;
+    public KafkaStockService(StoreFinder storeFinder, FactoryFinder factoryFinder, ProductFinder productFinder, MaterialFinder materialFinder, ColorFinder colorFinder, SetTypeFinder setTypeFinder, ClassificationFinder classificationFinder, AssistantStoneFinder assistantStoneFinder, StockRepository stockRepository, StatusHistoryRepository statusHistoryRepository) {
+        this.storeFinder = storeFinder;
+        this.factoryFinder = factoryFinder;
+        this.productFinder = productFinder;
+        this.materialFinder = materialFinder;
+        this.colorFinder = colorFinder;
+        this.setTypeFinder = setTypeFinder;
+        this.classificationFinder = classificationFinder;
+        this.assistantStoneFinder = assistantStoneFinder;
         this.stockRepository = stockRepository;
         this.statusHistoryRepository = statusHistoryRepository;
     }
+
     @Transactional
     public void saveStock(KafkaStockRequest stockDto) {
-        final String token = stockDto.getToken();
-
         Stock stock = stockRepository.findByFlowCode(stockDto.getFlowCode())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
@@ -65,76 +72,82 @@ public class KafkaStockService {
         StatusHistory statusHistory;
 
         try {
-            StoreDto.Response storeInfo;
+            // 거래처 정보 — 변경된 경우 최신 정보 조회, 아니면 기존 스냅샷 사용.
+            // 2026-05 P4: Stock 의 storeName/factoryName 컬럼 제거. id 변경 시점에만 스냅샷 갱신.
+            String resolvedStoreGrade;
             if (stockDto.getStoreId() != null && !stockDto.getStoreId().equals(stock.getStoreId())) {
-                storeInfo = storeClient.getStoreInfo(token, stockDto.getStoreId());
-                if (!storeInfo.getStoreName().equals(stock.getStoreName())) {
-                    stock.updateStore(StoreDto.Response.builder()
-                            .storeId(storeInfo.getStoreId())
-                            .storeName(storeInfo.getStoreName()).build());
-                }
+                StoreView storeInfo = storeFinder.getStoreInfo(stockDto.getStoreId());
+                stock.updateStore(
+                        storeInfo.storeId(),
+                        storeInfo.storeGrade(),
+                        SafeParse.toBigDecimalOrNull(storeInfo.storeHarry())
+                );
+                resolvedStoreGrade = storeInfo.storeGrade();
             } else {
-                storeInfo = StoreDto.Response.builder()
-                        .storeId(stock.getStoreId())
-                        .storeName(stock.getStoreName())
-                        .grade(stock.getStoreGrade())
-                        .build();
+                resolvedStoreGrade = stock.getStoreGrade();
             }
 
+            // 공장 정보
             if (stockDto.getFactoryId() != null && !stockDto.getFactoryId().equals(stock.getFactoryId())) {
-                FactoryDto.Response latestFactoryInfo = factoryClient.getFactoryInfo(token, stockDto.getFactoryId());
-                if (!latestFactoryInfo.getFactoryName().equals(stock.getFactoryName())) {
-                    stock.updateFactory(new FactoryDto.Response(latestFactoryInfo.getFactoryId(), latestFactoryInfo.getFactoryName(), latestFactoryInfo.getFactoryHarry()));
-                }
+                FactoryView latestFactoryInfo = factoryFinder.getFactoryInfo(stockDto.getFactoryId());
+                stock.updateFactory(
+                        latestFactoryInfo.factoryId(),
+                        SafeParse.toBigDecimalOrNull(latestFactoryInfo.goldHarryLoss())
+                );
             }
 
             ProductSnapshot product = stock.getProduct();
 
             String latestMaterialName = product.getMaterialName();
             if (stockDto.getMaterialId() != null && !stockDto.getMaterialId().equals(product.getMaterialId())) {
-                latestMaterialName = materialClient.getMaterialInfo(token, stockDto.getMaterialId());
+                latestMaterialName = materialFinder.getMaterialName(stockDto.getMaterialId());
             }
 
             String latestClassificationName = product.getClassificationName();
             if (stockDto.getClassificationId() != null && !stockDto.getClassificationId().equals(product.getClassificationId())) {
-                latestClassificationName = classificationClient.getClassificationInfo(token, stockDto.getClassificationId());
+                latestClassificationName = classificationFinder.getClassificationName(stockDto.getClassificationId());
             }
 
             String latestColorName = product.getColorName();
             if (stockDto.getColorId() != null && !stockDto.getColorId().equals(product.getColorId())) {
-                latestColorName = colorClient.getColorInfo(token, stockDto.getColorId());
+                latestColorName = colorFinder.getColorName(stockDto.getColorId());
             }
 
             String latestSetTypeName = product.getSetTypeName();
             if (stockDto.getSetTypeId() != null && !stockDto.getSetTypeId().equals(product.getSetTypeId())) {
-                latestSetTypeName = setTypeClient.getSetTypeName(token, stockDto.getSetTypeId());
+                latestSetTypeName = setTypeFinder.getSetTypeName(stockDto.getSetTypeId());
             }
 
-            AssistantStoneDto.Response latestAssistantStoneInfo;
+            // 보조석 정보 — 변경 시 최신 조회, 아니면 기존 스냅샷에서 view 구성
+            AssistantStoneView latestAssistantStoneInfo;
             if (stockDto.getAssistantStoneId() != null && !stockDto.getAssistantStoneId().equals(product.getAssistantStoneId())) {
-                latestAssistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(token, stockDto.getAssistantStoneId());
+                latestAssistantStoneInfo = assistantStoneFinder.getAssistantStone(stockDto.getAssistantStoneId());
             } else {
-                latestAssistantStoneInfo = new AssistantStoneDto.Response(product.getAssistantStoneId(), product.getAssistantStoneName(), "");
+                latestAssistantStoneInfo = new AssistantStoneView(
+                        product.getAssistantStoneId(),
+                        product.getAssistantStoneName(),
+                        ""
+                );
             }
 
-            ProductDetailDto latestProductInfo = productClient.getProductInfo(token, stockDto.getProductId(), storeInfo.getGrade());
+            ProductDetailView latestProductInfo = productFinder.getProductDetail(stockDto.getProductId(), resolvedStoreGrade);
 
-            if (!Objects.equals(latestProductInfo.getProductName(), product.getProductName()) ||
+            if (!Objects.equals(latestProductInfo.productName(), product.getProductName()) ||
                     !Objects.equals(latestMaterialName, product.getMaterialName()) ||
                     !Objects.equals(latestClassificationName, product.getClassificationName()) ||
                     !Objects.equals(latestColorName, product.getColorName()) ||
                     !Objects.equals(latestSetTypeName, product.getSetTypeName()) ||
-                    !Objects.equals(latestAssistantStoneInfo.getAssistantStoneName(), product.getAssistantStoneName())) {
+                    !Objects.equals(latestAssistantStoneInfo.assistantStoneName(), product.getAssistantStoneName())) {
 
                 product.updateProduct(
-                        latestProductInfo.getProductName(),
+                        latestProductInfo.productName(),
                         latestMaterialName,
                         latestClassificationName,
                         latestColorName,
                         latestSetTypeName,
                         stockDto.isAssistantStone(),
-                        latestAssistantStoneInfo.getAssistantStoneId(),
-                        latestAssistantStoneInfo.getAssistantStoneName(),
+                        latestAssistantStoneInfo.assistantStoneId(),
+                        latestAssistantStoneInfo.assistantStoneName(),
                         stockDto.getAssistantStoneCreateAt()
                 );
             }

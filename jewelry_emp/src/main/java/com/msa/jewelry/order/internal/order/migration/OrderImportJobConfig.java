@@ -1,8 +1,8 @@
 package com.msa.jewelry.order.internal.order.migration;
 
-import com.msa.jewelry.order.internal.global.feign_legacy.client.FactoryClient;
-import com.msa.jewelry.order.internal.global.feign_legacy.client.ProductClient;
-import com.msa.jewelry.order.internal.global.feign_legacy.client.StoreClient;
+import com.msa.jewelry.account.api.FactoryFinder;
+import com.msa.jewelry.account.api.StoreFinder;
+import com.msa.jewelry.product.api.ProductFinder;
 import com.msa.jewelry.order.internal.order.entity.Orders;
 import com.msa.jewelry.order.internal.priority.repository.PriorityRepository;
 import jakarta.persistence.EntityManagerFactory;
@@ -37,9 +37,9 @@ public class OrderImportJobConfig {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
     private final EntityManagerFactory entityManagerFactory;
-    private final StoreClient storeClient;
-    private final FactoryClient factoryClient;
-    private final ProductClient productClient;
+    private final StoreFinder storeFinder;
+    private final FactoryFinder factoryFinder;
+    private final ProductFinder productFinder;
     private final MigrationFailureCollector failureCollector;
     private final PriorityRepository priorityRepository;
 
@@ -123,7 +123,7 @@ public class OrderImportJobConfig {
             @Value("#{jobParameters['fixOrder'] ?: 'false'}") String fixOrder) {
         boolean isDeleted = "true".equalsIgnoreCase(deleted);
         boolean isFixOrder = "true".equalsIgnoreCase(fixOrder);
-        return new OrderCsvItemProcessor(token, storeClient, factoryClient, productClient, failureCollector, priorityRepository, isDeleted, isFixOrder);
+        return new OrderCsvItemProcessor(token, storeFinder, factoryFinder, productFinder, failureCollector, priorityRepository, isDeleted, isFixOrder);
     }
 
     /**

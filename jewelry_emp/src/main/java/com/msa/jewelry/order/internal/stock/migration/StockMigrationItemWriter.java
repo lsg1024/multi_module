@@ -121,9 +121,10 @@ public class StockMigrationItemWriter implements ItemWriter<Stock> {
 
             } catch (Exception e) {
                 // persist 실패 시 해당 건만 스킵, 나머지는 계속 처리
-                String stockInfo = String.format("모델=%s, 매장=%s, 상태=%s",
+                // 2026-05 P4: Stock.storeName 컬럼 제거. 로깅용 storeId 만 출력.
+                String stockInfo = String.format("모델=%s, storeId=%s, 상태=%s",
                         stock.getProduct() != null ? stock.getProduct().getProductFactoryName() : "N/A",
-                        stock.getStoreName(),
+                        stock.getStoreId() != null ? stock.getStoreId().toString() : "N/A",
                         stock.getOrderStatus());
                 log.error("Stock Writer 저장 실패 [{}]: {}", stockInfo, e.getMessage());
 
@@ -131,7 +132,7 @@ public class StockMigrationItemWriter implements ItemWriter<Stock> {
                 StockCsvRow failRow = new StockCsvRow();
                 failRow.setNo(stock.getStockNote());
                 failRow.setModelName(stock.getProduct() != null ? stock.getProduct().getProductFactoryName() : "");
-                failRow.setStoreName(stock.getStoreName());
+                failRow.setStoreName(stock.getStoreId() != null ? "store#" + stock.getStoreId() : "");
                 failRow.setCurrentStockType(stock.getOrderStatus() != null ? stock.getOrderStatus().getDisplayName() : "");
                 String reason = "DB 저장 실패: " + e.getMessage();
                 failureCollector.add(failRow, reason);

@@ -1,11 +1,12 @@
 package com.msa.jewelry.order.internal.stock.migration;
 
-import com.msa.jewelry.order.internal.global.feign_legacy.client.FactoryClient;
-import com.msa.jewelry.order.internal.global.feign_legacy.client.ProductClient;
-import com.msa.jewelry.order.internal.global.feign_legacy.client.StoreClient;
-import com.msa.jewelry.order.internal.global.feign_legacy.dto.ProductDetailDto;
-import com.msa.jewelry.order.internal.order.dto.FactoryDto;
-import com.msa.jewelry.order.internal.order.dto.StoreDto;
+import com.msa.jewelry.account.api.FactoryFinder;
+import com.msa.jewelry.account.api.FactoryView;
+import com.msa.jewelry.account.api.StoreFinder;
+import com.msa.jewelry.account.api.StoreView;
+import com.msa.jewelry.product.api.ProductDetailView;
+import com.msa.jewelry.product.api.ProductFinder;
+import com.msa.jewelry.product.api.ProductStoneView;
 import com.msa.jewelry.order.internal.order.entity.OrderStone;
 import com.msa.jewelry.order.internal.order.entity.order_enum.OrderStatus;
 import com.msa.jewelry.order.internal.stock.entity.ProductSnapshot;
@@ -17,8 +18,6 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
@@ -34,32 +33,31 @@ import java.util.Map;
 public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> {
 
     private final String token;
-    private final StoreClient storeClient;
-    private final FactoryClient factoryClient;
-    private final ProductClient productClient;
+    private final StoreFinder storeFinder;
+    private final FactoryFinder factoryFinder;
+    private final ProductFinder productFinder;
     private final StockMigrationFailureCollector failureCollector;
     private final StockMigrationRecordCollector recordCollector;
 
-    private final Map<String, StoreDto.Response> storeCache = new HashMap<>();
-    private final Map<String, FactoryDto.Response> factoryCache = new HashMap<>();
+    private final Map<String, StoreView> storeCache = new HashMap<>();
+    private final Map<String, FactoryView> factoryCache = new HashMap<>();
     /** 상품명 → 카탈로그 스톤 목록 캐시 (product-service 호출 최소화) */
-    private final Map<String, List<ProductDetailDto.StoneInfo>> productStoneCache = new HashMap<>();
+    private final Map<String, List<ProductStoneView>> productStoneCache = new HashMap<>();
     /** 상품명(모델명) → 카탈로그 상품 상세 캐시 (productId/productName 조회용) */
-    private final Map<String, ProductDetailDto> productInfoCache = new HashMap<>();
+    private final Map<String, ProductDetailView> productInfoCache = new HashMap<>();
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
 
     public StockCsvItemProcessor(String token,
-                                 StoreClient storeClient,
-                                 FactoryClient factoryClient,
-                                 ProductClient productClient,
+                                 StoreFinder storeFinder,
+                                 FactoryFinder factoryFinder,
+                                 ProductFinder productFinder,
                                  StockMigrationFailureCollector failureCollector,
                                  StockMigrationRecordCollector recordCollector) {
         this.token = token;
-        this.storeClient = storeClient;
-        this.factoryClient = factoryClient;
-        this.productClient = productClient;
+        this.storeFinder = storeFinder;
+        this.factoryFinder = factoryFinder;
+        this.productFinder = productFinder;
         this.failureCollector = failureCollector;
         this.recordCollector = recordCollector;
     }
@@ -82,16 +80,16 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
             BigDecimal storeHarry = null;
 
             if (StringUtils.hasText(storeName) && !"NONE".equalsIgnoreCase(storeName.trim())) {
-                StoreDto.Response storeInfo = lookupStore(storeName);
+                StoreView storeInfo = lookupStore(storeName);
                 if (storeInfo != null) {
-                    storeId = storeInfo.getStoreId();
-                    storeName = storeInfo.getStoreName();
-                    if (!StringUtils.hasText(storeGrade) && StringUtils.hasText(storeInfo.getGrade())) {
-                        storeGrade = storeInfo.getGrade();
+                    storeId = storeInfo.storeId();
+                    storeName = storeInfo.storeName();
+                    if (!StringUtils.hasText(storeGrade) && StringUtils.hasText(storeInfo.storeGrade())) {
+                        storeGrade = storeInfo.storeGrade();
                     }
-                    if (StringUtils.hasText(storeInfo.getStoreHarry())) {
+                    if (StringUtils.hasText(storeInfo.storeHarry())) {
                         try {
-                            storeHarry = new BigDecimal(storeInfo.getStoreHarry());
+                            storeHarry = new BigDecimal(storeInfo.storeHarry());
                         } catch (NumberFormatException e) {
                             // ignore, leave as null
                         }
@@ -106,13 +104,13 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
             BigDecimal factoryHarry = null;
 
             if (StringUtils.hasText(factoryName) && !"NONE".equalsIgnoreCase(factoryName.trim())) {
-                FactoryDto.Response factoryInfo = lookupFactoryByName(factoryName);
+                FactoryView factoryInfo = lookupFactoryByName(factoryName);
                 if (factoryInfo != null) {
-                    factoryId = factoryInfo.getFactoryId();
-                    factoryName = factoryInfo.getFactoryName();
-                    if (StringUtils.hasText(factoryInfo.getFactoryHarry())) {
+                    factoryId = factoryInfo.factoryId();
+                    factoryName = factoryInfo.factoryName();
+                    if (StringUtils.hasText(factoryInfo.goldHarryLoss())) {
                         try {
-                            factoryHarry = new BigDecimal(factoryInfo.getFactoryHarry());
+                            factoryHarry = new BigDecimal(factoryInfo.goldHarryLoss());
                         } catch (NumberFormatException e) {
                             // ignore, leave as null
                         }
@@ -161,13 +159,12 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
 
             // 8. Stock 엔티티 구성 — 스톤 합산 필드는 placeholder 로 초기화하고
             //    카탈로그 매칭 결과에 따라 9단계 이후 stock.updateStoneCost(...) 로 확정한다.
+            //    2026-05 P4: Stock 에 storeName/factoryName 컬럼 제거. id 만 저장.
             Stock stock = Stock.builder()
                     .storeId(storeId)
-                    .storeName(storeName)
                     .storeHarry(storeHarry)
                     .storeGrade(storeGrade)
                     .factoryId(factoryId)
-                    .factoryName(factoryName)
                     .factoryHarry(factoryHarry)
                     .stockNote(stockNote)
                     .stockMainStoneNote(row.getMainStone())
@@ -283,23 +280,23 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
         Long setTypeId = null;
 
         if (StringUtils.hasText(modelName)) {
-            ProductDetailDto productInfo = lookupProductInfo(modelName);
+            ProductDetailView productInfo = lookupProductInfo(modelName);
             if (productInfo != null) {
-                productId = productInfo.getProductId();
-                if (StringUtils.hasText(productInfo.getProductName())) {
-                    productName = productInfo.getProductName();
+                productId = productInfo.productId();
+                if (StringUtils.hasText(productInfo.productName())) {
+                    productName = productInfo.productName();
                 }
-                if (productInfo.getClassificationId() != null) {
-                    classificationId = productInfo.getClassificationId();
+                if (productInfo.classificationId() != null) {
+                    classificationId = productInfo.classificationId();
                 }
-                if (StringUtils.hasText(productInfo.getClassificationName())) {
-                    classificationName = productInfo.getClassificationName();
+                if (StringUtils.hasText(productInfo.classificationName())) {
+                    classificationName = productInfo.classificationName();
                 }
-                if (productInfo.getSetTypeId() != null) {
-                    setTypeId = productInfo.getSetTypeId();
+                if (productInfo.setTypeId() != null) {
+                    setTypeId = productInfo.setTypeId();
                 }
-                if (StringUtils.hasText(productInfo.getSetTypeName())) {
-                    setTypeName = productInfo.getSetTypeName();
+                if (StringUtils.hasText(productInfo.setTypeName())) {
+                    setTypeName = productInfo.setTypeName();
                 }
             }
         }
@@ -332,13 +329,13 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
      * 모델명으로 product-service의 상품 상세를 조회 (캐싱).
      * 조회 실패/미존재 시 null.
      */
-    private ProductDetailDto lookupProductInfo(String modelName) {
+    private ProductDetailView lookupProductInfo(String modelName) {
         if (productInfoCache.containsKey(modelName)) {
             return productInfoCache.get(modelName);
         }
 
         try {
-            ProductDetailDto info = productClient.getProductInfoByName(token, modelName);
+            ProductDetailView info = productFinder.findProductDetailByName(modelName);
             productInfoCache.put(modelName, info);
             return info;
         } catch (Exception e) {
@@ -453,13 +450,13 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
     /**
      * Store 정보 조회 (캐싱)
      */
-    private StoreDto.Response lookupStore(String storeName) {
+    private StoreView lookupStore(String storeName) {
         if (storeCache.containsKey(storeName)) {
             return storeCache.get(storeName);
         }
 
         try {
-            StoreDto.Response storeInfo = storeClient.getStoreInfoByName(token, storeName);
+            StoreView storeInfo = storeFinder.findStoreByName(storeName);
             storeCache.put(storeName, storeInfo);
             return storeInfo;
         } catch (Exception e) {
@@ -472,13 +469,13 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
     /**
      * Factory 정보 조회 (캐싱)
      */
-    private FactoryDto.Response lookupFactoryByName(String factoryName) {
+    private FactoryView lookupFactoryByName(String factoryName) {
         if (factoryCache.containsKey(factoryName)) {
             return factoryCache.get(factoryName);
         }
 
         try {
-            FactoryDto.Response factoryInfo = factoryClient.getFactoryInfoByName(token, factoryName);
+            FactoryView factoryInfo = factoryFinder.findFactoryByName(factoryName);
             factoryCache.put(factoryName, factoryInfo);
             return factoryInfo;
         } catch (Exception e) {
@@ -515,22 +512,22 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
         }
 
         // 카탈로그 스톤 목록 조회 (캐싱)
-        List<ProductDetailDto.StoneInfo> catalogStones = lookupProductStones(modelName);
+        List<ProductStoneView> catalogStones = lookupProductStones(modelName);
         if (catalogStones == null || catalogStones.isEmpty()) {
             return false;
         }
 
         // 카탈로그의 메인/보조 스톤 분리
-        List<ProductDetailDto.StoneInfo> catalogMain = catalogStones.stream()
-                .filter(ProductDetailDto.StoneInfo::isMainStone).toList();
-        List<ProductDetailDto.StoneInfo> catalogSub = catalogStones.stream()
-                .filter(s -> !s.isMainStone()).toList();
+        List<ProductStoneView> catalogMain = catalogStones.stream()
+                .filter(ProductStoneView::mainStone).toList();
+        List<ProductStoneView> catalogSub = catalogStones.stream()
+                .filter(s -> !s.mainStone()).toList();
 
         // (1) 수량 비교
         int catalogMainTotalQty = catalogMain.stream()
-                .mapToInt(s -> s.getQuantity() != null ? s.getQuantity() : 0).sum();
+                .mapToInt(s -> s.quantity() != null ? s.quantity() : 0).sum();
         int catalogSubTotalQty = catalogSub.stream()
-                .mapToInt(s -> s.getQuantity() != null ? s.getQuantity() : 0).sum();
+                .mapToInt(s -> s.quantity() != null ? s.quantity() : 0).sum();
         int csvMainCount = csvMainQty != null ? csvMainQty : 0;
         int csvSubCount = csvSubQty != null ? csvSubQty : 0;
 
@@ -543,14 +540,14 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
         // (2) 가격(공임) 비교 — 카탈로그의 laborCost × quantity 합계가 CSV 공임과 일치해야 함
         int catalogMainLaborTotal = catalogMain.stream()
                 .mapToInt(s -> {
-                    int q = s.getQuantity() != null ? s.getQuantity() : 0;
-                    int l = s.getLaborCost() != null ? s.getLaborCost() : 0;
+                    int q = s.quantity() != null ? s.quantity() : 0;
+                    int l = s.laborCost() != null ? s.laborCost() : 0;
                     return q * l;
                 }).sum();
         int catalogSubLaborTotal = catalogSub.stream()
                 .mapToInt(s -> {
-                    int q = s.getQuantity() != null ? s.getQuantity() : 0;
-                    int l = s.getLaborCost() != null ? s.getLaborCost() : 0;
+                    int q = s.quantity() != null ? s.quantity() : 0;
+                    int l = s.laborCost() != null ? s.laborCost() : 0;
                     return q * l;
                 }).sum();
         int csvMainLabor = stoneMainLaborCost != null ? stoneMainLaborCost : 0;
@@ -564,32 +561,32 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
 
         // 매칭 성공 — 카탈로그 스톤 정보 기반으로 OrderStone 생성
         // (stoneAddLaborCost 는 0 으로 — 매칭 성공 케이스에서는 누적 버킷이 비어있음)
-        for (ProductDetailDto.StoneInfo cs : catalogMain) {
+        for (ProductStoneView cs : catalogMain) {
             OrderStone orderStone = OrderStone.builder()
-                    .originStoneId(cs.getStoneId() != null ? Long.parseLong(cs.getStoneId()) : null)
-                    .originStoneName(cs.getStoneName())
-                    .originStoneWeight(cs.getStoneWeight() != null ? new BigDecimal(cs.getStoneWeight()) : null)
-                    .stoneQuantity(cs.getQuantity())
+                    .originStoneId(cs.stoneId() != null ? Long.parseLong(cs.stoneId()) : null)
+                    .originStoneName(cs.stoneName())
+                    .originStoneWeight(cs.stoneWeight() != null ? new BigDecimal(cs.stoneWeight()) : null)
+                    .stoneQuantity(cs.quantity())
                     .stoneLaborCost(stoneMainLaborCost)        // CSV 공임으로 덮어쓰기
                     .stonePurchaseCost(totalStonePurchaseCost)  // CSV 매입가로 덮어쓰기
                     .stoneAddLaborCost(0)
                     .mainStone(true)
-                    .includeStone(cs.isIncludeStone())
+                    .includeStone(cs.includeStone())
                     .build();
             stock.addStockStone(orderStone);
         }
 
-        for (ProductDetailDto.StoneInfo cs : catalogSub) {
+        for (ProductStoneView cs : catalogSub) {
             OrderStone orderStone = OrderStone.builder()
-                    .originStoneId(cs.getStoneId() != null ? Long.parseLong(cs.getStoneId()) : null)
-                    .originStoneName(cs.getStoneName())
-                    .originStoneWeight(cs.getStoneWeight() != null ? new BigDecimal(cs.getStoneWeight()) : null)
-                    .stoneQuantity(cs.getQuantity())
+                    .originStoneId(cs.stoneId() != null ? Long.parseLong(cs.stoneId()) : null)
+                    .originStoneName(cs.stoneName())
+                    .originStoneWeight(cs.stoneWeight() != null ? new BigDecimal(cs.stoneWeight()) : null)
+                    .stoneQuantity(cs.quantity())
                     .stoneLaborCost(stoneAssistanceLaborCost)  // CSV 보조공임으로 덮어쓰기
                     .stonePurchaseCost(totalStonePurchaseCost)
                     .stoneAddLaborCost(0)
                     .mainStone(false)
-                    .includeStone(cs.isIncludeStone())
+                    .includeStone(cs.includeStone())
                     .build();
             stock.addStockStone(orderStone);
         }
@@ -602,13 +599,13 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
     /**
      * 상품명으로 카탈로그 스톤 목록 조회 (캐싱)
      */
-    private List<ProductDetailDto.StoneInfo> lookupProductStones(String modelName) {
+    private List<ProductStoneView> lookupProductStones(String modelName) {
         if (productStoneCache.containsKey(modelName)) {
             return productStoneCache.get(modelName);
         }
 
         try {
-            List<ProductDetailDto.StoneInfo> stones = productClient.getProductStonesByName(token, modelName);
+            List<ProductStoneView> stones = productFinder.getProductStonesByName(modelName);
             productStoneCache.put(modelName, stones);
             return stones;
         } catch (Exception e) {

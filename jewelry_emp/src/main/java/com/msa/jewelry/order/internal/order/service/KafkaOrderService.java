@@ -1,12 +1,19 @@
 package com.msa.jewelry.order.internal.order.service;
 
-import com.msa.jewelry.order.internal.global.feign_legacy.client.*;
-import com.msa.jewelry.order.internal.global.feign_legacy.dto.AssistantStoneDto;
-import com.msa.jewelry.order.internal.global.feign_legacy.dto.ProductDetailDto;
+import com.msa.jewelry.account.api.FactoryFinder;
+import com.msa.jewelry.account.api.FactoryView;
+import com.msa.jewelry.account.api.StoreFinder;
+import com.msa.jewelry.account.api.StoreView;
 import com.msa.jewelry.order.internal.global.kafka_dto_legacy.OrderAsyncRequested;
 import com.msa.jewelry.order.internal.global.kafka_dto_legacy.OrderUpdateRequest;
-import com.msa.jewelry.order.internal.order.dto.FactoryDto;
-import com.msa.jewelry.order.internal.order.dto.StoreDto;
+import com.msa.jewelry.order.internal.global.util.SafeParse;
+import com.msa.jewelry.product.api.AssistantStoneFinder;
+import com.msa.jewelry.product.api.AssistantStoneView;
+import com.msa.jewelry.product.api.ColorFinder;
+import com.msa.jewelry.product.api.MaterialFinder;
+import com.msa.jewelry.product.api.ProductDetailView;
+import com.msa.jewelry.product.api.ProductFinder;
+import com.msa.jewelry.product.api.StoneFinder;
 import com.msa.jewelry.order.internal.order.entity.OrderProduct;
 import com.msa.jewelry.order.internal.order.entity.Orders;
 import com.msa.jewelry.order.internal.order.entity.StatusHistory;
@@ -30,24 +37,24 @@ import static com.msa.jewelry.order.internal.global.exception.ExceptionMessage.N
 @Transactional
 public class KafkaOrderService {
 
-    private final StoreClient storeClient;
-    private final StoneClient stoneClient;
-    private final ProductClient productClient;
-    private final FactoryClient factoryClient;
-    private final MaterialClient materialClient;
-    private final ColorClient colorClient;
-    private final AssistantStoneClient assistantStoneClient;
+    private final StoreFinder storeFinder;
+    private final StoneFinder stoneFinder;
+    private final ProductFinder productFinder;
+    private final FactoryFinder factoryFinder;
+    private final MaterialFinder materialFinder;
+    private final ColorFinder colorFinder;
+    private final AssistantStoneFinder assistantStoneFinder;
     private final OrdersRepository ordersRepository;
     private final StatusHistoryRepository statusHistoryRepository;
 
-    public KafkaOrderService(StoreClient storeClient, StoneClient stoneClient, ProductClient productClient, FactoryClient factoryClient, MaterialClient materialClient, ColorClient colorClient, AssistantStoneClient assistantStoneClient, OrdersRepository ordersRepository, StatusHistoryRepository statusHistoryRepository) {
-        this.storeClient = storeClient;
-        this.stoneClient = stoneClient;
-        this.productClient = productClient;
-        this.factoryClient = factoryClient;
-        this.materialClient = materialClient;
-        this.colorClient = colorClient;
-        this.assistantStoneClient = assistantStoneClient;
+    public KafkaOrderService(StoreFinder storeFinder, StoneFinder stoneFinder, ProductFinder productFinder, FactoryFinder factoryFinder, MaterialFinder materialFinder, ColorFinder colorFinder, AssistantStoneFinder assistantStoneFinder, OrdersRepository ordersRepository, StatusHistoryRepository statusHistoryRepository) {
+        this.storeFinder = storeFinder;
+        this.stoneFinder = stoneFinder;
+        this.productFinder = productFinder;
+        this.factoryFinder = factoryFinder;
+        this.materialFinder = materialFinder;
+        this.colorFinder = colorFinder;
+        this.assistantStoneFinder = assistantStoneFinder;
         this.ordersRepository = ordersRepository;
         this.statusHistoryRepository = statusHistoryRepository;
     }
@@ -69,64 +76,63 @@ public class KafkaOrderService {
         StatusHistory statusHistory;
 
         try {
-            StoreDto.Response latestStoreInfo = storeClient.getStoreInfo(token, evt.getStoreId());
-            if (!Objects.equals(latestStoreInfo.getStoreName(), order.getStoreName())) {
-
-                order.updateStore(StoreDto.Response.builder()
-                        .storeId(latestStoreInfo.getStoreId())
-                        .storeName(latestStoreInfo.getStoreName())
-                        .storeHarry(latestStoreInfo.getStoreHarry())
-                        .grade(latestStoreInfo.getGrade())
-                        .build());
-            }
-
-            FactoryDto.Response latestFactoryInfo = factoryClient.getFactoryInfo(token, evt.getFactoryId());
-            if (!Objects.equals(latestFactoryInfo.getFactoryName(), order.getFactoryName())) {
-
-                order.updateFactory(
-                        latestFactoryInfo.getFactoryId(),
-                        latestFactoryInfo.getFactoryName()
+            // 2026-05 P4: Orders 에 storeName/factoryName 컬럼 제거.
+            //              storeId/factoryId 변경 시점에만 스냅샷(harry, grade) 갱신.
+            StoreView latestStoreInfo = storeFinder.getStoreInfo(evt.getStoreId());
+            if (!Objects.equals(evt.getStoreId(), order.getStoreId())) {
+                order.updateStore(
+                        latestStoreInfo.storeId(),
+                        latestStoreInfo.storeGrade(),
+                        SafeParse.toBigDecimalOrNull(latestStoreInfo.storeHarry())
                 );
             }
 
-            ProductDetailDto latestProductInfo = productClient.getProductInfo(token, evt.getProductId(), order.getStoreGrade());
-            String latestMaterialName = materialClient.getMaterialInfo(token, evt.getMaterialId());
-            String latestColorName = colorClient.getColorInfo(token, evt.getColorId());
+            FactoryView latestFactoryInfo = factoryFinder.getFactoryInfo(evt.getFactoryId());
+            if (!Objects.equals(evt.getFactoryId(), order.getFactoryId())) {
+                order.updateFactory(
+                        latestFactoryInfo.factoryId(),
+                        SafeParse.toBigDecimalOrNull(latestFactoryInfo.goldHarryLoss())
+                );
+            }
 
-            if (!Objects.equals(latestProductInfo.getProductName(), orderProduct.getProductName()) ||
-                    !Objects.equals(latestProductInfo.getProductFactoryName(), orderProduct.getProductFactoryName()) ||
+            ProductDetailView latestProductInfo = productFinder.getProductDetail(evt.getProductId(), order.getStoreGrade());
+            String latestMaterialName = materialFinder.getMaterialName(evt.getMaterialId());
+            String latestColorName = colorFinder.getColorName(evt.getColorId());
+
+            if (!Objects.equals(latestProductInfo.productName(), orderProduct.getProductName()) ||
+                    !Objects.equals(latestProductInfo.productFactoryName(), orderProduct.getProductFactoryName()) ||
                     !Objects.equals(latestMaterialName, orderProduct.getMaterialName()) ||
                     !Objects.equals(latestColorName, orderProduct.getColorName()) ||
-                    !Objects.equals(latestProductInfo.getClassificationName(), orderProduct.getClassificationName()) ||
-                    !Objects.equals(latestProductInfo.getSetTypeName(), orderProduct.getSetTypeName()) ||
+                    !Objects.equals(latestProductInfo.classificationName(), orderProduct.getClassificationName()) ||
+                    !Objects.equals(latestProductInfo.setTypeName(), orderProduct.getSetTypeName()) ||
                     !evt.getMaterialId().equals(orderProduct.getMaterialId()) ||
                     !evt.getColorId().equals(orderProduct.getColorId())) {
 
                 orderProduct.updateOrderProduct(
-                        latestProductInfo.getProductName(),
-                        latestProductInfo.getProductFactoryName(),
+                        latestProductInfo.productName(),
+                        latestProductInfo.productFactoryName(),
                         evt.getMaterialId(),
                         latestMaterialName,
                         evt.getColorId(),
                         latestColorName,
-                        latestProductInfo.getClassificationId(),
-                        latestProductInfo.getClassificationName(),
-                        latestProductInfo.getSetTypeId(),
-                        latestProductInfo.getSetTypeName());
+                        latestProductInfo.classificationId(),
+                        latestProductInfo.classificationName(),
+                        latestProductInfo.setTypeId(),
+                        latestProductInfo.setTypeName());
             }
 
             // 보조석 정보 업데이트 - assistantStone 플래그와 관계없이 값이 있으면 설정
-            AssistantStoneDto.Response assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(token, evt.getAssistantStoneId());
+            AssistantStoneView assistantStoneInfo = assistantStoneFinder.getAssistantStone(evt.getAssistantStoneId());
             orderProduct.updateOrderProductAssistantStone(
                     evt.isAssistantStone(),
-                    assistantStoneInfo.getAssistantStoneId(),
-                    assistantStoneInfo.getAssistantStoneName(),
+                    assistantStoneInfo.assistantStoneId(),
+                    assistantStoneInfo.assistantStoneName(),
                     evt.getAssistantStoneCreateAt()
             );
 
             List<Long> stoneIds = evt.getStoneIds();
             for (Long stoneId : stoneIds) {
-                if (!stoneClient.getExistStoneId(token, stoneId)) {
+                if (!stoneFinder.existsStoneId(stoneId)) {
                     throw new IllegalArgumentException(NOT_FOUND_STONE);
                 }
             }
@@ -163,67 +169,67 @@ public class KafkaOrderService {
 
         StatusHistory statusHistory;
 
-        StoreDto.Response storeInfoForGrade = null;
+        StoreView storeInfoForGrade = null;
         try {
 
             if (updateRequest.getStoreId() != null) {
-                StoreDto.Response storeInfo = storeClient.getStoreInfo(token, updateRequest.getStoreId());
-                order.updateStore(StoreDto.Response.builder()
-                        .storeId(storeInfo.getStoreId())
-                        .storeName(storeInfo.getStoreName())
-                        .storeHarry(storeInfo.getStoreHarry())
-                        .grade(storeInfo.getGrade())
-                        .build());
-
+                StoreView storeInfo = storeFinder.getStoreInfo(updateRequest.getStoreId());
+                order.updateStore(
+                        storeInfo.storeId(),
+                        storeInfo.storeGrade(),
+                        SafeParse.toBigDecimalOrNull(storeInfo.storeHarry())
+                );
                 storeInfoForGrade = storeInfo;
             }
 
             if (updateRequest.getFactoryId() != null) {
-                FactoryDto.Response factoryInfo = factoryClient.getFactoryInfo(token, updateRequest.getFactoryId());
-                order.updateFactory(updateRequest.getFactoryId(), factoryInfo.getFactoryName());
+                FactoryView factoryInfo = factoryFinder.getFactoryInfo(updateRequest.getFactoryId());
+                order.updateFactory(
+                        updateRequest.getFactoryId(),
+                        SafeParse.toBigDecimalOrNull(factoryInfo.goldHarryLoss())
+                );
             }
 
             String materialName = null;
             if (updateRequest.getMaterialId() != null) {
-                materialName = materialClient.getMaterialInfo(token, updateRequest.getMaterialId());
+                materialName = materialFinder.getMaterialName(updateRequest.getMaterialId());
             }
 
             String colorName = null;
             if (updateRequest.getColorId() != null) {
-                colorName = colorClient.getColorInfo(token, updateRequest.getColorId());
+                colorName = colorFinder.getColorName(updateRequest.getColorId());
             }
 
-            ProductDetailDto productInfo = null;
+            ProductDetailView productInfo = null;
             if (updateRequest.getProductId() != null || updateRequest.getStoreId() != null) {
 
                 Long targetProductId = updateRequest.getProductId() != null
                         ? updateRequest.getProductId()
                         : order.getOrderProduct().getProductId();
 
-
                 String targetGrade = storeInfoForGrade != null
-                        ? storeInfoForGrade.getGrade()
+                        ? storeInfoForGrade.storeGrade()
                         : order.getStoreGrade();
 
-                productInfo = productClient.getProductInfo(token, targetProductId, targetGrade);
+                productInfo = productFinder.getProductDetail(targetProductId, targetGrade);
             }
 
             // 보조석 정보 조회 - assistantStone 플래그와 관계없이 assistantStoneId가 있으면 조회
-            AssistantStoneDto.Response assistantStoneInfo = null;
+            AssistantStoneView assistantStoneInfo = null;
             if (updateRequest.getAssistantStoneId() != null) {
-                assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(token, updateRequest.getAssistantStoneId());
+                assistantStoneInfo = assistantStoneFinder.getAssistantStone(updateRequest.getAssistantStoneId());
             }
 
             OrderProduct orderProduct = order.getOrderProduct();
             orderProduct.updateDetails(
-                    productInfo != null ? productInfo.getProductName() : null,
-                    productInfo != null ? productInfo.getClassificationName() : null,
-                    productInfo != null ? productInfo.getSetTypeName() : null,
+                    productInfo != null ? productInfo.productName() : null,
+                    productInfo != null ? productInfo.classificationName() : null,
+                    productInfo != null ? productInfo.setTypeName() : null,
                     materialName,
                     colorName,
                     updateRequest.isAssistantStone(),
                     updateRequest.getAssistantStoneId(),
-                    assistantStoneInfo != null ? assistantStoneInfo.getAssistantStoneName() : null,
+                    assistantStoneInfo != null ? assistantStoneInfo.assistantStoneName() : null,
                     updateRequest.getAssistantStoneCreateAt()
             );
 

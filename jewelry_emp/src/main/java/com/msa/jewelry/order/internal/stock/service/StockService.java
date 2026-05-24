@@ -1,13 +1,15 @@
 package com.msa.jewelry.order.internal.stock.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.util.CustomPage;
-import com.msa.jewelry.order.internal.global.dto.OutboxCreatedEvent;
 import com.msa.jewelry.order.internal.global.dto.StatusHistoryDto;
 import com.msa.jewelry.order.internal.global.dto.StoneDto;
-import com.msa.jewelry.order.internal.global.feign_legacy.client.AssistantStoneClient;
-import com.msa.jewelry.order.internal.global.feign_legacy.dto.AssistantStoneDto;
+import com.msa.jewelry.account.api.FactoryFinder;
+import com.msa.jewelry.account.api.FactoryView;
+import com.msa.jewelry.account.api.StoreFinder;
+import com.msa.jewelry.account.api.StoreView;
+import com.msa.jewelry.product.api.AssistantStoneFinder;
+import com.msa.jewelry.product.api.AssistantStoneView;
 import com.msa.jewelry.order.internal.global.kafka_dto_legacy.KafkaStockRequest;
 import com.msa.jewelry.order.internal.global.util.DateConversionUtil;
 import com.msa.jewelry.order.internal.global.util.SafeParse;
@@ -24,8 +26,6 @@ import com.msa.jewelry.order.internal.order.repository.OrdersRepository;
 import com.msa.jewelry.order.internal.order.repository.StatusHistoryRepository;
 import com.msa.jewelry.order.internal.order.util.ChangeTracker;
 import com.msa.jewelry.order.internal.order.util.StatusHistoryHelper;
-import com.msa.jewelry.order.internal.outbox.domain.entity.OutboxEvent;
-import com.msa.jewelry.order.internal.outbox.repository.OutboxEventRepository;
 import com.msa.jewelry.order.internal.stock.dto.InventoryDto;
 import com.msa.jewelry.order.internal.stock.dto.StockDto;
 import com.msa.jewelry.order.internal.stock.entity.ProductSnapshot;
@@ -36,19 +36,18 @@ import com.msa.jewelry.order.internal.global.exception.StockNotFoundException;
 import com.msa.jewelry.order.internal.global.exception.OrderNotFoundException;
 import com.msa.jewelry.order.internal.global.exception.InvalidOrderStatusException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.msa.jewelry.order.internal.global.exception.ExceptionMessage.*;
-import static com.msa.jewelry.order.internal.global.util.DateConversionUtil.StringToOffsetDateTime;
+import static com.msa.jewelry.order.internal.global.util.DateConversionUtil.StringToLocalDateTime;
 import static com.msa.jewelry.order.internal.order.util.StoneUtil.*;
 
 @Slf4j
@@ -56,26 +55,26 @@ import static com.msa.jewelry.order.internal.order.util.StoneUtil.*;
 @Transactional
 public class StockService {
     private final JwtUtil jwtUtil;
-    private final ObjectMapper objectMapper;
-    private final ApplicationEventPublisher eventPublisher;
-    private final AssistantStoneClient assistantStoneClient;
+    private final KafkaStockService kafkaStockService;
+    private final AssistantStoneFinder assistantStoneFinder;
+    private final StoreFinder storeFinder;
+    private final FactoryFinder factoryFinder;
     private final StockRepository stockRepository;
     private final OrdersRepository ordersRepository;
     private final CustomStockRepository customStockRepository;
     private final StatusHistoryRepository statusHistoryRepository;
-    private final OutboxEventRepository outboxEventRepository;
     private final StatusHistoryHelper statusHistoryHelper;
 
-    public StockService(JwtUtil jwtUtil, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, AssistantStoneClient assistantStoneClient, StockRepository stockRepository, OrdersRepository ordersRepository, CustomStockRepository customStockRepository, StatusHistoryRepository statusHistoryRepository, OutboxEventRepository outboxEventRepository, StatusHistoryHelper statusHistoryHelper) {
+    public StockService(JwtUtil jwtUtil, KafkaStockService kafkaStockService, AssistantStoneFinder assistantStoneFinder, StoreFinder storeFinder, FactoryFinder factoryFinder, StockRepository stockRepository, OrdersRepository ordersRepository, CustomStockRepository customStockRepository, StatusHistoryRepository statusHistoryRepository, StatusHistoryHelper statusHistoryHelper) {
         this.jwtUtil = jwtUtil;
-        this.objectMapper = objectMapper;
-        this.eventPublisher = eventPublisher;
-        this.assistantStoneClient = assistantStoneClient;
+        this.kafkaStockService = kafkaStockService;
+        this.assistantStoneFinder = assistantStoneFinder;
+        this.storeFinder = storeFinder;
+        this.factoryFinder = factoryFinder;
         this.stockRepository = stockRepository;
         this.ordersRepository = ordersRepository;
         this.customStockRepository = customStockRepository;
         this.statusHistoryRepository = statusHistoryRepository;
-        this.outboxEventRepository = outboxEventRepository;
         this.statusHistoryHelper = statusHistoryHelper;
     }
 
@@ -131,16 +130,22 @@ public class StockService {
                     ? statusHistory.getSourceType().getDisplayName()
                     : null;
 
+            // 2026-05 P4: Stock 의 storeName/factoryName 컬럼 제거. finder 로 조회.
+            String stockStoreName = stock.getStoreId() != null
+                    ? storeFinder.getStoreInfo(stock.getStoreId()).storeName() : null;
+            String stockFactoryName = stock.getFactoryId() != null
+                    ? factoryFinder.getFactoryInfo(stock.getFactoryId()).factoryName() : null;
+
             StockDto.ResponseDetail stockDetail = StockDto.ResponseDetail.builder()
                     .createAt(stock.getCreateDate() != null ? stock.getCreateDate().toString() : null)
                     .flowCode(stock.getFlowCode() != null ? stock.getFlowCode().toString() : null)
                     .originalProductStatus(originalProductStatus)
                     .storeId(stock.getStoreId() != null ? String.valueOf(stock.getStoreId()) : null)
-                    .storeName(stock.getStoreName())
+                    .storeName(stockStoreName)
                     .storeHarry(stock.getStoreHarry() != null ? stock.getStoreHarry().toPlainString() : null)
                     .storeGrade(stock.getStoreGrade())
                     .factoryId(stock.getFactoryId() != null ? String.valueOf(stock.getFactoryId()) : null)
-                    .factoryName(stock.getFactoryName())
+                    .factoryName(stockFactoryName)
                     .productId(product != null && product.getId() != null ? String.valueOf(product.getId()) : null)
                     .productName(product != null ? product.getProductName() : null)
                     .productSize(product != null ? product.getSize() : null)
@@ -265,18 +270,18 @@ public class StockService {
         stock.updateStoneCost(countStoneCost[0], countStoneCost[1], countStoneCost[2], countStoneCost[3], updateStock.getStoneAddLaborCost());
 
         if (assistantId != null && !product.getAssistantStoneId().equals(assistantId)) {
-            OffsetDateTime assistantStoneCreateAt = null;
+            LocalDateTime assistantStoneCreateAt = null;
             if (StringUtils.hasText(updateStock.getAssistantStoneCreateAt())) {
-                assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(updateStock.getAssistantStoneCreateAt());
+                assistantStoneCreateAt = DateConversionUtil.StringToLocalDateTime(updateStock.getAssistantStoneCreateAt());
             }
             product.updateAssistantStone(updateStock.isAssistantStone(), assistantId, updateStock.getAssistantStoneName(), assistantStoneCreateAt);
         }
 
         // 거래처(스토어) 및 제조사(팩토리) 업데이트 (변경되었을 경우)
+        // 2026-05 P4: storeName/factoryName 파라미터 제거. id 만 저장.
         if (StringUtils.hasText(updateStock.getStoreId())) {
             stock.updateStore(
                 SafeParse.toLongOrNull(updateStock.getStoreId()),
-                updateStock.getStoreName(),
                 updateStock.getStoreGrade(),
                 SafeParse.toBigDecimalOrNull(updateStock.getStoreHarry())
             );
@@ -284,7 +289,6 @@ public class StockService {
         if (StringUtils.hasText(updateStock.getFactoryId())) {
             stock.updateFactory(
                 SafeParse.toLongOrNull(updateStock.getFactoryId()),
-                updateStock.getFactoryName(),
                 SafeParse.toBigDecimalOrNull(updateStock.getFactoryHarry())
             );
         }
@@ -314,7 +318,7 @@ public class StockService {
             throw new IllegalArgumentException(READY_TO_EXPECT);
         }
 
-        AssistantStoneDto.Response assistantStoneInfo = assistantStoneClient.getAssistantStoneInfo(accessToken, SafeParse.toLongOrNull(stockDto.getAssistantStoneId()));
+        AssistantStoneView assistantStoneInfo = assistantStoneFinder.getAssistantStone(SafeParse.toLongOrNull(stockDto.getAssistantStoneId()));
 
         BigDecimal goldWeight = SafeParse.toBigDecimalOrNull(stockDto.getGoldWeight());
         BigDecimal stoneWeight = SafeParse.toBigDecimalOrNull(stockDto.getStoneWeight());
@@ -338,22 +342,21 @@ public class StockService {
                 .colorId(orderProduct.getColorId())
                 .colorName(orderProduct.getColorName())
                 .assistantStone(stockDto.isAssistantStone())
-                .assistantStoneId(assistantStoneInfo.getAssistantStoneId())
-                .assistantStoneName(assistantStoneInfo.getAssistantStoneName())
-                .assistantStoneCreateAt(stockDto.isAssistantStone() ? StringToOffsetDateTime(stockDto.getAssistantStoneCreateAt()) : null)
+                .assistantStoneId(assistantStoneInfo.assistantStoneId())
+                .assistantStoneName(assistantStoneInfo.assistantStoneName())
+                .assistantStoneCreateAt(stockDto.isAssistantStone() ? StringToLocalDateTime(stockDto.getAssistantStoneCreateAt()) : null)
                 .goldWeight(goldWeight)
                 .stoneWeight(stoneWeight)
                 .build();
 
+        // 2026-05 P4: Stock 에 storeName/factoryName 컬럼 제거. id 만 저장.
         Stock stock = Stock.builder()
                 .orders(order)
                 .flowCode(order.getFlowCode())
                 .storeId(order.getStoreId())
-                .storeName(order.getStoreName())
                 .storeHarry(order.getStoreHarry())
                 .storeGrade(order.getStoreGrade())
                 .factoryId(order.getFactoryId())
-                .factoryName(order.getFactoryName())
                 .factoryHarry(order.getFactoryHarry())
                 .stockMainStoneNote(stockDto.getMainStoneNote()) // 수정 가능
                 .stockAssistanceStoneNote(stockDto.getAssistanceStoneNote()) // 수정 가능
@@ -428,13 +431,12 @@ public class StockService {
         int[] stoneCosts = updateStoneCosts(stockDto.getStoneInfos());
         stoneCosts[1] += stockDto.getStoneAddLaborCost();
 
+        // 2026-05 P4: Stock 에 storeName/factoryName 컬럼 제거. id 만 저장.
         Stock stock = Stock.builder()
                 .storeId(storeId)
-                .storeName(stockDto.getStoreName())
                 .storeGrade(stockDto.getStoreGrade())
                 .storeHarry(SafeParse.toBigDecimalOrNull(stockDto.getStoreHarry()))
                 .factoryId(factoryId)
-                .factoryName(stockDto.getFactoryName())
                 .factoryHarry(SafeParse.toBigDecimalOrNull(stockDto.getFactoryHarry()))
                 .stockNote(stockDto.getStockNote())
                 .orderStatus(OrderStatus.WAIT)
@@ -476,9 +478,9 @@ public class StockService {
                 nickname
         );
 
-        OffsetDateTime assistantStoneCreateAt = null;
+        LocalDateTime assistantStoneCreateAt = null;
         if (StringUtils.hasText(stockDto.getAssistantStoneCreateAt())) {
-            assistantStoneCreateAt = DateConversionUtil.StringToOffsetDateTime(stockDto.getAssistantStoneCreateAt());
+            assistantStoneCreateAt = DateConversionUtil.StringToLocalDateTime(stockDto.getAssistantStoneCreateAt());
         }
 
         KafkaStockRequest stockRequest = KafkaStockRequest.builder()
@@ -499,25 +501,10 @@ public class StockService {
                 .assistantStoneCreateAt(assistantStoneCreateAt)
                 .build();
 
-        try {
-            OutboxEvent outboxEvent = new OutboxEvent(
-                    "stock.async.requested",
-                    stock.getStockCode().toString(),
-                    objectMapper.writeValueAsString(stockRequest),
-                    "STOCK_CREATED"
-            );
-
-            outboxEventRepository.save(outboxEvent);
-
-            log.info("재고 생성 및 Outbox 저장 완료. StockCode: {}, EventID: {}",
-                    stock.getStockCode(), outboxEvent.getId());
-
-            eventPublisher.publishEvent(new OutboxCreatedEvent(tenantId));
-
-        } catch (Exception e) {
-            log.error("Outbox 저장 실패. StockCode: {}", stock.getStockCode(), e);
-            throw new IllegalStateException("재고 생성 이벤트 저장 실패", e);
-        }
+        // 2026-05 P3: Outbox→Kafka(stub)→ApplicationEvent 경로 제거.
+        //              같은 트랜잭션 안에서 KafkaStockService.saveStock 직접 호출.
+        kafkaStockService.saveStock(stockRequest);
+        log.info("재고 생성 후처리 완료. StockCode: {}", stock.getStockCode());
     }
 
     //재고 -> 대여

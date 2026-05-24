@@ -1,5 +1,7 @@
 package com.msa.jewelry.account.api;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.math.BigDecimal;
 
 /**
@@ -19,6 +21,7 @@ import java.math.BigDecimal;
  *   <li>네트워크 실패 시나리오 자체가 사라짐</li>
  * </ul>
  */
+@Schema(description = "거래처(매장) 미수금 잔고 갱신 공개 API — 판매/결제/반품 트랜잭션 내 호출")
 public interface StoreBalanceUpdater {
 
     /**
