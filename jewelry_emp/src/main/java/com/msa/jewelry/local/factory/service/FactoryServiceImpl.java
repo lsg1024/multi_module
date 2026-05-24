@@ -218,10 +218,6 @@ public class FactoryServiceImpl implements FactoryService {
     @Override
     public void applyDelta(Long factoryId, BigDecimal goldDelta, Long moneyDelta, String eventId,
                            String transactionType, String material, Long accountSaleCode, String note) {
-        if (transactionHistoryRepository.existsByEventIdAndFactory_FactoryId(eventId, factoryId)) {
-            log.debug("FactoryService.applyDelta: eventId={} factoryId={} already processed (idempotent skip)", eventId, factoryId);
-            return;
-        }
         Factory factory = factoryRepository.findByIdWithLock(factoryId)
                 .orElseThrow(() -> new NotFoundException("Factory not found: factoryId=" + factoryId));
         BigDecimal gold = goldDelta != null ? goldDelta : BigDecimal.ZERO;

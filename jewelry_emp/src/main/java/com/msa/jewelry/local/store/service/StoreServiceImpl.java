@@ -282,10 +282,6 @@ public class StoreServiceImpl implements StoreService {
     @Override
     public void applyDelta(Long storeId, BigDecimal goldDelta, Long moneyDelta, String eventId,
                            String transactionType, String material, Long accountSaleCode, String note) {
-        if (transactionHistoryRepository.existsByEventIdAndStore_StoreId(eventId, storeId)) {
-            log.debug("StoreService.applyDelta: eventId={} storeId={} already processed (idempotent skip)", eventId, storeId);
-            return;
-        }
         Store store = storeRepository.findByIdWithLock(storeId)
                 .orElseThrow(() -> new NotFoundException("Store not found: storeId=" + storeId));
         BigDecimal gold = goldDelta != null ? goldDelta : BigDecimal.ZERO;
