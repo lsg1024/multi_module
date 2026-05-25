@@ -35,7 +35,7 @@ import static com.msa.jewelry.global.exception.ExceptionMessage.NOT_FOUND_STONE;
 @Slf4j
 @Service
 @Transactional
-public class KafkaOrderService {
+public class OrderProcessingService {
 
     private final StoreService storeService;
     private final StoneService stoneService;
@@ -47,7 +47,7 @@ public class KafkaOrderService {
     private final OrdersRepository ordersRepository;
     private final StatusHistoryRepository statusHistoryRepository;
 
-    public KafkaOrderService(StoreService storeService, StoneService stoneService, ProductService productService, FactoryService factoryService, MaterialService materialService, ColorService colorService, AssistantStoneService assistantStoneService, OrdersRepository ordersRepository, StatusHistoryRepository statusHistoryRepository) {
+    public OrderProcessingService(StoreService storeService, StoneService stoneService, ProductService productService, FactoryService factoryService, MaterialService materialService, ColorService colorService, AssistantStoneService assistantStoneService, OrdersRepository ordersRepository, StatusHistoryRepository statusHistoryRepository) {
         this.storeService = storeService;
         this.stoneService = stoneService;
         this.productService = productService;

@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 @Schema(description = "재고 생성 요청 페이로드. 주문 완료 시 재고 모듈에 전달.")
-public class KafkaStockRequest {
+public class StockCreationRequest {
     @Schema(description = "멱등성 키", example = "evt_abc123")
     private String eventId;
     @Schema(description = "전역 흐름 코드 (TSID)", example = "445823472384938240")
@@ -43,7 +43,7 @@ public class KafkaStockRequest {
     private LocalDateTime assistantStoneCreateAt;
 
     @Builder
-    public KafkaStockRequest(String eventId, Long flowCode, String tenantId, String token, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, Long setTypeId, Long classificationId, String nickname, boolean assistantStone, Long assistantStoneId, LocalDateTime assistantStoneCreateAt) {
+    public StockCreationRequest(String eventId, Long flowCode, String tenantId, String token, Long storeId, Long factoryId, Long productId, Long materialId, Long colorId, Long setTypeId, Long classificationId, String nickname, boolean assistantStone, Long assistantStoneId, LocalDateTime assistantStoneCreateAt) {
         this.eventId = eventId;
         this.flowCode = flowCode;
         this.tenantId = tenantId;

@@ -3,32 +3,28 @@ package com.msa.jewelry.local.sale.service;
 import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.util.CustomPage;
-import com.msa.jewelry.local.order.dto.StatusHistoryDto;
-import com.msa.jewelry.local.order.dto.StoneDto;
 import com.msa.jewelry.global.excel.dto.SaleExcelDto;
 import com.msa.jewelry.global.excel.util.SaleExcelUtil;
-import com.msa.jewelry.local.factory.service.FactoryService;
-import com.msa.jewelry.local.store.service.StoreService;
-import com.msa.jewelry.local.store.dto.StoreReceivableLogView;
-import com.msa.jewelry.local.store.dto.StoreView;
-import com.msa.jewelry.local.product.service.ProductService;
-import com.msa.jewelry.local.product.dto.ProductImageView;
 import com.msa.jewelry.global.util.DateConversionUtil;
 import com.msa.jewelry.global.util.GoldUtils;
 import com.msa.jewelry.global.util.SafeParse;
-import com.msa.jewelry.local.order.dto.StoreDto;
+import com.msa.jewelry.local.factory.service.FactoryService;
+import com.msa.jewelry.local.order.dto.StatusHistoryDto;
+import com.msa.jewelry.local.order.dto.StoneDto;
 import com.msa.jewelry.local.order.entity.OrderStone;
 import com.msa.jewelry.local.order.entity.StatusHistory;
 import com.msa.jewelry.local.order.entity.order_enum.BusinessPhase;
 import com.msa.jewelry.local.order.entity.order_enum.OrderStatus;
 import com.msa.jewelry.local.order.repository.CustomOrderStoneRepository;
 import com.msa.jewelry.local.order.repository.StatusHistoryRepository;
-import com.msa.jewelry.local.sale.entity.Sale;
-import com.msa.jewelry.local.sale.entity.SaleItem;
-import com.msa.jewelry.local.sale.entity.SalePayment;
+import com.msa.jewelry.local.product.dto.ProductImageView;
+import com.msa.jewelry.local.product.service.ProductService;
 import com.msa.jewelry.local.sale.dto.SaleDto;
 import com.msa.jewelry.local.sale.dto.SaleItemResponse;
 import com.msa.jewelry.local.sale.dto.SalePrintResponse;
+import com.msa.jewelry.local.sale.entity.Sale;
+import com.msa.jewelry.local.sale.entity.SaleItem;
+import com.msa.jewelry.local.sale.entity.SalePayment;
 import com.msa.jewelry.local.sale.repository.CustomSaleRepository;
 import com.msa.jewelry.local.sale.repository.SaleItemRepository;
 import com.msa.jewelry.local.sale.repository.SalePaymentRepository;
@@ -37,6 +33,9 @@ import com.msa.jewelry.local.stock.dto.StockDto;
 import com.msa.jewelry.local.stock.entity.ProductSnapshot;
 import com.msa.jewelry.local.stock.entity.Stock;
 import com.msa.jewelry.local.stock.repository.StockRepository;
+import com.msa.jewelry.local.store.dto.StoreReceivableLogView;
+import com.msa.jewelry.local.store.dto.StoreView;
+import com.msa.jewelry.local.store.service.StoreService;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -77,9 +76,6 @@ public class SaleService {
     private final SalePaymentRepository salePaymentRepository;
     private final CustomSaleRepository customSaleRepository;
     private final StatusHistoryRepository statusHistoryRepository;
-    private final StoreService storeService;
-    private final FactoryService factoryService;
-    private final StoreService storeService;
     private final ProductService productService;
 
     /** 결제 취소 시 처리 가능한 SaleStatus 집합 (PAYMENT, WG, DISCOUNT, PAYMENT_TO_BANK). */
@@ -90,7 +86,17 @@ public class SaleService {
             SaleStatus.PAYMENT_TO_BANK
     );
 
-    public SaleService(JwtUtil jwtUtil, StoreService storeService, FactoryService factoryService, StockRepository stockRepository, SaleRepository saleRepository, CustomOrderStoneRepository customOrderStoneRepository, SaleItemRepository saleItemRepository, SalePaymentRepository salePaymentRepository, CustomSaleRepository customSaleRepository, StatusHistoryRepository statusHistoryRepository, StoreService storeService, FactoryService factoryService, StoreService storeService, ProductService productService) {
+    public SaleService(JwtUtil jwtUtil,
+                       StoreService storeService,
+                       FactoryService factoryService,
+                       StockRepository stockRepository,
+                       SaleRepository saleRepository,
+                       CustomOrderStoneRepository customOrderStoneRepository,
+                       SaleItemRepository saleItemRepository,
+                       SalePaymentRepository salePaymentRepository,
+                       CustomSaleRepository customSaleRepository,
+                       StatusHistoryRepository statusHistoryRepository,
+                       ProductService productService) {
         this.jwtUtil = jwtUtil;
         this.storeService = storeService;
         this.factoryService = factoryService;
@@ -101,9 +107,6 @@ public class SaleService {
         this.salePaymentRepository = salePaymentRepository;
         this.customSaleRepository = customSaleRepository;
         this.statusHistoryRepository = statusHistoryRepository;
-        this.storeService = storeService;
-        this.factoryService = factoryService;
-        this.storeService = storeService;
         this.productService = productService;
     }
 
@@ -144,7 +147,6 @@ public class SaleService {
                     : null;
             return SaleDto.Response.builder()
                     .flowCode(saleItem.getFlowCode())
-                    // ⚠ String.valueOf(null) = "null" → PATCH 재전송 시 Long 파싱 실패를 유발하므로 모두 null-safe
                     .createAt(saleItem.getCreateDate() != null ? saleItem.getCreateDate().toString() : null)
                     .saleType(saleItem.getItemStatus().name())
                     .name(stockStoreName)
@@ -278,7 +280,7 @@ public class SaleService {
             sale.addPayment(payment);
             salePaymentRepository.saveAndFlush(payment);
 
-            publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, payment.getSaleStatus().name(), "STORE", storeId, storeName, payment.getMaterial(), payment.getPureGoldWeight(), payment.getCashAmount(), payment.getCreateDate());
+            applyBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, payment.getSaleStatus().name(), "STORE", storeId, storeName, payment.getMaterial(), payment.getPureGoldWeight(), payment.getCashAmount(), payment.getCreateDate());
         } catch (DataIntegrityViolationException e) {
             log.warn("멱등성 키 중복: 이미 처리된 요청입니다. eventId={}", eventId);
         }
@@ -345,8 +347,8 @@ public class SaleService {
         BigDecimal factoryPureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), product.getMaterialName().toUpperCase(), factoryHarry);
         Integer factoryTotalMoney = stock.getTotalStonePurchaseCost() + product.getProductPurchaseCost();
 
-        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", storeId, storeName, product.getMaterialName(), storePureGoldWeight, storeTotalMoney, transactionDate);
-        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.PURCHASE.name(), "FACTORY", factoryId, factoryName, product.getMaterialName(), factoryPureGoldWeight, factoryTotalMoney, transactionDate);
+        applyBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", storeId, storeName, product.getMaterialName(), storePureGoldWeight, storeTotalMoney, transactionDate);
+        applyBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.PURCHASE.name(), "FACTORY", factoryId, factoryName, product.getMaterialName(), factoryPureGoldWeight, factoryTotalMoney, transactionDate);
     }
 
     public void orderToSale(String accessToken, String eventId, Long flowCode, StockDto.StockRegisterRequest stockDto, boolean createNewSheet) {
@@ -389,8 +391,8 @@ public class SaleService {
         BigDecimal factoryPureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), stockDto.getMaterialName().toUpperCase(), factoryHarry);
         Integer factoryTotalMoney = stock.getTotalStonePurchaseCost() + stock.getProduct().getProductPurchaseCost();
 
-        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", storeId, storeName, stock.getProduct().getMaterialName(), storePureGoldWeight, storeTotalMoney, transactionDate);
-        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.PURCHASE.name(), "FACTORY", factoryId, factoryName, stock.getProduct().getMaterialName(), factoryPureGoldWeight, factoryTotalMoney, transactionDate);
+        applyBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", storeId, storeName, stock.getProduct().getMaterialName(), storePureGoldWeight, storeTotalMoney, transactionDate);
+        applyBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.PURCHASE.name(), "FACTORY", factoryId, factoryName, stock.getProduct().getMaterialName(), factoryPureGoldWeight, factoryTotalMoney, transactionDate);
     }
 
     //반품 로직 -> 제품은 다시 재고로, 결제는 다시 원복 -> 마지막 결제일의 경우?
@@ -448,14 +450,14 @@ public class SaleService {
             updateNewHistory(newFlowCode, nickname, BusinessPhase.RETURN, "판매 취소");
             // 미수액 변경
             LocalDateTime lastModifiedDate = sale.getCreateDate();
-            publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.RETURN.name(), "STORE", storeId, storeName, materialName, pureGoldWeight.negate(), totalLaborCost * -1, lastModifiedDate);
+            applyBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.RETURN.name(), "STORE", storeId, storeName, materialName, pureGoldWeight.negate(), totalLaborCost * -1, lastModifiedDate);
         } else if (PAYMENT_STATUSES.contains(inputStatus)) {
             SalePayment payment = salePaymentRepository.findByFlowCode(newFlowCode)
                     .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
             Sale sale = payment.getSale();
             LocalDateTime lastModifiedDate = sale.getCreateDate();
-            publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.RETURN.name(), "STORE", sale.getAccountId(), sale.getAccountName(), payment.getMaterial(), payment.getPureGoldWeight().negate(), payment.getCashAmount() * -1, lastModifiedDate);
+            applyBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.RETURN.name(), "STORE", sale.getAccountId(), sale.getAccountName(), payment.getMaterial(), payment.getPureGoldWeight().negate(), payment.getCashAmount() * -1, lastModifiedDate);
             salePaymentRepository.delete(payment);
         } else {
             throw new IllegalArgumentException("처리할 수 없는 취소 타입입니다: " + type);
@@ -561,14 +563,17 @@ public class SaleService {
         LocalDateTime lastModifiedDate = sale.getCreateDate();
         String stockStoreName = stock.getStoreId() != null
                 ? storeService.getStoreInfoView(stock.getStoreId()).storeName() : null;
-        publishBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", stock.getStoreId(), stockStoreName, product.getMaterialName(), pureGoldWeightDelta, moneyBalanceDelta, lastModifiedDate);
+        applyBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", stock.getStoreId(), stockStoreName, product.getMaterialName(), pureGoldWeightDelta, moneyBalanceDelta, lastModifiedDate);
     }
 
     /**
-     * 잔액 변동을 type 에 따라 Store/Factory BalanceUpdater 로 직접 위임한다.
+     * 잔액 변동을 type 에 따라 {@link StoreService#applyDelta} /
+     * {@link FactoryService#applyDelta} 로 직접 위임한다.
      *
-     * *호출 시점마다 하나의 잔액 변동 이벤트를 만들어 account-service의
-     * {@code current-balance-update} 토픽으로 발행할 페이로드를 조립한다.
+     * <p>같은 트랜잭션 안에서 in-process 호출로 매장/공장 잔액에 즉시 반영된다.
+     * (과거 마이크로서비스 시절에는 account-service 의 {@code current-balance-update}
+     * Kafka 토픽으로 발행하던 페이로드였으나, 모놀리식 통합 이후로는 토픽 발행 없이
+     * 동일 JVM 안에서 동기 호출로 처리된다.)
      *
      * @param eventId         멱등성 키
      * @param saleCode        판매 코드 (TSID 문자열)
@@ -582,14 +587,14 @@ public class SaleService {
      * @param moneyBalance    현금 잔액 변동분 (양수=증가, 음수=감소)
      * @param saleDate        거래 발생 일시
      */
-    private void publishBalanceChange(String eventId, String saleCode, String tenantId, String saleType,
+    private void applyBalanceChange(String eventId, String saleCode, String tenantId, String saleType,
                                       String type, Long id, String name, String material,
                                       BigDecimal pureGoldBalance, Integer moneyBalance, LocalDateTime saleDate) {
         Long moneyDelta = moneyBalance != null ? moneyBalance.longValue() : 0L;
         Long accountSaleCode = SafeParse.toLongOrNull(saleCode);
         String note = String.format("[%s] %s", saleType, name);
 
-        log.info("publishBalanceChange type={} id={} gold={} money={} eventId={}",
+        log.info("applyBalanceChange type={} id={} gold={} money={} eventId={}",
                 type, id, pureGoldBalance, moneyDelta, eventId);
 
         if ("STORE".equalsIgnoreCase(type)) {

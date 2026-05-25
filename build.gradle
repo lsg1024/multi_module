@@ -98,13 +98,6 @@ project(':order-service') {
     }
 }
 
-/* ====================================================================
- * jewelry_emp — 모놀리식 후보 서버.
- * order + product + account + user 4개 도메인을 흡수하며,
- * 자체 build.gradle 에서 모든 의존성을 직접 선언한다 (다른 service 모듈처럼).
- * Spring Modulith 로 모듈 경계 검증, Spring Cloud Bus / Kafka / Eureka /
- * Config Client 모두 미사용.
- * ==================================================================== */
 project(':jewelry_emp') {
     jar { enabled = false }
     bootJar { enabled = true }

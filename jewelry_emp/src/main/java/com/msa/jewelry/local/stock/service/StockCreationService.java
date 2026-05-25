@@ -4,7 +4,7 @@ import com.msa.jewelry.local.factory.service.FactoryService;
 import com.msa.jewelry.local.factory.dto.FactoryView;
 import com.msa.jewelry.local.store.service.StoreService;
 import com.msa.jewelry.local.store.dto.StoreView;
-import com.msa.jewelry.local.stock.dto.KafkaStockRequest;
+import com.msa.jewelry.local.stock.dto.StockCreationRequest;
 import com.msa.jewelry.global.util.SafeParse;
 import com.msa.jewelry.local.order.entity.StatusHistory;
 import com.msa.jewelry.local.order.entity.order_enum.BusinessPhase;
@@ -31,7 +31,7 @@ import static com.msa.jewelry.global.exception.ExceptionMessage.NOT_FOUND;
 
 @Slf4j
 @Service
-public class KafkaStockService {
+public class StockCreationService {
 
     private final StoreService storeService;
     private final FactoryService factoryService;
@@ -44,7 +44,7 @@ public class KafkaStockService {
     private final StockRepository stockRepository;
     private final StatusHistoryRepository statusHistoryRepository;
 
-    public KafkaStockService(StoreService storeService, FactoryService factoryService, ProductService productService, MaterialService materialService, ColorService colorService, SetTypeService setTypeService, ClassificationService classificationService, AssistantStoneService assistantStoneService, StockRepository stockRepository, StatusHistoryRepository statusHistoryRepository) {
+    public StockCreationService(StoreService storeService, FactoryService factoryService, ProductService productService, MaterialService materialService, ColorService colorService, SetTypeService setTypeService, ClassificationService classificationService, AssistantStoneService assistantStoneService, StockRepository stockRepository, StatusHistoryRepository statusHistoryRepository) {
         this.storeService = storeService;
         this.factoryService = factoryService;
         this.productService = productService;
@@ -58,7 +58,7 @@ public class KafkaStockService {
     }
 
     @Transactional
-    public void saveStock(KafkaStockRequest stockDto) {
+    public void saveStock(StockCreationRequest stockDto) {
         Stock stock = stockRepository.findByFlowCode(stockDto.getFlowCode())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 

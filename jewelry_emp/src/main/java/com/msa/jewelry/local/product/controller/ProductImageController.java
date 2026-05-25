@@ -4,26 +4,17 @@ import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.tenant.TenantContext;
 import com.msa.jewelry.local.product.dto.ProductImageDto;
 import com.msa.jewelry.local.product.service.ProductImageService;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -62,7 +53,6 @@ public class ProductImageController {
         return ResponseEntity.ok(ApiResponse.success("이미지 정리 작업이 시작되었습니다."));
     }
 
-    @GetMapping("/products/images
     @PostMapping("/products/{id}/image")
     public ResponseEntity<ApiResponse<String>> saveProductImage(
             @PathVariable(name = "id") Long productId,

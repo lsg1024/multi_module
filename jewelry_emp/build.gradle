@@ -1,18 +1,3 @@
-/*
- * jewelry_emp — 모놀리식 후보 서버 build.gradle.
- *
- * 기존 order/account/product/user 4개 서비스의 의존성을 합쳐 단일 부트 앱으로 빌드.
- *
- * 변경 사항 (기존 서비스 build.gradle 대비):
- *   - 추가  : Spring Modulith (모듈 경계 검증 + JPA Outbox 이벤트)
- *   - 제거  : Eureka Client, Spring Cloud Bus, Spring Cloud Config Client
- *   - 제거  : Kafka (spring-kafka, spring-cloud-starter-bus-kafka)
- *   - 제거 (2026-05 P2) : OpenFeign — 모든 inter-module 호출이 직접 메서드 호출로
- *                         전환되어 더 이상 필요 없음. Resilience4j CircuitBreaker 도 함께 제거.
- *
- * 모놀리스 통합 후 같은 JVM 내 모듈 호출은 직접 메서드 호출로 처리되므로,
- * Resilience4j Circuit Breaker 도 제거 가능.
- */
 ext {
     set('springCloudVersion', "2024.0.1")
     set('springModulithVersion', "1.3.4")
@@ -34,16 +19,11 @@ dependencies {
 
     // ---------- Redis (토큰·캐시·비동기 큐·분산 락) ----------
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    // implementation 'org.redisson:redisson-spring-boot-starter:3.49.0'  // 분산 락 필요 시 활성화
 
     // ---------- Spring Cloud ----------
-    // config-server 에서 jewelry-dev.properties 를 내려받기 위한 Config Client + Bootstrap.
     implementation 'org.springframework.cloud:spring-cloud-starter-config'
     implementation 'org.springframework.cloud:spring-cloud-starter-bootstrap'
-    // 기존 api-gateway 가 Eureka 기반 라우팅을 하므로 jewelry_emp 도 Eureka 에 등록.
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-    // 2026-05 P2 단계에서 OpenFeign / Resilience4j CircuitBreaker 의존성 제거 완료.
-    // 모듈 간 호출이 모두 같은 JVM 내 직접 호출로 전환되어 더 이상 필요 없음.
 
     // ---------- JWT ----------
     implementation 'io.jsonwebtoken:jjwt:0.12.3'
@@ -53,9 +33,10 @@ dependencies {
     // ---------- QueryDSL ----------
     implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
     implementation 'org.jetbrains:annotations:24.0.0'
-    annotationProcessor 'com.querydsl:querydsl-apt:5.1.0:jakarta'
-    annotationProcessor 'jakarta.annotation:jakarta.annotation-api'
-    annotationProcessor 'jakarta.persistence:jakarta.persistence-api'
+    annotationProcessor "com.querydsl:querydsl-apt:5.1.0:jakarta"
+    annotationProcessor "jakarta.annotation:jakarta.annotation-api"
+    annotationProcessor "jakarta.persistence:jakarta.persistence-api"
+
 
     // ---------- TSID (Order/Stock/Sale 의 flowCode 글로벌 키) ----------
     implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.8.3'
@@ -66,12 +47,9 @@ dependencies {
     implementation 'org.apache.poi:poi:5.4.1'
     implementation 'org.apache.poi:poi-ooxml:5.4.1'
     implementation 'org.jsoup:jsoup:1.21.2'
-    // 이미지 썸네일 처리 — product 모듈 ProductImageService 가 사용.
     implementation 'net.coobird:thumbnailator:0.4.20'
 
     // ---------- Spring Retry ----------
-    // product 모듈의 FactoryClient, ImageEmbeddingEventListener 가 @Retryable 사용.
-    // @EnableRetry 활성화는 별도 Configuration 또는 main app 에서 수행 필요.
     implementation 'org.springframework.retry:spring-retry'
     implementation 'org.springframework:spring-aspects'
 
@@ -79,7 +57,6 @@ dependencies {
     implementation 'org.apache.httpcomponents.client5:httpclient5'
 
     // ---------- Swagger / OpenAPI ----------
-    // springdoc-openapi v2.x — Spring Boot 3.x 호환. /swagger-ui/index.html, /v3/api-docs 자동 노출.
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
 
     // ---------- Lombok ----------
@@ -94,8 +71,8 @@ dependencies {
     testRuntimeOnly    'org.junit.platform:junit-platform-launcher'
 
     // common 모듈 (TenantContext, JwtUtil, ApiResponse 등 재사용)
-    implementation       project(':common')
-    annotationProcessor  project(':common')
+    implementation(project(":common"))
+    annotationProcessor project(':common')
 }
 
 tasks.named('test') {
@@ -105,6 +82,61 @@ tasks.named('test') {
 dependencyManagement {
     imports {
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
-        mavenBom "org.springframework.modulith:spring-modulith-bom:${springModulithVersion}"
     }
 }
+
+def querydslGeneratedDir = "$projectDir/src/main/generated"
+
+sourceSets.main.java.srcDirs += [ querydslGeneratedDir ]
+
+tasks.register('querydslGenerate', JavaCompile) {
+    description = 'QueryDSL Q 클래스 강제 생성 (-proc:only, entity/dto/global 만 스캔).'
+    group       = 'build'
+
+    // Repository/Service 등 사용처 코드는 처음부터 빼고 entity/dto/global 만 본다.
+    // 이렇게 하면 깨진 import 가 있는 파일이 javac 의 parse/enter 단계를 망쳐서
+    // AP round 가 중단되는 일이 생기지 않는다.
+    source = fileTree("$projectDir/src/main/java") {
+        include "**/entity/**/*.java"
+        include "**/dto/**/*.java"
+        include "**/global/**/*.java"
+    }
+    classpath  = configurations.compileClasspath
+    options.annotationProcessorPath = configurations.annotationProcessor
+
+    options.compilerArgs = [
+        "-proc:only",
+        "-processor",
+        "com.querydsl.apt.jpa.JPAAnnotationProcessor," +
+        "lombok.launch.AnnotationProcessorHider\$AnnotationProcessor",
+        "-XprintRounds"
+    ]
+
+    options.generatedSourceOutputDirectory = file(querydslGeneratedDir)
+    destinationDirectory                   = file("$buildDir/tmp/querydsl-classes")
+
+    // 일부 엔티티가 깨져도 멈추지 말고 끝까지 돌도록 한다.
+    options.failOnError = false
+
+    // OOM 차단 + classpath 격리.
+    options.fork = true
+    options.forkOptions.with {
+        memoryInitialSize = '512m'
+        memoryMaximumSize = '2g'
+    }
+
+    doFirst {
+        file(querydslGeneratedDir).mkdirs()
+    }
+}
+
+tasks.named('compileJava') {
+    dependsOn 'querydslGenerate'
+}
+
+tasks.named('clean') {
+    doLast {
+        file(querydslGeneratedDir).deleteDir()
+    }
+}
+

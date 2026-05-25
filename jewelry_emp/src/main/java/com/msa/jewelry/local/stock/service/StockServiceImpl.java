@@ -16,7 +16,7 @@ import com.msa.jewelry.local.store.service.StoreService;
 import com.msa.jewelry.local.store.dto.StoreView;
 import com.msa.jewelry.local.assistant_stone.service.AssistantStoneService;
 import com.msa.jewelry.local.assistant_stone.dto.AssistantStoneView;
-import com.msa.jewelry.local.stock.dto.KafkaStockRequest;
+import com.msa.jewelry.local.stock.dto.StockCreationRequest;
 import com.msa.jewelry.global.util.DateConversionUtil;
 import com.msa.jewelry.global.util.SafeParse;
 import com.msa.jewelry.local.order.dto.OrderDto;
@@ -61,7 +61,7 @@ import static com.msa.jewelry.local.order.util.StoneUtil.*;
 @Transactional
 public class StockServiceImpl implements StockService {
     private final JwtUtil jwtUtil;
-    private final KafkaStockService kafkaStockService;
+    private final StockCreationService stockCreationService;
     private final AssistantStoneService assistantStoneService;
     private final StoreService storeService;
     private final FactoryService factoryService;
@@ -71,9 +71,9 @@ public class StockServiceImpl implements StockService {
     private final StatusHistoryRepository statusHistoryRepository;
     private final StatusHistoryHelper statusHistoryHelper;
 
-    public StockServiceImpl(JwtUtil jwtUtil, KafkaStockService kafkaStockService, AssistantStoneService assistantStoneService, StoreService storeService, FactoryService factoryService, StockRepository stockRepository, OrdersRepository ordersRepository, CustomStockRepository customStockRepository, StatusHistoryRepository statusHistoryRepository, StatusHistoryHelper statusHistoryHelper) {
+    public StockServiceImpl(JwtUtil jwtUtil, StockCreationService stockCreationService, AssistantStoneService assistantStoneService, StoreService storeService, FactoryService factoryService, StockRepository stockRepository, OrdersRepository ordersRepository, CustomStockRepository customStockRepository, StatusHistoryRepository statusHistoryRepository, StatusHistoryHelper statusHistoryHelper) {
         this.jwtUtil = jwtUtil;
-        this.kafkaStockService = kafkaStockService;
+        this.stockCreationService = stockCreationService;
         this.assistantStoneService = assistantStoneService;
         this.storeService = storeService;
         this.factoryService = factoryService;
@@ -485,7 +485,7 @@ public class StockServiceImpl implements StockService {
             assistantStoneCreateAt = DateConversionUtil.StringToLocalDateTime(stockDto.getAssistantStoneCreateAt());
         }
 
-        KafkaStockRequest stockRequest = KafkaStockRequest.builder()
+        StockCreationRequest stockRequest = StockCreationRequest.builder()
                 .eventId(UUID.randomUUID().toString())
                 .flowCode(stock.getStockCode())
                 .tenantId(tenantId)
@@ -503,7 +503,7 @@ public class StockServiceImpl implements StockService {
                 .assistantStoneCreateAt(assistantStoneCreateAt)
                 .build();
 
-        kafkaStockService.saveStock(stockRequest);
+        stockCreationService.saveStock(stockRequest);
         log.info("재고 생성 후처리 완료. StockCode: {}", stock.getStockCode());
     }
 

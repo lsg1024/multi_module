@@ -8,8 +8,5 @@ include 'order-service'
 include 'eureka-service'
 include 'api-gateway'
 include 'config-server'
-
-// jewelry_emp: order/account/product/user 4개 서비스를 흡수한 모놀리식 후보 서버.
-// 점진 마이그레이션 기간 동안 기존 4개 서비스와 병행 유지 후, 검증 완료 시 절체.
 include 'jewelry_emp'
 

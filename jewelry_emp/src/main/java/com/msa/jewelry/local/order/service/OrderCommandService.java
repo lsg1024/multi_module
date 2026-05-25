@@ -44,7 +44,7 @@ public class OrderCommandService {
 
     private final OrdersRepository ordersRepository;
     private final PriorityRepository priorityRepository;
-    private final KafkaOrderService kafkaOrderService;
+    private final OrderProcessingService orderProcessingService;
 
     /**
      * 주문 생성
@@ -275,7 +275,7 @@ public class OrderCommandService {
             builder.assistantStoneCreateAt(StringToLocalDateTime(orderDto.getAssistantStoneCreateAt()));
         }
 
-        kafkaOrderService.createHandle(builder.build());
+        orderProcessingService.createHandle(builder.build());
         log.info("주문 생성 후처리 완료. OrderFlowCode: {}", order.getFlowCode());
     }
 
@@ -323,7 +323,7 @@ public class OrderCommandService {
             builder.assistantStoneCreateAt(StringToLocalDateTime(orderDto.getAssistantStoneCreateAt()));
         }
 
-        kafkaOrderService.updateHandle(builder.build());
+        orderProcessingService.updateHandle(builder.build());
         log.info("주문 수정 후처리 완료. OrderFlowCode: {}", order.getFlowCode());
     }
 }
