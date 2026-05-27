@@ -9,11 +9,7 @@ import com.msa.jewelry.local.product.entity.Product;
 import com.msa.jewelry.local.product.entity.ProductImage;
 import com.msa.jewelry.local.product.repository.ProductRepository;
 import com.msa.jewelry.local.product.repository.image.ProductImageRepository;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InjectMocks;
@@ -28,31 +24,14 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.*;
 
-/**
- * ProductImageService 단위 테스트.
- *
- * <p>외부 의존성(ProductRepository, ProductImageRepository, ApplicationEventPublisher,
- * 그리고 ThreadLocal TenantContext)을 Mockito 와 임시 디렉토리로 격리하여
- * ProductImageService 의 분기 로직을 검증한다.
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("ProductImageService 단위 테스트")
@@ -410,8 +389,6 @@ class ProductImageServiceTest {
         given(product.getProductImages()).willReturn(new ArrayList<>());
         return product;
     }
-
-    /** Thumbnails 가 읽을 수 있는 최소 PNG. (1x1 투명 PNG) */
     private static byte[] smallPngBytes() {
         return new byte[]{
                 (byte)0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n',

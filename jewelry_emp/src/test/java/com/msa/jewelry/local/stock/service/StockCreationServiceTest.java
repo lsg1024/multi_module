@@ -43,13 +43,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * StockCreationService 단위 테스트.
- *
- * <p>외부 의존성(Store/Factory/Product/Material/Color/SetType/Classification/AssistantStone
- * Service + Stock/StatusHistory Repository)을 Mockito 로 격리하여
- * 분기 / 예외 / 성공 시나리오를 검증한다.
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("StockCreationService 단위 테스트")
@@ -319,7 +312,6 @@ class StockCreationServiceTest {
     // -----------------------------------------------------------------------
     // 헬퍼
     // -----------------------------------------------------------------------
-    /** WAIT 상태의 stub stock - 동일 product 정보를 가진 ProductSnapshot 포함. */
     private static Stock stubStockReadyToCommit() {
         Stock stock = mock(Stock.class);
         ProductSnapshot product = mock(ProductSnapshot.class);

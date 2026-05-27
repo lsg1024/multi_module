@@ -50,24 +50,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.*;
 
-/**
- * StoreServiceImpl 단위 테스트.
- *
- * <p>외부 의존성(StoreRepository, SaleLogRepository, GoldHarryRepository,
- * TransactionHistoryRepository, AuthorityUserRoleUtil) 을 모두 Mockito 로 격리하여
- * StoreServiceImpl 의 로직만 검증한다.
- *
- * <p>커버리지 — 23 public 메서드 × (정상 / NOT_FOUND / 권한 거부 / 멱등성 / 빈 결과) 시나리오.
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("StoreServiceImpl 단위 테스트")

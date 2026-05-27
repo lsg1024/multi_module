@@ -33,11 +33,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * ClassificationServiceImpl 단위 테스트.
- *
- * <p>분류 마스터 CRUD 와 삭제 시 Spring Batch Job 위임 로직을 검증.
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("ClassificationServiceImpl 단위 테스트")

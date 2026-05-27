@@ -19,17 +19,6 @@ import java.util.Base64;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * QzSigningService 단위 테스트.
- *
- * <p>QZ Tray 인쇄 요청 서명 — 외부 의존성 없이 PrivateKey 로 SHA1withRSA 서명을 생성한다.
- *
- * <p>커버리지:
- * <ul>
- *   <li>정상 — 유효한 PKCS#8 RSA Key 로 서명 생성, Base64 유효성 검증</li>
- *   <li>예외 — 키 누락 / 손상된 Base64 / 잘못된 키 포맷</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("QzSigningService 단위 테스트")
@@ -37,8 +26,6 @@ class QzSigningServiceTest {
 
     @InjectMocks
     QzSigningService qzSigningService;
-
-    /** 매 테스트마다 새 RSA 키쌍을 만들어 PKCS#8 Base64 로 주입. */
     private static String generatePkcs8Base64PrivateKey() throws Exception {
         KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
         gen.initialize(2048);

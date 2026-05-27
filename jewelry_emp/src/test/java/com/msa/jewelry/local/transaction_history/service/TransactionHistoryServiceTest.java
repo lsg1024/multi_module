@@ -37,19 +37,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-/**
- * TransactionHistoryService 단위 테스트.
- *
- * <p>거래 이력 조회/저장 5개 메서드를 격리 검증한다. 거래 이력은 불변 데이터를
- * 다루므로 주로 (1) 조회 위임 (2) save 시 빌더 매핑이 중심이다.
- *
- * <p>커버리지:
- * <ul>
- *   <li>getCurrentBalance — store/factory 분기, 잘못된 ID 포맷</li>
- *   <li>findAccountPurchase / findFactoryPurchase — 위임 검증</li>
- *   <li>savePurchase — 빌더 매핑, transactionDate null 분기, 잘못된 SaleStatus 값</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("TransactionHistoryService 단위 테스트")

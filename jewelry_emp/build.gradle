@@ -90,16 +90,21 @@ def querydslGeneratedDir = "$projectDir/src/main/generated"
 sourceSets.main.java.srcDirs += [ querydslGeneratedDir ]
 
 tasks.register('querydslGenerate', JavaCompile) {
-    description = 'QueryDSL Q 클래스 강제 생성 (-proc:only, entity/dto/global 만 스캔).'
+    description = 'QueryDSL Q 클래스 강제 생성 (-proc:only, entity/dto 만 스캔).'
     group       = 'build'
 
-    // Repository/Service 등 사용처 코드는 처음부터 빼고 entity/dto/global 만 본다.
-    // 이렇게 하면 깨진 import 가 있는 파일이 javac 의 parse/enter 단계를 망쳐서
-    // AP round 가 중단되는 일이 생기지 않는다.
+    // QueryDSL APT 가 처리해야 하는 파일만 정확히 포함한다:
+    //   - **/entity/**  → @Entity 가 붙은 도메인 엔티티 (QXxx.java 생성 대상)
+    //   - **/dto/**     → @QueryProjection 이 붙은 생성자/DTO (QXxxDto_*.java 생성 대상)
+    //
+    // 주의: global/**/*.java 를 통째로 포함하면 안 된다.
+    // global/batch, global/config, global/util 같은 비-QueryDSL 클래스도 함께 끌려와
+    // 그 안의 import (예: com.msa.jewelry.local.goldharry.repository.GoldHarryRepository)
+    // 가 source set 에 없어 javac 가 "package does not exist" 로 fail 한다.
+    // global/dto, global/excel/dto 는 'dto/**' 패턴으로 자연스럽게 잡힌다.
     source = fileTree("$projectDir/src/main/java") {
         include "**/entity/**/*.java"
         include "**/dto/**/*.java"
-        include "**/global/**/*.java"
     }
     classpath  = configurations.compileClasspath
     options.annotationProcessorPath = configurations.annotationProcessor
@@ -109,14 +114,11 @@ tasks.register('querydslGenerate', JavaCompile) {
         "-processor",
         "com.querydsl.apt.jpa.JPAAnnotationProcessor," +
         "lombok.launch.AnnotationProcessorHider\$AnnotationProcessor",
-        "-XprintRounds"
+        "-parameters"
     ]
 
     options.generatedSourceOutputDirectory = file(querydslGeneratedDir)
     destinationDirectory                   = file("$buildDir/tmp/querydsl-classes")
-
-    // 일부 엔티티가 깨져도 멈추지 말고 끝까지 돌도록 한다.
-    options.failOnError = false
 
     // OOM 차단 + classpath 격리.
     options.fork = true
@@ -132,6 +134,11 @@ tasks.register('querydslGenerate', JavaCompile) {
 
 tasks.named('compileJava') {
     dependsOn 'querydslGenerate'
+    options.compilerArgs += [ "-parameters" ]
+}
+
+tasks.named('compileTestJava') {
+    options.compilerArgs += [ "-parameters" ]
 }
 
 tasks.named('clean') {

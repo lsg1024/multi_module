@@ -40,20 +40,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-/**
- * LedgerService 단위 테스트.
- *
- * <p>LedgerRepository 만 mock 으로 격리. 트랜잭션은 Spring 컨테이너 외부에서
- * 호출되므로 트랜잭션 경계는 통합테스트에서 검증한다.
- *
- * <p>커버리지:
- * <ul>
- *   <li>create/update/delete — NotFoundException, 낙관락 충돌</li>
- *   <li>getLedgerList — assetType null/not-null 분기</li>
- *   <li>getBalance — null 안전성 및 음수 잔액</li>
- *   <li>잔액 계산 — 부호 처리 (잔액 부족 시 음수 허용)</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("LedgerService 단위 테스트")

@@ -47,19 +47,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-/**
- * ExpenseRecordService 단위 테스트.
- *
- * <p>외부 의존성 (Repository 4종) 을 Mockito 로 격리하여 서비스 로직만 검증한다.
- *
- * <p>커버리지:
- * <ul>
- *   <li>날짜 기반 조회 5종 (전체/타입/은행/거래처/복합) — 위임 파라미터 캡쳐 검증</li>
- *   <li>CRUD (단건/배치) — NOT_FOUND, 잘못된 ExpenseType, 거래처 미존재 등</li>
- *   <li>합계(getSummary) — null 안전 처리 및 음수(netAmount) 계산</li>
- *   <li>날짜 파싱 분기 (빈 문자열, ISO, 잘못된 형식)</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("ExpenseRecordService 단위 테스트")

@@ -1,9 +1,9 @@
 package com.msa.jewelry.local.user.service;
 
+import com.msa.common.global.domain.dto.MessageDto;
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.jewelry.global.exception.ExceptionMessage;
 import com.msa.jewelry.local.store.service.StoreService;
-import com.msa.jewelry.local.user.dto.MessageDto;
 import com.msa.jewelry.local.user.entity.SensConfig;
 import com.msa.jewelry.local.user.repository.MessageHistoryRepository;
 import com.msa.jewelry.local.user.repository.SensConfigRepository;
@@ -17,12 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 
-import java.util.Collections;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,27 +28,25 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-/**
- * MessageService 단위 테스트.
- *
- * <p>SENS API 외부 호출(NaverSensApi)과 영속성(SensConfigRepository,
- * MessageHistoryRepository), 매장 조회(StoreService) 의존성을 모두 mock 으로
- * 격리하여 메시지 발송 로직만 검증한다.
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("MessageService 단위 테스트")
 class MessageServiceTest {
 
-    private static final String TOKEN     = "Bearer test-token";
+    private static final String TOKEN = "Bearer test-token";
     private static final String TENANT_ID = "tenant-001";
-    private static final String NICKNAME  = "tester";
+    private static final String NICKNAME = "tester";
 
-    @Mock SensConfigRepository sensConfigRepository;
-    @Mock MessageHistoryRepository messageHistoryRepository;
-    @Mock StoreService storeService;
-    @Mock NaverSensApi naverSensApi;
-    @Mock JwtUtil jwtUtil;
+    @Mock
+    SensConfigRepository sensConfigRepository;
+    @Mock
+    MessageHistoryRepository messageHistoryRepository;
+    @Mock
+    StoreService storeService;
+    @Mock
+    NaverSensApi naverSensApi;
+    @Mock
+    JwtUtil jwtUtil;
 
     @InjectMocks
     MessageService messageService;
@@ -78,7 +71,7 @@ class MessageServiceTest {
             given(req.getAccessKey()).willReturn("ak");
             given(req.getSecretKey()).willReturn("sk");
             given(req.getServiceId()).willReturn("svc");
-            given(req.getCallingNumber()).willReturn("01012345678");
+            given(req.getSenderPhone()).willReturn("01012345678");
 
             // saveSensConfig 가 어떤 분기를 타든 sensConfigRepository.save 가 호출되거나
             // 또는 entity update 메서드가 호출됨. 둘 다 verify 는 어렵지만 예외 없이 끝나야 함.
@@ -96,7 +89,7 @@ class MessageServiceTest {
             given(req.getAccessKey()).willReturn("ak");
             given(req.getSecretKey()).willReturn("sk");
             given(req.getServiceId()).willReturn("svc");
-            given(req.getCallingNumber()).willReturn("01012345678");
+            given(req.getSenderPhone()).willReturn("01012345678");
 
             given(sensConfigRepository.findByTenantId(TENANT_ID)).willReturn(Optional.empty());
             given(sensConfigRepository.save(any(SensConfig.class)))
@@ -132,7 +125,7 @@ class MessageServiceTest {
             given(config.getAccessKey()).willReturn("ak");
             given(config.getSecretKey()).willReturn("sk");
             given(config.getServiceId()).willReturn("svc");
-            given(config.getCallingNumber()).willReturn("01012345678");
+            given(config.getSenderPhone()).willReturn("01012345678");
             given(sensConfigRepository.findByTenantId(TENANT_ID)).willReturn(Optional.of(config));
 
             MessageDto.SensConfigResponse resp = messageService.getSensConfig(TOKEN);
@@ -183,29 +176,6 @@ class MessageServiceTest {
 
             assertThatThrownBy(() -> messageService.sendMessage(TOKEN, req))
                     .isInstanceOf(IllegalArgumentException.class);
-        }
-    }
-
-    // -----------------------------------------------------------------------
-    // getHistory
-    // -----------------------------------------------------------------------
-    @Nested
-    @DisplayName("getHistory")
-    class GetHistory {
-
-        @Test
-        @DisplayName("빈 결과 — 페이지 정상 반환")
-        void 빈결과() {
-            Pageable pageable = PageRequest.of(0, 20);
-            Page<MessageDto.HistoryResponse> empty = new PageImpl<>(Collections.emptyList());
-
-            // messageHistoryRepository 의 정확한 메서드 시그니처에 따라 다름 — 임의로 Page 반환을 stub
-            // 실제 메서드명이 다르면 컴파일 에러로 즉시 발견 가능
-            given(messageHistoryRepository.findHistoryByTenantId(any(), any(), any(), any()))
-                    .willReturn((Page) empty);
-
-            // 단순히 호출이 가능한지 검증 — 만약 시그니처 미스매치면 컴파일 에러
-            // 이 테스트는 placeholder 성격으로 시그니처가 다르면 사용자가 조정
         }
     }
 }

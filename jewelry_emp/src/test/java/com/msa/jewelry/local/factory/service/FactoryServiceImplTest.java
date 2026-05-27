@@ -4,7 +4,6 @@ import com.msa.common.global.util.AuthorityUserRoleUtil;
 import com.msa.common.global.util.CustomPage;
 import com.msa.jewelry.global.dto.AccountDto;
 import com.msa.jewelry.global.excel.dto.AccountExcelDto;
-import com.msa.jewelry.global.excel.dto.PurchaseExcelDto;
 import com.msa.jewelry.global.exception.ExceptionMessage;
 import com.msa.jewelry.global.exception.NotAuthorityException;
 import com.msa.jewelry.global.exception.NotFoundException;
@@ -15,7 +14,6 @@ import com.msa.jewelry.local.factory.dto.FactoryDto;
 import com.msa.jewelry.local.factory.dto.FactoryView;
 import com.msa.jewelry.local.factory.entity.Factory;
 import com.msa.jewelry.local.factory.repository.FactoryRepository;
-import com.msa.jewelry.local.goldharry.entity.GoldHarry;
 import com.msa.jewelry.local.goldharry.repository.GoldHarryRepository;
 import com.msa.jewelry.local.transaction_history.entity.TransactionHistory;
 import com.msa.jewelry.local.transaction_history.repository.TransactionHistoryRepository;
@@ -40,23 +38,9 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.*;
 
-/**
- * FactoryServiceImpl 단위 테스트.
- *
- * <p>외부 의존성(AuthorityUserRoleUtil, FactoryRepository, GoldHarryRepository,
- * TransactionHistoryRepository)을 Mockito 로 격리하여 FactoryServiceImpl 의
- * 로직만 검증한다.
- *
- * <p>커버리지 — 20 public 메서드 × (정상 / NOT_FOUND / 권한 거부 / 빈 결과 / 잘못된 상태) 시나리오.
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("FactoryServiceImpl 단위 테스트")
@@ -336,10 +320,10 @@ class FactoryServiceImplTest {
         @DisplayName("정상 — OptionLevel.getGrade() 반환")
         void 정상() {
             given(factoryRepository.findByCommonOptionOptionLevel(FACTORY_ID))
-                    .willReturn(OptionLevel.A);
+                    .willReturn(OptionLevel.ONE);
 
             assertThat(factoryService.getFactoryGrade(FACTORY_ID_STR))
-                    .isEqualTo(OptionLevel.A.getGrade());
+                    .isEqualTo(OptionLevel.ONE.getGrade());
         }
     }
 
@@ -570,7 +554,7 @@ class FactoryServiceImplTest {
             assertThat(result.factoryId()).isEqualTo(FACTORY_ID);
             assertThat(result.factoryName()).isEqualTo(FACTORY_NAME);
             assertThat(result.goldHarryLoss()).isEqualTo("1.5");
-            assertThat(result.grade()).isEqualTo(OptionLevel.A.name());
+            assertThat(result.grade()).isEqualTo(OptionLevel.ONE.name());
         }
 
         @Test
@@ -731,7 +715,7 @@ class FactoryServiceImplTest {
         given(factory.getFactoryName()).willReturn(FACTORY_NAME);
         given(factory.getCommonOption()).willReturn(commonOption);
         given(commonOption.getGoldHarryLoss()).willReturn("1.5");
-        given(commonOption.getOptionLevel()).willReturn(OptionLevel.A);
+        given(commonOption.getOptionLevel()).willReturn(OptionLevel.ONE);
         return factory;
     }
 }

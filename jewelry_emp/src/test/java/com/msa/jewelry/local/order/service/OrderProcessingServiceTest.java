@@ -20,9 +20,9 @@ import com.msa.jewelry.local.order.repository.OrdersRepository;
 import com.msa.jewelry.local.order.repository.StatusHistoryRepository;
 import com.msa.jewelry.local.product.dto.ProductDetailView;
 import com.msa.jewelry.local.product.service.ProductService;
+import com.msa.jewelry.local.stone.service.StoneService;
 import com.msa.jewelry.local.store.dto.StoreView;
 import com.msa.jewelry.local.store.service.StoreService;
-import com.msa.jewelry.local.stone.service.StoneService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -34,40 +34,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.*;
 
-/**
- * OrderProcessingService 단위 테스트.
- *
- * <p>외부 의존성을 전부 Mockito 로 대체해 createHandle / updateHandle 두 메서드의
- * 행복 경로 / NOT_FOUND / 외부 호출 실패 분기를 분리해 검증한다.
- *
- * <p>주요 검증:
- * <ul>
- *   <li>Orders/lastHistory NOT_FOUND → IllegalArgumentException</li>
- *   <li>order.orderStatus 가 WAIT 가 아니면 createHandle 은 일찍 return</li>
- *   <li>외부 서비스(productService 등) 실패 시 catch 블럭으로 빠져 StatusHistory.FAIL 저장</li>
- *   <li>storeId/factoryId 일치 시 update* 호출 안 됨 (스냅샷 보존)</li>
- *   <li>updateHandle 의 storeId/factoryId/productId 가 null 인 분기에서 각각 호출 skip</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("OrderProcessingService 단위 테스트")
@@ -308,7 +284,7 @@ class OrderProcessingServiceTest {
             verify(order, never()).updateStore(any(), any(), any());
             verify(order, never()).updateFactory(any(), any());
             verify(storeService, never()).getStoreInfoView(any());
-            verify(factoryService, never()).getFactoryInfo(any());
+            verify(factoryService, never()).getFactoryInfo((String) any());
             verify(productService, never()).getProductDetail(any(), any());
         }
 
@@ -469,10 +445,6 @@ class OrderProcessingServiceTest {
     private static AssistantStoneView stubAssistantView() {
         return new AssistantStoneView(ASSIST_ID, "큐빅", "큐빅 지르코니아");
     }
-
-    /**
-     * 외부 서비스 행복 경로 stub 묶음.
-     */
     private void stubAllExternalServicesOk() {
         given(storeService.getStoreInfoView(STORE_ID)).willReturn(stubStoreView());
         given(factoryService.getFactoryInfo(FACTORY_ID)).willReturn(stubFactoryView());

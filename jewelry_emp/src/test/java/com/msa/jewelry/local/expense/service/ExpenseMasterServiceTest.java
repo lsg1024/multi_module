@@ -35,18 +35,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * ExpenseMasterService 단위 테스트.
- *
- * <p>은행유형 / 수입계정 / 지출계정 3개 마스터 도메인의 CRUD 16개 메서드를
- * Repository mock 만 사용해 격리 검증한다.
- *
- * <p>커버리지:
- * <ul>
- *   <li>GetAll/GetById/Create/Update/Delete × 3 도메인</li>
- *   <li>NOT_FOUND, soft delete 호출 검증, 빈 결과, 중복 제약(DataIntegrityViolation) 등</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("ExpenseMasterService 단위 테스트")

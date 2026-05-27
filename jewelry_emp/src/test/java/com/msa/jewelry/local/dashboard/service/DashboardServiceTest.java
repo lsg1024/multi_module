@@ -28,18 +28,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-/**
- * DashboardService 단위 테스트.
- *
- * <p>DashboardService 는 DashboardRepository 위임 위주의 단순 facade.
- * 검증 포인트:
- * <ul>
- *   <li>TOP_LIMIT(5) 가 정확히 repository 에 전달되는지</li>
- *   <li>Pageable / Condition 이 그대로 전달되는지 (ArgumentCaptor)</li>
- *   <li>repository 빈 결과/정상 결과 둘 다 그대로 통과되는지</li>
- *   <li>null 결과 통과 — facade 가 임의 변환하지 않는지</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("DashboardService 단위 테스트")

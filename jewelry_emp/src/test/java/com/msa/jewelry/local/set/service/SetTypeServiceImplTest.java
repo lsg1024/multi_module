@@ -31,13 +31,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * SetTypeServiceImpl 단위 테스트.
- *
- * <p>주의: deletedSetType 의 분기는 setType.isDeletable() == false 일 때 예외이고
- * SetType.isDeletable() = !defaultId 이므로 defaultId=true 일 때 삭제 차단.
- * 본 테스트는 isDeletable() 의 boolean 값을 그대로 mocking 한다.
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("SetTypeServiceImpl 단위 테스트")

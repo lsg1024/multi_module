@@ -34,20 +34,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-/**
- * CatalogService 단위 테스트.
- *
- * <p>판매처(STORE) 전용 카탈로그 서비스 — 모든 public 메서드는
- * AuthorityUserRoleUtil.isStore() 통과 후 비즈니스 실행.
- *
- * <p>커버리지:
- * <ul>
- *   <li>판매처 권한 거부 → IllegalArgumentException ("판매처 계정만 접근 가능합니다.")</li>
- *   <li>재고 카운트 채우기 정상/빈 결과/null 키 fallback (getOrDefault) </li>
- *   <li>상품 상세 NOT_FOUND → IllegalArgumentException</li>
- *   <li>엑셀 다운로드 — 빈 리스트라도 byte[] 반환</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("CatalogService 단위 테스트")

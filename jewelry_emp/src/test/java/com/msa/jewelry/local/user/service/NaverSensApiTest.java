@@ -16,20 +16,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-/**
- * NaverSensApi 단위 테스트.
- *
- * <p>NaverSensApi 는 내부에서 {@code new RestTemplate()} 으로 매번 새 인스턴스를 만들어
- * 외부 HTTPS 엔드포인트 ({@code sens.apigw.ntruss.com}) 로 POST 하는 구조라
- * 순수 단위 테스트로 응답을 stub 하기는 어렵다.
- *
- * <p>따라서 본 테스트는 외부 호출 직전까지의 책임 영역을 검증한다:
- * <ul>
- *   <li>HMAC-SHA256 서명 생성 — Mac/Signature 분기 (잘못된 시크릿/서비스ID 분기)</li>
- *   <li>실제 API 호출에서 발생하는 RestClientException 전파 (외부 도달 시점 4xx/5xx/timeout 공통 분기)</li>
- *   <li>입력 유효성에 의한 인스턴스 생성 단계 예외 — InvalidKeyException 등</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("NaverSensApi 단위 테스트")

@@ -36,23 +36,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * UsersService 단위 테스트.
- *
- * <p>JwtUtil/BCryptPasswordEncoder/AuthorityUserRoleUtil/UsersRepository 를 모두 mock 으로
- * 대체하여 UsersService 의 비즈니스 로직(중복 체크, 비밀번호 정책, 권한 분기, 소프트 삭제 등)을
- * 격리해 검증한다.
- *
- * <p>커버리지:
- * <ul>
- *   <li>createUser — 중복 ID / 비밀번호 불일치 / 잘못된 Role / 정상</li>
- *   <li>getUserInfo / deletedUser — 토큰 기반 사용자 조회</li>
- *   <li>updateUserInfo — 권한 거부 / 본인 / 관리자 / Role 변경 권한</li>
- *   <li>getAllUsers — 본인 제외 정렬</li>
- *   <li>login — 비밀번호 불일치 / GUEST 차단 / 정상</li>
- *   <li>updatePassword — 기존 비밀번호 불일치 / 동일 비밀번호 / 확인 불일치 / 정상</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("UsersService 단위 테스트")

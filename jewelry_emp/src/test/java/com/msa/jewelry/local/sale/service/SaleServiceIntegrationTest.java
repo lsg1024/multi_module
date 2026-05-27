@@ -4,11 +4,9 @@ import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.jewelry.local.factory.dto.FactoryView;
 import com.msa.jewelry.local.factory.service.FactoryService;
-import com.msa.jewelry.local.product.dto.ProductImageView;
 import com.msa.jewelry.local.product.service.ProductService;
 import com.msa.jewelry.local.sale.dto.SaleDto;
 import com.msa.jewelry.local.sale.entity.Sale;
-import com.msa.jewelry.local.sale.entity.SalePayment;
 import com.msa.jewelry.local.sale.repository.SalePaymentRepository;
 import com.msa.jewelry.local.sale.repository.SaleRepository;
 import com.msa.jewelry.local.store.dto.StoreView;
@@ -30,7 +28,6 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -38,22 +35,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
-/**
- * SaleService 통합 테스트.
- *
- * <p>전체 Spring 컨텍스트를 띄우고 H2 + 실제 Repository 로 종단간 흐름을 검증한다.
- * 외부 의존성 (StoreService/FactoryService/ProductService/JwtUtil) 은 @MockBean 으로
- * 격리하여 SaleService 의 트랜잭션·영속성·도메인 메서드 동작에 집중한다.
- *
- * <p>각 테스트는 클래스 레벨 @Transactional 로 자동 롤백되므로 데이터 간 간섭이 없다.
- *
- * <p>실행 전제:
- * <ul>
- *   <li>{@code src/test/resources/application-test.yml} 가 H2 + cloud/redis/batch
- *       관련 자동구성을 모두 꺼두어 SpringBootTest 가 fail-fast 없이 뜬다</li>
- *   <li>JPA ddl-auto: create-drop 으로 매 테스트 클래스마다 스키마 재생성</li>
- * </ul>
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -79,7 +60,6 @@ class SaleServiceIntegrationTest {
 
     @PersistenceContext EntityManager em;
 
-    // 외부 모듈은 mock 으로 격리 (네트워크/타 모듈 영향 제거)
     @MockBean JwtUtil jwtUtil;
     @MockBean StoreService storeService;
     @MockBean FactoryService factoryService;
@@ -92,7 +72,9 @@ class SaleServiceIntegrationTest {
         given(jwtUtil.getRole(anyString())).willReturn("USER");
         given(storeService.getStoreInfoView(any()))
                 .willReturn(new StoreView(10L, "강남금은방", "A", "1.5", "SELL", true));
-        given(factoryService.getFactoryInfo(any()))
+        // FactoryService 에는 getFactoryInfo(String) 과 getFactoryInfo(Long) 오버로드가 있어
+        // any() 만으로는 모호하므로 명시적으로 Long 변형을 지정한다.
+        given(factoryService.getFactoryInfo(any(Long.class)))
                 .willReturn(new FactoryView(20L, "한빛제조사", "A", "1.5"));
         given(productService.getProductImages(any()))
                 .willReturn(Map.of());

@@ -5,7 +5,7 @@ import com.msa.jewelry.local.assistant_stone.dto.AssistantStoneDto;
 import com.msa.jewelry.local.assistant_stone.dto.AssistantStoneView;
 import com.msa.jewelry.local.assistant_stone.entity.AssistantStone;
 import com.msa.jewelry.local.assistant_stone.repository.AssistantStoneRepository;
-import jakarta.ws.rs.NotFoundException;
+import com.msa.jewelry.global.exception.NotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,11 +29,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * AssistantStoneServiceImpl 단위 테스트.
- *
- * <p>jakarta.ws.rs.NotFoundException 가 update/delete 시 던져진다는 점에 주의.
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("AssistantStoneServiceImpl 단위 테스트")

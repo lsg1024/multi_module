@@ -29,12 +29,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * StoneShapeService 단위 테스트.
- *
- * <p>스톤 모양 마스터(라운드/사각형 등)의 CRUD 흐름을 검증한다.
- * 외부 의존성 (JwtUtil, StoneShapeRepository) 은 Mockito 로 대체한다.
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("StoneShapeService 단위 테스트")

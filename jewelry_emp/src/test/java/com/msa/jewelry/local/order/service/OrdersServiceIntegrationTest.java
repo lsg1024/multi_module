@@ -12,21 +12,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
-/**
- * OrdersService 통합 테스트 — 핵심 시나리오 슬라이스.
- *
- * <p>외부 모듈 의존성(StoreService/FactoryService/ProductService) 은 @MockBean,
- * Repository 와 트랜잭션 경계는 실제 H2 로 검증.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -45,10 +39,11 @@ class OrdersServiceIntegrationTest {
 
     @PersistenceContext EntityManager em;
 
-    @MockBean JwtUtil jwtUtil;
-    @MockBean StoreService storeService;
-    @MockBean FactoryService factoryService;
-    @MockBean ProductService productService;
+    @MockitoBean
+    JwtUtil jwtUtil;
+    @MockitoBean StoreService storeService;
+    @MockitoBean FactoryService factoryService;
+    @MockitoBean ProductService productService;
 
     @BeforeEach
     void stubTokens() {

@@ -3,9 +3,9 @@ package com.msa.jewelry.local.stock.service;
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.util.CustomPage;
 import com.msa.jewelry.global.exception.InvalidOrderStatusException;
+import com.msa.jewelry.global.exception.NotFoundException;
 import com.msa.jewelry.global.exception.OrderNotFoundException;
 import com.msa.jewelry.global.exception.StockNotFoundException;
-import com.msa.jewelry.global.exception.NotFoundException;
 import com.msa.jewelry.local.assistant_stone.dto.AssistantStoneView;
 import com.msa.jewelry.local.assistant_stone.service.AssistantStoneService;
 import com.msa.jewelry.local.factory.dto.FactoryView;
@@ -42,59 +42,47 @@ import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.*;
 
-/**
- * StockServiceImpl 단위 테스트.
- *
- * <p>외부 의존성(JwtUtil, AssistantStoneService, StoreService, FactoryService,
- * StockRepository, OrdersRepository, CustomStockRepository, StatusHistoryRepository,
- * StatusHistoryHelper, StockCreationService)을 모두 Mockito 로 대체하여
- * StockServiceImpl 의 분기 로직만 격리해 검증한다.
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("StockServiceImpl 단위 테스트")
 class StockServiceImplTest {
 
-    private static final String TOKEN     = "Bearer test-token";
+    private static final String TOKEN = "Bearer test-token";
     private static final String TENANT_ID = "tenant-001";
-    private static final String NICKNAME  = "tester";
-    private static final Long   STORE_ID  = 100L;
-    private static final Long   FACTORY_ID = 200L;
-    private static final Long   FLOW_CODE = 9_990L;
-    private static final Long   PRODUCT_ID = 501L;
+    private static final String NICKNAME = "tester";
+    private static final Long STORE_ID = 100L;
+    private static final Long FACTORY_ID = 200L;
+    private static final Long FLOW_CODE = 9_990L;
+    private static final Long PRODUCT_ID = 501L;
 
-    @Mock JwtUtil jwtUtil;
-    @Mock StockCreationService stockCreationService;
-    @Mock AssistantStoneService assistantStoneService;
-    @Mock StoreService storeService;
-    @Mock FactoryService factoryService;
-    @Mock StockRepository stockRepository;
-    @Mock OrdersRepository ordersRepository;
-    @Mock CustomStockRepository customStockRepository;
-    @Mock StatusHistoryRepository statusHistoryRepository;
-    @Mock StatusHistoryHelper statusHistoryHelper;
+    @Mock
+    JwtUtil jwtUtil;
+    @Mock
+    StockCreationService stockCreationService;
+    @Mock
+    AssistantStoneService assistantStoneService;
+    @Mock
+    StoreService storeService;
+    @Mock
+    FactoryService factoryService;
+    @Mock
+    StockRepository stockRepository;
+    @Mock
+    OrdersRepository ordersRepository;
+    @Mock
+    CustomStockRepository customStockRepository;
+    @Mock
+    StatusHistoryRepository statusHistoryRepository;
+    @Mock
+    StatusHistoryHelper statusHistoryHelper;
 
     @InjectMocks
     StockServiceImpl stockService;
@@ -270,7 +258,7 @@ class StockServiceImplTest {
             assertThat(result.get(0).getStoreName()).isNull();
             assertThat(result.get(0).getFactoryName()).isNull();
             verify(storeService, never()).getStoreInfoView(any());
-            verify(factoryService, never()).getFactoryInfo(any());
+            verify(factoryService, never()).getFactoryInfo(any(Long.class));
         }
     }
 

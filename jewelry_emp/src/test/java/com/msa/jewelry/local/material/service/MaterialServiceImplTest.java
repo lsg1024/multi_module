@@ -33,12 +33,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * MaterialServiceImpl 단위 테스트.
- *
- * <p>주의: Material.isDeletable() 은 defaultId 가 true 일 때 true 를 반환하므로
- * isDeletable()=true 시 삭제 불가 분기에 들어간다.
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("MaterialServiceImpl 단위 테스트")

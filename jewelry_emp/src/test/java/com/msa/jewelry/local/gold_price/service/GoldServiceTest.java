@@ -26,18 +26,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-/**
- * GoldService 단위 테스트.
- *
- * <p>금시세 등록/조회 — Repository 만 mock 하면 충분.
- *
- * <p>커버리지:
- * <ul>
- *   <li>getGoldPrice — 최신 시세 / NOT_FOUND</li>
- *   <li>getGoldPrices — 빈 결과 / 다건 매핑 (createDate.toString 포함)</li>
- *   <li>createGoldPrice — 정상 save / null 입력</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("GoldService 단위 테스트")

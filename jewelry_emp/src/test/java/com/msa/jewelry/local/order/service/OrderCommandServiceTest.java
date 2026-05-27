@@ -37,21 +37,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-/**
- * OrderCommandService 단위 테스트.
- *
- * <p>외부 의존성 (OrdersRepository / PriorityRepository / OrderProcessingService)
- * 을 모두 Mockito 로 대체해 createOrder / updateOrder / deleteOrder 의
- * 분기 로직만 격리해 검증한다.
- *
- * <p>주된 검증 포인트:
- * <ul>
- *   <li>Priority 누락(NOT_FOUND) / Orders 미존재 → IllegalArgumentException</li>
- *   <li>role 검증 (ADMIN/USER 외엔 NOT_ACCESS)</li>
- *   <li>productId 미변경/변경 분기, store/factory 변경 감지 분기</li>
- *   <li>orderProcessingService.createHandle / updateHandle 위임 호출</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("OrderCommandService 단위 테스트")
@@ -387,15 +372,9 @@ class OrderCommandServiceTest {
     // -----------------------------------------------------------------------
     // 헬퍼
     // -----------------------------------------------------------------------
-
-    /** Long any() 의 가독성 좋은 헬퍼. */
     private static Long eqLong(Long v) {
         return org.mockito.ArgumentMatchers.eq(v);
     }
-
-    /**
-     * DTO 는 setter 가 없어 mock 으로 만든 뒤 willReturn 으로 stub 한다.
-     */
     private static OrderDto.Request stubRequest(String storeId, String factoryId, String productId,
                                                 String materialId, String colorId, String priorityName) {
         OrderDto.Request dto = mock(OrderDto.Request.class);
@@ -442,10 +421,6 @@ class OrderCommandServiceTest {
                 1, false, true
         );
     }
-
-    /**
-     * 기존 Orders mock — orderProduct/orderStones 까지 셋업한다.
-     */
     private static Orders stubExistingOrder(Long storeId, Long factoryId, Long productId,
                                             Long materialId, Long colorId) {
         Orders order = mock(Orders.class);

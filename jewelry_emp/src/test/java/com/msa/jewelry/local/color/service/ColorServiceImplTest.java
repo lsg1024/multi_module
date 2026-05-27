@@ -32,12 +32,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * ColorServiceImpl 단위 테스트.
- *
- * <p>주의: Color.isDeletable() 은 색상 모듈만 defaultId 가 true 일 때 true 를 반환
- * (다른 모듈은 반대) — 본 테스트는 현재 운영 구현 그대로의 분기를 검증한다.
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("ColorServiceImpl 단위 테스트")

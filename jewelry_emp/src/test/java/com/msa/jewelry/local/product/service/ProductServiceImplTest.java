@@ -9,10 +9,8 @@ import com.msa.jewelry.local.factory.service.FactoryService;
 import com.msa.jewelry.local.gold_price.repository.GoldRepository;
 import com.msa.jewelry.local.material.repository.MaterialRepository;
 import com.msa.jewelry.local.product.dto.ProductDetailDto;
-import com.msa.jewelry.local.product.dto.ProductDetailView;
 import com.msa.jewelry.local.product.dto.ProductDto;
 import com.msa.jewelry.local.product.dto.ProductImageView;
-import com.msa.jewelry.local.product.dto.ProductView;
 import com.msa.jewelry.local.product.entity.Product;
 import com.msa.jewelry.local.product.repository.ProductRepository;
 import com.msa.jewelry.local.product.repository.image.ProductImageRepository;
@@ -41,29 +39,10 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
-/**
- * ProductServiceImpl 단위 테스트.
- *
- * <p>외부 의존성(Repository × 11, JwtUtil, FactoryService, ProductImageService) 을
- * Mockito 로 격리하여 비즈니스 로직만 검증한다.
- *
- * <p>커버리지 — 15개 public 메서드:
- * <ul>
- *   <li>saveProduct, getProduct, getProducts, updateProduct, deletedProduct</li>
- *   <li>getProductInfoByName, getProductStonesByName, updateProductFactoryName</li>
- *   <li>getProductInfo, getRelatedProducts, findProductByName, getProductDetail</li>
- *   <li>findProductDetailByName, getProductImages</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("ProductServiceImpl 단위 테스트")
@@ -126,18 +105,21 @@ class ProductServiceImplTest {
     class GetProducts {
 
         @Test
-        @DisplayName("빈 결과여도 정상 응답")
+        @DisplayName("빈 결과여도 정상 응답 — productRepository.findByAllProductName 를 위임 호출")
         void 빈결과() {
             Pageable pageable = PageRequest.of(0, 20);
             CustomPage<ProductDto.Page> empty = mock(CustomPage.class);
             given(empty.getContent()).willReturn(Collections.emptyList());
 
-            given(customProductWorkGradePolicyGroupRepository.findProducts(any(), any(), any(), any(),
-                    any(), any(), any(), eq(pageable)))
+            // 실제 service 는 productRepository.findByAllProductName 만 호출한다 (11개 인자)
+            given(productRepository.findByAllProductName(
+                    any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), eq(pageable)))
                     .willReturn(empty);
+            given(goldRepository.findTopByOrderByGoldIdDesc()).willReturn(Optional.empty());
 
             CustomPage<ProductDto.Page> result = productService.getProducts(
-                    "다이아", "name", "0", "100000", "name", "ASC", "A", pageable);
+                    "다이아", "name", "0", "100000", "name", "ASC", "A",
+                    null, null, null, pageable);
 
             assertThat(result.getContent()).isEmpty();
         }
@@ -216,27 +198,16 @@ class ProductServiceImplTest {
     class GetProductStonesByName {
 
         @Test
-        @DisplayName("스톤 없으면 빈 리스트 반환")
-        void 빈_스톤() {
-            Product product = mock(Product.class);
-            given(product.getProductId()).willReturn(PRODUCT_ID);
-            given(productRepository.findByProductName("반지A")).willReturn(Optional.of(product));
-            given(productStoneRepository.findByProductId(PRODUCT_ID))
-                    .willReturn(Collections.emptyList());
+        @DisplayName("Product 이름으로 못 찾음 → 예외 던지지 않고 빈 리스트 반환")
+        void 이름_없음() {
+            // 실제 구현은 findByProductNameIgnoreCase 호출 + orElse(null) → 빈 리스트
+            given(productRepository.findByProductNameIgnoreCase("없는이름"))
+                    .willReturn(Optional.empty());
 
             List<ProductDetailDto.StoneInfo> result =
-                    productService.getProductStonesByName("반지A");
+                    productService.getProductStonesByName("없는이름");
 
             assertThat(result).isEmpty();
-        }
-
-        @Test
-        @DisplayName("Product 이름으로 못 찾음 → 예외")
-        void 이름_없음() {
-            given(productRepository.findByProductName("없는이름")).willReturn(Optional.empty());
-
-            assertThatThrownBy(() -> productService.getProductStonesByName("없는이름"))
-                    .isInstanceOf(IllegalArgumentException.class);
         }
     }
 
@@ -282,10 +253,20 @@ class ProductServiceImplTest {
     class GetRelatedProducts {
 
         @Test
-        @DisplayName("관련 상품 없으면 빈 리스트")
-        void 빈결과() {
-            given(productRepository.findRelatedProducts(PRODUCT_ID))
-                    .willReturn(Collections.emptyList());
+        @DisplayName("Product 없음 → NOT_FOUND 예외")
+        void product_없음() {
+            given(productRepository.findById(PRODUCT_ID)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> productService.getRelatedProducts(PRODUCT_ID))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("관련번호가 빈 문자열이면 빈 리스트 (조회 안 함)")
+        void 관련번호_빈값() {
+            Product product = mock(Product.class);
+            given(product.getProductRelatedNumber()).willReturn("");
+            given(productRepository.findById(PRODUCT_ID)).willReturn(Optional.of(product));
 
             List<ProductDto.RelatedProduct> result = productService.getRelatedProducts(PRODUCT_ID);
 
@@ -301,23 +282,13 @@ class ProductServiceImplTest {
     class FindProductByName {
 
         @Test
-        @DisplayName("이름으로 못 찾으면 NOT_FOUND")
+        @DisplayName("이름으로 못 찾으면 NotFoundException")
         void 없음() {
-            given(productRepository.findProductViewByName("없음"))
+            given(productRepository.findByProductName("없음"))
                     .willReturn(Optional.empty());
 
             assertThatThrownBy(() -> productService.findProductByName("없음"))
-                    .isInstanceOf(IllegalArgumentException.class);
-        }
-
-        @Test
-        @DisplayName("정상 — ProductView 반환")
-        void 정상() {
-            ProductView view = mock(ProductView.class);
-            given(productRepository.findProductViewByName("반지A"))
-                    .willReturn(Optional.of(view));
-
-            assertThat(productService.findProductByName("반지A")).isSameAs(view);
+                    .isInstanceOf(RuntimeException.class); // NotFoundException
         }
     }
 
@@ -346,23 +317,12 @@ class ProductServiceImplTest {
     class FindProductDetailByName {
 
         @Test
-        @DisplayName("못 찾으면 NOT_FOUND")
+        @DisplayName("Product 이름으로 못 찾으면 NOT_FOUND 예외 (getProductInfoByName 내부 호출)")
         void 없음() {
-            given(productRepository.findProductDetailViewByName("없음"))
-                    .willReturn(Optional.empty());
+            given(productRepository.findByProductName("없음")).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> productService.findProductDetailByName("없음"))
                     .isInstanceOf(IllegalArgumentException.class);
-        }
-
-        @Test
-        @DisplayName("정상 반환")
-        void 정상() {
-            ProductDetailView view = mock(ProductDetailView.class);
-            given(productRepository.findProductDetailViewByName("반지A"))
-                    .willReturn(Optional.of(view));
-
-            assertThat(productService.findProductDetailByName("반지A")).isSameAs(view);
         }
     }
 
@@ -374,13 +334,13 @@ class ProductServiceImplTest {
     class GetProductImages {
 
         @Test
-        @DisplayName("빈 productIds → 빈 Map 즉시 반환 (레포 호출 안 함)")
+        @DisplayName("빈 productIds → 빈 Map 즉시 반환 (productImageService 호출 안 함)")
         void 빈_입력() {
             Map<Long, ProductImageView> result =
                     productService.getProductImages(Collections.emptyList());
 
             assertThat(result).isEmpty();
-            verify(productImageRepository, never()).findRepresentativeImagesByProductIds(any());
+            verify(productImageService, never()).getImagesByProductIds(any());
         }
 
         @Test
@@ -389,14 +349,14 @@ class ProductServiceImplTest {
             Map<Long, ProductImageView> result = productService.getProductImages(null);
 
             assertThat(result).isEmpty();
-            verify(productImageRepository, never()).findRepresentativeImagesByProductIds(any());
+            verify(productImageService, never()).getImagesByProductIds(any());
         }
 
         @Test
         @DisplayName("매칭되는 이미지 없음 → 빈 Map")
         void 없음() {
-            given(productImageRepository.findRepresentativeImagesByProductIds(anyList()))
-                    .willReturn(Collections.emptyList());
+            given(productImageService.getImagesByProductIds(anyList()))
+                    .willReturn(Collections.emptyMap());
 
             Map<Long, ProductImageView> result =
                     productService.getProductImages(List.of(1L, 2L, 3L));

@@ -29,14 +29,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * StoneTypeService 단위 테스트.
- *
- * <p>스톤 타입 마스터(다이아/사파이어 등)의 CRUD 흐름을 검증한다.
- * 외부 의존성 (JwtUtil, StoneTypeRepository) 은 Mockito 로 대체한다.
- *
- * <p>업데이트 분기 주의: 이름 변경 여부와 무관하게 항상 existsByStoneTypeName 을 한 번 호출한다.
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("StoneTypeService 단위 테스트")

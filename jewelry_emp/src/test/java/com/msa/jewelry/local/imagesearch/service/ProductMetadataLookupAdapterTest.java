@@ -33,15 +33,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-/**
- * ProductMetadataLookupAdapter 단위 테스트.
- *
- * <p>JPA EntityManager 와 TypedQuery 를 모두 mock 하여 JPQL 호출 흐름과
- * 결과 → ProductMeta / imagePath 매핑 로직을 격리해 검증한다.
- *
- * <p>두 JPQL 가 동일하지 않으므로 매번 {@code em.createQuery(<sql>, <type>)} 가 다른
- * TypedQuery mock 을 반환하도록 stubbing 한다.
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("ProductMetadataLookupAdapter 단위 테스트")

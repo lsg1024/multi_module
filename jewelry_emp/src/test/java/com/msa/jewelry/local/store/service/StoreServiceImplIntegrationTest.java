@@ -19,9 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
-/**
- * StoreService 통합 테스트 — 핵심 시나리오 슬라이스.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional

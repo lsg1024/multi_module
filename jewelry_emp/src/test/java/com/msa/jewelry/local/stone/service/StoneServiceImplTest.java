@@ -35,12 +35,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * StoneServiceImpl 단위 테스트.
- *
- * <p>StoneDto.getStoneWorkGradePolicyDto 가 null 인 시나리오는 saveStone 의 for-each 가
- * NPE 를 던지는 게 알려진 결과 (현재 코드는 null 가드 없음).
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("StoneServiceImpl 단위 테스트")

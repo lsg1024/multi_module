@@ -69,19 +69,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-/**
- * SaleService 단위 테스트.
- *
- * <p>외부 의존성 (Repository, JwtUtil, StoreService, FactoryService, ProductService)
- * 을 모두 Mockito 로 대체하여 SaleService 의 로직만 격리해 검증한다.
- *
- * <p>커버리지:
- * <ul>
- *   <li>모든 public 메서드 × (정상 / 경계 / 예외) 시나리오</li>
- *   <li>applyBalanceChange (private) 의 STORE/FACTORY 분기 결과 검증 (verify 로 간접 확인)</li>
- *   <li>멱등성 (DataIntegrityViolation) / 잘못된 상태 전이 / 권한 거부 / NOT_FOUND</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("SaleService 단위 테스트")

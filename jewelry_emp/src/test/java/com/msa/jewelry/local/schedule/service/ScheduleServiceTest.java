@@ -30,21 +30,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * ScheduleService 단위 테스트.
- *
- * <p>일정 CRUD — ScheduleRepository 만 mock.
- *
- * <p>커버리지:
- * <ul>
- *   <li>createSchedule — request.toEntity 위임 후 save</li>
- *   <li>getSchedulesByDateRange — LocalDate parse / Repository 위임 / 빈 결과</li>
- *   <li>getSchedule — 정상 / NOT_FOUND</li>
- *   <li>updateSchedule — 정상 / NOT_FOUND</li>
- *   <li>deleteSchedule — 정상 / NOT_FOUND</li>
- *   <li>잘못된 날짜 포맷 / 과거 날짜</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("ScheduleService 단위 테스트")

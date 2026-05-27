@@ -6,7 +6,7 @@ import com.msa.jewelry.global.exception.NotFoundException;
 import com.msa.jewelry.local.goldharry.dto.GoldHarryDto;
 import com.msa.jewelry.local.goldharry.entity.GoldHarry;
 import com.msa.jewelry.local.goldharry.repository.GoldHarryRepository;
-import jakarta.ws.rs.ForbiddenException;
+import com.msa.jewelry.global.exception.NotAuthorityException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,20 +37,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * GoldHarryService 단위 테스트.
- *
- * <p>금시세(해리) 마스터의 CRUD + Spring Batch 연동을 검증한다.
- * 외부 의존성 (JwtUtil, JobLauncher, Job, AuthorityUserRoleUtil, GoldHarryRepository)
- * 을 모두 Mockito 로 대체한다.
- *
- * <p>특기 사항:
- * <ul>
- *   <li>updateLoss: 기존 loss 와 새 값이 같으면 save/배치 모두 호출하지 않는다.</li>
- *   <li>delete: AuthorityUserRoleUtil.verification == false 면 조용히 종료 (예외 없음).</li>
- *   <li>JobLauncher.run 실패는 IllegalStateException(BATCH_FAIL) 로 래핑된다.</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("GoldHarryService 단위 테스트")
@@ -285,12 +271,12 @@ class GoldHarryServiceTest {
         }
 
         @Test
-        @DisplayName("권한 없음 → ForbiddenException, save 호출 안 됨")
+        @DisplayName("권한 없음 → NotAuthorityException, save 호출 안 됨")
         void 권한_없음() {
             given(authorityUserRoleUtil.verification(TOKEN)).willReturn(false);
 
             assertThatThrownBy(() -> service.createHarry(TOKEN, new GoldHarryDto.Request(BigDecimal.ONE)))
-                    .isInstanceOf(ForbiddenException.class);
+                    .isInstanceOf(NotAuthorityException.class);
             verify(goldHarryRepository, never()).save(any());
         }
     }

@@ -39,20 +39,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * ProductImageSearchService 단위 테스트.
- *
- * <p>이미지 검색(searchByImage)과 텍스트 검색(searchByText) 두 진입점이 공유하는
- * {@code rerankAndEnrich} 로직(메타 조회, 부스팅, 정렬, topK 컷)을 집중적으로 검증한다.
- *
- * <p>외부 의존성:
- * <ul>
- *   <li>{@link ImageSearchClient} — 임베딩 서비스 호출. mock</li>
- *   <li>{@link ImageSearchProperties} — 점수 가중치. 실제 객체 사용</li>
- *   <li>{@link ProductMetadataLookup} — 상품 메타/이미지 경로 일괄 조회. mock</li>
- *   <li>{@link TenantContext} — ThreadLocal. set/clear 로 직접 제어</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("ProductImageSearchService 단위 테스트")
