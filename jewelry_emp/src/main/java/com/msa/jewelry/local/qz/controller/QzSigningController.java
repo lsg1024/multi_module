@@ -1,6 +1,7 @@
 package com.msa.jewelry.local.qz.controller;
 
 import com.msa.common.global.api.ApiResponse;
+import com.msa.jewelry.local.qz.service.QzSigningService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

@@ -6,7 +6,7 @@ import com.msa.jewelry.local.goldharry.repository.GoldHarryRepository;
 import com.msa.jewelry.global.exception.NotFoundException;
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.util.AuthorityUserRoleUtil;
-import jakarta.ws.rs.ForbiddenException;
+import com.msa.jewelry.global.exception.NotAuthorityException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
@@ -120,6 +120,6 @@ public class GoldHarryService {
             goldHarryRepository.save(goldHarry);
             return;
         }
-        throw new ForbiddenException("생성 권한이 없는 사용자 입니다.");
+        throw new NotAuthorityException("생성 권한이 없는 사용자 입니다.");
     }
 }

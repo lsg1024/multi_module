@@ -4,8 +4,8 @@ import com.msa.common.global.util.AuthorityUserRoleUtil;
 import com.msa.jewelry.local.priority.dto.PriorityDto;
 import com.msa.jewelry.local.priority.entity.Priority;
 import com.msa.jewelry.local.priority.repository.PriorityRepository;
-import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.NotFoundException;
+import com.msa.jewelry.global.exception.NotAuthorityException;
+import com.msa.jewelry.global.exception.NotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,7 +54,7 @@ public class PriorityService {
 
             priorityRepository.save(priority);
         }
-        throw new ForbiddenException(NOT_ACCESS);
+        throw new NotAuthorityException(NOT_ACCESS);
     }
 
     public void updatePriority(String accessToken, String priorityId, PriorityDto.Update priorityDto) {
@@ -67,7 +67,7 @@ public class PriorityService {
 
             priority.updatePriority(priorityDto.getPriorityName(), priorityDto.getPriorityDate());
         }
-        throw new ForbiddenException(NOT_ACCESS);
+        throw new NotAuthorityException(NOT_ACCESS);
     }
 
     public void delete(String accessToken, String priorityId) {
@@ -80,6 +80,6 @@ public class PriorityService {
 
             priorityRepository.delete(priority);
         }
-        throw new ForbiddenException(NOT_ACCESS);
+        throw new NotAuthorityException(NOT_ACCESS);
     }
 }

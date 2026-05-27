@@ -5,7 +5,7 @@ import com.msa.jewelry.local.assistant_stone.dto.AssistantStoneDto;
 import com.msa.jewelry.local.assistant_stone.dto.AssistantStoneView;
 import com.msa.jewelry.local.assistant_stone.entity.AssistantStone;
 import com.msa.jewelry.local.assistant_stone.repository.AssistantStoneRepository;
-import jakarta.ws.rs.NotFoundException;
+import com.msa.jewelry.global.exception.NotFoundException;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
