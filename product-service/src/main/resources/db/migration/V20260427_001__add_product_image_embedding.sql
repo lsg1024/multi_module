@@ -1,0 +1,30 @@
+-- =====================================================================
+-- DISABLED — pgvector 확장이 시스템에 설치되지 않아 임시 비활성화
+-- =====================================================================
+-- 이 마이그레이션은 PostgreSQL에 pgvector 확장이 시스템 수준으로
+-- 설치된 후 다시 활성화한다. 현재는 NOOP(아무 동작 안 함).
+--
+-- 활성화 절차:
+--   1) 시스템에 pgvector 설치
+--      - apt:    sudo apt install postgresql-17-pgvector
+--      - macOS:  brew install pgvector  (PostgreSQL 재시작)
+--      - Docker: pgvector/pgvector:pg17 이미지 사용
+--      - source: https://github.com/pgvector/pgvector#installation
+--
+--   2) DBA가 super 권한으로 한 번만 실행 (public schema):
+--      CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;
+--
+--   3) 본 파일을 image-search-feature/db/V20260427_001__add_product_image_embedding.sql 의
+--      내용으로 교체하되, 첫 줄의 "CREATE EXTENSION IF NOT EXISTS vector;"는 제거할 것.
+--      (이미 public에 설치되어 있고, schema-per-tenant 환경에서 매 schema마다
+--       extension을 만들 필요는 없음.)
+--
+--   4) Flyway repair 후 재기동:
+--      - Flyway는 동일 버전을 두 번 실행하지 않음
+--      - 본 NOOP가 이미 적용 상태로 기록되어 있으므로 V20260427_002 로
+--        새 버전을 만들어 실제 DDL을 수행하는 것이 안전.
+--
+-- 참고: image-search-feature/db/V20260427_001__add_product_image_embedding.sql
+--       에 원본 DDL이 보존되어 있다.
+
+SELECT 1;  -- placeholder so Flyway records this version as applied

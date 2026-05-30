@@ -8,4 +8,5 @@ include 'order-service'
 include 'eureka-service'
 include 'api-gateway'
 include 'config-server'
+include 'jewelry_emp'
 

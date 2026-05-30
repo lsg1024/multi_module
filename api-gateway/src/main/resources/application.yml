@@ -53,8 +53,48 @@ spring:
         # 외부 라우팅: 클라이언트 <-> 서비스 #
         ################################
 
+        # jewelry-signup: 새 path /jewelry/signup → jewelry UsersController.@PostMapping("/signup")
+        # 모놀리스 통합 후 frontend 가 /jewelry/* 형태로 호출하는 패턴 지원.
+        - id: jewelry-signup
+          uri: lb://jewelry
+          predicates:
+            - Path=/jewelry/signup
+            - Method=POST,OPTIONS
+          filters:
+            - StripPrefix=1
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+
+        # jewelry-login: 인증 없이 호출 가능한 /jewelry/login → jewelry UsersController.@PostMapping("/login")
+        - id: jewelry-login
+          uri: lb://jewelry
+          predicates:
+            - Path=/jewelry/login
+            - Method=POST,OPTIONS
+          filters:
+            - StripPrefix=1
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+
+        # jewelry: 기타 /jewelry/** 경로 (인증 필요)
+        - id: jewelry
+          uri: lb://jewelry
+          predicates:
+            - Path=/jewelry/**
+          filters:
+            - StripPrefix=1
+            - name: LoggingFilter
+            - name: TenantHeaderFilter
+            - name: ForwardedForHeaderFilter
+            - name: UserAgentHeaderFilter
+            - name: AuthorizationHeaderFilter
+              args:
+                require: true
+                verifyDevice: true
+                verifyForwardedFor: false
+
         - id: users-signup
-          uri: lb://users
+          uri: lb://jewelry
           predicates:
             - Path=/users/signup
             - Method=POST,OPTIONS
@@ -89,7 +129,7 @@ spring:
                   basedOnPreviousValue: false
 
         - id: users
-          uri: lb://users
+          uri: lb://jewelry
           predicates:
             - Path=/users/**
           filters:
@@ -105,7 +145,7 @@ spring:
                 verifyForwardedFor: false
 
         - id: account
-          uri: lb://account
+          uri: lb://jewelry
           predicates:
             - Path=/account/**
           filters:
@@ -121,7 +161,7 @@ spring:
                 verifyForwardedFor: true
 
         - id: product
-          uri: lb://product
+          uri: lb://jewelry
           predicates:
             - Path=/product/**
           filters:
@@ -137,7 +177,7 @@ spring:
                 verifyForwardedFor: true
 
         - id: catalog
-          uri: lb://product
+          uri: lb://jewelry
           predicates:
             - Path=/catalog/**
           filters:
@@ -152,7 +192,7 @@ spring:
                 verifyForwardedFor: true
 
         - id: order
-          uri: lb://order
+          uri: lb://jewelry
           predicates:
             - Path=/order/**
           filters:
@@ -171,7 +211,7 @@ spring:
         # 내부 라우팅: 서비스 <-> 서비스 #
         #############################
         - id: users-internal # 일단 내부로 돌리긴 했는데 추후 내부 통신에 따라 login과 비login으로 분리 필요할지도..
-          uri: lb://users
+          uri: lb://jewelry
           predicates:
             - Path=/internal/users/**
           filters:
@@ -189,7 +229,7 @@ spring:
                 verifyForwardedFor: false
 
         - id: account-internal
-          uri: lb://account
+          uri: lb://jewelry
           predicates:
             - Path=/internal/account/**
           #            - RemoteAddr=${ACCOUNT_INTERNAL_IP}
@@ -208,7 +248,7 @@ spring:
                 verifyForwardedFor: false
 
         - id: product-internal
-          uri: lb://product
+          uri: lb://jewelry
           predicates:
             - Path=/internal/product/**
           #            - RemoteAddr=${PRODUCT_INTERNAL_IP}
@@ -228,7 +268,7 @@ spring:
 
 
         - id: order-internal
-          uri: lb://order
+          uri: lb://jewelry
           predicates:
             - Path=/internal/order/**
           #            - RemoteAddr=${ORDER_INTERNAL_IP}

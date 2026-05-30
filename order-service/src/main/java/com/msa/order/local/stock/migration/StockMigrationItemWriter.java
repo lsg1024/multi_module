@@ -23,13 +23,31 @@ import org.springframework.orm.jpa.EntityManagerFactoryUtils;
 @Slf4j
 public class StockMigrationItemWriter implements ItemWriter<Stock> {
 
+    private static final String DEFAULT_USER_NAME = "LEGACY_MIGRATION";
+
     private final EntityManagerFactory entityManagerFactory;
     private final StockMigrationFailureCollector failureCollector;
+    private final StockMigrationRecordCollector recordCollector;
+    /**
+     * StatusHistory.userName 값. JobParameter 로 주입되며, 누락/공백이면 "LEGACY_MIGRATION".
+     * 크롤링 등 별도 출처는 호출 측에서 "CRAWL_MIGRATION" 같은 값을 지정해 식별 가능하게 한다.
+     */
+    private final String userName;
 
     public StockMigrationItemWriter(EntityManagerFactory entityManagerFactory,
-                                    StockMigrationFailureCollector failureCollector) {
+                                    StockMigrationFailureCollector failureCollector,
+                                    StockMigrationRecordCollector recordCollector) {
+        this(entityManagerFactory, failureCollector, recordCollector, DEFAULT_USER_NAME);
+    }
+
+    public StockMigrationItemWriter(EntityManagerFactory entityManagerFactory,
+                                    StockMigrationFailureCollector failureCollector,
+                                    StockMigrationRecordCollector recordCollector,
+                                    String userName) {
         this.entityManagerFactory = entityManagerFactory;
         this.failureCollector = failureCollector;
+        this.recordCollector = recordCollector;
+        this.userName = (userName == null || userName.isBlank()) ? DEFAULT_USER_NAME : userName;
     }
 
     @Override
@@ -79,15 +97,25 @@ public class StockMigrationItemWriter implements ItemWriter<Stock> {
                 SourceType sourceType = determineSourceType(stock);
                 BusinessPhase phase = determinePhase(stock);
 
+                // userName 별 식별 라벨 (StatusHistory content prefix)
+                // - LEGACY_MIGRATION → "[레거시 재고 마이그레이션]" (기존 호환 유지)
+                // - 그 외 (예: CRAWL_MIGRATION) → "[<userName>]"
+                String contentPrefix = DEFAULT_USER_NAME.equals(this.userName)
+                        ? "[레거시 재고 마이그레이션] "
+                        : "[" + this.userName + "] ";
+
                 StatusHistory history = StatusHistory.create(
                         stock.getFlowCode(),
                         sourceType,
                         phase,
                         Kind.CREATE,
-                        "LEGACY_MIGRATION",
-                        "[레거시 재고 마이그레이션] " + (stock.getStockNote() != null ? stock.getStockNote() : "")
+                        this.userName,
+                        contentPrefix + (stock.getStockNote() != null ? stock.getStockNote() : "")
                 );
                 em.persist(history);
+
+                // 성공 기록 (row 단위 — 단, chunk 롤백 시 부정확할 수 있음)
+                recordCollector.recordSuccess(stock);
 
                 successCount++;
 
@@ -105,7 +133,9 @@ public class StockMigrationItemWriter implements ItemWriter<Stock> {
                 failRow.setModelName(stock.getProduct() != null ? stock.getProduct().getProductFactoryName() : "");
                 failRow.setStoreName(stock.getStoreName());
                 failRow.setCurrentStockType(stock.getOrderStatus() != null ? stock.getOrderStatus().getDisplayName() : "");
-                failureCollector.add(failRow, "DB 저장 실패: " + e.getMessage());
+                String reason = "DB 저장 실패: " + e.getMessage();
+                failureCollector.add(failRow, reason);
+                recordCollector.recordErrorPersist(stock, reason);
 
                 // 실패한 엔티티를 영속성 컨텍스트에서 제거
                 em.detach(stock);

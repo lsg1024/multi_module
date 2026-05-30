@@ -1,0 +1,1536 @@
+﻿Initialized native services in: C:\Users\zks14\.gradle\native
+Initialized jansi services in: C:\Users\zks14\.gradle\native
+Found daemon DaemonInfo{pid=30704, address=[7819ab51-c4f4-4e73-a780-643dca50f90b port:57627, addresses:[/127.0.0.1]], state=Idle, lastBusy=1779645195868, context=DefaultDaemonContext[uid=37ba4cd5-c7b1-43c2-adaa-f47cfd648b0b,javaHome=C:\Program Files\Java\jdk-17,javaVersion=17,javaVendor=Oracle Corporation,daemonRegistryDir=C:\Users\zks14\.gradle\daemon,pid=30704,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-XX:MaxMetaspaceSize=384m,-XX:+HeapDumpOnOutOfMemoryError,-Xms256m,-Xmx512m,-Dfile.encoding=UTF-8,-Duser.country=KR,-Duser.language=ko,-Duser.variant]} however its context does not match the desired criteria.
+At least one daemon option is different.
+Wanted: DaemonRequestContext{jvmCriteria=C:\Program Files\Java\jdk-17 (no JDK specified, using current Java home), daemonOpts=[-XX:MaxMetaspaceSize=384m, -XX:+HeapDumpOnOutOfMemoryError, -Xms256m, -Xmx512m, -Dfile.encoding=x-windows-949, -Duser.country=KR, -Duser.language=ko, -Duser.variant], applyInstrumentationAgent=true, nativeServicesMode=ENABLED, priority=NORMAL}
+Actual: DefaultDaemonContext[uid=37ba4cd5-c7b1-43c2-adaa-f47cfd648b0b,javaHome=C:\Program Files\Java\jdk-17,javaVersion=17,javaVendor=Oracle Corporation,daemonRegistryDir=C:\Users\zks14\.gradle\daemon,pid=30704,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-XX:MaxMetaspaceSize=384m,-XX:+HeapDumpOnOutOfMemoryError,-Xms256m,-Xmx512m,-Dfile.encoding=UTF-8,-Duser.country=KR,-Duser.language=ko,-Duser.variant]
+
+  Looking for a different daemon...
+The client will now receive all logging from the daemon (pid: 25800). The daemon log file: C:\Users\zks14\.gradle\daemon\8.14.2\daemon-25800.out.log
+Starting 6th build in daemon [uptime: 10 mins 47.75 secs, performance: 100%, GC rate: 0.00/s, heap usage: 0% of 512 MiB, non-heap usage: 21% of 384 MiB]
+Using 24 worker leases.
+Now considering [C:\Users\zks14\Desktop\totalFile\multi_module] as hierarchies to watch
+Watching the file system is configured to be enabled if available
+File system watching is active
+Starting Build
+Settings evaluated using settings file 'C:\Users\zks14\Desktop\totalFile\multi_module\settings.gradle'.
+Projects loaded. Root project using build file 'C:\Users\zks14\Desktop\totalFile\multi_module\build.gradle'.
+Included projects: [root project 'multi_module', project ':account-service', project ':api-gateway', project ':auth-service', project ':common', project ':config-server', project ':eureka-service', project ':jewelry_emp', project ':order-service', project ':product-service', project ':user-service']
+
+> Configure project :
+Evaluating root project 'multi_module' using build file 'C:\Users\zks14\Desktop\totalFile\multi_module\build.gradle'.
+Resolved plugin [id: 'java']
+Resolved plugin [id: 'org.springframework.boot', version: '3.4.7']
+Resolved plugin [id: 'io.spring.dependency-management', version: '1.1.7']
+Applying dependency management to configuration 'annotationProcessor' in project 'multi_module'
+Applying dependency management to configuration 'apiElements' in project 'multi_module'
+Applying dependency management to configuration 'archives' in project 'multi_module'
+Applying dependency management to configuration 'bootArchives' in project 'multi_module'
+Applying dependency management to configuration 'compileClasspath' in project 'multi_module'
+Applying dependency management to configuration 'compileOnly' in project 'multi_module'
+Applying dependency management to configuration 'default' in project 'multi_module'
+Applying dependency management to configuration 'developmentOnly' in project 'multi_module'
+Applying dependency management to configuration 'implementation' in project 'multi_module'
+Applying dependency management to configuration 'mainSourceElements' in project 'multi_module'
+Applying dependency management to configuration 'productionRuntimeClasspath' in project 'multi_module'
+Applying dependency management to configuration 'runtimeClasspath' in project 'multi_module'
+Applying dependency management to configuration 'runtimeElements' in project 'multi_module'
+Applying dependency management to configuration 'runtimeOnly' in project 'multi_module'
+Applying dependency management to configuration 'testAndDevelopmentOnly' in project 'multi_module'
+Applying dependency management to configuration 'testAnnotationProcessor' in project 'multi_module'
+Applying dependency management to configuration 'testCompileClasspath' in project 'multi_module'
+Applying dependency management to configuration 'testCompileOnly' in project 'multi_module'
+Applying dependency management to configuration 'testImplementation' in project 'multi_module'
+Applying dependency management to configuration 'testResultsElementsForTest' in project 'multi_module'
+Applying dependency management to configuration 'testRuntimeClasspath' in project 'multi_module'
+Applying dependency management to configuration 'testRuntimeOnly' in project 'multi_module'
+Applying dependency management to configuration 'annotationProcessor' in project 'account-service'
+Applying dependency management to configuration 'apiElements' in project 'account-service'
+Applying dependency management to configuration 'archives' in project 'account-service'
+Applying dependency management to configuration 'bootArchives' in project 'account-service'
+Applying dependency management to configuration 'compileClasspath' in project 'account-service'
+Applying dependency management to configuration 'compileOnly' in project 'account-service'
+Applying dependency management to configuration 'default' in project 'account-service'
+Applying dependency management to configuration 'developmentOnly' in project 'account-service'
+Applying dependency management to configuration 'implementation' in project 'account-service'
+Applying dependency management to configuration 'mainSourceElements' in project 'account-service'
+Applying dependency management to configuration 'productionRuntimeClasspath' in project 'account-service'
+Applying dependency management to configuration 'runtimeClasspath' in project 'account-service'
+Applying dependency management to configuration 'runtimeElements' in project 'account-service'
+Applying dependency management to configuration 'runtimeOnly' in project 'account-service'
+Applying dependency management to configuration 'testAndDevelopmentOnly' in project 'account-service'
+Applying dependency management to configuration 'testAnnotationProcessor' in project 'account-service'
+Applying dependency management to configuration 'testCompileClasspath' in project 'account-service'
+Applying dependency management to configuration 'testCompileOnly' in project 'account-service'
+Applying dependency management to configuration 'testImplementation' in project 'account-service'
+Applying dependency management to configuration 'testResultsElementsForTest' in project 'account-service'
+Applying dependency management to configuration 'testRuntimeClasspath' in project 'account-service'
+Applying dependency management to configuration 'testRuntimeOnly' in project 'account-service'
+Applying dependency management to configuration 'testFixturesImplementation' in project 'account-service'
+Applying dependency management to configuration 'testFixturesCompileOnly' in project 'account-service'
+Applying dependency management to configuration 'testFixturesCompileClasspath' in project 'account-service'
+Applying dependency management to configuration 'testFixturesAnnotationProcessor' in project 'account-service'
+Applying dependency management to configuration 'testFixturesRuntimeOnly' in project 'account-service'
+Applying dependency management to configuration 'testFixturesRuntimeClasspath' in project 'account-service'
+Applying dependency management to configuration 'testFixturesApiElements' in project 'account-service'
+Applying dependency management to configuration 'testFixturesRuntimeElements' in project 'account-service'
+Applying dependency management to configuration 'testFixturesApi' in project 'account-service'
+Applying dependency management to configuration 'testFixturesCompileOnlyApi' in project 'account-service'
+Applying dependency management to configuration 'annotationProcessor' in project 'api-gateway'
+Applying dependency management to configuration 'apiElements' in project 'api-gateway'
+Applying dependency management to configuration 'archives' in project 'api-gateway'
+Applying dependency management to configuration 'bootArchives' in project 'api-gateway'
+Applying dependency management to configuration 'compileClasspath' in project 'api-gateway'
+Applying dependency management to configuration 'compileOnly' in project 'api-gateway'
+Applying dependency management to configuration 'default' in project 'api-gateway'
+Applying dependency management to configuration 'developmentOnly' in project 'api-gateway'
+Applying dependency management to configuration 'implementation' in project 'api-gateway'
+Applying dependency management to configuration 'mainSourceElements' in project 'api-gateway'
+Applying dependency management to configuration 'productionRuntimeClasspath' in project 'api-gateway'
+Applying dependency management to configuration 'runtimeClasspath' in project 'api-gateway'
+Applying dependency management to configuration 'runtimeElements' in project 'api-gateway'
+Applying dependency management to configuration 'runtimeOnly' in project 'api-gateway'
+Applying dependency management to configuration 'testAndDevelopmentOnly' in project 'api-gateway'
+Applying dependency management to configuration 'testAnnotationProcessor' in project 'api-gateway'
+Applying dependency management to configuration 'testCompileClasspath' in project 'api-gateway'
+Applying dependency management to configuration 'testCompileOnly' in project 'api-gateway'
+Applying dependency management to configuration 'testImplementation' in project 'api-gateway'
+Applying dependency management to configuration 'testResultsElementsForTest' in project 'api-gateway'
+Applying dependency management to configuration 'testRuntimeClasspath' in project 'api-gateway'
+Applying dependency management to configuration 'testRuntimeOnly' in project 'api-gateway'
+Applying dependency management to configuration 'testFixturesImplementation' in project 'api-gateway'
+Applying dependency management to configuration 'testFixturesCompileOnly' in project 'api-gateway'
+Applying dependency management to configuration 'testFixturesCompileClasspath' in project 'api-gateway'
+Applying dependency management to configuration 'testFixturesAnnotationProcessor' in project 'api-gateway'
+Applying dependency management to configuration 'testFixturesRuntimeOnly' in project 'api-gateway'
+Applying dependency management to configuration 'testFixturesRuntimeClasspath' in project 'api-gateway'
+Applying dependency management to configuration 'testFixturesApiElements' in project 'api-gateway'
+Applying dependency management to configuration 'testFixturesRuntimeElements' in project 'api-gateway'
+Applying dependency management to configuration 'testFixturesApi' in project 'api-gateway'
+Applying dependency management to configuration 'testFixturesCompileOnlyApi' in project 'api-gateway'
+Applying dependency management to configuration 'annotationProcessor' in project 'auth-service'
+Applying dependency management to configuration 'apiElements' in project 'auth-service'
+Applying dependency management to configuration 'archives' in project 'auth-service'
+Applying dependency management to configuration 'bootArchives' in project 'auth-service'
+Applying dependency management to configuration 'compileClasspath' in project 'auth-service'
+Applying dependency management to configuration 'compileOnly' in project 'auth-service'
+Applying dependency management to configuration 'default' in project 'auth-service'
+Applying dependency management to configuration 'developmentOnly' in project 'auth-service'
+Applying dependency management to configuration 'implementation' in project 'auth-service'
+Applying dependency management to configuration 'mainSourceElements' in project 'auth-service'
+Applying dependency management to configuration 'productionRuntimeClasspath' in project 'auth-service'
+Applying dependency management to configuration 'runtimeClasspath' in project 'auth-service'
+Applying dependency management to configuration 'runtimeElements' in project 'auth-service'
+Applying dependency management to configuration 'runtimeOnly' in project 'auth-service'
+Applying dependency management to configuration 'testAndDevelopmentOnly' in project 'auth-service'
+Applying dependency management to configuration 'testAnnotationProcessor' in project 'auth-service'
+Applying dependency management to configuration 'testCompileClasspath' in project 'auth-service'
+Applying dependency management to configuration 'testCompileOnly' in project 'auth-service'
+Applying dependency management to configuration 'testImplementation' in project 'auth-service'
+Applying dependency management to configuration 'testResultsElementsForTest' in project 'auth-service'
+Applying dependency management to configuration 'testRuntimeClasspath' in project 'auth-service'
+Applying dependency management to configuration 'testRuntimeOnly' in project 'auth-service'
+Applying dependency management to configuration 'testFixturesImplementation' in project 'auth-service'
+Applying dependency management to configuration 'testFixturesCompileOnly' in project 'auth-service'
+Applying dependency management to configuration 'testFixturesCompileClasspath' in project 'auth-service'
+Applying dependency management to configuration 'testFixturesAnnotationProcessor' in project 'auth-service'
+Applying dependency management to configuration 'testFixturesRuntimeOnly' in project 'auth-service'
+Applying dependency management to configuration 'testFixturesRuntimeClasspath' in project 'auth-service'
+Applying dependency management to configuration 'testFixturesApiElements' in project 'auth-service'
+Applying dependency management to configuration 'testFixturesRuntimeElements' in project 'auth-service'
+Applying dependency management to configuration 'testFixturesApi' in project 'auth-service'
+Applying dependency management to configuration 'testFixturesCompileOnlyApi' in project 'auth-service'
+Applying dependency management to configuration 'annotationProcessor' in project 'common'
+Applying dependency management to configuration 'apiElements' in project 'common'
+Applying dependency management to configuration 'archives' in project 'common'
+Applying dependency management to configuration 'bootArchives' in project 'common'
+Applying dependency management to configuration 'compileClasspath' in project 'common'
+Applying dependency management to configuration 'compileOnly' in project 'common'
+Applying dependency management to configuration 'default' in project 'common'
+Applying dependency management to configuration 'developmentOnly' in project 'common'
+Applying dependency management to configuration 'implementation' in project 'common'
+Applying dependency management to configuration 'mainSourceElements' in project 'common'
+Applying dependency management to configuration 'productionRuntimeClasspath' in project 'common'
+Applying dependency management to configuration 'runtimeClasspath' in project 'common'
+Applying dependency management to configuration 'runtimeElements' in project 'common'
+Applying dependency management to configuration 'runtimeOnly' in project 'common'
+Applying dependency management to configuration 'testAndDevelopmentOnly' in project 'common'
+Applying dependency management to configuration 'testAnnotationProcessor' in project 'common'
+Applying dependency management to configuration 'testCompileClasspath' in project 'common'
+Applying dependency management to configuration 'testCompileOnly' in project 'common'
+Applying dependency management to configuration 'testImplementation' in project 'common'
+Applying dependency management to configuration 'testResultsElementsForTest' in project 'common'
+Applying dependency management to configuration 'testRuntimeClasspath' in project 'common'
+Applying dependency management to configuration 'testRuntimeOnly' in project 'common'
+Applying dependency management to configuration 'testFixturesImplementation' in project 'common'
+Applying dependency management to configuration 'testFixturesCompileOnly' in project 'common'
+Applying dependency management to configuration 'testFixturesCompileClasspath' in project 'common'
+Applying dependency management to configuration 'testFixturesAnnotationProcessor' in project 'common'
+Applying dependency management to configuration 'testFixturesRuntimeOnly' in project 'common'
+Applying dependency management to configuration 'testFixturesRuntimeClasspath' in project 'common'
+Applying dependency management to configuration 'testFixturesApiElements' in project 'common'
+Applying dependency management to configuration 'testFixturesRuntimeElements' in project 'common'
+Applying dependency management to configuration 'testFixturesApi' in project 'common'
+Applying dependency management to configuration 'testFixturesCompileOnlyApi' in project 'common'
+Applying dependency management to configuration 'annotationProcessor' in project 'config-server'
+Applying dependency management to configuration 'apiElements' in project 'config-server'
+Applying dependency management to configuration 'archives' in project 'config-server'
+Applying dependency management to configuration 'bootArchives' in project 'config-server'
+Applying dependency management to configuration 'compileClasspath' in project 'config-server'
+Applying dependency management to configuration 'compileOnly' in project 'config-server'
+Applying dependency management to configuration 'default' in project 'config-server'
+Applying dependency management to configuration 'developmentOnly' in project 'config-server'
+Applying dependency management to configuration 'implementation' in project 'config-server'
+Applying dependency management to configuration 'mainSourceElements' in project 'config-server'
+Applying dependency management to configuration 'productionRuntimeClasspath' in project 'config-server'
+Applying dependency management to configuration 'runtimeClasspath' in project 'config-server'
+Applying dependency management to configuration 'runtimeElements' in project 'config-server'
+Applying dependency management to configuration 'runtimeOnly' in project 'config-server'
+Applying dependency management to configuration 'testAndDevelopmentOnly' in project 'config-server'
+Applying dependency management to configuration 'testAnnotationProcessor' in project 'config-server'
+Applying dependency management to configuration 'testCompileClasspath' in project 'config-server'
+Applying dependency management to configuration 'testCompileOnly' in project 'config-server'
+Applying dependency management to configuration 'testImplementation' in project 'config-server'
+Applying dependency management to configuration 'testResultsElementsForTest' in project 'config-server'
+Applying dependency management to configuration 'testRuntimeClasspath' in project 'config-server'
+Applying dependency management to configuration 'testRuntimeOnly' in project 'config-server'
+Applying dependency management to configuration 'testFixturesImplementation' in project 'config-server'
+Applying dependency management to configuration 'testFixturesCompileOnly' in project 'config-server'
+Applying dependency management to configuration 'testFixturesCompileClasspath' in project 'config-server'
+Applying dependency management to configuration 'testFixturesAnnotationProcessor' in project 'config-server'
+Applying dependency management to configuration 'testFixturesRuntimeOnly' in project 'config-server'
+Applying dependency management to configuration 'testFixturesRuntimeClasspath' in project 'config-server'
+Applying dependency management to configuration 'testFixturesApiElements' in project 'config-server'
+Applying dependency management to configuration 'testFixturesRuntimeElements' in project 'config-server'
+Applying dependency management to configuration 'testFixturesApi' in project 'config-server'
+Applying dependency management to configuration 'testFixturesCompileOnlyApi' in project 'config-server'
+Applying dependency management to configuration 'annotationProcessor' in project 'eureka-service'
+Applying dependency management to configuration 'apiElements' in project 'eureka-service'
+Applying dependency management to configuration 'archives' in project 'eureka-service'
+Applying dependency management to configuration 'bootArchives' in project 'eureka-service'
+Applying dependency management to configuration 'compileClasspath' in project 'eureka-service'
+Applying dependency management to configuration 'compileOnly' in project 'eureka-service'
+Applying dependency management to configuration 'default' in project 'eureka-service'
+Applying dependency management to configuration 'developmentOnly' in project 'eureka-service'
+Applying dependency management to configuration 'implementation' in project 'eureka-service'
+Applying dependency management to configuration 'mainSourceElements' in project 'eureka-service'
+Applying dependency management to configuration 'productionRuntimeClasspath' in project 'eureka-service'
+Applying dependency management to configuration 'runtimeClasspath' in project 'eureka-service'
+Applying dependency management to configuration 'runtimeElements' in project 'eureka-service'
+Applying dependency management to configuration 'runtimeOnly' in project 'eureka-service'
+Applying dependency management to configuration 'testAndDevelopmentOnly' in project 'eureka-service'
+Applying dependency management to configuration 'testAnnotationProcessor' in project 'eureka-service'
+Applying dependency management to configuration 'testCompileClasspath' in project 'eureka-service'
+Applying dependency management to configuration 'testCompileOnly' in project 'eureka-service'
+Applying dependency management to configuration 'testImplementation' in project 'eureka-service'
+Applying dependency management to configuration 'testResultsElementsForTest' in project 'eureka-service'
+Applying dependency management to configuration 'testRuntimeClasspath' in project 'eureka-service'
+Applying dependency management to configuration 'testRuntimeOnly' in project 'eureka-service'
+Applying dependency management to configuration 'testFixturesImplementation' in project 'eureka-service'
+Applying dependency management to configuration 'testFixturesCompileOnly' in project 'eureka-service'
+Applying dependency management to configuration 'testFixturesCompileClasspath' in project 'eureka-service'
+Applying dependency management to configuration 'testFixturesAnnotationProcessor' in project 'eureka-service'
+Applying dependency management to configuration 'testFixturesRuntimeOnly' in project 'eureka-service'
+Applying dependency management to configuration 'testFixturesRuntimeClasspath' in project 'eureka-service'
+Applying dependency management to configuration 'testFixturesApiElements' in project 'eureka-service'
+Applying dependency management to configuration 'testFixturesRuntimeElements' in project 'eureka-service'
+Applying dependency management to configuration 'testFixturesApi' in project 'eureka-service'
+Applying dependency management to configuration 'testFixturesCompileOnlyApi' in project 'eureka-service'
+Applying dependency management to configuration 'annotationProcessor' in project 'jewelry_emp'
+Applying dependency management to configuration 'apiElements' in project 'jewelry_emp'
+Applying dependency management to configuration 'archives' in project 'jewelry_emp'
+Applying dependency management to configuration 'bootArchives' in project 'jewelry_emp'
+Applying dependency management to configuration 'compileClasspath' in project 'jewelry_emp'
+Applying dependency management to configuration 'compileOnly' in project 'jewelry_emp'
+Applying dependency management to configuration 'default' in project 'jewelry_emp'
+Applying dependency management to configuration 'developmentOnly' in project 'jewelry_emp'
+Applying dependency management to configuration 'implementation' in project 'jewelry_emp'
+Applying dependency management to configuration 'mainSourceElements' in project 'jewelry_emp'
+Applying dependency management to configuration 'productionRuntimeClasspath' in project 'jewelry_emp'
+Applying dependency management to configuration 'runtimeClasspath' in project 'jewelry_emp'
+Applying dependency management to configuration 'runtimeElements' in project 'jewelry_emp'
+Applying dependency management to configuration 'runtimeOnly' in project 'jewelry_emp'
+Applying dependency management to configuration 'testAndDevelopmentOnly' in project 'jewelry_emp'
+Applying dependency management to configuration 'testAnnotationProcessor' in project 'jewelry_emp'
+Applying dependency management to configuration 'testCompileClasspath' in project 'jewelry_emp'
+Applying dependency management to configuration 'testCompileOnly' in project 'jewelry_emp'
+Applying dependency management to configuration 'testImplementation' in project 'jewelry_emp'
+Applying dependency management to configuration 'testResultsElementsForTest' in project 'jewelry_emp'
+Applying dependency management to configuration 'testRuntimeClasspath' in project 'jewelry_emp'
+Applying dependency management to configuration 'testRuntimeOnly' in project 'jewelry_emp'
+Applying dependency management to configuration 'testFixturesImplementation' in project 'jewelry_emp'
+Applying dependency management to configuration 'testFixturesCompileOnly' in project 'jewelry_emp'
+Applying dependency management to configuration 'testFixturesCompileClasspath' in project 'jewelry_emp'
+Applying dependency management to configuration 'testFixturesAnnotationProcessor' in project 'jewelry_emp'
+Applying dependency management to configuration 'testFixturesRuntimeOnly' in project 'jewelry_emp'
+Applying dependency management to configuration 'testFixturesRuntimeClasspath' in project 'jewelry_emp'
+Applying dependency management to configuration 'testFixturesApiElements' in project 'jewelry_emp'
+Applying dependency management to configuration 'testFixturesRuntimeElements' in project 'jewelry_emp'
+Applying dependency management to configuration 'testFixturesApi' in project 'jewelry_emp'
+Applying dependency management to configuration 'testFixturesCompileOnlyApi' in project 'jewelry_emp'
+Applying dependency management to configuration 'annotationProcessor' in project 'order-service'
+Applying dependency management to configuration 'apiElements' in project 'order-service'
+Applying dependency management to configuration 'archives' in project 'order-service'
+Applying dependency management to configuration 'bootArchives' in project 'order-service'
+Applying dependency management to configuration 'compileClasspath' in project 'order-service'
+Applying dependency management to configuration 'compileOnly' in project 'order-service'
+Applying dependency management to configuration 'default' in project 'order-service'
+Applying dependency management to configuration 'developmentOnly' in project 'order-service'
+Applying dependency management to configuration 'implementation' in project 'order-service'
+Applying dependency management to configuration 'mainSourceElements' in project 'order-service'
+Applying dependency management to configuration 'productionRuntimeClasspath' in project 'order-service'
+Applying dependency management to configuration 'runtimeClasspath' in project 'order-service'
+Applying dependency management to configuration 'runtimeElements' in project 'order-service'
+Applying dependency management to configuration 'runtimeOnly' in project 'order-service'
+Applying dependency management to configuration 'testAndDevelopmentOnly' in project 'order-service'
+Applying dependency management to configuration 'testAnnotationProcessor' in project 'order-service'
+Applying dependency management to configuration 'testCompileClasspath' in project 'order-service'
+Applying dependency management to configuration 'testCompileOnly' in project 'order-service'
+Applying dependency management to configuration 'testImplementation' in project 'order-service'
+Applying dependency management to configuration 'testResultsElementsForTest' in project 'order-service'
+Applying dependency management to configuration 'testRuntimeClasspath' in project 'order-service'
+Applying dependency management to configuration 'testRuntimeOnly' in project 'order-service'
+Applying dependency management to configuration 'testFixturesImplementation' in project 'order-service'
+Applying dependency management to configuration 'testFixturesCompileOnly' in project 'order-service'
+Applying dependency management to configuration 'testFixturesCompileClasspath' in project 'order-service'
+Applying dependency management to configuration 'testFixturesAnnotationProcessor' in project 'order-service'
+Applying dependency management to configuration 'testFixturesRuntimeOnly' in project 'order-service'
+Applying dependency management to configuration 'testFixturesRuntimeClasspath' in project 'order-service'
+Applying dependency management to configuration 'testFixturesApiElements' in project 'order-service'
+Applying dependency management to configuration 'testFixturesRuntimeElements' in project 'order-service'
+Applying dependency management to configuration 'testFixturesApi' in project 'order-service'
+Applying dependency management to configuration 'testFixturesCompileOnlyApi' in project 'order-service'
+Applying dependency management to configuration 'annotationProcessor' in project 'product-service'
+Applying dependency management to configuration 'apiElements' in project 'product-service'
+Applying dependency management to configuration 'archives' in project 'product-service'
+Applying dependency management to configuration 'bootArchives' in project 'product-service'
+Applying dependency management to configuration 'compileClasspath' in project 'product-service'
+Applying dependency management to configuration 'compileOnly' in project 'product-service'
+Applying dependency management to configuration 'default' in project 'product-service'
+Applying dependency management to configuration 'developmentOnly' in project 'product-service'
+Applying dependency management to configuration 'implementation' in project 'product-service'
+Applying dependency management to configuration 'mainSourceElements' in project 'product-service'
+Applying dependency management to configuration 'productionRuntimeClasspath' in project 'product-service'
+Applying dependency management to configuration 'runtimeClasspath' in project 'product-service'
+Applying dependency management to configuration 'runtimeElements' in project 'product-service'
+Applying dependency management to configuration 'runtimeOnly' in project 'product-service'
+Applying dependency management to configuration 'testAndDevelopmentOnly' in project 'product-service'
+Applying dependency management to configuration 'testAnnotationProcessor' in project 'product-service'
+Applying dependency management to configuration 'testCompileClasspath' in project 'product-service'
+Applying dependency management to configuration 'testCompileOnly' in project 'product-service'
+Applying dependency management to configuration 'testImplementation' in project 'product-service'
+Applying dependency management to configuration 'testResultsElementsForTest' in project 'product-service'
+Applying dependency management to configuration 'testRuntimeClasspath' in project 'product-service'
+Applying dependency management to configuration 'testRuntimeOnly' in project 'product-service'
+Applying dependency management to configuration 'testFixturesImplementation' in project 'product-service'
+Applying dependency management to configuration 'testFixturesCompileOnly' in project 'product-service'
+Applying dependency management to configuration 'testFixturesCompileClasspath' in project 'product-service'
+Applying dependency management to configuration 'testFixturesAnnotationProcessor' in project 'product-service'
+Applying dependency management to configuration 'testFixturesRuntimeOnly' in project 'product-service'
+Applying dependency management to configuration 'testFixturesRuntimeClasspath' in project 'product-service'
+Applying dependency management to configuration 'testFixturesApiElements' in project 'product-service'
+Applying dependency management to configuration 'testFixturesRuntimeElements' in project 'product-service'
+Applying dependency management to configuration 'testFixturesApi' in project 'product-service'
+Applying dependency management to configuration 'testFixturesCompileOnlyApi' in project 'product-service'
+Applying dependency management to configuration 'annotationProcessor' in project 'user-service'
+Applying dependency management to configuration 'apiElements' in project 'user-service'
+Applying dependency management to configuration 'archives' in project 'user-service'
+Applying dependency management to configuration 'bootArchives' in project 'user-service'
+Applying dependency management to configuration 'compileClasspath' in project 'user-service'
+Applying dependency management to configuration 'compileOnly' in project 'user-service'
+Applying dependency management to configuration 'default' in project 'user-service'
+Applying dependency management to configuration 'developmentOnly' in project 'user-service'
+Applying dependency management to configuration 'implementation' in project 'user-service'
+Applying dependency management to configuration 'mainSourceElements' in project 'user-service'
+Applying dependency management to configuration 'productionRuntimeClasspath' in project 'user-service'
+Applying dependency management to configuration 'runtimeClasspath' in project 'user-service'
+Applying dependency management to configuration 'runtimeElements' in project 'user-service'
+Applying dependency management to configuration 'runtimeOnly' in project 'user-service'
+Applying dependency management to configuration 'testAndDevelopmentOnly' in project 'user-service'
+Applying dependency management to configuration 'testAnnotationProcessor' in project 'user-service'
+Applying dependency management to configuration 'testCompileClasspath' in project 'user-service'
+Applying dependency management to configuration 'testCompileOnly' in project 'user-service'
+Applying dependency management to configuration 'testImplementation' in project 'user-service'
+Applying dependency management to configuration 'testResultsElementsForTest' in project 'user-service'
+Applying dependency management to configuration 'testRuntimeClasspath' in project 'user-service'
+Applying dependency management to configuration 'testRuntimeOnly' in project 'user-service'
+Applying dependency management to configuration 'testFixturesImplementation' in project 'user-service'
+Applying dependency management to configuration 'testFixturesCompileOnly' in project 'user-service'
+Applying dependency management to configuration 'testFixturesCompileClasspath' in project 'user-service'
+Applying dependency management to configuration 'testFixturesAnnotationProcessor' in project 'user-service'
+Applying dependency management to configuration 'testFixturesRuntimeOnly' in project 'user-service'
+Applying dependency management to configuration 'testFixturesRuntimeClasspath' in project 'user-service'
+Applying dependency management to configuration 'testFixturesApiElements' in project 'user-service'
+Applying dependency management to configuration 'testFixturesRuntimeElements' in project 'user-service'
+Applying dependency management to configuration 'testFixturesApi' in project 'user-service'
+Applying dependency management to configuration 'testFixturesCompileOnlyApi' in project 'user-service'
+
+> Configure project :account-service
+Evaluating project ':account-service' using build file 'C:\Users\zks14\Desktop\totalFile\multi_module\account-service\build.gradle'.
+
+> Configure project :api-gateway
+Evaluating project ':api-gateway' using build file 'C:\Users\zks14\Desktop\totalFile\multi_module\api-gateway\build.gradle'.
+
+> Configure project :auth-service
+Evaluating project ':auth-service' using build file 'C:\Users\zks14\Desktop\totalFile\multi_module\auth-service\build.gradle'.
+
+> Configure project :common
+Evaluating project ':common' using build file 'C:\Users\zks14\Desktop\totalFile\multi_module\common\build.gradle'.
+
+> Configure project :config-server
+Evaluating project ':config-server' using build file 'C:\Users\zks14\Desktop\totalFile\multi_module\config-server\build.gradle'.
+
+> Configure project :eureka-service
+Evaluating project ':eureka-service' using build file 'C:\Users\zks14\Desktop\totalFile\multi_module\eureka-service\build.gradle'.
+
+> Configure project :jewelry_emp
+Evaluating project ':jewelry_emp' using build file 'C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\build.gradle'.
+
+> Configure project :order-service
+Evaluating project ':order-service' using build file 'C:\Users\zks14\Desktop\totalFile\multi_module\order-service\build.gradle'.
+
+> Configure project :product-service
+Evaluating project ':product-service' using build file 'C:\Users\zks14\Desktop\totalFile\multi_module\product-service\build.gradle'.
+
+> Configure project :user-service
+Evaluating project ':user-service' using build file 'C:\Users\zks14\Desktop\totalFile\multi_module\user-service\build.gradle'.
+All projects evaluated.
+Task path ':jewelry_emp:clean' matched project ':jewelry_emp'
+Task name matched 'clean'
+Task path ':jewelry_emp:compileJava' matched project ':jewelry_emp'
+Task name matched 'compileJava'
+Selected primary task 'clean' from project :jewelry_emp
+Selected primary task 'compileJava' from project :jewelry_emp
+Resolving global dependency management for project 'jewelry_emp'
+Excluding []
+Excluding []
+Excluding []
+Excluding [com.google.code.findbugs:annotations, com.netflix.archaius:archaius-core, com.google.code.findbugs:jsr305, javax.servlet:servlet-api, com.github.vlsi.compactmap:compactmap, com.github.andrewoma.dexx:dexx-collections]
+Excluding []
+Resolving global dependency management for project 'common'
+Variant Selection Exception: org.gradle.internal.component.resolution.failure.exception.VariantSelectionByAttributesException caused by Resolution Failure: org.gradle.internal.component.resolution.failure.type.NoCompatibleVariantsFailure
+Excluding []
+Excluding []
+Excluding []
+Tasks to be executed: [task ':jewelry_emp:clean', task ':common:compileJava', task ':common:processResources', task ':common:classes', task ':common:jar', task ':common:compileTestFixturesJava', task ':jewelry_emp:compileJava']
+Tasks that were excluded: []
+Resolve mutations for :jewelry_emp:clean (Thread[Execution worker,5,main]) started.
+:jewelry_emp:clean (Thread[Execution worker Thread 5,5,main]) started.
+destroyer locations for task group 0 (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :jewelry_emp:clean
+Caching disabled for task ':jewelry_emp:clean' because:
+  Build cache is disabled
+Task ':jewelry_emp:clean' is not up-to-date because:
+  Task has not declared any outputs despite executing actions.
+Resolve mutations for :common:compileJava (Thread[Execution worker Thread 5,5,main]) started.
+:common:compileJava (Thread[Execution worker Thread 5,5,main]) started.
+
+> Task :common:compileJava UP-TO-DATE
+Custom actions are attached to task ':common:compileJava'.
+Caching disabled for task ':common:compileJava' because:
+  Build cache is disabled
+Skipping task ':common:compileJava' as it is up-to-date.
+Resolve mutations for :common:processResources (Thread[Execution worker Thread 5,5,main]) started.
+:common:processResources (Thread[Execution worker Thread 5,5,main]) started.
+
+> Task :common:processResources NO-SOURCE
+Skipping task ':common:processResources' as it has no source files and no previous output files.
+Resolve mutations for :common:classes (Thread[Execution worker Thread 5,5,main]) started.
+:common:classes (Thread[Execution worker Thread 13,5,main]) started.
+
+> Task :common:classes UP-TO-DATE
+Skipping task ':common:classes' as it has no actions.
+Resolve mutations for :common:jar (Thread[Execution worker Thread 7,5,main]) started.
+:common:jar (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :common:jar UP-TO-DATE
+Caching disabled for task ':common:jar' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':common:jar' as it is up-to-date.
+work action resolve common-0.0.1-SNAPSHOT-plain.jar (project :common) (Thread[Execution worker Thread 7,5,main]) started.
+Resolve mutations for :common:compileTestFixturesJava (Thread[Execution worker Thread 16,5,main]) started.
+:common:compileTestFixturesJava (Thread[Execution worker Thread 16,5,main]) started.
+
+> Task :common:compileTestFixturesJava NO-SOURCE
+Skipping task ':common:compileTestFixturesJava' as it has no source files and no previous output files.
+work action resolve testFixtures (project :common) (Thread[Execution worker Thread 16,5,main]) started.
+Resolve mutations for :jewelry_emp:compileJava (Thread[Execution worker Thread 16,5,main]) started.
+:jewelry_emp:compileJava (Thread[Execution worker Thread 16,5,main]) started.
+
+> Task :jewelry_emp:compileJava
+Custom actions are attached to task ':jewelry_emp:compileJava'.
+Caching disabled for task ':jewelry_emp:compileJava' because:
+  Build cache is disabled
+Task ':jewelry_emp:compileJava' is not up-to-date because:
+  Task has failed previously.
+The input changes require a full rebuild for incremental task ':jewelry_emp:compileJava'.
+Compilation mode: in-process compilation
+Full recompilation is required because no incremental change information is available. This is usually caused by clean builds or changing compiler arguments.
+Compiling with toolchain 'C:\Program Files\Java\jdk-17'.
+Compiling with JDK Java compiler API.
+./gradlew : C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:7: error: cannot
+ find symbol
+위치 줄:1 문자:1
++ ./gradlew :jewelry_emp:clean :jewelry_emp:compileJava --info 2>&1 | O ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\Users\zks14\...not find symbol:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+import com.msa.jewelry.local.classification.dto.QClassificationDto_ResponseSingle;
+                                               ^
+  symbol:   class QClassificationDto_ResponseSingle
+  location: package com.msa.jewelry.local.classification.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:8: error: cannot find symbol
+import com.msa.jewelry.local.material.dto.QMaterialDto_ResponseSingle;
+                                         ^
+  symbol:   class QMaterialDto_ResponseSingle
+  location: package com.msa.jewelry.local.material.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:10: error: cannot find symbo
+l
+import com.msa.jewelry.local.product.dto.QProductImageDto_Response;
+                                        ^
+  symbol:   class QProductImageDto_Response
+  location: package com.msa.jewelry.local.product.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:11: error: cannot find symbo
+l
+import com.msa.jewelry.local.set.dto.QSetTypeDto_ResponseSingle;
+                                    ^
+  symbol:   class QSetTypeDto_ResponseSingle
+  location: package com.msa.jewelry.local.set.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:26: error: cannot find symbo
+l
+import static com.msa.jewelry.local.classification.entity.QClassification.classification;
+                                                         ^
+  symbol:   class QClassification
+  location: package com.msa.jewelry.local.classification.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:26: error: static import onl
+y from classes and interfaces
+import static com.msa.jewelry.local.classification.entity.QClassification.classification;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:27: error: cannot find symbo
+l
+import static com.msa.jewelry.local.color.entity.QColor.color;
+                                                ^
+  symbol:   class QColor
+  location: package com.msa.jewelry.local.color.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:27: error: static import onl
+y from classes and interfaces
+import static com.msa.jewelry.local.color.entity.QColor.color;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:28: error: cannot find symbo
+l
+import static com.msa.jewelry.local.material.entity.QMaterial.material;
+                                                   ^
+  symbol:   class QMaterial
+  location: package com.msa.jewelry.local.material.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:28: error: static import onl
+y from classes and interfaces
+import static com.msa.jewelry.local.material.entity.QMaterial.material;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:29: error: cannot find symbo
+l
+import static com.msa.jewelry.local.product.entity.QProduct.product;
+                                                  ^
+  symbol:   class QProduct
+  location: package com.msa.jewelry.local.product.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:29: error: static import onl
+y from classes and interfaces
+import static com.msa.jewelry.local.product.entity.QProduct.product;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:30: error: cannot find symbo
+l
+import static com.msa.jewelry.local.product.entity.QProductImage.productImage;
+                                                  ^
+  symbol:   class QProductImage
+  location: package com.msa.jewelry.local.product.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:30: error: static import onl
+y from classes and interfaces
+import static com.msa.jewelry.local.product.entity.QProductImage.productImage;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:31: error: cannot find symbo
+l
+import static com.msa.jewelry.local.product.entity.QProductStone.productStone;
+                                                  ^
+  symbol:   class QProductStone
+  location: package com.msa.jewelry.local.product.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:31: error: static import onl
+y from classes and interfaces
+import static com.msa.jewelry.local.product.entity.QProductStone.productStone;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:32: error: cannot find symbo
+l
+import static com.msa.jewelry.local.product.entity.QProductWorkGradePolicyGroup.productWorkGradePolicyGroup;
+                                                  ^
+  symbol:   class QProductWorkGradePolicyGroup
+  location: package com.msa.jewelry.local.product.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:32: error: static import onl
+y from classes and interfaces
+import static com.msa.jewelry.local.product.entity.QProductWorkGradePolicyGroup.productWorkGradePolicyGroup;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:33: error: cannot find symbo
+l
+import static com.msa.jewelry.local.set.entity.QSetType.setType;
+                                              ^
+  symbol:   class QSetType
+  location: package com.msa.jewelry.local.set.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:33: error: static import onl
+y from classes and interfaces
+import static com.msa.jewelry.local.set.entity.QSetType.setType;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:34: error: cannot find symbo
+l
+import static com.msa.jewelry.local.stone.entity.QStone.stone;
+                                                ^
+  symbol:   class QStone
+  location: package com.msa.jewelry.local.stone.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:34: error: static import onl
+y from classes and interfaces
+import static com.msa.jewelry.local.stone.entity.QStone.stone;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\classification\repository\ClassificationRepositoryImpl.java:4: error: cann
+ot find symbol
+import com.msa.jewelry.local.classification.dto.QClassificationDto_ResponseSingle;
+                                               ^
+  symbol:   class QClassificationDto_ResponseSingle
+  location: package com.msa.jewelry.local.classification.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\classification\repository\ClassificationRepositoryImpl.java:11: error: can
+not find symbol
+import static com.msa.jewelry.local.classification.entity.QClassification.classification;
+                                                         ^
+  symbol:   class QClassification
+  location: package com.msa.jewelry.local.classification.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\classification\repository\ClassificationRepositoryImpl.java:11: error: sta
+tic import only from classes and interfaces
+import static com.msa.jewelry.local.classification.entity.QClassification.classification;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\color\repository\ColorRepositoryImpl.java:4: error: cannot find symbol
+import com.msa.jewelry.local.color.dto.QColorDto_ResponseSingle;
+                                      ^
+  symbol:   class QColorDto_ResponseSingle
+  location: package com.msa.jewelry.local.color.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\color\repository\ColorRepositoryImpl.java:11: error: cannot find symbol
+import static com.msa.jewelry.local.color.entity.QColor.color;
+                                                ^
+  symbol:   class QColor
+  location: package com.msa.jewelry.local.color.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\color\repository\ColorRepositoryImpl.java:11: error: static import only fr
+om classes and interfaces
+import static com.msa.jewelry.local.color.entity.QColor.color;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:6: error: cannot find sy
+mbol
+import com.msa.jewelry.local.dashboard.dto.QDashboardDto_MaterialStockSummary;
+                                          ^
+  symbol:   class QDashboardDto_MaterialStockSummary
+  location: package com.msa.jewelry.local.dashboard.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:7: error: cannot find sy
+mbol
+import com.msa.jewelry.local.dashboard.dto.QDashboardDto_SaleModelTop;
+                                          ^
+  symbol:   class QDashboardDto_SaleModelTop
+  location: package com.msa.jewelry.local.dashboard.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:8: error: cannot find sy
+mbol
+import com.msa.jewelry.local.dashboard.dto.QDashboardDto_StockDetail;
+                                          ^
+  symbol:   class QDashboardDto_StockDetail
+  location: package com.msa.jewelry.local.dashboard.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:9: error: cannot find sy
+mbol
+import com.msa.jewelry.local.dashboard.dto.QDashboardDto_StockModelTop;
+                                          ^
+  symbol:   class QDashboardDto_StockModelTop
+  location: package com.msa.jewelry.local.dashboard.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:10: error: cannot find s
+ymbol
+import com.msa.jewelry.local.dashboard.dto.QDashboardDto_StoreLaborCostTop;
+                                          ^
+  symbol:   class QDashboardDto_StoreLaborCostTop
+  location: package com.msa.jewelry.local.dashboard.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:11: error: cannot find s
+ymbol
+import com.msa.jewelry.local.dashboard.dto.QDashboardDto_MonthlySalesSummary;
+                                          ^
+  symbol:   class QDashboardDto_MonthlySalesSummary
+  location: package com.msa.jewelry.local.dashboard.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:12: error: cannot find s
+ymbol
+import com.msa.jewelry.local.dashboard.dto.QDashboardDto_ReceivableSummary;
+                                          ^
+  symbol:   class QDashboardDto_ReceivableSummary
+  location: package com.msa.jewelry.local.dashboard.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:13: error: cannot find s
+ymbol
+import com.msa.jewelry.local.dashboard.dto.QDashboardDto_RentalSummary;
+                                          ^
+  symbol:   class QDashboardDto_RentalSummary
+  location: package com.msa.jewelry.local.dashboard.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:14: error: cannot find s
+ymbol
+import com.msa.jewelry.local.dashboard.dto.QDashboardDto_RentalDetail;
+                                          ^
+  symbol:   class QDashboardDto_RentalDetail
+  location: package com.msa.jewelry.local.dashboard.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:15: error: cannot find s
+ymbol
+import com.msa.jewelry.local.dashboard.dto.QDashboardDto_FactoryUnpaidSummary;
+                                          ^
+  symbol:   class QDashboardDto_FactoryUnpaidSummary
+  location: package com.msa.jewelry.local.dashboard.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:32: error: cannot find s
+ymbol
+import static com.msa.jewelry.local.order.entity.QOrderStone.orderStone;
+                                                ^
+  symbol:   class QOrderStone
+  location: package com.msa.jewelry.local.order.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:32: error: static import
+ only from classes and interfaces
+import static com.msa.jewelry.local.order.entity.QOrderStone.orderStone;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:33: error: cannot find s
+ymbol
+import static com.msa.jewelry.local.sale.entity.QSale.sale;
+                                               ^
+  symbol:   class QSale
+  location: package com.msa.jewelry.local.sale.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:33: error: static import
+ only from classes and interfaces
+import static com.msa.jewelry.local.sale.entity.QSale.sale;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:34: error: cannot find s
+ymbol
+import static com.msa.jewelry.local.sale.entity.QSaleItem.saleItem;
+                                               ^
+  symbol:   class QSaleItem
+  location: package com.msa.jewelry.local.sale.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:34: error: static import
+ only from classes and interfaces
+import static com.msa.jewelry.local.sale.entity.QSaleItem.saleItem;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:35: error: cannot find s
+ymbol
+import static com.msa.jewelry.local.sale.entity.QSalePayment.salePayment;
+                                               ^
+  symbol:   class QSalePayment
+  location: package com.msa.jewelry.local.sale.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:35: error: static import
+ only from classes and interfaces
+import static com.msa.jewelry.local.sale.entity.QSalePayment.salePayment;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:36: error: cannot find s
+ymbol
+import static com.msa.jewelry.local.stock.entity.QStock.stock;
+                                                ^
+  symbol:   class QStock
+  location: package com.msa.jewelry.local.stock.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:36: error: static import
+ only from classes and interfaces
+import static com.msa.jewelry.local.stock.entity.QStock.stock;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:4: error: cannot find symbol
+import com.msa.jewelry.global.dto.QAccountDto_AccountResponse;
+                                 ^
+  symbol:   class QAccountDto_AccountResponse
+  location: package com.msa.jewelry.global.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:5: error: cannot find symbol
+import com.msa.jewelry.global.dto.QAccountDto_AccountSingleResponse;
+                                 ^
+  symbol:   class QAccountDto_AccountSingleResponse
+  location: package com.msa.jewelry.global.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:8: error: cannot find symbol
+import com.msa.jewelry.global.excel.dto.QAccountExcelDto;
+                                       ^
+  symbol:   class QAccountExcelDto
+  location: package com.msa.jewelry.global.excel.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:9: error: cannot find symbol
+import com.msa.jewelry.global.excel.dto.QPurchaseExcelDto;
+                                       ^
+  symbol:   class QPurchaseExcelDto
+  location: package com.msa.jewelry.global.excel.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:11: error: cannot find symbo
+l
+import com.msa.jewelry.local.factory.dto.QFactoryDto_ApiFactoryInfo;
+                                        ^
+  symbol:   class QFactoryDto_ApiFactoryInfo
+  location: package com.msa.jewelry.local.factory.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:12: error: cannot find symbo
+l
+import com.msa.jewelry.local.factory.dto.QFactoryDto_FactoryResponse;
+                                        ^
+  symbol:   class QFactoryDto_FactoryResponse
+  location: package com.msa.jewelry.local.factory.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:38: error: cannot find symbo
+l
+import static com.msa.jewelry.local.address.entity.QAddress.address;
+                                                  ^
+  symbol:   class QAddress
+  location: package com.msa.jewelry.local.address.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:38: error: static import onl
+y from classes and interfaces
+import static com.msa.jewelry.local.address.entity.QAddress.address;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:39: error: cannot find symbo
+l
+import static com.msa.jewelry.local.common_option.entity.QCommonOption.commonOption;
+                                                        ^
+  symbol:   class QCommonOption
+  location: package com.msa.jewelry.local.common_option.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:39: error: static import onl
+y from classes and interfaces
+import static com.msa.jewelry.local.common_option.entity.QCommonOption.commonOption;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:40: error: cannot find symbo
+l
+import static com.msa.jewelry.local.goldharry.entity.QGoldHarry.goldHarry;
+                                                    ^
+  symbol:   class QGoldHarry
+  location: package com.msa.jewelry.local.goldharry.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:40: error: static import onl
+y from classes and interfaces
+import static com.msa.jewelry.local.goldharry.entity.QGoldHarry.goldHarry;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:41: error: cannot find symbo
+l
+import static com.msa.jewelry.local.factory.entity.QFactory.factory;
+                                                  ^
+  symbol:   class QFactory
+  location: package com.msa.jewelry.local.factory.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:41: error: static import onl
+y from classes and interfaces
+import static com.msa.jewelry.local.factory.entity.QFactory.factory;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:42: error: cannot find symbo
+l
+import static com.msa.jewelry.local.transaction_history.entity.QSaleLog.saleLog;
+                                                              ^
+  symbol:   class QSaleLog
+  location: package com.msa.jewelry.local.transaction_history.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:42: error: static import onl
+y from classes and interfaces
+import static com.msa.jewelry.local.transaction_history.entity.QSaleLog.saleLog;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:43: error: cannot find symbo
+l
+import static com.msa.jewelry.local.transaction_history.entity.QTransactionHistory.transactionHistory;
+                                                              ^
+  symbol:   class QTransactionHistory
+  location: package com.msa.jewelry.local.transaction_history.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:43: error: static import onl
+y from classes and interfaces
+import static com.msa.jewelry.local.transaction_history.entity.QTransactionHistory.transactionHistory;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\material\repository\MaterialRepositoryImpl.java:4: error: cannot find symb
+ol
+import com.msa.jewelry.local.material.dto.QMaterialDto_ResponseSingle;
+                                         ^
+  symbol:   class QMaterialDto_ResponseSingle
+  location: package com.msa.jewelry.local.material.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\material\repository\MaterialRepositoryImpl.java:10: error: cannot find sym
+bol
+import static com.msa.jewelry.local.material.entity.QMaterial.material;
+                                                   ^
+  symbol:   class QMaterial
+  location: package com.msa.jewelry.local.material.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\material\repository\MaterialRepositoryImpl.java:10: error: static import o
+nly from classes and interfaces
+import static com.msa.jewelry.local.material.entity.QMaterial.material;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:5: error: cannot find symbol
+import com.msa.jewelry.global.excel.dto.QOrderExcelQueryDto;
+                                       ^
+  symbol:   class QOrderExcelQueryDto
+  location: package com.msa.jewelry.global.excel.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:8: error: cannot find symbol
+import com.msa.jewelry.local.order.dto.QOrderQueryDto;
+                                      ^
+  symbol:   class QOrderQueryDto
+  location: package com.msa.jewelry.local.order.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:38: error: cannot find symbol
+import static com.msa.jewelry.local.order.entity.QOrderProduct.orderProduct;
+                                                ^
+  symbol:   class QOrderProduct
+  location: package com.msa.jewelry.local.order.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:38: error: static import only fr
+om classes and interfaces
+import static com.msa.jewelry.local.order.entity.QOrderProduct.orderProduct;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:39: error: cannot find symbol
+import static com.msa.jewelry.local.order.entity.QOrders.orders;
+                                                ^
+  symbol:   class QOrders
+  location: package com.msa.jewelry.local.order.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:39: error: static import only fr
+om classes and interfaces
+import static com.msa.jewelry.local.order.entity.QOrders.orders;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:40: error: cannot find symbol
+import static com.msa.jewelry.local.order.entity.QStatusHistory.statusHistory;
+                                                ^
+  symbol:   class QStatusHistory
+  location: package com.msa.jewelry.local.order.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:40: error: static import only fr
+om classes and interfaces
+import static com.msa.jewelry.local.order.entity.QStatusHistory.statusHistory;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:41: error: cannot find symbol
+import static com.msa.jewelry.local.priority.entity.QPriority.priority;
+                                                   ^
+  symbol:   class QPriority
+  location: package com.msa.jewelry.local.priority.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:41: error: static import only fr
+om classes and interfaces
+import static com.msa.jewelry.local.priority.entity.QPriority.priority;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:42: error: cannot find symbol
+import static com.msa.jewelry.local.stock.entity.QStock.stock;
+                                                ^
+  symbol:   class QStock
+  location: package com.msa.jewelry.local.stock.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:42: error: static import only fr
+om classes and interfaces
+import static com.msa.jewelry.local.stock.entity.QStock.stock;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderStoneRepositoryImpl.java:3: error: cannot find symbo
+l
+import com.msa.jewelry.local.sale.dto.QSaleDto_StoneCountDto;
+                                     ^
+  symbol:   class QSaleDto_StoneCountDto
+  location: package com.msa.jewelry.local.sale.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderStoneRepositoryImpl.java:11: error: cannot find symb
+ol
+import static com.msa.jewelry.local.order.entity.QOrderStone.orderStone;
+                                                ^
+  symbol:   class QOrderStone
+  location: package com.msa.jewelry.local.order.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderStoneRepositoryImpl.java:11: error: static import on
+ly from classes and interfaces
+import static com.msa.jewelry.local.order.entity.QOrderStone.orderStone;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\image\ProductImageRepositoryImpl.java:4: error: cannot 
+find symbol
+import com.msa.jewelry.local.product.dto.QProductImageDto_ProductImageResponse;
+                                        ^
+  symbol:   class QProductImageDto_ProductImageResponse
+  location: package com.msa.jewelry.local.product.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\image\ProductImageRepositoryImpl.java:5: error: cannot 
+find symbol
+import com.msa.jewelry.local.product.dto.QProductImageDto_Response;
+                                        ^
+  symbol:   class QProductImageDto_Response
+  location: package com.msa.jewelry.local.product.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\image\ProductImageRepositoryImpl.java:13: error: cannot
+ find symbol
+import static com.msa.jewelry.local.product.entity.QProduct.product;
+                                                  ^
+  symbol:   class QProduct
+  location: package com.msa.jewelry.local.product.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\image\ProductImageRepositoryImpl.java:13: error: static
+ import only from classes and interfaces
+import static com.msa.jewelry.local.product.entity.QProduct.product;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\image\ProductImageRepositoryImpl.java:14: error: cannot
+ find symbol
+import static com.msa.jewelry.local.product.entity.QProductImage.productImage;
+                                                  ^
+  symbol:   class QProductImage
+  location: package com.msa.jewelry.local.product.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\image\ProductImageRepositoryImpl.java:14: error: static
+ import only from classes and interfaces
+import static com.msa.jewelry.local.product.entity.QProductImage.productImage;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\ProductRepositoryImpl.java:4: error: cannot find symbol
+import com.msa.jewelry.local.classification.dto.QClassificationDto_ResponseSingle;
+                                               ^
+  symbol:   class QClassificationDto_ResponseSingle
+  location: package com.msa.jewelry.local.classification.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\ProductRepositoryImpl.java:6: error: cannot find symbol
+import com.msa.jewelry.local.material.dto.QMaterialDto_ResponseSingle;
+                                         ^
+  symbol:   class QMaterialDto_ResponseSingle
+  location: package com.msa.jewelry.local.material.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\ProductRepositoryImpl.java:8: error: cannot find symbol
+import com.msa.jewelry.local.set.dto.QSetTypeDto_ResponseSingle;
+                                    ^
+  symbol:   class QSetTypeDto_ResponseSingle
+  location: package com.msa.jewelry.local.set.dto
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\ProductRepositoryImpl.java:25: error: cannot find symbo
+l
+import static com.msa.jewelry.local.classification.entity.QClassification.classification;
+                                                         ^
+  symbol:   class QClassification
+  location: package com.msa.jewelry.local.classification.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\ProductRepositoryImpl.java:25: error: static import onl
+y from classes and interfaces
+import static com.msa.jewelry.local.classification.entity.QClassification.classification;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\ProductRepositoryImpl.java:26: error: cannot find symbo
+l
+import static com.msa.jewelry.local.color.entity.QColor.color;
+                                                ^
+  symbol:   class QColor
+  location: package com.msa.jewelry.local.color.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\ProductRepositoryImpl.java:26: error: static import onl
+y from classes and interfaces
+import static com.msa.jewelry.local.color.entity.QColor.color;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\ProductRepositoryImpl.java:27: error: cannot find symbo
+l
+import static com.msa.jewelry.local.material.entity.QMaterial.material;
+                                                   ^
+  symbol:   class QMaterial
+  location: package com.msa.jewelry.local.material.entity
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\ProductRepositoryImpl.java:27: error: static import onl
+y from classes and interfaces
+import static com.msa.jewelry.local.material.entity.QMaterial.material;
+^
+C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\ProductRepositoryImpl.java:28: error: cannot find symbo
+l
+import static com.msa.jewelry.local.product.entity.QProduct.product;
+                                                  ^
+  symbol:   class QProduct
+  location: package com.msa.jewelry.local.product.entity
+100 errors
+
+> Task :jewelry_emp:compileJava FAILED
+
+[Incubating] Problems report is available at: file:///C:/Users/zks14/Desktop/totalFile/multi_module/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':jewelry_emp:compileJava'.
+> Compilation failed; see the compiler output below.
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:26: error: static import o
+nly from classes and interfaces
+  import static com.msa.jewelry.local.classification.entity.QClassification.classification;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:27: error: static import o
+nly from classes and interfaces
+  import static com.msa.jewelry.local.color.entity.QColor.color;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:28: error: static import o
+nly from classes and interfaces
+  import static com.msa.jewelry.local.material.entity.QMaterial.material;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:29: error: static import o
+nly from classes and interfaces
+  import static com.msa.jewelry.local.product.entity.QProduct.product;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:30: error: static import o
+nly from classes and interfaces
+  import static com.msa.jewelry.local.product.entity.QProductImage.productImage;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:31: error: static import o
+nly from classes and interfaces
+  import static com.msa.jewelry.local.product.entity.QProductStone.productStone;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:32: error: static import o
+nly from classes and interfaces
+  import static com.msa.jewelry.local.product.entity.QProductWorkGradePolicyGroup.productWorkGradePolicyGroup;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:33: error: static import o
+nly from classes and interfaces
+  import static com.msa.jewelry.local.set.entity.QSetType.setType;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:34: error: static import o
+nly from classes and interfaces
+  import static com.msa.jewelry.local.stone.entity.QStone.stone;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\classification\repository\ClassificationRepositoryImpl.java:11: error: s
+tatic import only from classes and interfaces
+  import static com.msa.jewelry.local.classification.entity.QClassification.classification;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\color\repository\ColorRepositoryImpl.java:11: error: static import only 
+from classes and interfaces
+  import static com.msa.jewelry.local.color.entity.QColor.color;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:32: error: static impo
+rt only from classes and interfaces
+  import static com.msa.jewelry.local.order.entity.QOrderStone.orderStone;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:33: error: static impo
+rt only from classes and interfaces
+  import static com.msa.jewelry.local.sale.entity.QSale.sale;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:34: error: static impo
+rt only from classes and interfaces
+  import static com.msa.jewelry.local.sale.entity.QSaleItem.saleItem;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:35: error: static impo
+rt only from classes and interfaces
+  import static com.msa.jewelry.local.sale.entity.QSalePayment.salePayment;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:36: error: static impo
+rt only from classes and interfaces
+  import static com.msa.jewelry.local.stock.entity.QStock.stock;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:38: error: static import o
+nly from classes and interfaces
+  import static com.msa.jewelry.local.address.entity.QAddress.address;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:39: error: static import o
+nly from classes and interfaces
+  import static com.msa.jewelry.local.common_option.entity.QCommonOption.commonOption;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:40: error: static import o
+nly from classes and interfaces
+  import static com.msa.jewelry.local.goldharry.entity.QGoldHarry.goldHarry;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:41: error: static import o
+nly from classes and interfaces
+  import static com.msa.jewelry.local.factory.entity.QFactory.factory;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:42: error: static import o
+nly from classes and interfaces
+  import static com.msa.jewelry.local.transaction_history.entity.QSaleLog.saleLog;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:43: error: static import o
+nly from classes and interfaces
+  import static com.msa.jewelry.local.transaction_history.entity.QTransactionHistory.transactionHistory;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\material\repository\MaterialRepositoryImpl.java:10: error: static import
+ only from classes and interfaces
+  import static com.msa.jewelry.local.material.entity.QMaterial.material;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:38: error: static import only 
+from classes and interfaces
+  import static com.msa.jewelry.local.order.entity.QOrderProduct.orderProduct;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:39: error: static import only 
+from classes and interfaces
+  import static com.msa.jewelry.local.order.entity.QOrders.orders;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:40: error: static import only 
+from classes and interfaces
+  import static com.msa.jewelry.local.order.entity.QStatusHistory.statusHistory;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:41: error: static import only 
+from classes and interfaces
+  import static com.msa.jewelry.local.priority.entity.QPriority.priority;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:42: error: static import only 
+from classes and interfaces
+  import static com.msa.jewelry.local.stock.entity.QStock.stock;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderStoneRepositoryImpl.java:11: error: static import 
+only from classes and interfaces
+  import static com.msa.jewelry.local.order.entity.QOrderStone.orderStone;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\image\ProductImageRepositoryImpl.java:13: error: stat
+ic import only from classes and interfaces
+  import static com.msa.jewelry.local.product.entity.QProduct.product;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\image\ProductImageRepositoryImpl.java:14: error: stat
+ic import only from classes and interfaces
+  import static com.msa.jewelry.local.product.entity.QProductImage.productImage;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\ProductRepositoryImpl.java:25: error: static import o
+nly from classes and interfaces
+  import static com.msa.jewelry.local.classification.entity.QClassification.classification;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\ProductRepositoryImpl.java:26: error: static import o
+nly from classes and interfaces
+  import static com.msa.jewelry.local.color.entity.QColor.color;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\ProductRepositoryImpl.java:27: error: static import o
+nly from classes and interfaces
+  import static com.msa.jewelry.local.material.entity.QMaterial.material;
+  ^
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:7: error: cannot find symb
+ol
+  import com.msa.jewelry.local.classification.dto.QClassificationDto_ResponseSingle;
+                                                 ^
+    symbol:   class QClassificationDto_ResponseSingle
+    location: package com.msa.jewelry.local.classification.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:8: error: cannot find symb
+ol
+  import com.msa.jewelry.local.material.dto.QMaterialDto_ResponseSingle;
+                                           ^
+    symbol:   class QMaterialDto_ResponseSingle
+    location: package com.msa.jewelry.local.material.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:10: error: cannot find sym
+bol
+  import com.msa.jewelry.local.product.dto.QProductImageDto_Response;
+                                          ^
+    symbol:   class QProductImageDto_Response
+    location: package com.msa.jewelry.local.product.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:11: error: cannot find sym
+bol
+  import com.msa.jewelry.local.set.dto.QSetTypeDto_ResponseSingle;
+                                      ^
+    symbol:   class QSetTypeDto_ResponseSingle
+    location: package com.msa.jewelry.local.set.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:26: error: cannot find sym
+bol
+  import static com.msa.jewelry.local.classification.entity.QClassification.classification;
+                                                           ^
+    symbol:   class QClassification
+    location: package com.msa.jewelry.local.classification.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:27: error: cannot find sym
+bol
+  import static com.msa.jewelry.local.color.entity.QColor.color;
+                                                  ^
+    symbol:   class QColor
+    location: package com.msa.jewelry.local.color.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:28: error: cannot find sym
+bol
+  import static com.msa.jewelry.local.material.entity.QMaterial.material;
+                                                     ^
+    symbol:   class QMaterial
+    location: package com.msa.jewelry.local.material.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:29: error: cannot find sym
+bol
+  import static com.msa.jewelry.local.product.entity.QProduct.product;
+                                                    ^
+    symbol:   class QProduct
+    location: package com.msa.jewelry.local.product.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:30: error: cannot find sym
+bol
+  import static com.msa.jewelry.local.product.entity.QProductImage.productImage;
+                                                    ^
+    symbol:   class QProductImage
+    location: package com.msa.jewelry.local.product.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:31: error: cannot find sym
+bol
+  import static com.msa.jewelry.local.product.entity.QProductStone.productStone;
+                                                    ^
+    symbol:   class QProductStone
+    location: package com.msa.jewelry.local.product.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:32: error: cannot find sym
+bol
+  import static com.msa.jewelry.local.product.entity.QProductWorkGradePolicyGroup.productWorkGradePolicyGroup;
+                                                    ^
+    symbol:   class QProductWorkGradePolicyGroup
+    location: package com.msa.jewelry.local.product.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:33: error: cannot find sym
+bol
+  import static com.msa.jewelry.local.set.entity.QSetType.setType;
+                                                ^
+    symbol:   class QSetType
+    location: package com.msa.jewelry.local.set.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\catalog\repository\CatalogRepositoryImpl.java:34: error: cannot find sym
+bol
+  import static com.msa.jewelry.local.stone.entity.QStone.stone;
+                                                  ^
+    symbol:   class QStone
+    location: package com.msa.jewelry.local.stone.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\classification\repository\ClassificationRepositoryImpl.java:4: error: ca
+nnot find symbol
+  import com.msa.jewelry.local.classification.dto.QClassificationDto_ResponseSingle;
+                                                 ^
+    symbol:   class QClassificationDto_ResponseSingle
+    location: package com.msa.jewelry.local.classification.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\classification\repository\ClassificationRepositoryImpl.java:11: error: c
+annot find symbol
+  import static com.msa.jewelry.local.classification.entity.QClassification.classification;
+                                                           ^
+    symbol:   class QClassification
+    location: package com.msa.jewelry.local.classification.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\color\repository\ColorRepositoryImpl.java:4: error: cannot find symbol
+  import com.msa.jewelry.local.color.dto.QColorDto_ResponseSingle;
+                                        ^
+    symbol:   class QColorDto_ResponseSingle
+    location: package com.msa.jewelry.local.color.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\color\repository\ColorRepositoryImpl.java:11: error: cannot find symbol
+  import static com.msa.jewelry.local.color.entity.QColor.color;
+                                                  ^
+    symbol:   class QColor
+    location: package com.msa.jewelry.local.color.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:6: error: cannot find 
+symbol
+  import com.msa.jewelry.local.dashboard.dto.QDashboardDto_MaterialStockSummary;
+                                            ^
+    symbol:   class QDashboardDto_MaterialStockSummary
+    location: package com.msa.jewelry.local.dashboard.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:7: error: cannot find 
+symbol
+  import com.msa.jewelry.local.dashboard.dto.QDashboardDto_SaleModelTop;
+                                            ^
+    symbol:   class QDashboardDto_SaleModelTop
+    location: package com.msa.jewelry.local.dashboard.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:8: error: cannot find 
+symbol
+  import com.msa.jewelry.local.dashboard.dto.QDashboardDto_StockDetail;
+                                            ^
+    symbol:   class QDashboardDto_StockDetail
+    location: package com.msa.jewelry.local.dashboard.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:9: error: cannot find 
+symbol
+  import com.msa.jewelry.local.dashboard.dto.QDashboardDto_StockModelTop;
+                                            ^
+    symbol:   class QDashboardDto_StockModelTop
+    location: package com.msa.jewelry.local.dashboard.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:10: error: cannot find
+ symbol
+  import com.msa.jewelry.local.dashboard.dto.QDashboardDto_StoreLaborCostTop;
+                                            ^
+    symbol:   class QDashboardDto_StoreLaborCostTop
+    location: package com.msa.jewelry.local.dashboard.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:11: error: cannot find
+ symbol
+  import com.msa.jewelry.local.dashboard.dto.QDashboardDto_MonthlySalesSummary;
+                                            ^
+    symbol:   class QDashboardDto_MonthlySalesSummary
+    location: package com.msa.jewelry.local.dashboard.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:12: error: cannot find
+ symbol
+  import com.msa.jewelry.local.dashboard.dto.QDashboardDto_ReceivableSummary;
+                                            ^
+    symbol:   class QDashboardDto_ReceivableSummary
+    location: package com.msa.jewelry.local.dashboard.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:13: error: cannot find
+ symbol
+  import com.msa.jewelry.local.dashboard.dto.QDashboardDto_RentalSummary;
+                                            ^
+    symbol:   class QDashboardDto_RentalSummary
+    location: package com.msa.jewelry.local.dashboard.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:14: error: cannot find
+ symbol
+  import com.msa.jewelry.local.dashboard.dto.QDashboardDto_RentalDetail;
+                                            ^
+    symbol:   class QDashboardDto_RentalDetail
+    location: package com.msa.jewelry.local.dashboard.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:15: error: cannot find
+ symbol
+  import com.msa.jewelry.local.dashboard.dto.QDashboardDto_FactoryUnpaidSummary;
+                                            ^
+    symbol:   class QDashboardDto_FactoryUnpaidSummary
+    location: package com.msa.jewelry.local.dashboard.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:32: error: cannot find
+ symbol
+  import static com.msa.jewelry.local.order.entity.QOrderStone.orderStone;
+                                                  ^
+    symbol:   class QOrderStone
+    location: package com.msa.jewelry.local.order.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:33: error: cannot find
+ symbol
+  import static com.msa.jewelry.local.sale.entity.QSale.sale;
+                                                 ^
+    symbol:   class QSale
+    location: package com.msa.jewelry.local.sale.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:34: error: cannot find
+ symbol
+  import static com.msa.jewelry.local.sale.entity.QSaleItem.saleItem;
+                                                 ^
+    symbol:   class QSaleItem
+    location: package com.msa.jewelry.local.sale.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:35: error: cannot find
+ symbol
+  import static com.msa.jewelry.local.sale.entity.QSalePayment.salePayment;
+                                                 ^
+    symbol:   class QSalePayment
+    location: package com.msa.jewelry.local.sale.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\dashboard\repository\DashboardRepositoryImpl.java:36: error: cannot find
+ symbol
+  import static com.msa.jewelry.local.stock.entity.QStock.stock;
+                                                  ^
+    symbol:   class QStock
+    location: package com.msa.jewelry.local.stock.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:4: error: cannot find symb
+ol
+  import com.msa.jewelry.global.dto.QAccountDto_AccountResponse;
+                                   ^
+    symbol:   class QAccountDto_AccountResponse
+    location: package com.msa.jewelry.global.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:5: error: cannot find symb
+ol
+  import com.msa.jewelry.global.dto.QAccountDto_AccountSingleResponse;
+                                   ^
+    symbol:   class QAccountDto_AccountSingleResponse
+    location: package com.msa.jewelry.global.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:8: error: cannot find symb
+ol
+  import com.msa.jewelry.global.excel.dto.QAccountExcelDto;
+                                         ^
+    symbol:   class QAccountExcelDto
+    location: package com.msa.jewelry.global.excel.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:9: error: cannot find symb
+ol
+  import com.msa.jewelry.global.excel.dto.QPurchaseExcelDto;
+                                         ^
+    symbol:   class QPurchaseExcelDto
+    location: package com.msa.jewelry.global.excel.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:11: error: cannot find sym
+bol
+  import com.msa.jewelry.local.factory.dto.QFactoryDto_ApiFactoryInfo;
+                                          ^
+    symbol:   class QFactoryDto_ApiFactoryInfo
+    location: package com.msa.jewelry.local.factory.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:12: error: cannot find sym
+bol
+  import com.msa.jewelry.local.factory.dto.QFactoryDto_FactoryResponse;
+                                          ^
+    symbol:   class QFactoryDto_FactoryResponse
+    location: package com.msa.jewelry.local.factory.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:38: error: cannot find sym
+bol
+  import static com.msa.jewelry.local.address.entity.QAddress.address;
+                                                    ^
+    symbol:   class QAddress
+    location: package com.msa.jewelry.local.address.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:39: error: cannot find sym
+bol
+  import static com.msa.jewelry.local.common_option.entity.QCommonOption.commonOption;
+                                                          ^
+    symbol:   class QCommonOption
+    location: package com.msa.jewelry.local.common_option.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:40: error: cannot find sym
+bol
+  import static com.msa.jewelry.local.goldharry.entity.QGoldHarry.goldHarry;
+                                                      ^
+    symbol:   class QGoldHarry
+    location: package com.msa.jewelry.local.goldharry.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:41: error: cannot find sym
+bol
+  import static com.msa.jewelry.local.factory.entity.QFactory.factory;
+                                                    ^
+    symbol:   class QFactory
+    location: package com.msa.jewelry.local.factory.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:42: error: cannot find sym
+bol
+  import static com.msa.jewelry.local.transaction_history.entity.QSaleLog.saleLog;
+                                                                ^
+    symbol:   class QSaleLog
+    location: package com.msa.jewelry.local.transaction_history.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\factory\repository\FactoryRepositoryImpl.java:43: error: cannot find sym
+bol
+  import static com.msa.jewelry.local.transaction_history.entity.QTransactionHistory.transactionHistory;
+                                                                ^
+    symbol:   class QTransactionHistory
+    location: package com.msa.jewelry.local.transaction_history.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\material\repository\MaterialRepositoryImpl.java:4: error: cannot find sy
+mbol
+  import com.msa.jewelry.local.material.dto.QMaterialDto_ResponseSingle;
+                                           ^
+    symbol:   class QMaterialDto_ResponseSingle
+    location: package com.msa.jewelry.local.material.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\material\repository\MaterialRepositoryImpl.java:10: error: cannot find s
+ymbol
+  import static com.msa.jewelry.local.material.entity.QMaterial.material;
+                                                     ^
+    symbol:   class QMaterial
+    location: package com.msa.jewelry.local.material.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:5: error: cannot find symbol
+  import com.msa.jewelry.global.excel.dto.QOrderExcelQueryDto;
+                                         ^
+    symbol:   class QOrderExcelQueryDto
+    location: package com.msa.jewelry.global.excel.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:8: error: cannot find symbol
+  import com.msa.jewelry.local.order.dto.QOrderQueryDto;
+                                        ^
+    symbol:   class QOrderQueryDto
+    location: package com.msa.jewelry.local.order.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:38: error: cannot find symbol
+  import static com.msa.jewelry.local.order.entity.QOrderProduct.orderProduct;
+                                                  ^
+    symbol:   class QOrderProduct
+    location: package com.msa.jewelry.local.order.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:39: error: cannot find symbol
+  import static com.msa.jewelry.local.order.entity.QOrders.orders;
+                                                  ^
+    symbol:   class QOrders
+    location: package com.msa.jewelry.local.order.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:40: error: cannot find symbol
+  import static com.msa.jewelry.local.order.entity.QStatusHistory.statusHistory;
+                                                  ^
+    symbol:   class QStatusHistory
+    location: package com.msa.jewelry.local.order.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:41: error: cannot find symbol
+  import static com.msa.jewelry.local.priority.entity.QPriority.priority;
+                                                     ^
+    symbol:   class QPriority
+    location: package com.msa.jewelry.local.priority.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderRepositoryImpl.java:42: error: cannot find symbol
+  import static com.msa.jewelry.local.stock.entity.QStock.stock;
+                                                  ^
+    symbol:   class QStock
+    location: package com.msa.jewelry.local.stock.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderStoneRepositoryImpl.java:3: error: cannot find sym
+bol
+  import com.msa.jewelry.local.sale.dto.QSaleDto_StoneCountDto;
+                                       ^
+    symbol:   class QSaleDto_StoneCountDto
+    location: package com.msa.jewelry.local.sale.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\order\repository\OrderStoneRepositoryImpl.java:11: error: cannot find sy
+mbol
+  import static com.msa.jewelry.local.order.entity.QOrderStone.orderStone;
+                                                  ^
+    symbol:   class QOrderStone
+    location: package com.msa.jewelry.local.order.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\image\ProductImageRepositoryImpl.java:4: error: canno
+t find symbol
+  import com.msa.jewelry.local.product.dto.QProductImageDto_ProductImageResponse;
+                                          ^
+    symbol:   class QProductImageDto_ProductImageResponse
+    location: package com.msa.jewelry.local.product.dto
+4 actionable tasks: 2 executed, 2 up-to-date
+Watched directory hierarchies: [C:\Users\zks14\Desktop\totalFile\multi_module]
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\image\ProductImageRepositoryImpl.java:5: error: canno
+t find symbol
+  import com.msa.jewelry.local.product.dto.QProductImageDto_Response;
+                                          ^
+    symbol:   class QProductImageDto_Response
+    location: package com.msa.jewelry.local.product.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\image\ProductImageRepositoryImpl.java:13: error: cann
+ot find symbol
+  import static com.msa.jewelry.local.product.entity.QProduct.product;
+                                                    ^
+    symbol:   class QProduct
+    location: package com.msa.jewelry.local.product.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\image\ProductImageRepositoryImpl.java:14: error: cann
+ot find symbol
+  import static com.msa.jewelry.local.product.entity.QProductImage.productImage;
+                                                    ^
+    symbol:   class QProductImage
+    location: package com.msa.jewelry.local.product.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\ProductRepositoryImpl.java:4: error: cannot find symb
+ol
+  import com.msa.jewelry.local.classification.dto.QClassificationDto_ResponseSingle;
+                                                 ^
+    symbol:   class QClassificationDto_ResponseSingle
+    location: package com.msa.jewelry.local.classification.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\ProductRepositoryImpl.java:6: error: cannot find symb
+ol
+  import com.msa.jewelry.local.material.dto.QMaterialDto_ResponseSingle;
+                                           ^
+    symbol:   class QMaterialDto_ResponseSingle
+    location: package com.msa.jewelry.local.material.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\ProductRepositoryImpl.java:8: error: cannot find symb
+ol
+  import com.msa.jewelry.local.set.dto.QSetTypeDto_ResponseSingle;
+                                      ^
+    symbol:   class QSetTypeDto_ResponseSingle
+    location: package com.msa.jewelry.local.set.dto
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\ProductRepositoryImpl.java:25: error: cannot find sym
+bol
+  import static com.msa.jewelry.local.classification.entity.QClassification.classification;
+                                                           ^
+    symbol:   class QClassification
+    location: package com.msa.jewelry.local.classification.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\ProductRepositoryImpl.java:26: error: cannot find sym
+bol
+  import static com.msa.jewelry.local.color.entity.QColor.color;
+                                                  ^
+    symbol:   class QColor
+    location: package com.msa.jewelry.local.color.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\ProductRepositoryImpl.java:27: error: cannot find sym
+bol
+  import static com.msa.jewelry.local.material.entity.QMaterial.material;
+                                                     ^
+    symbol:   class QMaterial
+    location: package com.msa.jewelry.local.material.entity
+  C:\Users\zks14\Desktop\totalFile\multi_module\jewelry_emp\src\main\java\com\msa\jewelry\local\product\repository\ProductRepositoryImpl.java:28: error: cannot find sym
+bol
+  import static com.msa.jewelry.local.product.entity.QProduct.product;
+                                                    ^
+    symbol:   class QProduct
+    location: package com.msa.jewelry.local.product.entity
+  100 errors
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to get full insights.
+
+BUILD FAILED in 5s

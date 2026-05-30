@@ -8,6 +8,7 @@ import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -39,26 +40,35 @@ public class StockMigrationController {
     private final JobLauncher jobLauncher;
     private final Job stockImportJob;
     private final StockMigrationFailureCollector failureCollector;
+    private final StockMigrationRecordCollector recordCollector;
     private final StockMigrationService migrationService;
+
+    @Value("${migration.failure-log-dir:src/main/resources/logs}")
+    private String failureLogDir;
 
     @PostMapping("/api/migration/stocks")
     public ResponseEntity<?> migrateStocks(
             @AccessToken String accessToken,
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "encoding", defaultValue = "UTF-8") String encoding) {
+            @RequestParam(value = "encoding", defaultValue = "UTF-8") String encoding,
+            @RequestParam(value = "userName", defaultValue = "LEGACY_MIGRATION") String userName) {
 
         try {
             // 1. CSV → UTF-8 변환 후 임시 파일 저장 (기본: UTF-8, CP949 지정 가능)
             Path tempPath = convertToUtf8(file, Charset.forName(encoding));
 
-            // 2. 실패 수집기 초기화
+            // 2. 실패/레코드 수집기 초기화 (이전 실행 결과 잔존 방지)
             failureCollector.clear();
+            recordCollector.clear();
 
             // 3. Batch Job 실행 (동기) — Reader는 항상 UTF-8
+            //    userName 은 StatusHistory.userName 에 그대로 사용된다.
+            //    레거시: "LEGACY_MIGRATION" (기본값) / 크롤러: "CRAWL_MIGRATION" 등 호출 측이 식별 가능한 값을 지정.
             JobParameters params = new JobParametersBuilder()
                     .addString("filePath", tempPath.toAbsolutePath().toString())
                     .addString("accessToken", accessToken)
                     .addString("encoding", "UTF-8")
+                    .addString("userName", userName)
                     .addLong("time", System.currentTimeMillis())
                     .toJobParameters();
 
@@ -76,28 +86,82 @@ public class StockMigrationController {
             // 4. 임시 파일 삭제
             Files.deleteIfExists(tempPath);
 
-            // 5. 실패 건 확인
+            // 5. logs 디렉터리 준비 (records / summary / failures 모두 여기에 저장)
+            Path logsDir = Path.of(failureLogDir);
+            Files.createDirectories(logsDir);
+            String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+
+            // 6. records.csv 항상 저장 — 모든 row 처리 결과(SUCCESS/SKIP/ERROR)
+            List<StockMigrationRecordCollector.Record> records = recordCollector.getAll();
+            Path recordsPath = logsDir.resolve("migration_stock_records_" + timestamp + ".csv");
+            Files.write(recordsPath, migrationService.generateRecordsCsv(records));
+            log.info("재고 마이그레이션 records.csv 저장: {} ({}건)", recordsPath.toAbsolutePath(), records.size());
+
+            long successByRecord = recordCollector.countByOutcome(StockMigrationRecordCollector.Outcome.SUCCESS);
+            long skipNullStatus = recordCollector.countByOutcome(StockMigrationRecordCollector.Outcome.SKIP_NULL_STATUS);
+            long skipException = recordCollector.countByOutcome(StockMigrationRecordCollector.Outcome.SKIP_EXCEPTION);
+            long errorPersist = recordCollector.countByOutcome(StockMigrationRecordCollector.Outcome.ERROR_PERSIST);
+
+            // 7. summary.txt 항상 저장
+            Path summaryPath = logsDir.resolve("migration_stock_summary_" + timestamp + ".txt");
+            String summary = String.format(
+                    "===== 재고 마이그레이션 요약 =====%n" +
+                    "시각: %s%n" +
+                    "userName: %s%n" +
+                    "encoding(원본): %s%n" +
+                    "원본 파일: %s%n" +
+                    "%n" +
+                    "[Spring Batch 통계]%n" +
+                    "  읽기(readCount):  %d%n" +
+                    "  저장(writeCount): %d%n" +
+                    "  스킵(skipCount):  %d%n" +
+                    "%n" +
+                    "[RecordCollector 통계 — row 단위 결과]%n" +
+                    "  SUCCESS:           %d%n" +
+                    "  SKIP_NULL_STATUS:  %d  (현재고구분 매핑 실패)%n" +
+                    "  SKIP_EXCEPTION:    %d  (Processor catch)%n" +
+                    "  ERROR_PERSIST:     %d  (Writer catch)%n" +
+                    "  총 records:         %d%n" +
+                    "%n" +
+                    "[FailureCollector 통계]%n" +
+                    "  실패 row: %d%n" +
+                    "%n" +
+                    "[주의]%n" +
+                    "  Spring Batch의 writeCount 는 Writer가 받은 아이템 수이며,%n" +
+                    "  실제 commit 건수와 다를 수 있습니다.%n" +
+                    "  진짜 commit 건수는 RecordCollector 의 SUCCESS 값을 참고하되,%n" +
+                    "  chunk 트랜잭션이 silent rollback 된 경우 SUCCESS 도 부정확할 수 있습니다.%n" +
+                    "  최종적으로 DB의 SELECT COUNT(*) FROM stock 으로 검증해야 합니다.%n",
+                    java.time.LocalDateTime.now(),
+                    userName, encoding,
+                    file.getOriginalFilename(),
+                    readCount, writeCount, skipCount,
+                    successByRecord, skipNullStatus, skipException, errorPersist, records.size(),
+                    failureCollector.getFailureCount()
+            );
+            Files.writeString(summaryPath, summary);
+            log.info("재고 마이그레이션 summary.txt 저장: {}", summaryPath.toAbsolutePath());
+
+            // 8. 실패 건 확인
             List<FailedStockRow> failures = failureCollector.getFailures();
 
             if (failures.isEmpty()) {
-                return ResponseEntity.ok(ApiResponse.success(
-                        String.format("재고 마이그레이션 완료 (읽기: %d건, 저장: %d건)", readCount, writeCount)));
+                return ResponseEntity.ok(ApiResponse.success(String.format(
+                        "재고 마이그레이션 완료 (읽기: %d건, writeCount: %d건, SUCCESS: %d건) | records: %s | summary: %s",
+                        readCount, writeCount, successByRecord,
+                        recordsPath.toAbsolutePath(), summaryPath.toAbsolutePath())));
             }
 
-            // 6. 실패 건이 있으면 CSV 파일로 저장
+            // 9. 실패 건이 있으면 failures.csv도 저장
             byte[] failureCsv = migrationService.generateFailureCsv(failures);
-
-            String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-            String fileName = "migration_stock_failures_" + timestamp + ".csv";
-
-            Path failurePath = Path.of(System.getProperty("java.io.tmpdir"), fileName);
+            Path failurePath = logsDir.resolve("migration_stock_failures_" + timestamp + ".csv");
             Files.write(failurePath, failureCsv);
-
             log.info("재고 마이그레이션 실패 {}건 - 파일 저장: {}", failures.size(), failurePath.toAbsolutePath());
 
-            return ResponseEntity.ok(ApiResponse.error(
-                    String.format("재고 마이그레이션 완료 (읽기: %d건, 저장: %d건, 실패: %d건) - 파일: %s",
-                            readCount, writeCount, failures.size(), failurePath.toAbsolutePath())));
+            return ResponseEntity.ok(ApiResponse.error(String.format(
+                    "재고 마이그레이션 완료 (읽기: %d건, writeCount: %d건, SUCCESS: %d건, 실패: %d건) | records: %s | summary: %s | failures: %s",
+                    readCount, writeCount, successByRecord, failures.size(),
+                    recordsPath.toAbsolutePath(), summaryPath.toAbsolutePath(), failurePath.toAbsolutePath())));
 
         } catch (Exception e) {
             log.error("재고 마이그레이션 처리 중 오류", e);

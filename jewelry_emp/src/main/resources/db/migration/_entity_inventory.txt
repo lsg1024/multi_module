@@ -1,0 +1,460 @@
+
+============================================================
+  account
+============================================================
+
+## ExpenseBankType  (@Entity  table=expense_bank_type)
+  @Column(name = "expense_bank_type_id") | private Long expenseBankTypeId;
+  @Column(name = "bank_type_name", nullable = false, length = 100) | private String bankTypeName;
+  @Column(name = "bank_type_note", length = 255) | private String bankTypeNote;
+  @Column(name = "deleted", nullable = false) | private Boolean deleted = false;
+
+## ExpenseExpenseAccount  (@Entity  table=expense_expense_account)
+  @Column(name = "expense_expense_account_id") | private Long expenseExpenseAccountId;
+  @Column(name = "expense_account_name", nullable = false, length = 100) | private String expenseAccountName;
+  @Column(name = "expense_account_note", length = 255) | private String expenseAccountNote;
+  @Column(name = "deleted", nullable = false) | private Boolean deleted = false;
+
+## ExpenseIncomeAccount  (@Entity  table=expense_income_account)
+  @Column(name = "expense_income_account_id") | private Long expenseIncomeAccountId;
+  @Column(name = "income_account_name", nullable = false, length = 100) | private String incomeAccountName;
+  @Column(name = "income_account_note", length = 255) | private String incomeAccountNote;
+  @Column(name = "deleted", nullable = false) | private Boolean deleted = false;
+
+## ExpenseRecord  (@Entity  table=expense_record)
+  @Column(name = "expense_record_id") | private Long expenseRecordId;
+  @Column(name = "record_date", nullable = false) | private LocalDateTime recordDate;
+  @Column(name = "expense_type", nullable = false, length = 20) | private ExpenseType expenseType;
+  @JoinColumn(name = "expense_bank_type_id") | private ExpenseBankType bankType;
+  @JoinColumn(name = "expense_income_account_id") | private ExpenseIncomeAccount incomeAccount;
+  @JoinColumn(name = "expense_expense_account_id") | private ExpenseExpenseAccount expenseAccount;
+  @Column(name = "counterparty", length = 100) | private String counterparty;
+  @Column(name = "description", length = 500) | private String description;
+  @Column(name = "material", length = 50) | private String material;
+  @Column(name = "weight", precision = 10, scale = 3) | private BigDecimal weight;
+  @Column(name = "quantity") | private Integer quantity = 1;
+  @Column(name = "unit_price") | private Long unitPrice = 0L;
+  @Column(name = "supply_amount") | private Long supplyAmount = 0L;
+  @Column(name = "tax_amount") | private Long taxAmount = 0L;
+  @Column(name = "deleted", nullable = false) | private Boolean deleted = false;
+
+## Factory  (@Entity  table=FACTORY)
+  @Column(name = "FACTORY_ID") | private Long factoryId;
+  @Column(name = "FACTORY_NAME", unique = true, nullable = false, length = 30) | private String factoryName;
+  @Column(name = "FACTORY_OWNER_NAME", length = 30) | private String factoryOwnerName;
+  @Column(name = "FACTORY_PHONE_NUMBER", length = 13) | private String factoryPhoneNumber;
+  @Column(name = "FACTORY_CONTACT_NUMBER_1", length = 13) | private String factoryContactNumber1;
+  @Column(name = "FACTORY_CONTACT_NUMBER_2", length = 13) | private String factoryContactNumber2;
+  @Column(name = "FACTORY_FAX_NUMBER", length = 16) | private String factoryFaxNumber;
+  @Column(name = "FACTORY_NOTE") | private String factoryNote;
+  @Column(name = "FACTORY_DELETED", nullable = false) | private boolean factoryDeleted = false;
+  @Column(name = "CURRENT_GOLD_BALANCE", nullable = false, precision = 10, scale = 3) | private BigDecimal currentGoldBalance = BigDecimal.ZERO;
+  @Column(name = "CURRENT_MONEY_BALANCE", nullable = false) | private Long currentMoneyBalance = 0L;
+  @JoinColumn(name = "ADDRESS_ID") | private Address address;
+  @JoinColumn(name = "COMMON_OPTION_ID") | private CommonOption commonOption;
+
+## Address  (@Entity  table=ADDRESS)
+  @Column(name = "ADDRESS_ID") | private Long addressId;
+  @Column(name = "ADDRESS_ZIP_CODE") | private String addressZipCode;
+  @Column(name = "ADDRESS_BASIC") | private String addressBasic;
+  @Column(name = "ADDRESS_ADD") | private String addressAdd;
+
+## CommonOption  (@Entity  table=COMMON_OPTION)
+  @Column(name = "COMMON_OPTION_ID") | private Long commonOptionId;
+  @Enumerated(EnumType.STRING) | private OptionTradeType optionTradeType;
+  @Enumerated(EnumType.STRING) | private OptionLevel optionLevel;
+  @JoinColumn(name = "GOLD_HARRY_ID", nullable = false) | private GoldHarry goldHarry;
+  @Column(name = "GOLD_HARRY_LOSS") | private String goldHarryLoss;
+
+## GoldHarry  (@Entity  table=GOLD_HARRY)
+  @Column(name = "GOLD_HARRY_ID") | private Long goldHarryId;
+  @Column(name = "GOLD_HARRY_LOSS", nullable = false, precision = 10, scale = 2) | private BigDecimal goldHarryLoss;
+  @Column(name = "DEFAULT_OPTION", nullable = false) | private boolean DefaultOption = false;
+
+## Ledger  (@Entity  table=LEDGER)
+  @Column(name = "LEDGER_ID") | private Long ledgerId;
+  @Column(name = "LEDGER_DATE", nullable = false) | private LocalDate ledgerDate;
+  @Column(name = "ASSET_TYPE", nullable = false, length = 10) | private AssetType assetType;
+  @Column(name = "TRANSACTION_TYPE", nullable = false, length = 10) | private TransactionType transactionType;
+  @Column(name = "GOLD_AMOUNT", precision = 10, scale = 3) | private BigDecimal goldAmount;
+  @Column(name = "MONEY_AMOUNT") | private Long moneyAmount;
+  @Column(name = "DESCRIPTION", length = 255) | private String description;
+  @Column(name = "CREATED_BY", updatable = false) | private String createdBy;
+
+## Schedule  (@Entity  table=SCHEDULE)
+  @Column(name = "SCHEDULE_ID") | private Long scheduleId;
+  @Column(name = "TITLE", nullable = false, length = 100) | private String title;
+  @Column(name = "CONTENT", length = 500) | private String content;
+  @Column(name = "START_AT", nullable = false) | private LocalDateTime startAt;
+  @Column(name = "END_AT", nullable = false) | private LocalDateTime endAt;
+  @Column(name = "ALL_DAY", nullable = false) | private boolean allDay = false;
+  @Column(name = "REPEAT_TYPE", nullable = false) | private RepeatType repeatType = RepeatType.NONE;
+  @Column(name = "COLOR", length = 20) | private String color;
+
+## AdditionalOption  (@Entity  table=ADDITIONAL_OPTION)
+  @Column(name = "OPTION_ID") | private Long optionId;
+  @Column(name = "OPTION_APPLY_PAST_SALES") | private boolean optionApplyPastSales;
+  @Column(name = "OPTION_MATERIAL_ID" )// product server mapping 필요 | private String optionMaterialId;
+  @Column(name = "OPTION_MATERIAL_NAME") // 싱글 조회용 | private String optionMaterialName;
+
+## Store  (@Entity  table=STORE)
+  @Column(name = "STORE_ID") | private Long storeId;
+  @Column(name = "STORE_NAME", unique = true, nullable = false, length = 30) | private String storeName;
+  @Column(name = "STORE_OWNER_NAME", length = 30) | private String storeOwnerName;
+  @Column(name = "STORE_PHONE_NUMBER", length = 13) | private String storePhoneNumber;
+  @Column(name = "STORE_CONTACT_NUMBER_1", length = 13) | private String storeContactNumber1;
+  @Column(name = "STORE_CONTACT_NUMBER_2", length = 13) | private String storeContactNumber2;
+  @Column(name = "STORE_FAX_NUMBER", length = 16) | private String storeFaxNumber;
+  @Column(name = "STORE_NOTE") | private String storeNote;
+  @Column(name = "STORE_DEFAULT", nullable = false) | private boolean storeDefault = false;
+  @Column(name = "STORE_DELETED", nullable = false) | private boolean storeDeleted = false;
+  @Column(name = "CURRENT_GOLD_BALANCE", nullable = false, precision = 10, scale = 3) | private BigDecimal currentGoldBalance = BigDecimal.ZERO;
+  @Column(name = "CURRENT_MONEY_BALANCE", nullable = false) | private Long currentMoneyBalance = 0L;
+  @JoinColumn(name = "ADDRESS_ID") | private Address address;
+  @JoinColumn(name = "COMMON_OPTION_ID") | private CommonOption commonOption;
+  @JoinColumn(name = "OPTION_ID") | private AdditionalOption additionalOption;
+
+## SaleLog  (@Entity  table=)
+  @Column(name = "SALE_LOG_ID") | private Long id;
+  @Column(name = "ACCOUNT_SALE_CODE") | private Long accountSaleCode;
+  @Column(name = "PREVIOUS_GOLD_BALANCE", precision = 10, scale = 3) | private BigDecimal previousGoldBalance = BigDecimal.ZERO;
+  @Column(name = "PREVIOUS_MONEY_BALANCE") | private Long previousMoneyBalance = 0L;
+  @Column(name = "AFTER_GOLD_BALANCE", precision = 10, scale = 3) | private BigDecimal afterGoldBalance = BigDecimal.ZERO;
+  @Column(name = "AFTER_MONEY_BALANCE") | private Long afterMoneyBalance = 0L;
+  @Column(name = "SALE_DATE") | private LocalDateTime saleDate;
+  @JoinColumn(name = "STORE_ID") | private Store store;
+  @JoinColumn(name = "FACTORY_ID") | private Factory factory;
+  @Column(name = "OWNER_TYPE") | private String ownerType;
+
+## TransactionHistory  (@Entity  table=TRANSACTION_HISTORY)
+  @Column(name = "TRANSACTION_ID") | private Long transactionId;
+  @Column(name = "TRANSACTION_DATE", nullable = false) | private LocalDateTime transactionDate;
+  @Column(name = "TRANSACTION_TYPE") | private SaleStatus transactionType;
+  @Column(name = "MATERIAL") | private String material;
+  @Column(name = "GOLD_AMOUNT", precision = 10, scale = 3) | private BigDecimal goldAmount;
+  @Column(name = "MONEY_AMOUNT") | private Long moneyAmount;
+  @Column(name = "TRANSACTION_DELETED", nullable = false) | private boolean transactionDeleted = false;
+  @Column(name = "EVENT_ID", nullable = false, unique = true) | private String eventId; // 멱등성 id 이자 판매 시 동시 등록되는 연결되는 값
+  @Column(name = "ACCOUNT_SALE_CODE") | private Long accountSaleCode; // 판매 주문장 id
+  @JoinColumn(name = "STORE_ID") | private Store store;
+  @JoinColumn(name = "FACTORY_ID") | private Factory factory;
+  @Column(name = "TRANSACTION_HISTORY_NOTE") | private String transactionHistoryNote;
+
+============================================================
+  product
+============================================================
+
+## Classification  (@Entity  table=CLASSIFICATION)
+  @Column(name = "CLASSIFICATION_ID") | private Long classificationId;
+  @Column(name = "CLASSIFICATION_NAME", unique = true) | private String classificationName;
+  @Column(name = "CLASSIFICATION_NOTE") | private String classificationNote;
+  @Column(name = "DEFAULT_ID") | private boolean defaultId;
+
+## Color  (@Entity  table=COLOR)
+  @Column(name = "COLOR_ID") | private Long colorId;
+  @Column(name = "COLOR_NAME", unique = true) | private String colorName;
+  @Column(name = "COLOR_NOTE") | private String colorNote;
+  @Column(name = "DEFAULT_ID") | private boolean defaultId;
+
+## Gold  (@Entity  table=GOLD)
+  @Column(name = "GOLD_ID") | private Long goldId;
+  @Column(name = "GOLD_PRICE") | private Integer goldPrice;
+
+## Material  (@Entity  table=MATERIAL)
+  @Column(name = "MATERIAL_ID") | private Long materialId;
+  @Column(name = "MATERIAL_NAME", unique = true) | private String materialName;
+  @Column(name = "MATERIAL_GOLD_PURITY_PERCENT", precision = 5, scale = 2) | private BigDecimal materialGoldPurityPercent;
+  @Column(name = "DEFAULT_ID") | private boolean defaultId;
+
+## Product  (@Entity  table=PRODUCT)
+  @Column(name = "PRODUCT_ID") | private Long productId;
+  @Column(name = "FACTORY_ID") | private Long factoryId;
+  @Column(name = "FACTORY_NAME") | private String factoryName;
+  @Column(name = "PRODUCT_FACTORY_NAME") | private String productFactoryName;
+  @Column(name = "PRODUCT_NAME", nullable = false, unique = true) | private String productName;
+  @JoinColumn(name = "SET_TYPE_ID") | private SetType setType;
+  @JoinColumn(name = "CLASSIFICATION_ID") | private Classification classification;
+  @JoinColumn(name = "MATERIAL_ID") | private Material material;
+  @Column(name = "STANDARD_WEIGHT") | private BigDecimal standardWeight;
+  @Column(name = "PRODUCT_NOTE") | private String productNote;
+  @Column(name = "PRODUCT_RELATED_NUMBER") | private String productRelatedNumber;
+  @Column(name = "PRODUCT_DELETED") | private Boolean productDeleted;
+  @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true) | private List<ProductWorkGradePolicyGroup> productWorkGradePolicyGroups = new ArrayList<>();
+  @OneToMany(mappedBy = "product", cascade = {CascadeType.PERSIST, CascadeType.MERGE}) | private List<ProductStone> productStones = new ArrayList<>();
+  @OneToMany(mappedBy = "product", cascade = {CascadeType.PERSIST, CascadeType.MERGE}) | private List<ProductImage> productImages = new ArrayList<>();
+
+## ProductImage  (@Entity  table=PRODUCT_IMAGE)
+  @Column(name = "IMAGE_ID") | private Long imageId;
+  @Column(name = "IMAGE_URL", nullable = false) | private String imagePath;
+  @Column(name = "IMAGE_NAME", nullable = false) | private String imageName;
+  @Column(name = "IMAGE_ORIGIN_NAME", nullable = false) | private String imageOriginName;
+  @Column(name = "IMAGE_MAIN", nullable = false) | private Boolean imageMain;
+  @JoinColumn(name = "PRODUCT_ID") | private Product product;
+
+## ProductStone  (@Entity  table=PRODUCT_STONE)
+  @Column(name = "PRODUCT_STONE_ID") | private Long productStoneId;
+  @JoinColumn(name = "PRODUCT_ID", nullable = false) | private Product product;
+  @JoinColumn(name = "STONE_ID", nullable = false) | private Stone stone; // 판매 단가 호출 필요
+  @Column(name = "MAIN_STONE") | private Boolean mainStone; // 메인 여부
+  @Column(name = "INCLUDE_STONE") | private Boolean includeStone; // 포함 여부
+  @Column(name = "INCLUDE_QUANTITY") | private Boolean includeQuantity; // 알 개수 포함 여부
+  @Column(name = "INCLUDE_PRICE") | private Boolean includePrice; // 가격 포함 여부
+  @Column(name = "STONE_QUANTITY") | private Integer stoneQuantity;
+  @Column(name = "PRODUCT_STONE_NOTE") | private String productStoneNote;
+
+## ProductWorkGradePolicy  (@Entity  table=PRODUCT_WORK_GRADE_POLICY)
+  @Column(name = "PRODUCT_WORK_GRADE_POLICY_ID") | private Long productWorkGradePolicyId;
+  @Column(name = "GRADE", nullable = false) | private WorkGrade grade;
+  @Column(name = "LABOR_COST") | private Integer laborCost = 0;
+  @JoinColumn(name = "PRODUCT_WORK_GRADE_POLICY_GROUP_ID") | private ProductWorkGradePolicyGroup workGradePolicyGroup;
+
+## ProductWorkGradePolicyGroup  (@Entity  table=PRODUCT_WORK_GRADE_POLICY_GROUP)
+  @Column(name = "PRODUCT_WORK_GRADE_POLICY_GROUP_ID") | private Long productWorkGradePolicyGroupId;
+  @Column(name = "PRODUCT_PURCHASE_PRICE") | private Integer productPurchasePrice = 0;
+  @JoinColumn(name = "PRODUCT_ID") | private Product product;
+  @JoinColumn(name = "COLOR_ID") | private Color color;
+  @Column(name = "PRODUCT_WORK_GRADE_POLICY_GROUP_DEFAULT") | private boolean productWorkGradePolicyGroupDefault;
+  @OneToMany(mappedBy = "workGradePolicyGroup", cascade = CascadeType.ALL, orphanRemoval = true) | private List<ProductWorkGradePolicy> gradePolicies = new ArrayList<>();
+  @Column(name = "PRODUCT_NOTE") | private String note;
+
+## SetType  (@Entity  table=SET_TYPE)
+  @Column(name = "SET_TYPE_ID") | private Long setTypeId;
+  @Column(name = "SET_TYPE_NAME", unique = true) | private String setTypeName;
+  @Column(name = "SET_TYPE_NOTE") | private String setTypeNote;
+  @Column(name = "DEFAULT_ID") | private boolean defaultId = false;
+
+## AssistantStone  (@Entity  table=ASSISTANCE_STONE)
+  @Column(name = "ASSISTANCE_STONE_ID") | private Long assistanceStoneId;
+  @Column(name = "ASSISTANCE_STONE_NAME") | private String assistanceStoneName;
+  @Column(name = "ASSISTANCE_STONE_NOTE") | private String assistanceStoneNote;
+  @Column(name = "ASSISTANCE_STONE_DELETED") | private boolean assistanceStoneDeleted = false;
+
+## StoneShape  (@Entity  table=STONE_SHAPE)
+  @Column(name = "STONE_SHAPE_ID") | private Long stoneShapeId;
+  @Column(name = "STONE_SHAPE_NAME", unique = true) | private String stoneShapeName;
+  @Column(name = "STONE_SHAPE_NOTE") | private String stoneShapeNote;
+
+## Stone  (@Entity  table=STONE)
+  @Column(name = "STONE_ID") | private Long stoneId;
+  @Column(name = "STONE_NAME", unique = true) | private String stoneName; // stoneTypeName + stoneShapeName + stoneSize
+  @Column(name = "STONE_NOTE") | private String stoneNote;
+  @Column(name = "STONE_WEIGHT", precision = 5, scale = 2) | private BigDecimal stoneWeight;
+  @Column(name = "STONE_PURCHASE_PRICE") | private Integer stonePurchasePrice;
+  @OneToMany(mappedBy = "stone", cascade = CascadeType.ALL, orphanRemoval = true) | private List<StoneWorkGradePolicy> gradePolicies = new ArrayList<>();
+
+## StoneWorkGradePolicy  (@Entity  table=STONE_WORK_GRADE_POLICY)
+  @Column(name = "STONE_WORK_GRADE_POLICY_ID") | private Long stoneWorkGradePolicyId;
+  @JoinColumn(name = "STONE_ID", nullable = false) | private Stone stone;
+  @Column(name = "GRADE", nullable = false) | private WorkGrade grade;
+  @Column(name = "LABOR_COST") | private Integer laborCost;
+
+## StoneType  (@Entity  table=STONE_TYPE)
+  @Column(name = "STONE_TYPE_ID") | private Long stoneTypeId;
+  @Column(name = "STONE_TYPE_NAME", unique = true) | private String stoneTypeName;
+  @Column(name = "STONE_TYPE_NOTE") | private String stoneTypeNote;
+
+============================================================
+  order
+============================================================
+
+## OrderProduct  (@Entity  table=ORDER_PRODUCT)
+  @Column(name = "ORDER_PRODUCT_ID") | private Long orderProductId;
+  @Column(name = "PRODUCT_ID") | private Long productId;
+  @Column(name = "PRODUCT_NAME") | private String productName;
+  @Column(name = "PRODUCT_FACTORY_NAME") | private String productFactoryName;
+  @Column(name = "PRODUCT_SIZE") | private String productSize;
+  @Column(name = "IS_PRODUCT_WEIGHT_SALE") | private boolean isProductWeightSale;
+  @Column(name = "GOLD_WEIGHT", precision = 10, scale = 3) | private BigDecimal goldWeight;
+  @Column(name = "STONE_WEIGHT", precision = 10, scale = 3) | private BigDecimal stoneWeight;
+  @Column(name = "ORDER_MAIN_STONE_NOTE") | private String orderMainStoneNote;
+  @Column(name = "ORDER_ASSISTANCE_STONE_NOTE") | private String orderAssistanceStoneNote;
+  @Column(name = "PRODUCT_PURCHASE_COST") | private Integer productPurchaseCost;
+  @Column(name = "PRODUCT_LABOR_COST") | private Integer productLaborCost; // 상점 grade 등급에 따라 가격
+  @Column(name = "PRODUCT_ADD_LABOR_COST") | private Integer productAddLaborCost;
+  @Column(name = "MATERIAL_ID") | private Long materialId; // 재질
+  @Column(name = "MATERIAL_NAME") | private String materialName; // 재질
+  @Column(name = "CLASSIFICATION_ID") | private Long classificationId; // 분류
+  @Column(name = "CLASSIFICATION_NAME") | private String classificationName; // 분류
+  @Column(name = "COLOR_ID") | private Long colorId; // 색
+  @Column(name = "COLOR_NAME") | private String colorName; // 색
+  @Column(name = "SET_TYPE_ID") // 세트 | private Long setTypeId;
+  @Column(name = "SET_TYPE_NAME") // 세트 | private String setTypeName;
+  @Column(name = "ASSISTANT_STONE") | private boolean assistantStone = false; //보조석
+  @Column(name = "ASSISTANT_STONE_ID") | private Long assistantStoneId;
+  @Column(name = "ASSISTANT_STONE_NAME") | private String assistantStoneName;
+  @Column(name = "ASSISTANT_STONE_CREATE_AT") | private OffsetDateTime assistantStoneCreateAt;
+
+## OrderStone  (@Entity  table=ORDER_STONE)
+  @Column(name = "ORDER_STONE_ID") | private Long orderStoneId;
+  @Column(name = "ORIGIN_STONE_ID") | private Long originStoneId;
+  @Column(name = "ORIGIN_STONE_NAME") | private String originStoneName;
+  @Column(name = "ORIGIN_STONE_WEIGHT", precision = 10, scale = 3) | private BigDecimal originStoneWeight;
+  @Column(name = "STONE_PURCHASE_COST") | private Integer stonePurchaseCost; // 매입 금액
+  @Column(name = "STONE_LABOR_COST") | private Integer stoneLaborCost; // 판매 금액
+  @Column(name = "STONE_ADD_LABOR_COST") | private Integer stoneAddLaborCost; // 추가 판매 금액
+  @Column(name = "STONE_QUANTITY") | private Integer stoneQuantity; // 스톤 개수
+  @Column(name = "IS_MAIN_STONE") | private Boolean mainStone; // 메인 여부
+  @Column(name = "IS_INCLUDE_STONE") | private Boolean includeStone; // 포함 여부
+  @JoinColumn(name = "ORDER_ID") | private Orders order;
+  @JoinColumn(name = "STOCK_ID") | private Stock stock;
+
+## Orders  (@Entity  table=ORDERS)
+  @Column(name = "ORDER_ID") | private Long orderId;
+  @Tsid @Column(name = "FLOW_CODE") | private Long flowCode;
+  @Column(name = "STORE_ID") //account - store | private Long storeId;
+  @Column(name = "STORE_NAME") //account - store | private String storeName;
+  @Column(name = "STORE_GRADE") | private String storeGrade;
+  @Column(name = "STORE_HARRY", precision = 10, scale = 2) | private BigDecimal storeHarry;
+  @Column(name = "FACTORY_ID") //account - factory | private Long factoryId;
+  @Column(name = "FACTORY_NAME") | private String factoryName;
+  @Column(name = "FACTORY_HARRY", precision = 10, scale = 2) | private BigDecimal factoryHarry;
+  @Column(name = "ORDER_NOTE") | private String orderNote;
+  @Column(name = "CREATE_AT") | private OffsetDateTime createAt;
+  @Column(name = "SHIPPING_AT") | private OffsetDateTime shippingAt;
+  @Column(name = "ORDER_DELETED", nullable = false) | private boolean orderDeleted = false;
+  @OneToOne(mappedBy = "order", cascade = {PERSIST, MERGE}) | private OrderProduct orderProduct;
+  @OneToMany(mappedBy = "order", cascade = {PERSIST, MERGE, REMOVE}, orphanRemoval = true) | private List<OrderStone> orderStones = new ArrayList<>();
+  @JoinColumn(name = "PRIORITY_ID") | private Priority priority; // 출고 등급
+  @Enumerated(EnumType.STRING) | private ProductStatus productStatus; // 주문 상태
+  @Enumerated(EnumType.STRING) | private OrderStatus orderStatus;
+
+## StatusHistory  (@Entity  table=STATUS_HISTORY)
+  @Column(name = "ID") | private Long id;
+  @Column(name = "FLOW_CODE", nullable = false) | private Long flowCode;
+  @Enumerated(EnumType.STRING) @Column(name = "SOURCE_TYPE") | private SourceType sourceType;
+  @Enumerated(EnumType.STRING) @Column(name = "PHASE") | private BusinessPhase phase;
+  @Enumerated(EnumType.STRING) @Column(name = "KIND") | private Kind kind;
+  @Column(name = "FROM_VALUE") | private String fromValue;
+  @Column(name = "TO_VALUE") | private String toValue;
+  @Column(name = "CONTENT", columnDefinition = "TEXT") | private String content;
+  @Column(name = "CREATED_AT") | private OffsetDateTime createAt;
+  @Column(name = "USER_NAME") | private String userName;
+
+## OutboxEvent  (@Entity  table=OUT_BOX_EVENT)
+  @Column(nullable = false, name = "TOPIC") | private String topic;
+  @Column(nullable = false, name = "MESSAGE_KEY") | private String messageKey;
+  @Column(nullable = false, columnDefinition = "TEXT", name = "PAYLOAD") | private String payload;
+  @Column(nullable = false, name = "EVENT_STATUS") | private EventStatus status = EventStatus.PENDING;
+  @Column(name = "RETRY_COUNT") | private int retryCount = 0;
+  @Column(name = "LAST_ERROR_MESSAGE", length = 500) | private String lastErrorMessage;
+  @Column(name = "NEXT_RETRY_AT") | private OffsetDateTime nextRetryAt;
+  @Column(name = "EVENT_TYPE", length = 50) | private String eventType;
+
+## Sale  (@Entity  table=)
+  @Column(name = "SALE_ID") | private Long saleId;
+  @Column(name = "SALE_CODE") | private Long saleCode;
+  @Column(name = "SALE_STATUS") | private SaleStatus saleStatus;
+  @Column(name = "ACCOUNT_ID", nullable = false) | private Long accountId;
+  @Column(name = "ACCOUNT_NAME", nullable = false) | private String accountName;
+  @Column(name = "ACCOUNT_HARRY", precision = 10, scale = 2) | private BigDecimal accountHarry;
+  @Column(name = "ACCOUNT_GRADE") | private String accountGrade;
+  @Column(name = "ACCOUNT_GOLD_PRICE") | private Integer accountGoldPrice;
+  @Column(name = "DISPLAY_CODE", length = 10) | private String displayCode;
+  @OneToMany(mappedBy="sale", cascade = CascadeType.ALL, orphanRemoval = true) | private List<SaleItem> items = new ArrayList<>();
+  @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, orphanRemoval = true) | private List<SalePayment> salePayments = new ArrayList<>();
+
+## SaleItem  (@Entity  table=)
+  @Column(name = "SALE_ITEM_ID") | private Long saleItemId;
+  @JoinColumn(name="SALE_ID") | private Sale sale;
+  @JoinColumn(name="STOCK_ID") | private Stock stock;
+  @Column(name = "FLOW_CODE", nullable = false) | private Long flowCode;
+  @Column(name = "ITEM_STATUS") | private SaleStatus itemStatus = SaleStatus.SALE;
+
+## SalePayment  (@Entity  table=)
+  @Column(name = "SALE_PAYMENT_ID") | private Long salePaymentId;
+  @JoinColumn(name = "SALE_ID", nullable = false) | private Sale sale;
+  @Column(name = "FLOW_CODE", nullable = false) | private Long flowCode;
+  @Column(name = "SALE_STATUS") | private SaleStatus saleStatus;
+  @Column(name="CASH_AMOUNT") | private Integer cashAmount = 0;
+  @Column(name = "GOLD_MATERIAL") | private String material;
+  @Column(name="PURE_GOLD_WEIGHT", precision=18, scale=3) | private BigDecimal pureGoldWeight = BigDecimal.ZERO;
+  @Column(name="GOLD_WEIGHT", precision=18, scale=3) | private BigDecimal goldWeight = BigDecimal.ZERO;
+  @Column(name = "PAYMENT_NOTE") | private String paymentNote;
+  @Column(name="EVENT_ID", nullable=false) | private String eventId;
+  @Column(name = "PAYMENT_DELETED", nullable = false) | private boolean deleted = false;
+
+## ProductSnapshot  (@Embeddable  table=)
+  @Column(name = "PRODUCT_ID", updatable = false) | private Long id;
+  @Column(name = "PRODUCT_NAME") | private String productName;
+  @Column(name = "PRODUCT_FACTORY_NAME") | private String productFactoryName;
+  @Column(name = "PRODUCT_SIZE") | private String size;
+  @Column(name = "IS_PRODUCT_WEIGHT_SALE") | private boolean isProductWeightSale;
+  @Column(name = "PRODUCT_LABOR_COST") // 상품 매출 비용 | private Integer productLaborCost;
+  @Column(name = "PRODUCT_ADD_LABOR_COST") // 상품 추가 매출 비용 | private Integer productAddLaborCost;
+  @Column(name = "PRODUCT_PURCHASE_COST") // 상품 매입 비용 | private Integer productPurchaseCost;
+  @Column(name = "MATERIAL_ID") | private Long materialId;
+  @Column(name = "MATERIAL_NAME") | private String materialName;
+  @Column(name = "COLOR_ID") | private Long colorId;
+  @Column(name = "COLOR_NAME") | private String colorName;
+  @Column(name = "CLASSIFICATION_ID") | private Long classificationId;
+  @Column(name = "CLASSIFICATION_NAME") | private String classificationName;
+  @Column(name = "SET_TYPE_ID") // 세트 | private Long setTypeId;
+  @Column(name = "SET_TYPE_NAME") | private String setTypeName;
+  @Column(name = "ASSISTANT_STONE") | private boolean assistantStone = false; //보조석
+  @Column(name = "ASSISTANT_STONE_ID") | private Long assistantStoneId;
+  @Column(name = "ASSISTANT_STONE_NAME") | private String assistantStoneName; //보조석
+  @Column(name = "ASSISTANT_STONE_CREATE_AT") | private OffsetDateTime assistantStoneCreateAt;
+  @Column(name = "GOLD_WEIGHT", precision = 10, scale = 3) // 상품 총 무게 | private BigDecimal goldWeight;
+  @Column(name = "STONE_WEIGHT", precision = 10, scale = 3) // 상품 스톤 총 무게 | private BigDecimal stoneWeight;
+
+## Stock  (@Entity  table=STOCK)
+  @Column(name = "STOCK_ID") | private Long stockId;
+  @Tsid @Column(name = "STOCK_CODE") | private Long stockCode;
+  @Column(name = "FLOW_CODE") | private Long flowCode;
+  @Column(name = "STORE_ID") //account - store | private Long storeId;
+  @Column(name = "STORE_NAME") //account - store | private String storeName;
+  @Column(name = "STORE_HARRY", precision = 10, scale = 2) | private BigDecimal storeHarry;
+  @Column(name = "STORE_GRADE") //account - store | private String storeGrade;
+  @Column(name = "FACTORY_ID") //account - factory | private Long factoryId;
+  @Column(name = "FACTORY_NAME") | private String factoryName;
+  @Column(name = "FACTORY_HARRY", precision = 10, scale = 2) | private BigDecimal factoryHarry;
+  @Column(name = "STOCK_NOTE") | private String stockNote;
+  @Column(name = "STOCK_MAIN_STONE_NOTE") | private String stockMainStoneNote;
+  @Column(name = "STOCK_ASSISTANCE_STONE_NOTE") | private String stockAssistanceStoneNote;
+  @Column(name = "STONE_MAIN_LABOR_COST") // 스톤 메인 매출 비용 | private Integer stoneMainLaborCost;
+  @Column(name = "STONE_ASSISTANCE_LABOR_COST") // 스톤 보조 매출 비용 | private Integer stoneAssistanceLaborCost;
+  @Column(name = "STONE_ADD_LABOR_COST") // 추가 스톤 매출 비용 | private Integer stoneAddLaborCost;
+  @Column(name = "TOTAL_STONE_PURCHASE_COST") // 총 스톤 매입 비용 | private Integer totalStonePurchaseCost;
+  @Column(name = "TOTAL_STONE_LABOR_COST") | private Integer totalStoneLaborCost;
+  @Column(name = "STOCK_DELETED", nullable = false) | private boolean stockDeleted = false;
+  @Column(name = "STOCK_CHECKED") | private Boolean stockChecked = false;
+  @Column(name = "STOCK_CHECKED_AT") | private LocalDateTime stockCheckedAt;
+  @Embedded | private ProductSnapshot product;
+  @JoinColumn(name = "ORDER_ID") | private Orders order;
+  @OneToMany(mappedBy = "stock", cascade = {PERSIST, MERGE, REMOVE}, orphanRemoval = true) | private List<OrderStone> orderStones = new ArrayList<>();
+  @Enumerated(EnumType.STRING) | private OrderStatus orderStatus;
+
+============================================================
+  user
+============================================================
+
+## MessageHistory  (@Entity  table=MESSAGE_HISTORY)
+  @Column(name = "ID") | private Long id;
+  @Column(name = "TENANT_ID", nullable = false, length = 10) | private String tenantId;
+  @Column(name = "RECEIVER_PHONE", nullable = false, length = 15) | private String receiverPhone;
+  @Column(name = "RECEIVER_NAME", length = 50) | private String receiverName;
+  @Column(name = "CONTENT", columnDefinition = "TEXT", nullable = false) | private String content;
+  @Column(name = "STATUS", nullable = false, length = 20) | private String status;
+  @Column(name = "ERROR_MESSAGE", length = 500) | private String errorMessage;
+  @Column(name = "NAVER_REQUEST_ID", length = 100) | private String naverRequestId;
+  @Column(name = "SENT_BY", nullable = false, length = 50) | private String sentBy;
+  @Column(name = "CREATED_AT") | private LocalDateTime createdAt;
+
+## SensConfig  (@Entity  table=SENS_CONFIG)
+  @Column(name = "ID") | private Long id;
+  @Column(name = "TENANT_ID", unique = true, nullable = false, length = 10) | private String tenantId;
+  @Column(name = "ACCESS_KEY", nullable = false) | private String accessKey;
+  @Column(name = "SECRET_KEY", nullable = false) | private String secretKey;
+  @Column(name = "SERVICE_ID", nullable = false) | private String serviceId;
+  @Column(name = "SENDER_PHONE", nullable = false, length = 15) | private String senderPhone;
+  @Column(name = "ENABLED", nullable = false) | private boolean enabled = true;
+
+## Users  (@Entity  table=)
+  @Column(name = "ID") | private Long id;
+  @Column(name = "USER_ID", nullable = false, length = 10) | private String userId; // 사용자 아이디
+  @Column(name = "PASSWORD", nullable = false, length = 100) | private String password;
+  @Column(name = "NICKNAME", nullable = false, length = 10) | private String nickname; // 이름
+  @Column(name = "TENANT_ID", nullable = false, length = 10) | private String tenantId;
+  @Enumerated(EnumType.STRING) | private Role role;
+  @Column(name = "STORE_ID") | private Long storeId;  // 판매처 계정인 경우 연결된 Store ID
+  @Column(name = "DELETED", nullable = false) | private boolean deleted = false;

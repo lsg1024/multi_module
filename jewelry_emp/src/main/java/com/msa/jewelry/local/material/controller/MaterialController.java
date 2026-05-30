@@ -1,0 +1,86 @@
+package com.msa.jewelry.local.material.controller;
+
+import com.msa.jewelry.local.material.dto.MaterialDto;
+import com.msa.jewelry.local.material.service.MaterialService;
+import com.msa.common.global.api.ApiResponse;
+import com.msa.common.global.jwt.AccessToken;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+public class MaterialController {
+
+    private final MaterialService materialService;
+
+    public MaterialController(MaterialService materialService) {
+        this.materialService = materialService;
+    }
+
+    @PostMapping("/materials")
+    public ResponseEntity<ApiResponse<String>> createMaterial(
+            @Valid @RequestBody MaterialDto materialDto) {
+
+        materialService.saveMaterial(materialDto);
+
+        return ResponseEntity.ok(ApiResponse.success("생성 완료"));
+    }
+
+    @PostMapping("/materialss")
+    public ResponseEntity<ApiResponse<String>> createMaterials(
+            @Valid @RequestBody List<MaterialDto> materialDto) {
+
+        materialDto.forEach(materialService::saveMaterial);
+
+        return ResponseEntity.ok(ApiResponse.success("생성 완료"));
+    }
+
+    @GetMapping("/materials/{id}")
+    public ResponseEntity<ApiResponse<MaterialDto.ResponseSingle>> getMaterial(
+            @PathVariable(name = "id") Long materialId) {
+
+        MaterialDto.ResponseSingle material = materialService.getMaterial(materialId);
+
+        return ResponseEntity.ok(ApiResponse.success(material));
+    }
+
+    @GetMapping("/materials")
+    public ResponseEntity<ApiResponse<List<MaterialDto.ResponseSingle>>> getMaterials() {
+        return ResponseEntity.ok(ApiResponse.success(materialService.getMaterials()));
+    }
+
+    @PatchMapping("/materials/{id}")
+    public ResponseEntity<ApiResponse<String>> updateMaterial(
+            @PathVariable(name = "id") Long materialId,
+            @Valid @RequestBody MaterialDto materialDto) {
+
+        materialService.updateMaterial(materialId, materialDto);
+        return ResponseEntity.ok(ApiResponse.success("수정 완료"));
+    }
+
+    @DeleteMapping("/materials/{id}")
+    public ResponseEntity<ApiResponse<String>> deletedMaterial(
+            @AccessToken String accessToken,
+            @PathVariable(name = "id") Long materialId) {
+
+        materialService.deleteMaterial(accessToken, materialId);
+        return ResponseEntity.ok(ApiResponse.success("삭제 완료"));
+    }
+
+    @GetMapping("/api/material/{id}")
+    public ResponseEntity<ApiResponse<String>> getMaterialInfo(@PathVariable Long id) {
+        String materialName = materialService.getMaterialName(id);
+        return ResponseEntity.ok(ApiResponse.success(materialName));
+    }
+
+    /**
+     * 재질명으로 재질 ID 조회 (마이그레이션용, 대소문자 무시)
+     */
+    @GetMapping("/api/material/name")
+    public ResponseEntity<ApiResponse<Long>> getMaterialIdByName(@RequestParam("name") String name) {
+        Long materialId = materialService.getMaterialIdByName(name);
+        return ResponseEntity.ok(ApiResponse.success(materialId));
+    }
+}

@@ -1,0 +1,221 @@
+package com.msa.jewelry.local.user.service;
+
+import com.msa.common.global.domain.dto.MessageDto;
+import com.msa.common.global.jwt.JwtUtil;
+import com.msa.jewelry.local.store.service.StoreService;
+import com.msa.jewelry.local.store.dto.StorePhoneView;
+import com.msa.jewelry.local.user.entity.MessageHistory;
+import com.msa.jewelry.local.user.entity.SensConfig;
+import com.msa.jewelry.local.user.repository.MessageHistoryRepository;
+import com.msa.jewelry.local.user.repository.SensConfigRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class MessageService {
+
+    private final SensConfigRepository sensConfigRepository;
+    private final MessageHistoryRepository messageHistoryRepository;
+    private final StoreService storeService;
+    private final NaverSensApi naverSensApi;
+    private final JwtUtil jwtUtil;
+
+    // SENS 설정 저장/수정
+    @Transactional
+    public MessageDto.SensConfigResponse saveSensConfig(String accessToken, MessageDto.SensConfigRequest request) {
+        String tenantId = jwtUtil.getTenantId(accessToken);
+
+        SensConfig config = sensConfigRepository.findByTenantId(tenantId)
+                .map(existing -> {
+                    existing.update(request.getAccessKey(), request.getSecretKey(),
+                            request.getServiceId(), request.getSenderPhone());
+                    return existing;
+                })
+                .orElseGet(() -> sensConfigRepository.save(
+                        SensConfig.builder()
+                                .tenantId(tenantId)
+                                .accessKey(request.getAccessKey())
+                                .secretKey(request.getSecretKey())
+                                .serviceId(request.getServiceId())
+                                .senderPhone(request.getSenderPhone())
+                                .build()
+                ));
+
+        return MessageDto.SensConfigResponse.builder()
+                .id(config.getId())
+                .accessKey(config.getAccessKey())
+                .serviceId(config.getServiceId())
+                .senderPhone(config.getSenderPhone())
+                .enabled(config.isEnabled())
+                .build();
+    }
+
+    // SENS 설정 조회
+    @Transactional(readOnly = true)
+    public MessageDto.SensConfigResponse getSensConfig(String accessToken) {
+        String tenantId = jwtUtil.getTenantId(accessToken);
+
+        SensConfig config = sensConfigRepository.findByTenantId(tenantId)
+                .orElseThrow(() -> new IllegalArgumentException("SENS 설정이 존재하지 않습니다."));
+
+        return MessageDto.SensConfigResponse.builder()
+                .id(config.getId())
+                .accessKey(config.getAccessKey())
+                .serviceId(config.getServiceId())
+                .senderPhone(config.getSenderPhone())
+                .enabled(config.isEnabled())
+                .build();
+    }
+
+    // SENS 설정 삭제
+    @Transactional
+    public void deleteSensConfig(String accessToken) {
+        String tenantId = jwtUtil.getTenantId(accessToken);
+
+        SensConfig config = sensConfigRepository.findByTenantId(tenantId)
+                .orElseThrow(() -> new IllegalArgumentException("SENS 설정이 존재하지 않습니다."));
+
+        sensConfigRepository.delete(config);
+    }
+
+    // SMS 전송
+    @Transactional
+    public List<MessageDto.SendResult> sendMessage(String accessToken, MessageDto.SendRequest request) {
+        String tenantId = jwtUtil.getTenantId(accessToken);
+        String nickname = jwtUtil.getNickname(accessToken);
+
+        SensConfig config = sensConfigRepository.findByTenantId(tenantId)
+                .orElseThrow(() -> new IllegalArgumentException("SENS 설정이 존재하지 않습니다. 먼저 설정을 완료해주세요."));
+
+        if (!config.isEnabled()) {
+            throw new IllegalArgumentException("SENS 서비스가 비활성화 상태입니다.");
+        }
+
+        List<StorePhoneView> storePhones = storeService.getStorePhonesView(request.getStoreIds());
+        if (storePhones == null) {
+            throw new IllegalArgumentException("거래처 정보를 가져올 수 없습니다.");
+        }
+
+        List<MessageDto.SendResult> results = new ArrayList<>();
+
+        for (StorePhoneView store : storePhones) {
+            String phone = store.storePhoneNumber();
+
+            if (phone == null || phone.isBlank()) {
+                results.add(MessageDto.SendResult.builder()
+                        .storeName(store.storeName())
+                        .phone("")
+                        .status("FAILED")
+                        .errorMessage("전화번호가 등록되어 있지 않습니다.")
+                        .build());
+
+                saveHistory(tenantId, "", store.storeName(), request.getContent(),
+                        "FAILED", "전화번호 미등록", null, nickname);
+                continue;
+            }
+
+            // 전화번호에서 하이픈 제거
+            String cleanPhone = phone.replaceAll("-", "");
+
+            try {
+                MessageDto.NaverSmsResponse smsResponse = naverSensApi.sendSms(config, cleanPhone, request.getContent());
+
+                String requestId = smsResponse != null ? smsResponse.getRequestId() : null;
+
+                results.add(MessageDto.SendResult.builder()
+                        .storeName(store.storeName())
+                        .phone(phone)
+                        .status("SUCCESS")
+                        .build());
+
+                saveHistory(tenantId, phone, store.storeName(), request.getContent(),
+                        "SUCCESS", null, requestId, nickname);
+
+            } catch (Exception e) {
+                log.error("SMS 전송 실패 - Store: {}, Phone: {}, Error: {}",
+                        store.storeName(), phone, e.getMessage());
+
+                results.add(MessageDto.SendResult.builder()
+                        .storeName(store.storeName())
+                        .phone(phone)
+                        .status("FAILED")
+                        .errorMessage(e.getMessage())
+                        .build());
+
+                saveHistory(tenantId, phone, store.storeName(), request.getContent(),
+                        "FAILED", e.getMessage(), null, nickname);
+            }
+        }
+
+        return results;
+    }
+
+    // 전송 이력 조회 (수신자/전화번호/내용/날짜 범위 선택적 필터)
+    @Transactional(readOnly = true)
+    public Page<MessageDto.HistoryResponse> getHistory(String accessToken,
+                                                       String receiverName,
+                                                       String receiverPhone,
+                                                       String content,
+                                                       LocalDate startDate,
+                                                       LocalDate endDate,
+                                                       Pageable pageable) {
+        String tenantId = jwtUtil.getTenantId(accessToken);
+
+        LocalDateTime startDateTime = startDate != null ? startDate.atStartOfDay() : null;
+        LocalDateTime endDateTime = endDate != null ? endDate.atTime(LocalTime.MAX) : null;
+
+        return messageHistoryRepository.searchByTenantId(
+                        tenantId,
+                        trimOrNull(receiverName),
+                        trimOrNull(receiverPhone),
+                        trimOrNull(content),
+                        startDateTime,
+                        endDateTime,
+                        pageable)
+                .map(h -> MessageDto.HistoryResponse.builder()
+                        .id(h.getId())
+                        .receiverPhone(h.getReceiverPhone())
+                        .receiverName(h.getReceiverName())
+                        .content(h.getContent())
+                        .status(h.getStatus())
+                        .errorMessage(h.getErrorMessage())
+                        .sentBy(h.getSentBy())
+                        .createdAt(h.getCreatedAt())
+                        .build());
+    }
+
+    private String trimOrNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private void saveHistory(String tenantId, String phone, String storeName,
+                             String content, String status, String errorMessage,
+                             String requestId, String sentBy) {
+        messageHistoryRepository.save(
+                MessageHistory.builder()
+                        .tenantId(tenantId)
+                        .receiverPhone(phone)
+                        .receiverName(storeName)
+                        .content(content)
+                        .status(status)
+                        .errorMessage(errorMessage)
+                        .naverRequestId(requestId)
+                        .sentBy(sentBy)
+                        .build()
+        );
+    }
+}

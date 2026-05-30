@@ -1,6 +1,8 @@
 package com.msa.product.local.product.service;
 
 import com.msa.common.global.tenant.TenantContext;
+import com.msa.product.local.imagesearch.event.ProductImageDeletedEvent;
+import com.msa.product.local.imagesearch.event.ProductImageUploadedEvent;
 import com.msa.product.local.product.dto.ProductImageDto;
 import com.msa.product.local.product.entity.Product;
 import com.msa.product.local.product.entity.ProductImage;
@@ -9,6 +11,7 @@ import com.msa.product.local.product.repository.image.ProductImageRepository;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,9 +36,14 @@ public class ProductImageService {
 
     private final ProductImageRepository productImageRepository;
 
-    public ProductImageService(ProductRepository productRepository, ProductImageRepository productImageRepository) {
+    private final ApplicationEventPublisher eventPublisher;
+
+    public ProductImageService(ProductRepository productRepository,
+                               ProductImageRepository productImageRepository,
+                               ApplicationEventPublisher eventPublisher) {
         this.productRepository = productRepository;
         this.productImageRepository = productImageRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     public void bulkUploadByFileName(List<MultipartFile> files) {
@@ -75,6 +83,9 @@ public class ProductImageService {
         List<ProductImage> currentImages = productImageRepository.findByProduct(product);
 
         if (!currentImages.isEmpty()) {
+            List<Long> deletedImageIds = currentImages.stream()
+                    .map(ProductImage::getImageId)
+                    .toList();
             for (ProductImage oldImage : currentImages) {
                 // 기존 물리 파일 삭제
                 deletePhysicalFile(oldImage.getImagePath(), tenant);
@@ -82,6 +93,9 @@ public class ProductImageService {
                 productImageRepository.delete(oldImage);
             }
             product.getProductImages().clear();
+
+            // 이미지 검색 임베딩 정리 (트랜잭션 커밋 후 비동기)
+            eventPublisher.publishEvent(new ProductImageDeletedEvent(tenant, deletedImageIds));
         }
 
         saveImageFileAndEntity(image, product, tenant);
@@ -132,6 +146,9 @@ public class ProductImageService {
         deletePhysicalFile(image.getImagePath(), tenant);
 
         productImageRepository.delete(image);
+
+        // 이미지 검색 임베딩 정리 (트랜잭션 커밋 후 비동기)
+        eventPublisher.publishEvent(new ProductImageDeletedEvent(tenant, List.of(imageId)));
     }
 
     @Transactional(readOnly = true)
@@ -183,6 +200,15 @@ public class ProductImageService {
 
             product.addImage(image);
             productImageRepository.save(image);
+
+            // 이미지 검색 임베딩 인덱싱 (트랜잭션 커밋 후 비동기)
+            // image.getImageId()는 IDENTITY 전략 save 직후 채워짐
+            eventPublisher.publishEvent(new ProductImageUploadedEvent(
+                    tenant,
+                    product.getProductId(),
+                    image.getImageId(),
+                    dbRelativePath
+            ));
 
         } catch (IOException e) {
             throw new RuntimeException("이미지 저장 실패: " + file.getOriginalFilename(), e);

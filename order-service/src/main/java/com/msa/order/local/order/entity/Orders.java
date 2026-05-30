@@ -56,6 +56,8 @@ public class Orders {
     private Long factoryId;
     @Column(name = "FACTORY_NAME")
     private String factoryName;
+    @Column(name = "FACTORY_HARRY", precision = 10, scale = 2)
+    private BigDecimal factoryHarry;
     @Column(name = "ORDER_NOTE")
     private String orderNote;
     @Column(name = "CREATE_AT")
@@ -86,7 +88,7 @@ public class Orders {
     private OrderStatus orderStatus;
 
     @Builder
-    public Orders(Long orderId, Long flowCode, Long storeId, String storeName, String storeGrade, BigDecimal storeHarry, Long factoryId, String factoryName, String orderNote, OffsetDateTime createAt, OffsetDateTime shippingAt, ProductStatus productStatus, OrderStatus orderStatus) {
+    public Orders(Long orderId, Long flowCode, Long storeId, String storeName, String storeGrade, BigDecimal storeHarry, Long factoryId, String factoryName, BigDecimal factoryHarry, String orderNote, OffsetDateTime createAt, OffsetDateTime shippingAt, ProductStatus productStatus, OrderStatus orderStatus) {
         this.orderId = orderId;
         this.flowCode = flowCode;
         this.storeId = storeId;
@@ -95,6 +97,7 @@ public class Orders {
         this.storeHarry = storeHarry;
         this.factoryId = factoryId;
         this.factoryName = factoryName;
+        this.factoryHarry = factoryHarry;
         this.orderNote = orderNote;
         this.createAt = createAt;
         this.shippingAt = shippingAt;
@@ -174,14 +177,21 @@ public class Orders {
         }
     }
 
+    /**
+     * 제조사 정보 부분 업데이트 (factoryHarry 포함).
+     * storeHarry 와 동일하게, payload 가 보낸 값을 스냅샷으로 저장한다.
+     * 이후 거래처(공장)의 원본 harry 값이 변경되어도 본 주문에는 영향을 주지 않는다.
+     * null/빈 값이면 기존 값 유지.
+     */
     public void updateFactory(Long factoryId, String factoryName, BigDecimal factoryHarry) {
-        // factoryHarry 파라미터는 Orders 엔티티에 저장 필드가 없어 무시됨.
-        // (storeHarry 와 달리 Orders.factoryHarry 는 존재하지 않음 — 필요 시 컬럼 추가 후 반영)
         if (factoryId != null) {
             this.factoryId = factoryId;
         }
         if (factoryName != null && !factoryName.isEmpty()) {
             this.factoryName = factoryName;
+        }
+        if (factoryHarry != null) {
+            this.factoryHarry = factoryHarry;
         }
     }
 

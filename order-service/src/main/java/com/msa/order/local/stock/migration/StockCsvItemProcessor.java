@@ -38,6 +38,7 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
     private final FactoryClient factoryClient;
     private final ProductClient productClient;
     private final StockMigrationFailureCollector failureCollector;
+    private final StockMigrationRecordCollector recordCollector;
 
     private final Map<String, StoreDto.Response> storeCache = new HashMap<>();
     private final Map<String, FactoryDto.Response> factoryCache = new HashMap<>();
@@ -53,12 +54,14 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
                                  StoreClient storeClient,
                                  FactoryClient factoryClient,
                                  ProductClient productClient,
-                                 StockMigrationFailureCollector failureCollector) {
+                                 StockMigrationFailureCollector failureCollector,
+                                 StockMigrationRecordCollector recordCollector) {
         this.token = token;
         this.storeClient = storeClient;
         this.factoryClient = factoryClient;
         this.productClient = productClient;
         this.failureCollector = failureCollector;
+        this.recordCollector = recordCollector;
     }
 
     @Override
@@ -68,6 +71,7 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
             OrderStatus orderStatus = mapOrderStatus(row.getCurrentStockType());
             if (orderStatus == null) {
                 failureCollector.add(row, "알 수 없는 현재고구분 값: " + row.getCurrentStockType());
+                recordCollector.recordSkipNullStatus(row);
                 return null;
             }
 
@@ -127,12 +131,14 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
             ProductSnapshot product = buildProductSnapshot(row);
 
             // 5. 비용 파싱 (쉼표 제거 후 정수 변환)
-            Integer productLaborCost = parseMoneyField(row.getProductLaborCost());
-            Integer productAddLaborCost = parseMoneyField(row.getProductAddLaborCost());
+            //    productLaborCost / productAddLaborCost 는 buildProductSnapshot() 내부에서 별도로 다시 파싱한다.
             Integer stoneMainLaborCost = parseMoneyField(row.getStoneMainLaborCost());
             Integer stoneAssistanceLaborCost = parseMoneyField(row.getStoneSubLaborCost());
-            Integer stoneAddLaborCost = parseMoneyField(row.getProductAddLaborCost()); // 추가공임/EA 재사용
             Integer totalStonePurchaseCost = parseMoneyField(row.getTotalStonePurchaseCost());
+            // stoneAddLaborCost: 카탈로그 매칭 결과에 따라 process() 후반부에서 결정한다.
+            //   - 매칭 성공: 0  (메인/보조가 각 OrderStone 으로 정확히 분배되므로 추가버킷 비움)
+            //   - 매칭 실패(카탈로그 없음 포함): stoneMainLaborCost + stoneAssistanceLaborCost
+            //     스톤 정체를 알 수 없을 때 'Stock.stoneAddLaborCost' 한 곳에 합산한다.
 
             // 6. 금중량, 알중량 파싱
             BigDecimal goldWeight = parseWeight(row.getGoldWeight());
@@ -153,7 +159,8 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
             }
             String stockNote = noteBuilder.toString();
 
-            // 8. Stock 엔티티 구성
+            // 8. Stock 엔티티 구성 — 스톤 합산 필드는 placeholder 로 초기화하고
+            //    카탈로그 매칭 결과에 따라 9단계 이후 stock.updateStoneCost(...) 로 확정한다.
             Stock stock = Stock.builder()
                     .storeId(storeId)
                     .storeName(storeName)
@@ -165,11 +172,11 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
                     .stockNote(stockNote)
                     .stockMainStoneNote(row.getMainStone())
                     .stockAssistanceStoneNote(row.getSubStone())
-                    .stoneMainLaborCost(stoneMainLaborCost)
+                    .stoneMainLaborCost(stoneMainLaborCost)        // 매칭 결과 따라 추후 갱신
                     .stoneAssistanceLaborCost(stoneAssistanceLaborCost)
-                    .stoneAddLaborCost(stoneAddLaborCost)
+                    .stoneAddLaborCost(null)                        // 매칭 결과 따라 추후 갱신
                     .totalStonePurchaseCost(totalStonePurchaseCost)
-                    .totalStoneLaborCost(sumLaborCosts(stoneMainLaborCost, stoneAssistanceLaborCost, stoneAddLaborCost))
+                    .totalStoneLaborCost(sumLaborCosts(stoneMainLaborCost, stoneAssistanceLaborCost))
                     .product(product)
                     .orderStatus(orderStatus)
                     .stockDeleted(orderStatus == OrderStatus.DELETED)
@@ -188,19 +195,34 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
                 stock.setMigrationModifiedDate(csvModifiedDate);
             }
 
-            // 9. OrderStone 생성 — 카탈로그 스톤 매칭 우선, 불일치 시 fallback
+            // 9. OrderStone 생성 — 카탈로그 스톤(수량+공임) 매칭 시에만 생성
             Integer mainStoneQty = parseIntegerField(row.getMainStoneQuantity());
             Integer subStoneQty = parseIntegerField(row.getSubStoneQuantity());
 
             boolean catalogMatched = tryMatchCatalogStones(
                     stock, row.getModelName(), mainStoneQty, subStoneQty,
-                    stoneMainLaborCost, stoneAssistanceLaborCost, stoneAddLaborCost, totalStonePurchaseCost);
+                    stoneMainLaborCost, stoneAssistanceLaborCost, totalStonePurchaseCost);
 
-            if (!catalogMatched) {
-                // Fallback: 카탈로그 매칭 실패 → stoneId 없이 수량+비용만으로 생성
-                createFallbackOrderStones(
-                        stock, row, mainStoneQty, subStoneQty,
-                        stoneMainLaborCost, stoneAssistanceLaborCost, stoneAddLaborCost, totalStonePurchaseCost);
+            // 9-1. 매칭 결과에 따라 Stock 의 스톤 합산 필드 확정
+            int safeMain = stoneMainLaborCost != null ? stoneMainLaborCost : 0;
+            int safeSub = stoneAssistanceLaborCost != null ? stoneAssistanceLaborCost : 0;
+            int safePurchase = totalStonePurchaseCost != null ? totalStonePurchaseCost : 0;
+
+            if (catalogMatched) {
+                // 매칭 성공: 메인/보조 공임은 OrderStone 으로 정확히 분배되었으므로 그대로 두고
+                //          stoneAddLaborCost 는 0 (미할당 누적 버킷 — 비어있음).
+                int totalLabor = safeMain + safeSub;
+                stock.updateStoneCost(safePurchase, totalLabor, safeMain, safeSub, 0);
+            } else {
+                // 매칭 실패(카탈로그 없음 포함): 스톤 정체를 모르므로 OrderStone 미생성.
+                //    중심+보조 공임 합계를 stoneAddLaborCost 한 곳에 누적한다.
+                //    이중계산 방지를 위해 main/assistance 는 0 으로 비운다 (totalStoneLaborCost 동일 유지).
+                int sumStoneLabor = safeMain + safeSub;
+                stock.updateStoneCost(safePurchase, sumStoneLabor, 0, 0, sumStoneLabor);
+                if (sumStoneLabor > 0) {
+                    log.debug("스톤 카탈로그 매칭 실패 → stoneAddLaborCost 누적 [모델:{}, 시리얼:{}, 합계:{}]",
+                            row.getModelName(), row.getSerialNumber(), sumStoneLabor);
+                }
             }
 
             return stock;
@@ -210,7 +232,9 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
                     row.getNo(), row.getModelName(), row.getReceiptNumber(),
                     row.getStoreName(), row.getCurrentStockType());
             log.error("Stock 변환 중 오류 [{}]: {}", rowInfo, e.getMessage(), e);
-            failureCollector.add(row, String.format("처리 중 예외 발생 [%s]: %s", rowInfo, e.getMessage()));
+            String reason = String.format("처리 중 예외 발생 [%s]: %s", rowInfo, e.getMessage());
+            failureCollector.add(row, reason);
+            recordCollector.recordSkipException(row, reason);
             return null;
         }
     }
@@ -467,18 +491,24 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
     /**
      * 카탈로그 기반 스톤 매칭 시도.
      *
-     * 1. 모델명으로 product-service에서 스톤 목록 조회 (캐싱)
-     * 2. 카탈로그의 메인/보조 스톤 수량과 CSV의 메인알수/보조알수 비교
-     * 3. 일치하면 카탈로그 스톤 정보(stoneId, stoneName, stoneWeight)를 사용하고
-     *    공임 값은 CSV 값으로 덮어쓴다.
+     * <p>매칭 성공 조건 (모두 충족해야 함):
+     * <ol>
+     *   <li>모델명으로 product-service 카탈로그 스톤 목록을 조회할 수 있을 것</li>
+     *   <li>카탈로그 메인 스톤 총 수량 == CSV 메인알수, 보조도 동일</li>
+     *   <li>카탈로그 메인 공임 합계(Σ laborCost × quantity) == CSV 중심공임/EA, 보조도 동일</li>
+     * </ol>
      *
-     * @return true: 카탈로그 매칭 성공, false: 매칭 실패 (fallback 필요)
+     * <p>모두 일치하면 카탈로그 스톤 정보(stoneId, stoneName, stoneWeight)로 OrderStone 을 생성한다.
+     * 공임/매입원가는 CSV 값으로 덮어쓴다. 매칭 실패 시 OrderStone 은 생성되지 않으며,
+     * 호출 측(process)이 합계를 stoneAddLaborCost 에 누적하는 방식으로 처리한다.</p>
+     *
+     * @return true: 카탈로그 매칭 성공(OrderStone 생성됨), false: 매칭 실패(OrderStone 미생성)
      */
     private boolean tryMatchCatalogStones(
             Stock stock, String modelName,
             Integer csvMainQty, Integer csvSubQty,
             Integer stoneMainLaborCost, Integer stoneAssistanceLaborCost,
-            Integer stoneAddLaborCost, Integer totalStonePurchaseCost) {
+            Integer totalStonePurchaseCost) {
 
         if (!StringUtils.hasText(modelName)) {
             return false;
@@ -496,23 +526,44 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
         List<ProductDetailDto.StoneInfo> catalogSub = catalogStones.stream()
                 .filter(s -> !s.isMainStone()).toList();
 
-        // 카탈로그 총 수량 합산
+        // (1) 수량 비교
         int catalogMainTotalQty = catalogMain.stream()
                 .mapToInt(s -> s.getQuantity() != null ? s.getQuantity() : 0).sum();
         int catalogSubTotalQty = catalogSub.stream()
                 .mapToInt(s -> s.getQuantity() != null ? s.getQuantity() : 0).sum();
-
         int csvMainCount = csvMainQty != null ? csvMainQty : 0;
         int csvSubCount = csvSubQty != null ? csvSubQty : 0;
 
-        // 메인알수·보조알수 모두 일치해야 카탈로그 기반 생성
         if (catalogMainTotalQty != csvMainCount || catalogSubTotalQty != csvSubCount) {
             log.debug("스톤 수량 불일치 [모델:{}] 카탈로그 메인={}/보조={}, CSV 메인={}/보조={}",
                     modelName, catalogMainTotalQty, catalogSubTotalQty, csvMainCount, csvSubCount);
             return false;
         }
 
+        // (2) 가격(공임) 비교 — 카탈로그의 laborCost × quantity 합계가 CSV 공임과 일치해야 함
+        int catalogMainLaborTotal = catalogMain.stream()
+                .mapToInt(s -> {
+                    int q = s.getQuantity() != null ? s.getQuantity() : 0;
+                    int l = s.getLaborCost() != null ? s.getLaborCost() : 0;
+                    return q * l;
+                }).sum();
+        int catalogSubLaborTotal = catalogSub.stream()
+                .mapToInt(s -> {
+                    int q = s.getQuantity() != null ? s.getQuantity() : 0;
+                    int l = s.getLaborCost() != null ? s.getLaborCost() : 0;
+                    return q * l;
+                }).sum();
+        int csvMainLabor = stoneMainLaborCost != null ? stoneMainLaborCost : 0;
+        int csvSubLabor = stoneAssistanceLaborCost != null ? stoneAssistanceLaborCost : 0;
+
+        if (catalogMainLaborTotal != csvMainLabor || catalogSubLaborTotal != csvSubLabor) {
+            log.debug("스톤 공임 불일치 [모델:{}] 카탈로그 메인={}/보조={}, CSV 메인={}/보조={}",
+                    modelName, catalogMainLaborTotal, catalogSubLaborTotal, csvMainLabor, csvSubLabor);
+            return false;
+        }
+
         // 매칭 성공 — 카탈로그 스톤 정보 기반으로 OrderStone 생성
+        // (stoneAddLaborCost 는 0 으로 — 매칭 성공 케이스에서는 누적 버킷이 비어있음)
         for (ProductDetailDto.StoneInfo cs : catalogMain) {
             OrderStone orderStone = OrderStone.builder()
                     .originStoneId(cs.getStoneId() != null ? Long.parseLong(cs.getStoneId()) : null)
@@ -521,7 +572,7 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
                     .stoneQuantity(cs.getQuantity())
                     .stoneLaborCost(stoneMainLaborCost)        // CSV 공임으로 덮어쓰기
                     .stonePurchaseCost(totalStonePurchaseCost)  // CSV 매입가로 덮어쓰기
-                    .stoneAddLaborCost(stoneAddLaborCost)
+                    .stoneAddLaborCost(0)
                     .mainStone(true)
                     .includeStone(cs.isIncludeStone())
                     .build();
@@ -536,7 +587,7 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
                     .stoneQuantity(cs.getQuantity())
                     .stoneLaborCost(stoneAssistanceLaborCost)  // CSV 보조공임으로 덮어쓰기
                     .stonePurchaseCost(totalStonePurchaseCost)
-                    .stoneAddLaborCost(stoneAddLaborCost)
+                    .stoneAddLaborCost(0)
                     .mainStone(false)
                     .includeStone(cs.isIncludeStone())
                     .build();
@@ -546,45 +597,6 @@ public class StockCsvItemProcessor implements ItemProcessor<StockCsvRow, Stock> 
         log.info("카탈로그 스톤 매칭 성공 [모델:{}] 메인 {}건, 보조 {}건",
                 modelName, catalogMain.size(), catalogSub.size());
         return true;
-    }
-
-    /**
-     * Fallback: 카탈로그 매칭 실패 시 stoneId 없이 수량+비용만으로 OrderStone 생성.
-     * originStoneName에 CSV 텍스트(중심스톤/보조스톤)를 보존한다.
-     */
-    private void createFallbackOrderStones(
-            Stock stock, StockCsvRow row,
-            Integer mainStoneQty, Integer subStoneQty,
-            Integer stoneMainLaborCost, Integer stoneAssistanceLaborCost,
-            Integer stoneAddLaborCost, Integer totalStonePurchaseCost) {
-
-        if (mainStoneQty != null && mainStoneQty > 0) {
-            OrderStone mainStone = OrderStone.builder()
-                    .originStoneId(null)
-                    .originStoneName(StringUtils.hasText(row.getMainStone()) ? row.getMainStone() : null)
-                    .stoneQuantity(mainStoneQty)
-                    .stoneLaborCost(stoneMainLaborCost)
-                    .stonePurchaseCost(totalStonePurchaseCost)
-                    .stoneAddLaborCost(stoneAddLaborCost)
-                    .mainStone(true)
-                    .includeStone(true)
-                    .build();
-            stock.addStockStone(mainStone);
-        }
-
-        if (subStoneQty != null && subStoneQty > 0) {
-            OrderStone subStone = OrderStone.builder()
-                    .originStoneId(null)
-                    .originStoneName(StringUtils.hasText(row.getSubStone()) ? row.getSubStone() : null)
-                    .stoneQuantity(subStoneQty)
-                    .stoneLaborCost(stoneAssistanceLaborCost)
-                    .stonePurchaseCost(totalStonePurchaseCost)
-                    .stoneAddLaborCost(stoneAddLaborCost)
-                    .mainStone(false)
-                    .includeStone(true)
-                    .build();
-            stock.addStockStone(subStone);
-        }
     }
 
     /**
