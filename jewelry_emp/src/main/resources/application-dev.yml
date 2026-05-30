@@ -1,0 +1,14 @@
+FILE_UPLOAD_PATH: ${FILE_UPLOAD_PATH:/tmp/jewelry/uploads}
+
+imagesearch:
+  base-url: ${IMAGE_SEARCH_BASE_URL:http://localhost:8081}
+  api-key: ${IMAGE_SEARCH_API_KEY:dev-api-key}
+  enabled: ${IMAGE_SEARCH_ENABLED:false}
+  connect-timeout: 2s
+  read-timeout: 5s
+  default-top-k: 20
+  candidate-top-k: 200
+  scoring:
+    similarity-weight: 0.7
+    material-weight: 0.15
+    color-weight: 0.15

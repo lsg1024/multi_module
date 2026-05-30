@@ -1,0 +1,88 @@
+# =============================================================================
+# SaleService 통합 테스트용 application-test.yml
+# -----------------------------------------------------------------------------
+# 외부 의존성(Config Server / Eureka / Redis / Kafka / Flyway) 을 모두 끄고
+# H2 in-memory 로만 띄워, @SpringBootTest 가 컨텍스트 로드에서 실패하지 않게 한다.
+# =============================================================================
+spring:
+  application:
+    name: jewelry_emp-test
+
+  # --- Spring Cloud 비활성화 ---
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+    bootstrap:
+      enabled: false
+  config:
+    import: "optional:configserver:"
+
+  # --- H2 in-memory ---
+  datasource:
+    url: jdbc:h2:mem:jewelry_emp_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;NON_KEYWORDS=USER
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: false
+        jdbc:
+          time_zone: Asia/Seoul
+    open-in-view: false
+
+  # --- Flyway 끄기 (테스트에서는 JPA ddl-auto 만 사용) ---
+  flyway:
+    enabled: false
+
+  # --- Batch Job 자동 실행 끄기 ---
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: always
+
+  # --- Redis 자동 구성 제외 ---
+  data:
+    redis:
+      repositories:
+        enabled: false
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+
+# --- Eureka 클라이언트 비활성화 ---
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+# --- 테스트용 JWT secret (any 32+ chars) ---
+jwt:
+  secret: test-secret-key-for-integration-test-only-32chars-min
+  expiration: 3600000
+  refresh-expiration: 86400000
+
+# --- 로깅 최소화 ---
+logging:
+  level:
+    root: WARN
+    com.msa.jewelry: INFO
+    org.hibernate.SQL: WARN
+    org.springframework.test: INFO
+
+management:
+  health:
+    redis:
+      enabled: false
+    elasticsearch:
+      enabled: false

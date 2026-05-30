@@ -82,6 +82,7 @@ public class OrderCommandService {
                 .storeHarry(SafeParse.toBigDecimalOrNull(orderDto.getStoreHarry()))
                 .factoryId(factoryId)
                 .factoryName(orderDto.getFactoryName())
+                .factoryHarry(SafeParse.toBigDecimalOrNull(orderDto.getFactoryHarry()))
                 .orderNote(orderDto.getOrderNote())
                 .productStatus(ProductStatus.RECEIPT)
                 .orderStatus(OrderStatus.WAIT)
@@ -185,7 +186,7 @@ public class OrderCommandService {
             order.updateFactory(
                 SafeParse.toLongOrNull(orderDto.getFactoryId()),
                 orderDto.getFactoryName(),
-                null
+                SafeParse.toBigDecimalOrNull(orderDto.getFactoryHarry())
             );
         }
 

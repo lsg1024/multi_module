@@ -97,3 +97,12 @@ project(':order-service') {
         implementation(testFixtures(project(":common")))
     }
 }
+
+project(':jewelry_emp') {
+    jar { enabled = false }
+    bootJar { enabled = true }
+    dependencies {
+        implementation project(':common')
+        implementation(testFixtures(project(":common")))
+    }
+}

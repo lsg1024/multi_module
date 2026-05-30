@@ -1,0 +1,27 @@
+===== 재고 마이그레이션 요약 =====
+시각: 2026-04-29T01:03:03.108924900
+userName: LEGACY_MIGRATION
+encoding(원본): UTF-8
+원본 파일: stocks_enriched.csv
+
+[Spring Batch 통계]
+  읽기(readCount):  708
+  저장(writeCount): 708
+  스킵(skipCount):  0
+
+[RecordCollector 통계 — row 단위 결과]
+  SUCCESS:           708
+  SKIP_NULL_STATUS:  0  (현재고구분 매핑 실패)
+  SKIP_EXCEPTION:    0  (Processor catch)
+  ERROR_PERSIST:     0  (Writer catch)
+  총 records:         708
+
+[FailureCollector 통계]
+  실패 row: 0
+
+[주의]
+  Spring Batch의 writeCount 는 Writer가 받은 아이템 수이며,
+  실제 commit 건수와 다를 수 있습니다.
+  진짜 commit 건수는 RecordCollector 의 SUCCESS 값을 참고하되,
+  chunk 트랜잭션이 silent rollback 된 경우 SUCCESS 도 부정확할 수 있습니다.
+  최종적으로 DB의 SELECT COUNT(*) FROM stock 으로 검증해야 합니다.

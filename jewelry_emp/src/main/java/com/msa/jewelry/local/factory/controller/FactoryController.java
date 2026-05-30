@@ -1,0 +1,259 @@
+package com.msa.jewelry.local.factory.controller;
+
+import com.msa.jewelry.global.dto.AccountDto;
+import com.msa.jewelry.global.excel.dto.AccountExcelDto;
+import com.msa.jewelry.local.factory.dto.FactoryDto;
+import com.msa.jewelry.local.factory.service.ExcelService;
+import com.msa.jewelry.local.factory.service.FactoryService;
+import com.msa.common.global.api.ApiResponse;
+import com.msa.common.global.jwt.AccessToken;
+import com.msa.common.global.util.CustomPage;
+import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+
+@Slf4j
+@RestController
+public class FactoryController {
+
+    private final FactoryService factoryService;
+    private final ExcelService excelService;
+    private final JobLauncher jobLauncher;
+    private final Job factoryImportJob;
+
+    public FactoryController(FactoryService factoryService, ExcelService excelService, JobLauncher jobLauncher, Job factoryImportJob) {
+        this.factoryService = factoryService;
+        this.excelService = excelService;
+        this.jobLauncher = jobLauncher;
+        this.factoryImportJob = factoryImportJob;
+    }
+
+    //단일 조회
+    @GetMapping("/factory/{id}")
+    public ResponseEntity<ApiResponse<AccountDto.AccountSingleResponse>> getFactoryInfo(
+            @PathVariable("id") String factoryId) {
+
+        AccountDto.AccountSingleResponse factoryInfo = factoryService.getFactoryInfo(factoryId);
+
+        return ResponseEntity.ok(ApiResponse.success(factoryInfo));
+    }
+
+    //목록 조회
+    @GetMapping("/factories")
+    public ResponseEntity<ApiResponse<CustomPage<FactoryDto.FactoryResponse>>> getFactoryList(
+            @RequestParam(name = "search", required = false) String name,
+            @RequestParam(name = "searchField", required = false) String searchField,
+            @RequestParam(name = "sortField", required = false) String sortField,
+            @RequestParam(name = "sortOrder", required = false) String sortOrder,
+            @RequestParam(name = "un_page", required = false, defaultValue = "false") boolean un_page,
+            @PageableDefault(size = 12) Pageable pageable) {
+
+        if (un_page) {
+            pageable = Pageable.unpaged();
+        }
+
+        CustomPage<FactoryDto.FactoryResponse> factoryList = factoryService.getFactoryList(name, searchField, sortField, sortOrder, pageable);
+
+        return ResponseEntity.ok(ApiResponse.success(factoryList));
+    }
+
+    //공장 미수 금액 조회
+    @GetMapping("/factories/purchase")
+    public ResponseEntity<ApiResponse<CustomPage<AccountDto.AccountResponse>>> getFactoryPurchase(
+            @RequestParam(name = "endAt", required = false) String endAt,
+            @PageableDefault(size = 12) Pageable pageable) {
+        CustomPage<AccountDto.AccountResponse> factoryPurchase = factoryService.getFactoryPurchase(endAt, pageable);
+        return ResponseEntity.ok(ApiResponse.success(factoryPurchase));
+    }
+
+//    //공장 미수 금액 상세 조회 - 현재 매입 값 조회
+//    @GetMapping("/factories/purchase/{id}")
+//    public ResponseEntity<ApiResponse<AccountDto.AccountResponse>> getFactoryPurchaseDetail(
+//            @PathVariable(name = "id") String factoryId) {
+//        factoryService.getFactoryPurchaseDetail(factoryId);
+//        return null;
+//    }
+//
+//    @GetMapping("/factories/purchase/{id}")
+//    public ResponseEntity<ApiResponse<AccountDto.AccountSaleLogResponse>> getFactoryPurchaseLogDetail(
+//            @PathVariable(name = "id") String factoryId,
+//            @RequestParam(name = "saleCode") String saleCode) {
+//        factoryService.getFactoryPurchaseLogDetail(factoryId, saleCode);
+//        return null;
+//    }
+
+    /**
+     * Task 4-3 / 4-4 — 제조사 최근 활동(거래 내역 + 결제 집계) 조회.
+     * FactoryPage 의 최근거래일/최근결제일 셀 클릭 시 모달에서 사용.
+     */
+    @GetMapping("/factories/{id}/recent-activity")
+    public ResponseEntity<ApiResponse<AccountDto.RecentActivityResponse>> getFactoryRecentActivity(
+            @PathVariable(name = "id") Long factoryId,
+            @RequestParam(name = "limit", required = false, defaultValue = "20") int limit) {
+        return ResponseEntity.ok(ApiResponse.success(factoryService.getFactoryRecentActivity(factoryId, limit)));
+    }
+
+    //생성
+    @PostMapping("/factory")
+    public ResponseEntity<ApiResponse<String>> createFactory(
+            @Valid @RequestBody FactoryDto.FactoryRequest accountInfo) {
+
+        factoryService.createFactory(accountInfo);
+
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    //생성 - batch
+    @PostMapping("/factories/batch")
+    public ResponseEntity<ApiResponse<String>> createFactoriesForBatch(
+            @RequestParam("file") MultipartFile file) {
+
+        Path tempPath = null;
+        try {
+            tempPath = Files.createTempFile("factory-upload-", ".json");
+            file.transferTo(tempPath.toFile());
+
+            JobParameters jobParameters = new JobParametersBuilder()
+                    .addString("filePath", tempPath.toAbsolutePath().toString())
+                    .addLong("time", System.currentTimeMillis())
+                    .toJobParameters();
+
+            jobLauncher.run(factoryImportJob, jobParameters);
+
+        } catch (Exception e) {
+            log.error("Factory batch upload failed", e);
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("저장 실패: " + e.getMessage()));
+        } finally {
+            if (tempPath != null) {
+                try { Files.deleteIfExists(tempPath); } catch (IOException ignored) {}
+            }
+        }
+
+        return ResponseEntity.ok(ApiResponse.success("저장 중..."));
+    }
+
+    //수정
+    @PatchMapping("/factories/{id}")
+    public ResponseEntity<ApiResponse<String>> updateFactory(
+            @AccessToken String accessToken,
+            @PathVariable("id") String factoryId,
+            @Valid @RequestBody AccountDto.AccountUpdate factoryInfo) {
+
+        factoryService.updateFactory(accessToken, factoryId, factoryInfo);
+
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    //엑셀 다운로드
+    @GetMapping("/factories/excel")
+    public ResponseEntity<byte[]> getFactoryExcel(
+            @AccessToken String accessToken) throws IOException {
+
+        List<AccountExcelDto> excel = factoryService.getExcel(accessToken);
+
+        byte[] formatDtoToExcel = excelService.getFormatDtoToExcel(excel, "매입처");
+
+        HttpHeaders headers = new HttpHeaders();
+
+        String fileName = "매입처_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodedFileName + "\"; filename*=UTF-8''");
+        headers.add(HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+        return new ResponseEntity<>(formatDtoToExcel, headers, HttpStatus.OK);
+    }
+
+    @GetMapping("/factories/purchase/excel")
+    public ResponseEntity<byte[]> getPurchaseExcel(
+            @AccessToken String accessToken,
+            @RequestParam(name = "endAt") String endAt) throws IOException {
+
+        byte[] excelBytes = factoryService.getPurchaseExcel(accessToken, endAt);
+
+        HttpHeaders headers = new HttpHeaders();
+        String fileName = "매입잔액_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodedFileName + "\"; filename*=UTF-8''");
+        headers.add(HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+        return new ResponseEntity<>(excelBytes, headers, HttpStatus.OK);
+    }
+
+    @PatchMapping("/factories/harry/{id}/{harry}")
+    public ResponseEntity<ApiResponse<String>> updateHarry(
+            @AccessToken String accessToken,
+            @PathVariable("id") String factoryId,
+            @PathVariable("harry") String harryId) {
+        factoryService.updateFactoryHarry(accessToken, factoryId, harryId);
+        return ResponseEntity.ok(ApiResponse.success("수정 완료"));
+    }
+
+    @PatchMapping("/factories/grade/{id}/{grade}")
+    public ResponseEntity<ApiResponse<String>> updateGrade(
+            @AccessToken String accessToken,
+            @PathVariable("id") String factoryId,
+            @PathVariable("grade") String grade) {
+        factoryService.updateFactoryGrade(accessToken, factoryId, grade);
+        return ResponseEntity.ok(ApiResponse.success("수정 완료"));
+    }
+
+    //삭제
+    @DeleteMapping("/factories/{id}")
+    public ResponseEntity<ApiResponse<String>> deleteFactory(
+            @AccessToken String accessToken,
+            @PathVariable("id") String factoryId) {
+
+        factoryService.deleteFactory(accessToken, factoryId);
+
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @GetMapping("/factories/grade")
+    public ResponseEntity<ApiResponse<String>> getFactoryGrade(
+            @RequestParam(name = "id") String factoryId) {
+        String grade = factoryService.getFactoryGrade(factoryId);
+        return ResponseEntity.ok(ApiResponse.success(grade));
+    }
+
+    //공장 검증
+    @GetMapping("/api/factory/{id}")
+    public ResponseEntity<ApiResponse<FactoryDto.ApiFactoryInfo>> getFactoryInfo(@PathVariable Long id) {
+        FactoryDto.ApiFactoryInfo factoryIdAndName = factoryService.getFactoryIdAndName(id);
+        return ResponseEntity.ok(ApiResponse.success(factoryIdAndName));
+    }
+
+    @GetMapping("/api/factory/name")
+    public ResponseEntity<ApiResponse<FactoryDto.ApiFactoryInfo>> getFactoryInfoByName(
+            @RequestParam("name") String factoryName) {
+        FactoryDto.ApiFactoryInfo factoryInfo = factoryService.getFactoryInfoByName(factoryName);
+        return ResponseEntity.ok(ApiResponse.success(factoryInfo));
+    }
+
+    @GetMapping("/api/factories")
+    public ResponseEntity<ApiResponse<List<FactoryDto.ApiFactoryInfo>>> getFactoryAll() {
+        List<FactoryDto.ApiFactoryInfo> factoryInfos = factoryService.findAllFactory();
+        return ResponseEntity.ok(ApiResponse.success(factoryInfos));
+    }
+}

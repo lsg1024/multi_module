@@ -51,6 +51,9 @@ dependencies {
     //image resize
     implementation 'net.coobird:thumbnailator:0.4.20'
 
+    //retry (image-search 인덱싱 비동기 재시도용 — @Retryable)
+    implementation 'org.springframework.retry:spring-retry'
+
     //excel
     implementation 'org.apache.poi:poi:5.3.0'
     implementation 'org.apache.poi:poi-ooxml:5.3.0'
