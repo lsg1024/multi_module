@@ -127,11 +127,25 @@ tasks.register('querydslGenerate', JavaCompile) {
 
 tasks.named('compileJava') {
     dependsOn 'querydslGenerate'
-    options.compilerArgs += [ "-parameters" ]
+    // -processor 로 Lombok 만 명시적으로 지정한다.
+    // querydslGenerate 가 이미 Q 클래스를 만들었는데, compileJava 가 자동 ServiceLoader
+    // 로 querydsl-apt 를 재발견해서 Q 클래스를 또 만들려고 시도하면
+    // "Attempt to recreate a file for type ...QProduct" 로 컴파일이 깨진다.
+    options.compilerArgs += [
+        "-parameters",
+        "-processor",
+        "lombok.launch.AnnotationProcessorHider\$AnnotationProcessor"
+    ]
 }
 
 tasks.named('compileTestJava') {
-    options.compilerArgs += [ "-parameters" ]
+    // 테스트 컴파일에서도 동일하게 Lombok 만 지정.
+    // (Q 클래스는 src/main/generated 에 이미 만들어진 걸 그대로 참조한다.)
+    options.compilerArgs += [
+        "-parameters",
+        "-processor",
+        "lombok.launch.AnnotationProcessorHider\$AnnotationProcessor"
+    ]
 }
 
 tasks.named('clean') {
