@@ -21,6 +21,7 @@ jobs:
       product: ${{ steps.filter.outputs.product }}
       order: ${{ steps.filter.outputs.order }}
       common: ${{ steps.filter.outputs.common }}
+      jewelry-emp: ${{ steps.filter.outputs.jewelry-emp }}
 
     steps:
       - uses: actions/checkout@v4
@@ -37,6 +38,7 @@ jobs:
             product: 'product-service/**'
             order: 'order-service/**'
             common: 'common/**'
+            jewelry-emp: 'jewelry_emp/**'
 
   deploy-config:
     needs: check-changes
@@ -673,4 +675,101 @@ jobs:
               --name order-service \
               -p ${{ secrets.ORDER_PORT }}:${{ secrets.ORDER_PORT }} \
               ${{ secrets.DOCKER_USERNAME }}/order-service:latest
+          EOF
+
+  # ===========================================================================
+  # jewelry_emp (모놀로식 통합 서버) — 레거시 4개 모듈과 독립 배포
+  #
+  # 트리거 정책: jewelry_emp 폴더 변경 시에만 배포.
+  #   common 모듈 변경에는 영향받지 않는다 (운영 독립성 보장).
+  #   common 의 변경이 정말로 jewelry_emp 동작에 영향을 주는 경우는
+  #   jewelry_emp 의 build.gradle 이나 코드도 함께 PR 에 포함해
+  #   명시적으로 jewelry-emp 트리거가 발동되게 한다.
+  # ===========================================================================
+  deploy-jewelry-emp:
+    needs: [ check-changes, verify-config-server ]
+    if: >-
+      always() &&
+      needs.verify-config-server.result == 'success' &&
+      needs.check-changes.outputs.jewelry-emp == 'true'
+    runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Create jewelry_emp Properties
+        run: |
+          mkdir -p jewelry_emp/src/main/resources
+
+          cat <<EOF > jewelry_emp/src/main/resources/bootstrap.yml
+          spring:
+            application:
+              name: jewelry
+            profiles:
+              active: dev
+            cloud:
+              config:
+                uri: http://${{ secrets.ID }}:${{ secrets.PW }}@${{ secrets.NAS_HOST }}:${{ secrets.CONFIG_PORT }}
+                fail-fast: true
+
+            servlet:
+              multipart:
+                enabled: true
+                file-size-threshold: 0B
+                max-file-size: 100MB
+                max-request-size: 100MB
+                location: /app/images
+
+          eureka:
+            instance:
+              prefer-ip-address: true
+              hostname: 172.20.0.10
+              instance-id: \${spring.application.name}:${{ secrets.JEWELRY_EMP_PORT }}
+            client:
+              register-with-eureka: true
+              fetch-registry: true
+              service-url:
+                defaultZone: http://${{ secrets.ID }}:${{ secrets.PW }}@${{ secrets.NAS_HOST }}:${{ secrets.EUREKA_PORT }}/eureka/
+          EOF
+
+          touch jewelry_emp/src/main/resources/application-secret.yml
+          echo "FILE_UPLOAD_PATH2: /app/images/" >> jewelry_emp/src/main/resources/application-secret.yml
+
+      - name: Grant execute permission for Gradle
+        run: chmod +x ./gradlew
+
+      - name: Build jewelry_emp Server
+        run: ./gradlew clean :jewelry_emp:build -x test
+
+      - name: Docker Build & Push
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/jewelry-emp:latest ./jewelry_emp
+          docker push ${{ secrets.DOCKER_USERNAME }}/jewelry-emp:latest
+
+      - name: Deploy jewelry_emp to NAS
+        run: |
+          sudo apt-get install -y sshpass
+          sshpass -p "${{ secrets.NAS_PASSWORD }}" ssh -t -o StrictHostKeyChecking=no -p ${{ secrets.NAS_SSH_PORT }} ${{ secrets.NAS_USERNAME }}@${{ secrets.NAS_HOST }} << EOF
+            export PATH=/usr/local/bin:\$PATH
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            docker pull ${{ secrets.DOCKER_USERNAME }}/jewelry-emp:latest
+            docker stop jewelry-emp || true
+            docker rm jewelry-emp || true
+
+            docker run -d \
+              --name jewelry-emp \
+              --network msa-network \
+              --ip 172.20.0.10 \
+              -e TZ=Asia/Seoul \
+              -p ${{ secrets.JEWELRY_EMP_PORT }}:${{ secrets.JEWELRY_EMP_PORT }} \
+              -v /volume1/docker/msa/jewelry-emp/logs:/app/logs \
+              -v /volume1/docker/msa/jewelry-emp/images:/app/images \
+              ${{ secrets.DOCKER_USERNAME }}/jewelry-emp:latest
           EOF
