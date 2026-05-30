@@ -96,9 +96,6 @@ custom:
     entity-scan-packages:
       - com.msa.jewelry
 
-migration:
-  failure-log-dir: ${MIGRATION_FAILURE_LOG_DIR:src/main/resources/logs}
-
 logging:
   level:
     org.hibernate.SQL: debug
@@ -108,14 +105,3 @@ logging:
     org.apache.kafka.clients.NetworkClient: WARN
     org.springframework.kafka: WARN
     com.netflix.discovery.shared.resolver.aws.ConfigClusterResolver: WARN
-
-
-eureka:
-  instance:
-    prefer-ip-address: true
-    instance-id: ${spring.application.name}:${SERVER_PORT:8023}
-  client:
-    register-with-eureka: true
-    fetch-registry: true
-    service-url:
-      defaultZone: ${EUREKA_DEFAULT_ZONE:http://LIMJAESEONG:vycp8PzEe9iVnUw@localhost:8761/eureka}

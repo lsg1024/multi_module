@@ -677,15 +677,6 @@ jobs:
               ${{ secrets.DOCKER_USERNAME }}/order-service:latest
           EOF
 
-  # ===========================================================================
-  # jewelry_emp (모놀로식 통합 서버) — 레거시 4개 모듈과 독립 배포
-  #
-  # 트리거 정책: jewelry_emp 폴더 변경 시에만 배포.
-  #   common 모듈 변경에는 영향받지 않는다 (운영 독립성 보장).
-  #   common 의 변경이 정말로 jewelry_emp 동작에 영향을 주는 경우는
-  #   jewelry_emp 의 build.gradle 이나 코드도 함께 PR 에 포함해
-  #   명시적으로 jewelry-emp 트리거가 발동되게 한다.
-  # ===========================================================================
   deploy-jewelry-emp:
     needs: [ check-changes, verify-config-server ]
     if: >-
