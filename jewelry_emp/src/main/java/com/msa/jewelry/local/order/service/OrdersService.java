@@ -456,7 +456,7 @@ public class OrdersService {
 
     // 출고 예정 목록 출력
     @Transactional(readOnly = true)
-    public CustomPage<OrderDto.Response> getDeliveryProducts(String accessToken, String input, String searchField,
+    public CustomPage<OrderDto.Response> getDeliveryProducts(String input, String searchField,
                                                               String startAt, String endAt, String orderStatus,
                                                               String factoryName, String storeName, String setTypeName,
                                                               String colorName, String classificationName, String materialName,

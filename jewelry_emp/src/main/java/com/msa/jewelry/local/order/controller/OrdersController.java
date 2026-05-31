@@ -163,7 +163,7 @@ public class OrdersController {
             @RequestParam(name = "sortOrder", required = false) String sort,
             @PageableDefault(size = 20) Pageable pageable) {
 
-        CustomPage<OrderDto.Response> expectProducts = ordersService.getDeliveryProducts(accessToken,
+        CustomPage<OrderDto.Response> expectProducts = ordersService.getDeliveryProducts(
                 input, searchField, startAt, endAt, orderStatus,
                 factoryName, storeName, setTypeName,
                 colorName, classificationName, materialName, sortField, sort, pageable);
