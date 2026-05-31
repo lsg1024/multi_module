@@ -2,6 +2,7 @@ package com.msa.jewelry.local.stone_type.dto;
 
 import com.querydsl.core.annotations.QueryProjection;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,6 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Schema(description = "스톤 타입 요청 DTO — 다이아몬드/사파이어 등 보석 종류 마스터")
 public class StoneTypeDto {
+    @NotBlank(message = "스톤 타입명은 필수입니다.")
     @Schema(description = "스톤 타입명", example = "다이아몬드")
     private String name;
     @Schema(description = "스톤 타입 비고", example = "천연 다이아몬드")

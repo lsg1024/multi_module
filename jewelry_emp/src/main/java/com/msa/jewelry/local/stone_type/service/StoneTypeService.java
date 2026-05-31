@@ -25,13 +25,16 @@ public class StoneTypeService {
 
     // 생성
     public void saveStoneType(StoneTypeDto stoneTypeDto) {
-        boolean existsByTypeName = stoneTypeRepository.existsByStoneTypeName(stoneTypeDto.getName());
-        if (existsByTypeName) {
+        String name = stoneTypeDto.getName() == null ? null : stoneTypeDto.getName().trim();
+        if (name == null || name.isEmpty()) {
+            throw new IllegalArgumentException("스톤 타입명은 필수입니다.");
+        }
+        if (stoneTypeRepository.existsByStoneTypeName(name)) {
             throw new IllegalArgumentException(IS_EXIST);
         }
 
         StoneType stoneType = StoneType.builder()
-                .stoneTypeName(stoneTypeDto.getName())
+                .stoneTypeName(name)
                 .stoneTypeNote(stoneTypeDto.getNote())
                 .build();
 
