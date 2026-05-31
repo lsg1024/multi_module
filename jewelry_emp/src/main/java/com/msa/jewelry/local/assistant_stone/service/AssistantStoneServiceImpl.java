@@ -69,7 +69,7 @@ public class AssistantStoneServiceImpl implements AssistantStoneService {
         Long newAssistantId = Long.parseLong(assistantId);
         AssistantStone assistantStone = assistantStoneRepository.findById(newAssistantId)
                 .orElseThrow(() -> new NotFoundException(NOT_FOUND));
-        assistantStone.updateAssistantStone(assistantDto.getAssistantStoneName(), assistantStone.getAssistanceStoneNote());
+        assistantStone.updateAssistantStone(assistantDto.getAssistantStoneName(), assistantDto.getAssistantStoneNote());
     }
 
     @Override
