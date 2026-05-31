@@ -43,12 +43,15 @@ public class CatalogController {
             @RequestParam(name = "name", required = false) String productName,
             @RequestParam(name = "classification", required = false) String classificationId,
             @RequestParam(name = "setType", required = false) String setTypeId,
+            @RequestParam(name = "material", required = false) String materialName,
+            @RequestParam(name = "relatedNumber", required = false) String relatedNumber,
             @RequestParam(name = "sortField", required = false) String sortField,
             @RequestParam(name = "sort", required = false) String sort,
             @PageableDefault(size = 12) Pageable pageable) {
 
         CustomPage<CatalogProductDto.Page> products = catalogService.getCatalogProducts(
                 accessToken, productName, classificationId, setTypeId,
+                materialName, relatedNumber,
                 sortField, sort, pageable
         );
 
@@ -92,10 +95,13 @@ public class CatalogController {
             @AccessToken String accessToken,
             @RequestParam(name = "name", required = false) String productName,
             @RequestParam(name = "classification", required = false) String classificationId,
-            @RequestParam(name = "setType", required = false) String setTypeId) throws IOException {
+            @RequestParam(name = "setType", required = false) String setTypeId,
+            @RequestParam(name = "material", required = false) String materialName,
+            @RequestParam(name = "relatedNumber", required = false) String relatedNumber) throws IOException {
 
         byte[] excelBytes = catalogService.getCatalogProductsExcel(
-                accessToken, productName, classificationId, setTypeId
+                accessToken, productName, classificationId, setTypeId,
+                materialName, relatedNumber
         );
 
         String fileName = "상품카탈로그_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";

@@ -48,6 +48,8 @@ public class CatalogService {
             String productName,
             String classificationId,
             String setTypeId,
+            String materialName,
+            String relatedNumber,
             String sortField,
             String sort,
             Pageable pageable) {
@@ -56,6 +58,7 @@ public class CatalogService {
 
         CustomPage<CatalogProductDto.Page> page = catalogRepository.findCatalogProducts(
                 productName, classificationId, setTypeId,
+                materialName, relatedNumber,
                 sortField, sort, pageable
         );
 
@@ -103,11 +106,12 @@ public class CatalogService {
      * 카탈로그 상품 엑셀 다운로드
      */
     public byte[] getCatalogProductsExcel(String accessToken, String productName,
-                                          String classificationId, String setTypeId) throws IOException {
+                                          String classificationId, String setTypeId,
+                                          String materialName, String relatedNumber) throws IOException {
         validateStoreAccess(accessToken);
 
         List<CatalogExcelDto> catalogExcelDtos = catalogRepository.findCatalogProductsForExcel(
-                productName, classificationId, setTypeId
+                productName, classificationId, setTypeId, materialName, relatedNumber
         );
 
         return CatalogExcelUtil.createCatalogWorkSheet(catalogExcelDtos);
