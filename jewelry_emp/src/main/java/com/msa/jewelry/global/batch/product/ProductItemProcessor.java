@@ -1,10 +1,10 @@
 package com.msa.jewelry.global.batch.product;
 
-import com.msa.jewelry.local.factory.service.FactoryService;
-import com.msa.jewelry.local.factory.dto.FactoryView;
 import com.msa.jewelry.local.classification.repository.ClassificationRepository;
 import com.msa.jewelry.local.color.entity.Color;
 import com.msa.jewelry.local.color.repository.ColorRepository;
+import com.msa.jewelry.local.factory.dto.FactoryView;
+import com.msa.jewelry.local.factory.service.FactoryService;
 import com.msa.jewelry.local.material.repository.MaterialRepository;
 import com.msa.jewelry.local.product.dto.ProductBatchDto;
 import com.msa.jewelry.local.product.dto.ProductWorkGradePolicyDto;
@@ -17,7 +17,6 @@ import com.msa.jewelry.local.set.repository.SetTypeRepository;
 import com.msa.jewelry.local.stone.repository.StoneRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemProcessor;
@@ -70,7 +69,7 @@ public class ProductItemProcessor implements ItemProcessor<ProductBatchDto, Prod
         }
     }
     @Override
-    public @NotNull Product process(ProductBatchDto dto) {
+    public Product process(ProductBatchDto dto) {
         if (productRepository.existsByProductName(dto.getProductName())) {
             log.debug("Skip duplicated product: {}", dto.getProductName());
             return null;
@@ -86,10 +85,14 @@ public class ProductItemProcessor implements ItemProcessor<ProductBatchDto, Prod
                 .map(BigDecimal::new)
                 .orElse(BigDecimal.ZERO);
 
+        String productFactoryName = StringUtils.hasText(dto.getProductFactoryName())
+                ? dto.getProductFactoryName()
+                : dto.getProductName();
+
         Product product = Product.builder()
                 .factoryId(factoryId)
                 .factoryName(dto.getFactoryName())
-                .productFactoryName(dto.getProductFactoryName())
+                .productFactoryName(productFactoryName)
                 .productName(dto.getProductName())
                 .standardWeight(weight)
                 .productNote(dto.getProductNote())
@@ -97,19 +100,26 @@ public class ProductItemProcessor implements ItemProcessor<ProductBatchDto, Prod
                 .productStones(new ArrayList<>())
                 .build();
 
+        // setTypeName 이 비어 있으면 기본 SetType(id=1, 보통 "단품") 으로 폴백.
         if (StringUtils.hasText(dto.getSetTypeName())) {
             setTypeRepository.findBySetTypeNameIgnoreCase(dto.getSetTypeName().trim())
                     .ifPresent(product::setSetType);
+        } else {
+            setTypeRepository.findById(1L).ifPresent(product::setSetType);
         }
 
         if (StringUtils.hasText(dto.getClassificationName())) {
             classificationRepository.findByClassificationNameIgnoreCase(dto.getClassificationName().trim())
                     .ifPresent(product::setClassification);
+        } else {
+            classificationRepository.findById(1L).ifPresent(product::setClassification);
         }
 
         if (StringUtils.hasText(dto.getMaterialName())) {
             materialRepository.findByMaterialNameIgnoreCase(dto.getMaterialName().trim())
                     .ifPresent(product::setMaterial);
+        } else {
+            materialRepository.findById(1L).ifPresent(product::setMaterial);
         }
 
         if (dto.getProductStoneDtos() != null) {

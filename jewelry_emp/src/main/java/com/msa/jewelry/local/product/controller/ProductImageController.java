@@ -34,7 +34,6 @@ public class ProductImageController {
     }
 
     // 상품 다건 대표 이미지 일괄 조회
-    // frontend: productApi.getProductImagesByProductIds(productIds) → query string `ids=1,2,3`
     @GetMapping("/api/products/images")
     public ResponseEntity<ApiResponse<java.util.Map<Long, ProductImageDto.ProductImageResponse>>> getProductImagesByIds(
             @RequestParam("ids") List<Long> productIds) {
