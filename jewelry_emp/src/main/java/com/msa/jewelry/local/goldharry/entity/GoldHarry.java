@@ -7,7 +7,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.annotations.SQLDelete;
 
 import java.math.BigDecimal;
 
@@ -16,7 +15,6 @@ import java.math.BigDecimal;
 @Entity
 @Table(name = "GOLD_HARRY")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE GOLD_HARRY SET DELETED = TRUE WHERE HARRY_ID = ?")
 @Schema(description = "금시세 정책(해리/손모율) 엔티티 — 테넌트별 가공 시 금 손실 비율 마스터")
 public class GoldHarry {
 
@@ -30,8 +28,6 @@ public class GoldHarry {
     @Column(name = "DEFAULT_OPTION", nullable = false)
     @Schema(description = "시스템 기본 해리 여부 — 해리 삭제 시 대체 대상으로 사용", example = "true")
     private boolean DefaultOption = false;
-    @Schema(description = "소프트 삭제 플래그", example = "false")
-    private boolean deleted = false;
 
     @Builder
     public GoldHarry(Long goldHarryId, BigDecimal goldHarryLoss) {
