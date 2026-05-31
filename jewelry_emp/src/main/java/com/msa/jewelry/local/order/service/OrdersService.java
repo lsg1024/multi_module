@@ -109,9 +109,6 @@ public class OrdersService {
                 .productSize(orderProduct.getProductSize())
                 .productLaborCost(orderProduct.getProductLaborCost())
                 .productAddLaborCost(orderProduct.getProductAddLaborCost())
-                // ⚠ String.valueOf(null) 은 리터럴 "null" 을 반환해 PATCH 재전송 시
-                //    SafeParse.toLongOrNull("null") 에서 NumberFormatException 을 유발한다.
-                //    선택 필드는 반드시 null-safe 로 문자열화해야 한다.
                 .classificationId(orderProduct.getClassificationId() != null ? orderProduct.getClassificationId().toString() : null)
                 .classificationName(orderProduct.getClassificationName())
                 .materialId(orderProduct.getMaterialId() != null ? orderProduct.getMaterialId().toString() : null)
@@ -138,7 +135,7 @@ public class OrdersService {
 
     // 주문 전체 리스트 조회
     @Transactional(readOnly = true)
-    public CustomPage<OrderDto.Response> getOrderProducts(String accessToken, String input, String searchField, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String classificationName, String materialName, String sortField, String sort, String orderStatus, Pageable pageable) {
+    public CustomPage<OrderDto.Response> getOrderProducts(String input, String searchField, String startAt, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String classificationName, String materialName, String sortField, String sort, String orderStatus, Pageable pageable) {
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input, searchField);
         OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName, classificationName, materialName);
         OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
@@ -187,10 +184,9 @@ public class OrdersService {
     public void saveOrder(String accessToken, String orderStatus, OrderDto.Request orderDto) {
         log.info("saveOrder = {}", orderStatus);
         String nickname = jwtUtil.getNickname(accessToken);
-        String tenantId = jwtUtil.getTenantId(accessToken);
 
         // OrderCommandService로 위임
-        Orders order = orderCommandService.createOrder(tenantId, accessToken, orderStatus, orderDto, nickname);
+        Orders order = orderCommandService.createOrder(orderStatus, orderDto);
 
         // statusHistory 추가
         statusHistoryHelper.saveCreate(
@@ -235,7 +231,7 @@ public class OrdersService {
         }
 
         // OrderCommandService
-        Orders order = orderCommandService.updateOrder(tenantId, accessToken, flowCode, orderStatus, orderDto, nickname);
+        Orders order = orderCommandService.updateOrder(flowCode, orderStatus, orderDto);
 
         // statusHistory
         statusHistoryHelper.savePhaseChangeFromLast(

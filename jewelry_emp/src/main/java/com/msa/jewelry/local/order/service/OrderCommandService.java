@@ -1,10 +1,10 @@
 package com.msa.jewelry.local.order.service;
 
-import com.msa.jewelry.local.order.dto.StoneDto;
-import com.msa.jewelry.local.order.dto.OrderAsyncRequested;
-import com.msa.jewelry.local.order.dto.OrderUpdateRequest;
 import com.msa.jewelry.global.util.SafeParse;
+import com.msa.jewelry.local.assistant_stone.dto.AssistantStoneView;
+import com.msa.jewelry.local.assistant_stone.service.AssistantStoneService;
 import com.msa.jewelry.local.order.dto.OrderDto;
+import com.msa.jewelry.local.order.dto.StoneDto;
 import com.msa.jewelry.local.order.entity.OrderProduct;
 import com.msa.jewelry.local.order.entity.OrderStone;
 import com.msa.jewelry.local.order.entity.Orders;
@@ -13,6 +13,7 @@ import com.msa.jewelry.local.order.entity.order_enum.ProductStatus;
 import com.msa.jewelry.local.order.repository.OrdersRepository;
 import com.msa.jewelry.local.priority.entity.Priority;
 import com.msa.jewelry.local.priority.repository.PriorityRepository;
+import com.msa.jewelry.local.stone.service.StoneService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,17 +27,13 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 import static com.msa.jewelry.global.exception.ExceptionMessage.NOT_ACCESS;
 import static com.msa.jewelry.global.exception.ExceptionMessage.NOT_FOUND;
+import static com.msa.jewelry.global.exception.ExceptionMessage.NOT_FOUND_STONE;
 import static com.msa.jewelry.global.util.DateConversionUtil.StringToLocalDateTime;
 import static com.msa.jewelry.local.order.util.StoneUtil.updateOrderStoneInfo;
 
-/**
- * 주문 생성/수정/삭제를 담당하는 서비스
- * OrdersService Facade에서 위임받아 처리합니다.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -44,14 +41,11 @@ public class OrderCommandService {
 
     private final OrdersRepository ordersRepository;
     private final PriorityRepository priorityRepository;
-    private final OrderProcessingService orderProcessingService;
+    private final AssistantStoneService assistantStoneService;
+    private final StoneService stoneService;
 
-    /**
-     * 주문 생성
-     */
     @Transactional(propagation = Propagation.MANDATORY)
-    public Orders createOrder(String tenantId, String accessToken, String orderStatus,
-                             OrderDto.Request orderDto, String nickname) {
+    public Orders createOrder(String orderStatusName, OrderDto.Request orderDto) {
 
         Long storeId = SafeParse.toLongOrNull(orderDto.getStoreId());
         Long factoryId = SafeParse.toLongOrNull(orderDto.getFactoryId());
@@ -61,7 +55,6 @@ public class OrderCommandService {
         Long assistantId = SafeParse.toLongOrNull(orderDto.getAssistantStoneId());
         boolean assistantStone = orderDto.isAssistantStone();
 
-        // priority 추가
         Priority priority = priorityRepository.findByPriorityName(orderDto.getPriorityName())
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
@@ -81,10 +74,9 @@ public class OrderCommandService {
                 .shippingAt(shippingAt)
                 .build();
 
-        // orderStone 추가
+        // OrderStone 추가
         List<Long> stoneIds = new ArrayList<>();
-        List<StoneDto.StoneInfo> storeInfos = orderDto.getStoneInfos();
-        for (StoneDto.StoneInfo stoneInfo : storeInfos) {
+        for (StoneDto.StoneInfo stoneInfo : orderDto.getStoneInfos()) {
             Long stoneId = SafeParse.toLongOrNull(stoneInfo.getStoneId());
             OrderStone orderStone = OrderStone.builder()
                     .originStoneId(stoneId)
@@ -97,14 +89,11 @@ public class OrderCommandService {
                     .mainStone(stoneInfo.isMainStone())
                     .includeStone(stoneInfo.isIncludeStone())
                     .build();
-
-            if (stoneId != null) {
-                stoneIds.add(stoneId);
-            }
+            if (stoneId != null) stoneIds.add(stoneId);
             order.addOrderStone(orderStone);
         }
 
-        // orderProduct 추가
+        // OrderProduct 추가
         OrderProduct orderProduct = OrderProduct.builder()
                 .productId(productId)
                 .productName(orderDto.getProductName())
@@ -135,19 +124,44 @@ public class OrderCommandService {
 
         ordersRepository.save(order);
 
-        publishOrderCreateEvent(order, tenantId, accessToken, storeId, factoryId,
-                                productId, materialId, colorId, nickname, stoneIds,
-                                assistantStone, assistantId, orderStatus, orderDto);
+        // Stone 마스터 존재 검증 — 잘못된 stoneId 가 들어왔는지 보장.
+        for (Long stoneId : stoneIds) {
+            if (!stoneService.existsStoneId(stoneId)) {
+                throw new IllegalArgumentException(NOT_FOUND_STONE);
+            }
+        }
 
+        // 보조석 ID 가 있고 이름이 비어있으면 한 번 fetch 해서 채움
+        if (assistantId != null && !StringUtils.hasText(orderProduct.getAssistantStoneName())) {
+            try {
+                AssistantStoneView v = assistantStoneService.getAssistantStoneView(assistantId);
+                orderProduct.updateOrderProductAssistantStone(
+                        assistantStone, v.assistantStoneId(), v.assistantStoneName(),
+                        StringUtils.hasText(orderDto.getAssistantStoneCreateAt())
+                                ? StringToLocalDateTime(orderDto.getAssistantStoneCreateAt()) : null);
+            } catch (Exception e) {
+                log.warn("보조석({}) fetch 실패 — FE 값 유지. {}", assistantId, e.getMessage());
+            }
+        }
+
+        // 상태 전이 — orderStatusName 이 정상 enum 이면 적용, 아니면 WAIT 유지.
+        if (StringUtils.hasText(orderStatusName)) {
+            try {
+                order.updateOrderStatus(OrderStatus.valueOf(orderStatusName.trim().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                log.warn("알 수 없는 orderStatus={} — WAIT 유지", orderStatusName);
+            }
+        }
+
+        log.info("주문 생성 완료. flowCode={}", order.getFlowCode());
         return order;
     }
 
     /**
-     * 주문 수정
+     * 주문 수정.
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public Orders updateOrder(String tenantId, String accessToken, Long flowCode,
-                             String orderStatus, OrderDto.Request orderDto, String nickname) {
+    public Orders updateOrder(Long flowCode, String orderStatusName, OrderDto.Request orderDto) {
 
         Priority priority = priorityRepository.findByPriorityName(orderDto.getPriorityName())
                 .orElseThrow(() -> new IllegalArgumentException("등급: " + NOT_FOUND));
@@ -163,31 +177,28 @@ public class OrderCommandService {
         order.updateShippingDate(shippingAt);
         order.addPriority(priority);
 
-        // 거래처(스토어) 및 제조사(팩토리) 업데이트 (변경되었을 경우)
-        if (StringUtils.hasText(orderDto.getStoreId())) {
-            order.updateStore(
-                SafeParse.toLongOrNull(orderDto.getStoreId()),
-                orderDto.getStoreGrade(),
-                SafeParse.toBigDecimalOrNull(orderDto.getStoreHarry())
-            );
+        // 거래처/제조사 변경
+        Long newStoreId = SafeParse.toLongOrNull(orderDto.getStoreId());
+        Long newFactoryId = SafeParse.toLongOrNull(orderDto.getFactoryId());
+        Long newMaterialId = SafeParse.toLongOrNull(orderDto.getMaterialId());
+        Long newColorId = SafeParse.toLongOrNull(orderDto.getColorId());
+        Long newAssistantId = SafeParse.toLongOrNull(orderDto.getAssistantStoneId());
+
+        if (newStoreId != null) {
+            order.updateStore(newStoreId, orderDto.getStoreGrade(),
+                    SafeParse.toBigDecimalOrNull(orderDto.getStoreHarry()));
         }
-        if (StringUtils.hasText(orderDto.getFactoryId())) {
-            order.updateFactory(
-                SafeParse.toLongOrNull(orderDto.getFactoryId()),
-                SafeParse.toBigDecimalOrNull(orderDto.getFactoryHarry())
-            );
+        if (newFactoryId != null) {
+            order.updateFactory(newFactoryId, SafeParse.toBigDecimalOrNull(orderDto.getFactoryHarry()));
         }
 
         List<OrderStone> orderStones = order.getOrderStones();
         updateOrderStoneInfo(orderDto.getStoneInfos(), order, orderStones);
 
-        // 변경 감지: DB 의 현재 productId 와 payload 의 신규 productId 를 비교한다.
-        // (이전 구현은 동일 orderDto.getProductId() 를 두 번 파싱해 비교가 항상 true 였음 — 버그)
         OrderProduct orderProduct = order.getOrderProduct();
         Long currentProductId = orderProduct.getProductId();
         Long newProductId = SafeParse.toLongOrNull(orderDto.getProductId());
         if (newProductId == null || Objects.equals(newProductId, currentProductId)) {
-            // productId 가 변하지 않았으므로 상세값만 갱신
             orderProduct.updateOrderProductInfo(
                     orderDto.getStoneWeight(),
                     orderDto.getProductPurchaseCost(),
@@ -198,7 +209,6 @@ public class OrderCommandService {
                     orderDto.getProductSize()
             );
         } else {
-            // productId 가 변경되었으므로 함께 갱신
             orderProduct.updateOrderProductInfo(
                     newProductId,
                     orderDto.getStoneWeight(),
@@ -211,14 +221,12 @@ public class OrderCommandService {
             );
         }
 
-        // 상품 속성(재질/색상/분류/세트타입)도 수정 반영
-        // setTypeId/classificationId는 선택 필드이므로 null 허용
         orderProduct.updateOrderProduct(
                 orderDto.getProductName(),
                 orderDto.getProductFactoryName(),
-                SafeParse.toLongOrNull(orderDto.getMaterialId()),
+                newMaterialId,
                 orderDto.getMaterialName(),
-                SafeParse.toLongOrNull(orderDto.getColorId()),
+                newColorId,
                 orderDto.getColorName(),
                 SafeParse.toLongOrNull(orderDto.getClassificationId()),
                 orderDto.getClassificationName(),
@@ -226,10 +234,33 @@ public class OrderCommandService {
                 orderDto.getSetTypeName()
         );
 
+        OrderProduct currentOrderProduct = order.getOrderProduct();
+        LocalDateTime assistantCreateAtParsed = StringUtils.hasText(orderDto.getAssistantStoneCreateAt())
+                ? StringToLocalDateTime(orderDto.getAssistantStoneCreateAt()) : null;
+        String resolvedAssistantName = orderDto.getAssistantStoneName();
+        if (newAssistantId != null && !StringUtils.hasText(resolvedAssistantName)) {
+            try {
+                AssistantStoneView v = assistantStoneService.getAssistantStoneView(newAssistantId);
+                resolvedAssistantName = v.assistantStoneName();
+            } catch (Exception e) {
+                log.warn("보조석({}) fetch 실패 — FE 값 유지. {}", newAssistantId, e.getMessage());
+            }
+        }
+        currentOrderProduct.updateOrderProductAssistantStone(
+                orderDto.isAssistantStone(), newAssistantId, resolvedAssistantName, assistantCreateAtParsed);
+
+        // 상태 전이 — orderStatusName 이 정상 enum 이면 적용.
+        if (order.getOrderStatus() == OrderStatus.WAIT && StringUtils.hasText(orderStatusName)) {
+            try {
+                order.updateOrderStatus(OrderStatus.valueOf(orderStatusName.trim().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                log.warn("알 수 없는 orderStatus={} — WAIT 유지", orderStatusName);
+            }
+        }
+
         ordersRepository.save(order);
 
-        publishOrderUpdateEvent(order, tenantId, accessToken, orderStatus, orderProduct, orderDto, nickname);
-
+        log.info("주문 수정 완료. flowCode={}", order.getFlowCode());
         return order;
     }
 
@@ -241,7 +272,6 @@ public class OrderCommandService {
         if (!role.equals("ADMIN") && !role.equals("USER")) {
             throw new IllegalArgumentException(NOT_ACCESS);
         }
-
         Orders order = ordersRepository.findByFlowCode(flowCode)
                 .orElseThrow(() -> new IllegalArgumentException("flowCode: " + NOT_FOUND));
 
@@ -249,81 +279,4 @@ public class OrderCommandService {
         order.deletedOrder(LocalDateTime.now());
     }
 
-    private void publishOrderCreateEvent(Orders order, String tenantId, String accessToken,
-                                        Long storeId, Long factoryId, Long productId,
-                                        Long materialId, Long colorId, String nickname,
-                                        List<Long> stoneIds, boolean assistantStone,
-                                        Long assistantId, String orderStatus, OrderDto.Request orderDto) {
-
-        OrderAsyncRequested.OrderAsyncRequestedBuilder builder = OrderAsyncRequested.builder()
-                .eventId(UUID.randomUUID().toString())
-                .flowCode(order.getFlowCode())
-                .tenantId(tenantId)
-                .token(accessToken)
-                .storeId(storeId)
-                .factoryId(factoryId)
-                .productId(productId)
-                .materialId(materialId)
-                .colorId(colorId)
-                .nickname(nickname)
-                .stoneIds(stoneIds)
-                .assistantStone(assistantStone)
-                .assistantStoneId(assistantId)
-                .orderStatus(orderStatus);
-
-        if (orderDto.getAssistantStoneCreateAt() != null && !orderDto.getAssistantStoneCreateAt().isEmpty()) {
-            builder.assistantStoneCreateAt(StringToLocalDateTime(orderDto.getAssistantStoneCreateAt()));
-        }
-
-        orderProcessingService.createHandle(builder.build());
-        log.info("주문 생성 후처리 완료. OrderFlowCode: {}", order.getFlowCode());
-    }
-
-    private void publishOrderUpdateEvent(Orders order, String tenantId, String accessToken,
-                                        String orderStatus, OrderProduct orderProduct,
-                                        OrderDto.Request orderDto, String nickname) {
-
-        Long storeId = SafeParse.toLongOrNull(orderDto.getStoreId());
-        Long factoryId = SafeParse.toLongOrNull(orderDto.getFactoryId());
-        Long productId = SafeParse.toLongOrNull(orderDto.getProductId());
-        Long materialId = SafeParse.toLongOrNull(orderDto.getMaterialId());
-        Long colorId = SafeParse.toLongOrNull(orderDto.getColorId());
-        Long assistantId = SafeParse.toLongOrNull(orderDto.getAssistantStoneId());
-
-        OrderUpdateRequest.OrderUpdateRequestBuilder builder = OrderUpdateRequest.builder()
-                .eventId(UUID.randomUUID().toString())
-                .tenantId(tenantId)
-                .token(accessToken)
-                .orderStatus(orderStatus)
-                .flowCode(order.getFlowCode())
-                .nickname(nickname);
-
-        Long newProductId = SafeParse.toLongOrNull(orderDto.getProductId());
-        if (newProductId != null && productId != null && !newProductId.equals(productId)) {
-            builder.productId(productId);
-        }
-
-        if (!Objects.equals(storeId, order.getStoreId())) {
-            builder.storeId(storeId);
-        }
-        if (!Objects.equals(factoryId, order.getFactoryId())) {
-            builder.factoryId(factoryId);
-        }
-        if (!Objects.equals(materialId, orderProduct.getMaterialId())) {
-            builder.materialId(materialId);
-        }
-        if (!Objects.equals(colorId, orderProduct.getColorId())) {
-            builder.colorId(colorId);
-        }
-
-        boolean assistantStone = orderDto.isAssistantStone();
-        builder.assistantStone(assistantStone).assistantStoneId(assistantId);
-
-        if (orderDto.getAssistantStoneCreateAt() != null && !orderDto.getAssistantStoneCreateAt().isEmpty()) {
-            builder.assistantStoneCreateAt(StringToLocalDateTime(orderDto.getAssistantStoneCreateAt()));
-        }
-
-        orderProcessingService.updateHandle(builder.build());
-        log.info("주문 수정 후처리 완료. OrderFlowCode: {}", order.getFlowCode());
-    }
 }

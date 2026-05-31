@@ -56,7 +56,6 @@ public class OrdersController {
     //복수 값
     @GetMapping("/orders") // URL 경로는 고정 -> 거래처, 상점 파라미터 추가 필요
     public ResponseEntity<ApiResponse<CustomPage<OrderDto.Response>>> getOrders(
-            @AccessToken String accessToken,
             @RequestParam(name = "search", required = false) String input,
             @RequestParam(name = "searchField", required = false) String searchField,
             @RequestParam(name = "start") String startAt,
@@ -72,7 +71,7 @@ public class OrdersController {
             @RequestParam(name = "order_status", required = false) String orderStatus,
             @PageableDefault(size = 20) Pageable pageable) {
 
-        CustomPage<OrderDto.Response> orderProducts = ordersService.getOrderProducts(accessToken, input, searchField, startAt, endAt, factoryName,
+        CustomPage<OrderDto.Response> orderProducts = ordersService.getOrderProducts(input, searchField, startAt, endAt, factoryName,
                 storeName, setTypeName, colorName, classificationName, materialName, sortField, sort, orderStatus, pageable);
         return ResponseEntity.ok(ApiResponse.success(orderProducts));
     }
