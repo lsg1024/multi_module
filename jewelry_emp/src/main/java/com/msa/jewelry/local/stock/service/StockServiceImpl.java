@@ -1,25 +1,19 @@
 package com.msa.jewelry.local.stock.service;
-import com.msa.jewelry.global.exception.NotFoundException;
-import com.msa.jewelry.local.stock.dto.StockView;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import lombok.RequiredArgsConstructor;
 
 import com.msa.common.global.jwt.JwtUtil;
 import com.msa.common.global.util.CustomPage;
-import com.msa.jewelry.local.order.dto.StatusHistoryDto;
-import com.msa.jewelry.local.order.dto.StoneDto;
-import com.msa.jewelry.local.factory.service.FactoryService;
-import com.msa.jewelry.local.factory.dto.FactoryView;
-import com.msa.jewelry.local.store.service.StoreService;
-import com.msa.jewelry.local.store.dto.StoreView;
-import com.msa.jewelry.local.assistant_stone.service.AssistantStoneService;
-import com.msa.jewelry.local.assistant_stone.dto.AssistantStoneView;
-import com.msa.jewelry.local.stock.dto.StockCreationRequest;
+import com.msa.jewelry.global.exception.InvalidOrderStatusException;
+import com.msa.jewelry.global.exception.NotFoundException;
+import com.msa.jewelry.global.exception.OrderNotFoundException;
+import com.msa.jewelry.global.exception.StockNotFoundException;
 import com.msa.jewelry.global.util.DateConversionUtil;
 import com.msa.jewelry.global.util.SafeParse;
+import com.msa.jewelry.local.assistant_stone.dto.AssistantStoneView;
+import com.msa.jewelry.local.assistant_stone.service.AssistantStoneService;
+import com.msa.jewelry.local.factory.service.FactoryService;
 import com.msa.jewelry.local.order.dto.OrderDto;
+import com.msa.jewelry.local.order.dto.StatusHistoryDto;
+import com.msa.jewelry.local.order.dto.StoneDto;
 import com.msa.jewelry.local.order.entity.OrderProduct;
 import com.msa.jewelry.local.order.entity.OrderStone;
 import com.msa.jewelry.local.order.entity.Orders;
@@ -33,14 +27,14 @@ import com.msa.jewelry.local.order.repository.StatusHistoryRepository;
 import com.msa.jewelry.local.order.util.ChangeTracker;
 import com.msa.jewelry.local.order.util.StatusHistoryHelper;
 import com.msa.jewelry.local.stock.dto.InventoryDto;
+import com.msa.jewelry.local.stock.dto.StockCreationRequest;
 import com.msa.jewelry.local.stock.dto.StockDto;
+import com.msa.jewelry.local.stock.dto.StockView;
 import com.msa.jewelry.local.stock.entity.ProductSnapshot;
 import com.msa.jewelry.local.stock.entity.Stock;
 import com.msa.jewelry.local.stock.repository.CustomStockRepository;
 import com.msa.jewelry.local.stock.repository.StockRepository;
-import com.msa.jewelry.global.exception.StockNotFoundException;
-import com.msa.jewelry.global.exception.OrderNotFoundException;
-import com.msa.jewelry.global.exception.InvalidOrderStatusException;
+import com.msa.jewelry.local.store.service.StoreService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -260,9 +254,8 @@ public class StockServiceImpl implements StockService {
         tracker.track("보조스톤메모", stock.getStockAssistanceStoneNote(), updateStock.getAssistanceStoneNote());
         tracker.track("재고메모", stock.getStockNote(), updateStock.getStockNote());
 
-        // 보조석 변경 추적 (ID로 비교, 이름으로 표시)
         Long assistantId = SafeParse.toLongOrNull(updateStock.getAssistantStoneId());
-        if (assistantId != null && !product.getAssistantStoneId().equals(assistantId)) {
+        if (!java.util.Objects.equals(product.getAssistantStoneId(), assistantId)) {
             tracker.track("보조석", product.getAssistantStoneName(), updateStock.getAssistantStoneName());
         }
 
@@ -274,7 +267,7 @@ public class StockServiceImpl implements StockService {
         int[] countStoneCost = countStoneCost(stock.getOrderStones());
         stock.updateStoneCost(countStoneCost[0], countStoneCost[1], countStoneCost[2], countStoneCost[3], updateStock.getStoneAddLaborCost());
 
-        if (assistantId != null && !product.getAssistantStoneId().equals(assistantId)) {
+        if ((assistantId != null) && !Objects.equals(product.getAssistantStoneId(), assistantId)) {
             LocalDateTime assistantStoneCreateAt = null;
             if (StringUtils.hasText(updateStock.getAssistantStoneCreateAt())) {
                 assistantStoneCreateAt = DateConversionUtil.StringToLocalDateTime(updateStock.getAssistantStoneCreateAt());
