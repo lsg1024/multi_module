@@ -382,14 +382,26 @@ public class ProductRepositoryImpl implements CustomProductRepository {
     }
 
     private void buildFilterConditions(BooleanBuilder builder, String setTypeFilter, String classificationFilter, String factoryFilter) {
-        if (StringUtils.hasText(setTypeFilter)) {
-            builder.and(product.setType.setTypeId.eq(Long.parseLong(setTypeFilter)));
+        Long setTypeId = tryParseLong(setTypeFilter);
+        if (setTypeId != null) {
+            builder.and(product.setType.setTypeId.eq(setTypeId));
         }
-        if (StringUtils.hasText(classificationFilter)) {
-            builder.and(product.classification.classificationId.eq(Long.parseLong(classificationFilter)));
+        Long classificationId = tryParseLong(classificationFilter);
+        if (classificationId != null) {
+            builder.and(product.classification.classificationId.eq(classificationId));
         }
-        if (StringUtils.hasText(factoryFilter)) {
-            builder.and(product.factoryId.eq(Long.parseLong(factoryFilter)));
+        Long factoryId = tryParseLong(factoryFilter);
+        if (factoryId != null) {
+            builder.and(product.factoryId.eq(factoryId));
+        }
+    }
+
+    private static Long tryParseLong(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            return Long.parseLong(raw.trim());
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 

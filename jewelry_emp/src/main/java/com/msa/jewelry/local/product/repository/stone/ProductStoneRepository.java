@@ -15,4 +15,6 @@ public interface ProductStoneRepository extends JpaRepository<ProductStone, Long
     List<ProductStone> findByProductStoneIds(@Param("productStoneIds") List<Long> productStoneIds);
 
     Optional<ProductStone> findByProductProductIdAndStoneStoneId(Long productId, Long stoneId);
+
+    boolean existsByStone_StoneId(Long stoneId);
 }
