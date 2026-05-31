@@ -55,7 +55,16 @@ public class Stone {
     public void updateStone(StoneDto stoneDto) {
         this.stoneName = stoneDto.getStoneName();
         this.stoneNote = stoneDto.getStoneNote();
-        this.stoneWeight = new BigDecimal(stoneDto.getStoneWeight());
+        String weightRaw = stoneDto.getStoneWeight();
+        if (weightRaw == null || weightRaw.isBlank()) {
+            this.stoneWeight = BigDecimal.ZERO;
+        } else {
+            try {
+                this.stoneWeight = new BigDecimal(weightRaw.trim());
+            } catch (NumberFormatException e) {
+                this.stoneWeight = BigDecimal.ZERO;
+            }
+        }
         this.stonePurchasePrice = stoneDto.getStonePurchasePrice();
     }
 }

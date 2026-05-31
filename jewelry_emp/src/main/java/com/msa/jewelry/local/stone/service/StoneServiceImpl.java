@@ -8,6 +8,7 @@ import com.msa.jewelry.local.stone.dto.StoneDto;
 import com.msa.jewelry.local.stone.dto.StoneWorkGradePolicyDto;
 import com.msa.jewelry.local.stone.entity.Stone;
 import com.msa.jewelry.local.stone.entity.StoneWorkGradePolicy;
+import com.msa.jewelry.local.product.repository.stone.ProductStoneRepository;
 import com.msa.jewelry.local.stone.repository.StoneRepository;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -28,10 +29,14 @@ public class StoneServiceImpl implements StoneService {
 
     private final JwtUtil jwtUtil;
     private final StoneRepository stoneRepository;
+    private final ProductStoneRepository productStoneRepository;
 
-    public StoneServiceImpl(JwtUtil jwtUtil, StoneRepository stoneRepository) {
+    public StoneServiceImpl(JwtUtil jwtUtil,
+                            StoneRepository stoneRepository,
+                            ProductStoneRepository productStoneRepository) {
         this.jwtUtil = jwtUtil;
         this.stoneRepository = stoneRepository;
+        this.productStoneRepository = productStoneRepository;
     }
 
     @Override
@@ -89,11 +94,14 @@ public class StoneServiceImpl implements StoneService {
     @Override
     public void updateStone(Long stoneId, StoneDto stoneDto) {
         Stone stone = getStoneEntity(stoneRepository.findById(stoneId));
-        boolean existsByStoneName = stoneRepository.existsByStoneName(stoneDto.getStoneName());
 
-        if (stoneDto.getStoneName().equals(stone.getStoneName()) || !existsByStoneName) {
-            stone.updateStone(stoneDto);
-            stone.getGradePolicies().clear();
+        if (stoneRepository.existsByStoneNameAndStoneIdNot(stoneDto.getStoneName(), stoneId)) {
+            throw new IllegalArgumentException(IS_EXIST);
+        }
+
+        stone.updateStone(stoneDto);
+        stone.getGradePolicies().clear();
+        if (stoneDto.getStoneWorkGradePolicyDto() != null) {
             for (StoneWorkGradePolicyDto dto : stoneDto.getStoneWorkGradePolicyDto()) {
                 StoneWorkGradePolicy policy = StoneWorkGradePolicy.builder()
                         .grade(dto.getGrade())
@@ -101,9 +109,7 @@ public class StoneServiceImpl implements StoneService {
                         .build();
                 stone.addGradePolicy(policy);
             }
-            return;
         }
-        throw new IllegalArgumentException(IS_EXIST);
     }
 
     @Override
@@ -113,6 +119,10 @@ public class StoneServiceImpl implements StoneService {
             throw new IllegalArgumentException(NOT_ACCESS);
         }
         Stone stone = getStoneEntity(stoneRepository.findById(stoneId));
+
+        if (productStoneRepository.existsByStone_StoneId(stoneId)) {
+            throw new IllegalArgumentException("이 스톤을 사용 중인 상품이 있어 삭제할 수 없습니다.");
+        }
         stoneRepository.delete(stone);
     }
 
