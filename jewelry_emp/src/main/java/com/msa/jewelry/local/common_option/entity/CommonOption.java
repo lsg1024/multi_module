@@ -8,13 +8,11 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.SQLDelete;
 
 @Getter
 @Entity
 @Table(name = "COMMON_OPTION")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE COMMON_OPTION SET DELETED = TRUE WHERE COMMON_OPTION_ID = ?")
 @Schema(description = "공통 거래 옵션 엔티티 — Store/Factory 가 1:1 로 보유하는 거래 유형/등급/금시세 정책")
 public class CommonOption {
 
@@ -30,8 +28,6 @@ public class CommonOption {
     @Enumerated(EnumType.STRING)
     @Schema(description = "거래처 등급 (A/B/C 등)", example = "A")
     private OptionLevel optionLevel;
-    @Schema(description = "소프트 삭제 플래그", example = "false")
-    private boolean deleted = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "GOLD_HARRY_ID", nullable = false)
