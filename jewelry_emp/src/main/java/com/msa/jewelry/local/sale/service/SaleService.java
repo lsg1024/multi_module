@@ -123,10 +123,14 @@ public class SaleService {
             List<OrderStone> orderStones = stock.getOrderStones();
             List<StoneDto.StoneInfo> stonesDtos = new ArrayList<>();
             for (OrderStone orderStone : orderStones) {
+                String originStoneIdStr = orderStone.getOriginStoneId() != null
+                        ? orderStone.getOriginStoneId().toString() : null;
+                String originStoneWeightStr = orderStone.getOriginStoneWeight() != null
+                        ? orderStone.getOriginStoneWeight().toPlainString() : null;
                 StoneDto.StoneInfo stoneDto = new StoneDto.StoneInfo(
-                        orderStone.getOriginStoneId().toString(),
+                        originStoneIdStr,
                         orderStone.getOriginStoneName(),
-                        orderStone.getOriginStoneWeight().toPlainString(),
+                        originStoneWeightStr,
                         orderStone.getStonePurchaseCost(),
                         orderStone.getStoneLaborCost(),
                         orderStone.getStoneAddLaborCost(),
@@ -324,7 +328,7 @@ public class SaleService {
         stock.updateStockNote(stockDto.getMainStoneNote(), stockDto.getAssistanceStoneNote(), stockDto.getStockNote());
 
         Long assistantId = SafeParse.toLongOrNull(stockDto.getAssistantStoneId());
-        if (assistantId != null && !stock.getProduct().getAssistantStoneId().equals(assistantId)) {
+        if (assistantId != null && !java.util.Objects.equals(stock.getProduct().getAssistantStoneId(), assistantId)) {
             LocalDateTime assistantStoneCreateAt = null;
             if (StringUtils.hasText(stockDto.getAssistantStoneCreateAt())) {
                 assistantStoneCreateAt = DateConversionUtil.StringToLocalDateTime(stockDto.getAssistantStoneCreateAt());
@@ -337,14 +341,16 @@ public class SaleService {
 
         updateNewHistory(stock.getFlowCode(), nickname, BusinessPhase.SALE, "판매 등록");
 
-        BigDecimal storePureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), product.getMaterialName().toUpperCase(), storeHarry);
+        // 재질이 null 이면 빈 문자열로 — calculatePureGoldWeightWithHarry / applyBalanceChange 내부 null 가드와 함께 동작.
+        String materialNameUpper = product.getMaterialName() != null ? product.getMaterialName().toUpperCase() : "";
+        BigDecimal storePureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), materialNameUpper, storeHarry);
         Integer storeTotalMoney = stock.getTotalStoneLaborCost() + stockDto.getStoneAddLaborCost() +
                 product.getProductLaborCost() + stockDto.getAddProductLaborCost();
 
         // 공장 harry: 주문 시점에 Stock 으로 스냅샷된 값을 우선 사용 (storeHarry 패턴 동일).
         // 과거 데이터 등으로 null 인 경우 기본값 1.10 fallback.
         BigDecimal factoryHarry = stock.getFactoryHarry() != null ? stock.getFactoryHarry() : new BigDecimal("1.10");
-        BigDecimal factoryPureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), product.getMaterialName().toUpperCase(), factoryHarry);
+        BigDecimal factoryPureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), materialNameUpper, factoryHarry);
         Integer factoryTotalMoney = stock.getTotalStonePurchaseCost() + product.getProductPurchaseCost();
 
         applyBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", storeId, storeName, product.getMaterialName(), storePureGoldWeight, storeTotalMoney, transactionDate);
@@ -684,7 +690,8 @@ public class SaleService {
     @NotNull
     private static SalePayment createSalePayment(SaleDto.Request saleDto) {
 
-        final Integer cashAmount = saleDto.getPayAmount();
+        final Integer cashAmountRaw = saleDto.getPayAmount();
+        final int cashAmount = cashAmountRaw != null ? cashAmountRaw : 0;
         final String material = saleDto.getMaterial();
         BigDecimal pureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(saleDto.getGoldWeight(), material, saleDto.getHarry());
         final BigDecimal goldWeight = SafeParse.toBigDecimalOrNull(saleDto.getGoldWeight());
@@ -696,27 +703,34 @@ public class SaleService {
         } catch (IllegalArgumentException e) {
             saleStatus = SaleStatus.fromDisplayName(saleDto.getOrderStatus());
         }
+        if (saleStatus == null) {
+            // FE 가 알 수 없는 표시값을 보냈을 때 NPE 가 아닌 명확한 400 으로.
+            throw new IllegalArgumentException("지원하지 않는 판매 상태값: " + saleDto.getOrderStatus());
+        }
 
         if (saleStatus.equals(SaleStatus.WG)) {
 
             Integer accountGoldPrice = saleDto.getAccountGoldPrice();
             pureGoldWeight = GoldUtils.calculateWeightFromPrice(cashAmount, accountGoldPrice);
+            BigDecimal pureNeg = pureGoldWeight != null ? pureGoldWeight.negate() : BigDecimal.ZERO;
 
             return SalePayment.builder()
                     .cashAmount(cashAmount * -1)
-                    .pureGoldWeight(pureGoldWeight.negate())
-                    .goldWeight(pureGoldWeight.negate())
+                    .pureGoldWeight(pureNeg)
+                    .goldWeight(pureNeg)
                     .material("24K")
                     .paymentNote(note)
                     .saleStatus(saleStatus)
                     .build();
         }
 
+        BigDecimal pureNeg = pureGoldWeight != null ? pureGoldWeight.negate() : BigDecimal.ZERO;
+        BigDecimal goldNeg = goldWeight != null ? goldWeight.negate() : BigDecimal.ZERO;
         return SalePayment.builder()
                 .cashAmount(cashAmount * -1)
                 .material(material)
-                .pureGoldWeight(pureGoldWeight.negate())
-                .goldWeight(goldWeight.negate())
+                .pureGoldWeight(pureNeg)
+                .goldWeight(goldNeg)
                 .paymentNote(note)
                 .saleStatus(saleStatus)
                 .build();
@@ -755,7 +769,11 @@ public class SaleService {
     }
 
     public Integer checkAccountGoldPrice(String saleCode) {
-        Sale sale = saleRepository.findBySaleCode(Long.valueOf(saleCode))
+        Long saleCodeLong = SafeParse.toLongOrNull(saleCode);
+        if (saleCodeLong == null) {
+            throw new IllegalArgumentException("판매 코드(saleCode) 가 올바르지 않습니다: " + saleCode);
+        }
+        Sale sale = saleRepository.findBySaleCode(saleCodeLong)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         if (sale.isAccountGoldPrice()) {
@@ -770,7 +788,11 @@ public class SaleService {
      * @param goldPriceRequest 추가할 시세
      */
     public void updateAccountGoldPrice(String saleCode, SaleDto.GoldPriceRequest goldPriceRequest) {
-        Sale sale = saleRepository.findBySaleCodeAndSalePayments(Long.valueOf(saleCode))
+        Long saleCodeLong = SafeParse.toLongOrNull(saleCode);
+        if (saleCodeLong == null) {
+            throw new IllegalArgumentException("판매 코드(saleCode) 가 올바르지 않습니다: " + saleCode);
+        }
+        Sale sale = saleRepository.findBySaleCodeAndSalePayments(saleCodeLong)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
         if (sale.isAccountGoldPrice()) {
@@ -795,34 +817,16 @@ public class SaleService {
     public SalePrintResponse getSalePrint(String token, String saleCode) {
         List<SaleItemResponse> printSales = customSaleRepository.findPrintSales(saleCode);
 
+        // 빈 결과 가드 — 잘못된 saleCode / soft-deleted sale 등.
+        if (printSales == null || printSales.isEmpty()) {
+            throw new NotFoundException(NOT_FOUND);
+        }
         SaleItemResponse saleItemResponse = printSales.get(0);
 
-        List<Long> productIds = new ArrayList<>();
-        for (SaleItemResponse printSale : printSales) {
-            List<SaleItemResponse.SaleItem> saleItems = printSale.getSaleItems();
-            List<Long> ids = saleItems.stream()
-                    .map(SaleItemResponse.SaleItem::getStoreId)
-                    .filter(id -> id != null && !id.isEmpty())
-                    .map(Long::parseLong)
-                    .distinct()
-                    .toList();
-
-            productIds.addAll(ids);
-        }
-
-        Map<Long, ProductImageView> productImages = productService.getProductImages(productIds);
-
-        for (SaleItemResponse printSale : printSales) {
-            for (SaleItemResponse.SaleItem item : printSale.getSaleItems()) {
-                if (StringUtils.hasText(item.getStoreId())) {
-                    Long key = Long.parseLong(item.getStoreId());
-
-                    if (productImages.containsKey(key)) {
-                        item.updateImagePath(productImages.get(key).imagePath());
-                    }
-                }
-            }
-        }
+        // TODO: 상품 이미지 매핑 — SaleItem 에 productId 가 없어 storeId 로 잘못 조회하던 코드를
+        //       제거. 정확한 매핑을 위해서는 findPrintSales 의 QueryProjection 에 productId 를
+        //       포함하거나 flowCode → Stock.productId 별도 조회 후 productImages map 으로 채워야 함.
+        //       지금은 imagePath 가 빈 상태로 응답.
 
         //미수금액 조회
         if (StringUtils.hasText(saleItemResponse.getStoreName())) {
