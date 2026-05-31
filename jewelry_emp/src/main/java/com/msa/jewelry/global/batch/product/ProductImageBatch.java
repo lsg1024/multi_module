@@ -1,6 +1,7 @@
 package com.msa.jewelry.global.batch.product;
 
 import com.msa.common.global.tenant.TenantContext;
+import com.msa.jewelry.global.batch.TenantAwareJobListener;
 import com.msa.jewelry.local.product.entity.Product;
 import com.msa.jewelry.local.product.entity.ProductImage;
 import com.msa.jewelry.local.product.repository.ProductRepository;
@@ -40,6 +41,7 @@ public class ProductImageBatch {
 
     private final ProductRepository productRepository;
     private final ProductImageRepository productImageRepository;
+    private final TenantAwareJobListener tenantAwareJobListener;
 
     @Value("${FILE_UPLOAD_PATH2:/tmp/jewelry/uploads}")
     private String baseUploadPath;
@@ -47,6 +49,7 @@ public class ProductImageBatch {
     @Bean
     public Job imageMigrationJob(JobRepository jobRepository, Step imageMigrationStep) {
         return new JobBuilder("imageMigrationJob", jobRepository)
+                .listener(tenantAwareJobListener)
                 .start(imageMigrationStep)
                 .build();
     }
@@ -100,8 +103,6 @@ public class ProductImageBatch {
         return items -> {
             for (ImageMoveDto item : items) {
                 try {
-                    TenantContext.setTenant(item.getTenant());
-
                     Product product = productRepository.findById(item.getProductId())
                             .orElse(null);
 
@@ -138,8 +139,6 @@ public class ProductImageBatch {
 
                 } catch (Exception e) {
                     log.error("이미지 저장 실패: " + item.getFile().getName(), e);
-                } finally {
-                    TenantContext.clear();
                 }
             }
         };
@@ -165,7 +164,7 @@ public class ProductImageBatch {
 
         @Override
         public void beforeStep(StepExecution stepExecution) {
-            this.tenant = stepExecution.getJobParameters().getString("tenant");
+            this.tenant = stepExecution.getJobParameters().getString("tenantId");
 
             if (!StringUtils.hasText(this.tenant)) {
                 this.tenant = TenantContext.getTenant();
@@ -176,15 +175,10 @@ public class ProductImageBatch {
             }
 
             log.info(">>>> [Batch] 상품 데이터 캐싱 시작 (Tenant: {})", this.tenant);
-            try {
-                // 대소문자 무시 TreeMap으로 캐시 구성 (파일명과 상품명 대소문자 불일치 방지)
-                productCache = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-                productRepository.findAll().forEach(p ->
-                        productCache.putIfAbsent(p.getProductName(), p.getProductId()));
-                log.info(">>>> [Batch] 캐싱 완료. 상품 수: {}", productCache.size());
-            } finally {
-                TenantContext.clear();
-            }
+            productCache = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            productRepository.findAll().forEach(p ->
+                    productCache.putIfAbsent(p.getProductName(), p.getProductId()));
+            log.info(">>>> [Batch] 캐싱 완료. 상품 수: {}", productCache.size());
         }
 
         @Override
