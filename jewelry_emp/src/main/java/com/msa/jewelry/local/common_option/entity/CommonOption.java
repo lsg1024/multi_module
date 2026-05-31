@@ -56,12 +56,24 @@ public class CommonOption {
     }
 
     public void updateTradeTypeAndOptionLevel(CommonOptionDto.CommonOptionInfo commonOptionInfo) {
-        this.optionTradeType = OptionTradeType.valueOf(commonOptionInfo.getTradeType());
-        this.optionLevel = OptionLevel.valueOf(commonOptionInfo.getGrade());
+        OptionTradeType tradeType = OptionTradeType.fromInput(commonOptionInfo.getTradeType());
+        OptionLevel level = OptionLevel.fromInput(commonOptionInfo.getGrade());
+        if (tradeType == null) {
+            throw new IllegalArgumentException("지원하지 않는 거래 유형: " + commonOptionInfo.getTradeType());
+        }
+        if (level == null) {
+            throw new IllegalArgumentException("지원하지 않는 등급: " + commonOptionInfo.getGrade());
+        }
+        this.optionTradeType = tradeType;
+        this.optionLevel = level;
     }
 
     public void updateOptionLevel(String level) {
-        this.optionLevel = OptionLevel.valueOf(level);
+        OptionLevel parsed = OptionLevel.fromInput(level);
+        if (parsed == null) {
+            throw new IllegalArgumentException("지원하지 않는 등급: " + level);
+        }
+        this.optionLevel = parsed;
     }
 
     public void updateGoldHarry(GoldHarry newGoldHarry) {

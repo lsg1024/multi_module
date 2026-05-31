@@ -19,4 +19,15 @@ public enum OptionTradeType {
         }
         return null;
     }
+
+    public static OptionTradeType fromInput(String input) {
+        if (input == null || input.isBlank()) return null;
+        String trimmed = input.trim();
+        for (OptionTradeType type : values()) {
+            if (type.key.equalsIgnoreCase(trimmed) || type.title.equals(trimmed)) {
+                return type;
+            }
+        }
+        return null;
+    }
 }
