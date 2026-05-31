@@ -615,17 +615,30 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
 
     private static BooleanExpression getExpectStatusBuilder(OrderDto.ExpectCondition orderCondition) {
         String endAt = orderCondition.getEndAt();
+        LocalDateTime endDateTime = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
+        BooleanExpression result = orders.shippingAt.loe(endDateTime);
 
-        LocalDateTime end = LocalDate.parse(endAt).atTime(23, 59, 59); // 예: 2025-08-05 23:59:59
+        String startAt = orderCondition.getStartAt();
+        if (startAt != null && !startAt.isBlank()) {
+            try {
+                LocalDateTime startDateTime = LocalDate.parse(startAt).atStartOfDay();
+                result = result.and(orders.shippingAt.goe(startDateTime));
+            } catch (Exception ignore) { /* 잘못된 startAt 은 필터 무적용 */ }
+        }
 
-        LocalDateTime endDateTime = end;
+        String orderStatus = orderCondition.getOrderStatus();
+        if (orderStatus != null && !orderStatus.isBlank()) {
+            try {
+                OrderStatus os = OrderStatus.valueOf(orderStatus.trim().toUpperCase());
+                result = result.and(orders.orderStatus.eq(os));
+            } catch (IllegalArgumentException e) {
+                result = result.and(orders.orderStatus.notIn(OrderStatus.STOCK));
+            }
+        } else {
+            result = result.and(orders.orderStatus.notIn(OrderStatus.STOCK));
+        }
 
-        BooleanExpression shippingAt =
-                orders.shippingAt.loe(endDateTime);
-
-        BooleanExpression status = orders.orderStatus.notIn(OrderStatus.STOCK);
-
-        return status.and(shippingAt);
+        return result;
     }
 
     private OrderSpecifier<?>[] createOrderSpecifiers(OrderDto.SortCondition sortCondition) {

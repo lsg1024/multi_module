@@ -74,6 +74,7 @@ public class ProductStone {
         this.includeQuantity = dto.isIncludeQuantity();
         this.includePrice = dto.isIncludePrice();
         this.stoneQuantity = dto.getStoneQuantity();
+        this.productStoneNote = dto.getProductStoneNote();
     }
 
     public void updateIncludeQuantity(boolean includeQuantity) {

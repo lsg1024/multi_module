@@ -40,7 +40,8 @@ public class Classification {
         this.classificationName = classificationDto.getName();
         this.classificationNote = classificationDto.getNote();
     }
+
     public boolean isDeletable() {
-        return !defaultId;
+        return defaultId;
     }
 }

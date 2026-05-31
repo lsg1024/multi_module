@@ -1,7 +1,5 @@
 package com.msa.jewelry.local.order.dto;
 
-import com.msa.jewelry.local.order.dto.StatusHistoryDto;
-import com.msa.jewelry.local.order.dto.StoneDto;
 import com.msa.jewelry.local.order.entity.order_enum.OrderStatus;
 import com.msa.jewelry.local.order.entity.order_enum.ProductStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -398,8 +396,12 @@ public class OrderDto {
     @AllArgsConstructor
     @Schema(description = "출고 예정일 기반 검색 조건.")
     public static class ExpectCondition {
+        @Schema(description = "시작 일자 (yyyy-MM-dd) — 선택", example = "2026-05-01")
+        private String startAt;
         @Schema(description = "종료 일자 (yyyy-MM-dd)", example = "2026-05-31")
         private String endAt;
+        @Schema(description = "주문 상태 필터 — 선택. enum OrderStatus 의 이름", example = "ORDER")
+        private String orderStatus;
         @Schema(description = "필터 옵션")
         private OptionCondition optionCondition;
         @Schema(description = "정렬 조건")

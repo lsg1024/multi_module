@@ -10,7 +10,7 @@ public interface MaterialService {
 
     MaterialDto.ResponseSingle getMaterial(Long materialId);
 
-    List<MaterialDto.ResponseSingle> getMaterials();
+    List<MaterialDto.ResponseSingle> getMaterials(String name);
 
     void updateMaterial(Long id, MaterialDto materialDto);
 

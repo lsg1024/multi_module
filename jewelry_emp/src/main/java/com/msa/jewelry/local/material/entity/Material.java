@@ -40,7 +40,15 @@ public class Material {
 
     public void updateMaterial(MaterialDto materialDto) {
         this.materialName = materialDto.getName();
-        this.materialGoldPurityPercent = new BigDecimal(materialDto.getGoldPurityPercent());
+        String raw = materialDto.getGoldPurityPercent();
+        if (raw == null || raw.isBlank()) {
+            throw new IllegalArgumentException("금 함량 퍼센트(goldPurityPercent) 는 필수입니다.");
+        }
+        try {
+            this.materialGoldPurityPercent = new BigDecimal(raw.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("금 함량 퍼센트가 올바른 숫자가 아닙니다: " + raw);
+        }
     }
 
     public boolean isDeletable() {

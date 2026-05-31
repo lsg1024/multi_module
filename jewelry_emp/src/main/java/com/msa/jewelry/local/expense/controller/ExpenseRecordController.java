@@ -33,24 +33,8 @@ public class ExpenseRecordController {
             @RequestParam(required = false) String counterparty,
             @PageableDefault(size = 20) Pageable pageable) {
 
-        CustomPage<ExpenseRecordDto.ListResponse> records;
-
-        if (expenseType != null && bankTypeId != null) {
-            records = recordService.getExpenseRecordsByDateRangeAndFilters(
-                    startDate, endDate, expenseType, bankTypeId, pageable);
-        } else if (expenseType != null) {
-            records = recordService.getExpenseRecordsByDateRangeAndType(
-                    startDate, endDate, expenseType, pageable);
-        } else if (bankTypeId != null) {
-            records = recordService.getExpenseRecordsByDateRangeAndBankType(
-                    startDate, endDate, bankTypeId, pageable);
-        } else if (counterparty != null) {
-            records = recordService.getExpenseRecordsByDateRangeAndCounterparty(
-                    startDate, endDate, counterparty, pageable);
-        } else {
-            records = recordService.getExpenseRecordsByDateRange(
-                    startDate, endDate, pageable);
-        }
+        CustomPage<ExpenseRecordDto.ListResponse> records = recordService.getExpenseRecords(
+                startDate, endDate, expenseType, bankTypeId, counterparty, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(records));
     }

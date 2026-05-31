@@ -94,10 +94,10 @@ public class OrdersService {
                 : null;
 
         return OrderDto.ResponseDetail.builder()
-                .createAt(order.getCreateAt().toString())
-                .shippingAt(order.getShippingAt().toString())
-                .flowCode(order.getFlowCode().toString())
-                .storeId(order.getStoreId().toString())
+                .createAt(order.getCreateAt() != null ? order.getCreateAt().toString() : null)
+                .shippingAt(order.getShippingAt() != null ? order.getShippingAt().toString() : null)
+                .flowCode(order.getFlowCode() != null ? order.getFlowCode().toString() : null)
+                .storeId(order.getStoreId() != null ? order.getStoreId().toString() : null)
                 .storeName(storeName)
                 .storeHarry(order.getStoreHarry() != null ? order.getStoreHarry().toPlainString() : null)
                 .storeGrade(order.getStoreGrade())
@@ -460,11 +460,15 @@ public class OrdersService {
 
     // 출고 예정 목록 출력
     @Transactional(readOnly = true)
-    public CustomPage<OrderDto.Response> getDeliveryProducts(String accessToken, String input, String searchField, String endAt, String factoryName, String storeName, String setTypeName, String colorName, String classificationName, String materialName, String sortField, String sort, Pageable pageable) {
+    public CustomPage<OrderDto.Response> getDeliveryProducts(String accessToken, String input, String searchField,
+                                                              String startAt, String endAt, String orderStatus,
+                                                              String factoryName, String storeName, String setTypeName,
+                                                              String colorName, String classificationName, String materialName,
+                                                              String sortField, String sort, Pageable pageable) {
         OrderDto.InputCondition inputCondition = new OrderDto.InputCondition(input, searchField);
         OrderDto.OptionCondition optionCondition = new OrderDto.OptionCondition(factoryName, storeName, setTypeName, colorName, classificationName, materialName);
         OrderDto.SortCondition sortCondition = new OrderDto.SortCondition(sortField, sort);
-        OrderDto.ExpectCondition expectCondition = new OrderDto.ExpectCondition(endAt, optionCondition, sortCondition);
+        OrderDto.ExpectCondition expectCondition = new OrderDto.ExpectCondition(startAt, endAt, orderStatus, optionCondition, sortCondition);
 
         CustomPage<OrderQueryDto> expectOrderPages = customOrderRepository.findByDeliveryOrders(inputCondition, expectCondition, pageable);
 

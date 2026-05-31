@@ -7,6 +7,7 @@ import java.util.Optional;
 
 public interface StoneRepository extends JpaRepository<Stone, Long>, CustomStoneRepository {
     boolean existsByStoneName(String stoneName);
+    boolean existsByStoneNameAndStoneIdNot(String stoneName, Long stoneId);
     boolean existsByStoneId(Long stoneId);
     Optional<Stone> findByStoneName(String stoneName);
     Optional<Stone> findByStoneNameIgnoreCase(String stoneName);

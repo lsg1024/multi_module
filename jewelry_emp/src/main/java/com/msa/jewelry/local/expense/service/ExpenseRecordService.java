@@ -11,11 +11,15 @@ import com.msa.jewelry.local.expense.repository.ExpenseIncomeAccountRepository;
 import com.msa.jewelry.local.expense.repository.ExpenseRecordRepository;
 import com.msa.common.global.common_enum.expense_enum.ExpenseType;
 import com.msa.common.global.util.CustomPage;
+import jakarta.persistence.criteria.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -51,6 +55,46 @@ public class ExpenseRecordService {
         LocalDateTime end = parseEndDate(endDate);
 
         Page<ExpenseRecord> records = recordRepository.findByDateRange(start, end, pageable);
+        return convertToCustomPage(records);
+    }
+
+    @Transactional(readOnly = true)
+    public CustomPage<ExpenseRecordDto.ListResponse> getExpenseRecords(
+            String startDate, String endDate,
+            String expenseType, Long bankTypeId, String counterparty,
+            Pageable pageable) {
+
+        LocalDateTime start = parseStartDate(startDate);
+        LocalDateTime end = parseEndDate(endDate);
+        ExpenseType typeEnum = null;
+        if (expenseType != null && !expenseType.isBlank()) {
+            try {
+                typeEnum = ExpenseType.valueOf(expenseType.trim().toUpperCase());
+            } catch (IllegalArgumentException ignore) {
+                // 잘못된 enum 값은 무시
+            }
+        }
+
+        final ExpenseType finalType = typeEnum;
+        final String trimmedCp = (counterparty == null || counterparty.isBlank()) ? null : counterparty.trim();
+
+        Specification<ExpenseRecord> spec = (root, query, cb) -> {
+            List<Predicate> preds = new ArrayList<>();
+            preds.add(cb.equal(root.get("deleted"), false));
+            preds.add(cb.between(root.get("recordDate"), start, end));
+            if (finalType != null) {
+                preds.add(cb.equal(root.get("expenseType"), finalType));
+            }
+            if (bankTypeId != null) {
+                preds.add(cb.equal(root.get("bankType").get("expenseBankTypeId"), bankTypeId));
+            }
+            if (trimmedCp != null) {
+                preds.add(cb.like(root.get("counterparty"), "%" + trimmedCp + "%"));
+            }
+            return cb.and(preds.toArray(new Predicate[0]));
+        };
+
+        Page<ExpenseRecord> records = recordRepository.findAll(spec, pageable);
         return convertToCustomPage(records);
     }
 

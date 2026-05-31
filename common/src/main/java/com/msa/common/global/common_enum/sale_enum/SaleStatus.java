@@ -22,10 +22,14 @@ public enum SaleStatus {
     public String getDisplayName() { return displayName; }
 
     public static SaleStatus fromDisplayName(String displayName) {
-        return Arrays.stream(values())
-                .filter(status -> status.displayName.equals(displayName))
-                .findFirst()
-                .orElse(null);
+        if (displayName == null) return null;
+        return switch (displayName) {
+            case "결통" -> PAYMENT_TO_BANK;
+            default -> Arrays.stream(values())
+                    .filter(status -> status.displayName.equals(displayName))
+                    .findFirst()
+                    .orElse(null);
+        };
     }
 
 }

@@ -22,6 +22,17 @@ public enum OptionLevel {
         return null;
     }
 
+    public static OptionLevel fromInput(String input) {
+        if (input == null || input.isBlank()) return null;
+        String trimmed = input.trim();
+        for (OptionLevel level : values()) {
+            if (level.key.equalsIgnoreCase(trimmed) || level.grade.equals(trimmed)) {
+                return level;
+            }
+        }
+        return null;
+    }
+
     public String getGrade() {
         return this.grade;
     }

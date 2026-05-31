@@ -45,41 +45,41 @@ public class PriorityService {
     }
 
     public void createPriority(String accessToken, PriorityDto.Request priorityDto) {
-
-        if (authorityUserRoleUtil.verification(accessToken)) {
-            Priority priority = Priority.builder()
-                    .priorityName(priorityDto.getPriorityName())
-                    .priorityDate(priorityDto.getPriorityDate())
-                    .build();
-
-            priorityRepository.save(priority);
+        if (!authorityUserRoleUtil.verification(accessToken)) {
+            throw new NotAuthorityException(NOT_ACCESS);
         }
-        throw new NotAuthorityException(NOT_ACCESS);
+
+        Priority priority = Priority.builder()
+                .priorityName(priorityDto.getPriorityName())
+                .priorityDate(priorityDto.getPriorityDate())
+                .build();
+
+        priorityRepository.save(priority);
     }
 
     public void updatePriority(String accessToken, String priorityId, PriorityDto.Update priorityDto) {
-        if (authorityUserRoleUtil.verification(accessToken)) {
-
-            Long newPriorityId = Long.parseLong(priorityId);
-
-            Priority priority = priorityRepository.findById(newPriorityId)
-                    .orElseThrow(() -> new NotFoundException(NOT_FOUND));
-
-            priority.updatePriority(priorityDto.getPriorityName(), priorityDto.getPriorityDate());
+        if (!authorityUserRoleUtil.verification(accessToken)) {
+            throw new NotAuthorityException(NOT_ACCESS);
         }
-        throw new NotAuthorityException(NOT_ACCESS);
+
+        Long newPriorityId = Long.parseLong(priorityId);
+
+        Priority priority = priorityRepository.findById(newPriorityId)
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND));
+
+        priority.updatePriority(priorityDto.getPriorityName(), priorityDto.getPriorityDate());
     }
 
     public void delete(String accessToken, String priorityId) {
-        if (authorityUserRoleUtil.verification(accessToken)) {
-
-            Long newPriorityId = Long.parseLong(priorityId);
-
-            Priority priority = priorityRepository.findById(newPriorityId)
-                    .orElseThrow(() -> new NotFoundException(NOT_FOUND));
-
-            priorityRepository.delete(priority);
+        if (!authorityUserRoleUtil.verification(accessToken)) {
+            throw new NotAuthorityException(NOT_ACCESS);
         }
-        throw new NotAuthorityException(NOT_ACCESS);
+
+        Long newPriorityId = Long.parseLong(priorityId);
+
+        Priority priority = priorityRepository.findById(newPriorityId)
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND));
+
+        priorityRepository.delete(priority);
     }
 }

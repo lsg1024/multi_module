@@ -128,7 +128,10 @@ public class ProductServiceImpl implements ProductService {
 
         List<ProductStoneDto> productStoneDtos = productDto.getProductStoneDtos();
         for (ProductStoneDto productStoneDto : productStoneDtos) {
-            Long stoneId = Long.valueOf(productStoneDto.getStoneId());
+            Long stoneId = parseNullableLong(productStoneDto.getStoneId());
+            if (stoneId == null) {
+                throw new IllegalArgumentException("stone ID(stoneId) 는 필수입니다.");
+            }
 
             Stone stone = stoneRepository.findById(stoneId)
                     .orElseThrow(() -> new IllegalArgumentException("stone: " + NOT_FOUND));
@@ -151,7 +154,10 @@ public class ProductServiceImpl implements ProductService {
         boolean isFirst = true;
 
         for (ProductWorkGradePolicyGroupDto groupDto : groupDtos) {
-            Long colorId = Long.valueOf(groupDto.getColorId());
+            Long colorId = parseNullableLong(groupDto.getColorId());
+            if (colorId == null) {
+                throw new IllegalArgumentException("color ID(colorId) 는 필수입니다.");
+            }
             Color color = colorRepository.findById(colorId)
                     .orElseThrow(() -> new IllegalArgumentException("color: " + NOT_FOUND));
 
@@ -389,18 +395,26 @@ public class ProductServiceImpl implements ProductService {
                 ProductWorkGradePolicyGroup group = existingMap.get(groupId);
                 if (group == null) continue;
 
-                Color originColor = group.getColor();
-                if (!originColor.getColorId().equals(Long.valueOf(dto.getColorId()))) {
-                    Color color = colorRepository.findById(Long.valueOf(dto.getColorId()))
-                            .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
-                    group.setColor(color);
+                Long newColorId = parseNullableLong(dto.getColorId());
+                if (newColorId != null) {
+                    Color originColor = group.getColor();
+                    Long originColorId = originColor != null ? originColor.getColorId() : null;
+                    if (!newColorId.equals(originColorId)) {
+                        Color color = colorRepository.findById(newColorId)
+                                .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
+                        group.setColor(color);
+                    }
                 }
                 group.updateProductPurchasePrice(dto.getProductPurchasePrice(), dto.getNote());
                 updatePolicies(group, dto.getPolicyDtos());
                 keepIds.add(groupId);
 
             } else {
-                Color color = colorRepository.findById(Long.valueOf(dto.getColorId()))
+                Long newColorId = parseNullableLong(dto.getColorId());
+                if (newColorId == null) {
+                    throw new IllegalArgumentException("색상 ID(colorId) 는 새 정책 그룹 생성 시 필수입니다.");
+                }
+                Color color = colorRepository.findById(newColorId)
                         .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
                 ProductWorkGradePolicyGroup newGroup = ProductWorkGradePolicyGroup.builder()
