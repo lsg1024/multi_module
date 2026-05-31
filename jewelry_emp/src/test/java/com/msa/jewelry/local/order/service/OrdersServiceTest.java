@@ -157,7 +157,7 @@ class OrdersServiceTest {
                     .willReturn(Collections.emptyList());
 
             CustomPage<OrderDto.Response> result = ordersService.getOrderProducts(
-                    TOKEN, "input", "field", "2026-05-01", "2026-05-31",
+                    "input", "field", "2026-05-01", "2026-05-31",
                     null, null, null, null, null, null, null, null, "WAIT", pageable);
 
             assertThat(result.getContent()).isEmpty();
@@ -178,12 +178,12 @@ class OrdersServiceTest {
             OrderDto.Request dto = mock(OrderDto.Request.class);
             Orders saved = mock(Orders.class);
             given(saved.getFlowCode()).willReturn(FLOW_CODE);
-            given(orderCommandService.createOrder(eq(TENANT_ID), eq(TOKEN), eq("ORDER"), eq(dto), eq(NICKNAME)))
+            given(orderCommandService.createOrder(eq("ORDER"), eq(dto)))
                     .willReturn(saved);
 
             ordersService.saveOrder(TOKEN, "ORDER", dto);
 
-            verify(orderCommandService).createOrder(TENANT_ID, TOKEN, "ORDER", dto, NICKNAME);
+            verify(orderCommandService).createOrder("ORDER", dto);
             verify(statusHistoryHelper).saveCreate(
                     eq(FLOW_CODE), eq(SourceType.ORDER), eq(BusinessPhase.WAITING),
                     eq("주문 등록"), eq(NICKNAME));
@@ -195,7 +195,7 @@ class OrdersServiceTest {
             OrderDto.Request dto = mock(OrderDto.Request.class);
             Orders saved = mock(Orders.class);
             given(saved.getFlowCode()).willReturn(FLOW_CODE);
-            given(orderCommandService.createOrder(any(), any(), any(), any(), any()))
+            given(orderCommandService.createOrder(any(), any()))
                     .willReturn(saved);
 
             assertThatThrownBy(() -> ordersService.saveOrder(TOKEN, "NOT_REAL_SOURCE", dto))
@@ -218,12 +218,12 @@ class OrdersServiceTest {
             given(ordersRepository.findByFlowCode(FLOW_CODE)).willReturn(Optional.of(beforeOrder));
             Orders after = mock(Orders.class);
             given(after.getFlowCode()).willReturn(FLOW_CODE);
-            given(orderCommandService.updateOrder(eq(TENANT_ID), eq(TOKEN), eq(FLOW_CODE), eq("ORDER"), eq(dto), eq(NICKNAME)))
+            given(orderCommandService.updateOrder(eq(FLOW_CODE), eq("ORDER"), eq(dto)))
                     .willReturn(after);
 
             ordersService.updateOrder(TOKEN, FLOW_CODE, "ORDER", dto);
 
-            verify(orderCommandService).updateOrder(TENANT_ID, TOKEN, FLOW_CODE, "ORDER", dto, NICKNAME);
+            verify(orderCommandService).updateOrder(FLOW_CODE, "ORDER", dto);
             verify(statusHistoryHelper).savePhaseChangeFromLast(
                     eq(FLOW_CODE), eq(BusinessPhase.UPDATE), anyString(), eq(NICKNAME));
         }
@@ -594,8 +594,8 @@ class OrdersServiceTest {
                     .willReturn(Collections.emptyList());
 
             CustomPage<OrderDto.Response> result = ordersService.getDeliveryProducts(
-                    TOKEN, "input", "field", "2026-05-31",
-                    null, null, null, null, null, null, null, null, pageable);
+                    "input", "field", "2026-05-31",
+                    null, null, null, null, null, null, null, null, null, null, pageable);
 
             assertThat(result.getContent()).isEmpty();
         }
