@@ -4,16 +4,25 @@ import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.tenant.TenantContext;
 import com.msa.jewelry.local.product.dto.ProductImageDto;
 import com.msa.jewelry.local.product.service.ProductImageService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 @Slf4j
@@ -40,6 +49,56 @@ public class ProductImageController {
         return ResponseEntity.ok(ApiResponse.success(
                 productImageService.getImagesByProductIds(productIds)
         ));
+    }
+
+    @GetMapping("/products/images/**")
+    public ResponseEntity<Resource> getImages(HttpServletRequest request) {
+        String requestUri = request.getRequestURI();
+        int idx = requestUri.indexOf("/images/");
+        if (idx < 0) {
+            return ResponseEntity.notFound().build();
+        }
+        String relativePath = requestUri.substring(idx + "/images/".length());
+
+        if (!StringUtils.hasText(relativePath) || relativePath.contains("..")) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        String tenant = TenantContext.getTenant();
+        if (!StringUtils.hasText(tenant)) {
+            log.warn("이미지 요청에 tenant 없음: {}", requestUri);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Path baseDir = Paths.get(baseUploadPath, tenant).toAbsolutePath().normalize();
+        Path filePath = baseDir.resolve(relativePath).normalize();
+
+        // resolve 후에도 baseDir 밖으로 빠지지 않는지 재확인 (symlink/traversal 이중 방어)
+        if (!filePath.startsWith(baseDir)) {
+            log.warn("디렉토리 이탈 시도 차단: {}", filePath);
+            return ResponseEntity.badRequest().build();
+        }
+
+        try {
+            Resource resource = new UrlResource(filePath.toUri());
+            if (!resource.exists() || !resource.isReadable()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            String contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
+            if (contentType == null) {
+                contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "inline; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            log.error("이미지 서빙 실패: {}", filePath, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @PostMapping("/products/images/migration")
