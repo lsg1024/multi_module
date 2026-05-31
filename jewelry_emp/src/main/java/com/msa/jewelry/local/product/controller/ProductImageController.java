@@ -47,14 +47,14 @@ public class ProductImageController {
 
         try {
             JobParameters params = new JobParametersBuilder()
-                    .addString("tenant", TenantContext.getTenant())
+                    .addString("tenantId", TenantContext.getTenant())
                     .addLong("time", System.currentTimeMillis())
                     .toJobParameters();
 
             jobLauncher.run(imageMigrationJob, params);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("이미지 마이그레이션 실패", e);
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("마이그레이션 실패: " + e.getMessage()));
         }
