@@ -17,7 +17,6 @@ import com.msa.jewelry.local.order.entity.order_enum.BusinessPhase;
 import com.msa.jewelry.local.order.entity.order_enum.OrderStatus;
 import com.msa.jewelry.local.order.repository.CustomOrderStoneRepository;
 import com.msa.jewelry.local.order.repository.StatusHistoryRepository;
-import com.msa.jewelry.local.product.dto.ProductImageView;
 import com.msa.jewelry.local.product.service.ProductService;
 import com.msa.jewelry.local.sale.dto.SaleDto;
 import com.msa.jewelry.local.sale.dto.SaleItemResponse;
@@ -36,6 +35,7 @@ import com.msa.jewelry.local.stock.repository.StockRepository;
 import com.msa.jewelry.local.store.dto.StoreReceivableLogView;
 import com.msa.jewelry.local.store.dto.StoreView;
 import com.msa.jewelry.local.store.service.StoreService;
+import jakarta.ws.rs.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -822,11 +822,6 @@ public class SaleService {
             throw new NotFoundException(NOT_FOUND);
         }
         SaleItemResponse saleItemResponse = printSales.get(0);
-
-        // TODO: 상품 이미지 매핑 — SaleItem 에 productId 가 없어 storeId 로 잘못 조회하던 코드를
-        //       제거. 정확한 매핑을 위해서는 findPrintSales 의 QueryProjection 에 productId 를
-        //       포함하거나 flowCode → Stock.productId 별도 조회 후 productImages map 으로 채워야 함.
-        //       지금은 imagePath 가 빈 상태로 응답.
 
         //미수금액 조회
         if (StringUtils.hasText(saleItemResponse.getStoreName())) {
