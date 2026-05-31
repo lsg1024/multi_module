@@ -14,11 +14,16 @@ public interface CatalogRepository {
 
     /**
      * 상품 목록 조회 (가격/제조사 정보 제외)
+     *
+     * @param materialName    재질명(부분일치). 없으면 null/빈문자열.
+     * @param relatedNumber   관련번호(부분일치). 없으면 null/빈문자열.
      */
     CustomPage<CatalogProductDto.Page> findCatalogProducts(
             String productName,
             String classificationId,
             String setTypeId,
+            String materialName,
+            String relatedNumber,
             String sortField,
             String sort,
             Pageable pageable
@@ -37,5 +42,6 @@ public interface CatalogRepository {
     /**
      * 엑셀 다운로드용 상품 목록 조회
      */
-    List<CatalogExcelDto> findCatalogProductsForExcel(String productName, String classificationId, String setTypeId);
+    List<CatalogExcelDto> findCatalogProductsForExcel(String productName, String classificationId, String setTypeId,
+                                                      String materialName, String relatedNumber);
 }

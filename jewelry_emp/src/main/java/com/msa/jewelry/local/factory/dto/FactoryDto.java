@@ -111,7 +111,7 @@ public class FactoryDto {
                     .factoryContactNumber2(accountInfo.getAccountContactNumber2())
                     .factoryFaxNumber(accountInfo.getAccountFaxNumber())
                     .factoryNote(accountInfo.getAccountNote())
-                    .address(addressInfo.toEntity())
+                    .address(addressInfo != null ? addressInfo.toEntity() : null)
                     .commonOption(commonOptionInfo.toEntity(goldHarry))
                     .build();
         }

@@ -151,7 +151,9 @@ public class OrdersController {
             @AccessToken String accessToken,
             @RequestParam(name = "search", required = false) String input,
             @RequestParam(name = "searchField", required = false) String searchField,
+            @RequestParam(name = "start", required = false) String startAt,
             @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "order_status", required = false) String orderStatus,
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
@@ -163,7 +165,8 @@ public class OrdersController {
             @PageableDefault(size = 20) Pageable pageable) {
 
         CustomPage<OrderDto.Response> expectProducts = ordersService.getDeliveryProducts(accessToken,
-                input, searchField, endAt, factoryName, storeName, setTypeName,
+                input, searchField, startAt, endAt, orderStatus,
+                factoryName, storeName, setTypeName,
                 colorName, classificationName, materialName, sortField, sort, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(expectProducts));

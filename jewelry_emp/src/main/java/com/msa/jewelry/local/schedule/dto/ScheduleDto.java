@@ -1,5 +1,6 @@
 package com.msa.jewelry.local.schedule.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.msa.jewelry.local.schedule.entity.RepeatType;
 import com.msa.jewelry.local.schedule.entity.Schedule;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -27,10 +28,12 @@ public class ScheduleDto {
         private String content;
 
         @NotNull(message = "시작 일시는 필수입니다.")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd['T'][' ']HH:mm:ss[.SSS]")
         @Schema(description = "일정 시작 일시", example = "2026-05-20T10:00:00")
         private LocalDateTime startAt;
 
         @NotNull(message = "종료 일시는 필수입니다.")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd['T'][' ']HH:mm:ss[.SSS]")
         @Schema(description = "일정 종료 일시", example = "2026-05-20T11:30:00")
         private LocalDateTime endAt;
 

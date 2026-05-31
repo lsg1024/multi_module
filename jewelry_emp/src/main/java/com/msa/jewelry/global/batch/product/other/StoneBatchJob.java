@@ -24,7 +24,11 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Configuration
 public class StoneBatchJob {
@@ -44,32 +48,37 @@ public class StoneBatchJob {
     @Bean
     @StepScope
     public ItemProcessor<StoneDto, Stone> stoneProcessor(StoneRepository stoneRepository) {
+        // 처리 정책:
+        //   ① 같은 stoneName 의 Stone 이 없으면 → 새 Stone + 정책 전부 생성 (기존 흐름)
+        //   ② 같은 stoneName 이 이미 있으면 → 누락된 grade 의 policy 만 add (backfill 용도)
+        //   ③ 추가할 policy 가 0건이면 return null (chunk skip)
         return dto -> {
-            if (stoneRepository.existsByStoneName(dto.getStoneName())) {
-                return null;
-            }
+            // dto → 후보 policy 리스트 변환
+            List<StoneWorkGradePolicy> candidatePolicies = buildPoliciesFromDto(dto);
 
-            BigDecimal weight = BigDecimal.ZERO;
-            if (dto.getStoneWeight() != null && !dto.getStoneWeight().toString().isBlank()) {
-                try {
-                    weight = new BigDecimal(dto.getStoneWeight().toString());
-                } catch (NumberFormatException e) {
-                    weight = BigDecimal.ZERO;
+            Stone existing = stoneRepository.findByStoneNameIgnoreCase(dto.getStoneName()).orElse(null);
+            if (existing != null) {
+                if (candidatePolicies.isEmpty()) {
+                    return null;
                 }
-            }
+                // 이미 등록된 grade 는 건너뛰고 누락된 것만 추가
+                Set<String> existingGrades = existing.getGradePolicies().stream()
+                        .map(p -> p.getGrade().name())
+                        .collect(Collectors.toCollection(HashSet::new));
 
-            Integer purchasePrice = 0;
-            if (dto.getStonePurchasePrice() != null) {
-                if (dto.getStonePurchasePrice() instanceof Number) {
-                    purchasePrice = ((Number) dto.getStonePurchasePrice()).intValue();
-                } else if (!dto.getStonePurchasePrice().toString().isBlank()){
-                    try {
-                        purchasePrice = (int) Double.parseDouble(dto.getStonePurchasePrice().toString());
-                    } catch (NumberFormatException e) {
-                        purchasePrice = 0;
+                boolean changed = false;
+                for (StoneWorkGradePolicy np : candidatePolicies) {
+                    if (existingGrades.add(np.getGrade().name())) {
+                        existing.addGradePolicy(np);
+                        changed = true;
                     }
                 }
+                return changed ? existing : null;
             }
+
+            // 신규 Stone — 기존 로직과 동일
+            BigDecimal weight = parseWeight(dto.getStoneWeight());
+            Integer purchasePrice = parsePurchasePrice(dto.getStonePurchasePrice());
 
             Stone stone = Stone.builder()
                     .stoneName(dto.getStoneName())
@@ -79,35 +88,58 @@ public class StoneBatchJob {
                     .gradePolicies(new ArrayList<>())
                     .build();
 
-            // 4. gradePolicies 변환
-            if (dto.getStoneWorkGradePolicyDto() != null) {
-                for (StoneWorkGradePolicyDto p : dto.getStoneWorkGradePolicyDto()) {
-
-                    int labor = 0;
-                    Object costObj = p.getLaborCost();
-
-                    if (costObj != null) {
-                        if (costObj instanceof Number) {
-                            labor = ((Number) costObj).intValue();
-                        } else if (costObj instanceof String && !((String) costObj).isBlank()) {
-                            try {
-                                labor = (int) Double.parseDouble((String) costObj);
-                            } catch (NumberFormatException e) {
-                                labor = 0;
-                            }
-                        }
-                    }
-
-                    stone.addGradePolicy(
-                            StoneWorkGradePolicy.builder()
-                                    .grade(p.getGrade())
-                                    .laborCost(labor)
-                                    .build()
-                    );
-                }
-            }
+            candidatePolicies.forEach(stone::addGradePolicy);
             return stone;
         };
+    }
+
+    /** stoneWorkGradePolicyDto 배열을 StoneWorkGradePolicy 엔티티 후보로 변환 (stone 미연결 상태). */
+    private static List<StoneWorkGradePolicy> buildPoliciesFromDto(StoneDto dto) {
+        List<StoneWorkGradePolicy> result = new ArrayList<>();
+        if (dto.getStoneWorkGradePolicyDto() == null) {
+            return result;
+        }
+        for (StoneWorkGradePolicyDto p : dto.getStoneWorkGradePolicyDto()) {
+            int labor = parseLaborCost(p.getLaborCost());
+            result.add(StoneWorkGradePolicy.builder()
+                    .grade(p.getGrade())
+                    .laborCost(labor)
+                    .build());
+        }
+        return result;
+    }
+
+    private static BigDecimal parseWeight(Object raw) {
+        if (raw == null || raw.toString().isBlank()) return BigDecimal.ZERO;
+        try {
+            return new BigDecimal(raw.toString());
+        } catch (NumberFormatException e) {
+            return BigDecimal.ZERO;
+        }
+    }
+
+    private static Integer parsePurchasePrice(Object raw) {
+        if (raw == null) return 0;
+        if (raw instanceof Number) return ((Number) raw).intValue();
+        if (raw.toString().isBlank()) return 0;
+        try {
+            return (int) Double.parseDouble(raw.toString());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private static int parseLaborCost(Object raw) {
+        if (raw == null) return 0;
+        if (raw instanceof Number) return ((Number) raw).intValue();
+        if (raw instanceof String s && !s.isBlank()) {
+            try {
+                return (int) Double.parseDouble(s);
+            } catch (NumberFormatException e) {
+                return 0;
+            }
+        }
+        return 0;
     }
 
     @Bean

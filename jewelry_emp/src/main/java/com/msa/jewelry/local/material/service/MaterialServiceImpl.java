@@ -46,9 +46,20 @@ public class MaterialServiceImpl implements MaterialService {
         }
         Material material = Material.builder()
                 .materialName(materialDto.getName())
-                .materialGoldPurityPercent(new BigDecimal(materialDto.getGoldPurityPercent()))
+                .materialGoldPurityPercent(parsePurityPercent(materialDto.getGoldPurityPercent()))
                 .build();
         materialRepository.save(material);
+    }
+
+    private static BigDecimal parsePurityPercent(String raw) {
+        if (raw == null || raw.isBlank()) {
+            throw new IllegalArgumentException("금 함량 퍼센트 는 필수입니다.");
+        }
+        try {
+            return new BigDecimal(raw.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("금 함량 퍼센트가 올바른 숫자가 아닙니다: " + raw);
+        }
     }
 
     @Override
@@ -65,8 +76,14 @@ public class MaterialServiceImpl implements MaterialService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<MaterialDto.ResponseSingle> getMaterials() {
-        return materialRepository.findAllOrderByAsc();
+    public List<MaterialDto.ResponseSingle> getMaterials(String name) {
+        List<MaterialDto.ResponseSingle> all = materialRepository.findAllOrderByAsc();
+        if (name == null || name.isBlank()) return all;
+        final String q = name.trim().toLowerCase();
+        return all.stream()
+                .filter(m -> m.getMaterialName() != null
+                        && m.getMaterialName().toLowerCase().contains(q))
+                .toList();
     }
 
     @Override

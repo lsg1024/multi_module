@@ -2,7 +2,7 @@ package com.msa.jewelry.local.goldharry.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -25,7 +25,7 @@ public class GoldHarryDto {
     @AllArgsConstructor
     @Schema(description = "금시세 정책 등록 요청")
     public static class Request {
-        @NotBlank(message = "필수 입력값 입니다.")
+        @NotNull(message = "필수 입력값 입니다.")
         @DecimalMin(value = "0.0", message = "0.0 이상이어야 합니다.")
         @Schema(description = "금 손모율 (0.0 이상)", example = "1.05")
         private BigDecimal goldHarry;

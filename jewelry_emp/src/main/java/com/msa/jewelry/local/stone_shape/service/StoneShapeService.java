@@ -25,13 +25,16 @@ public class StoneShapeService {
 
     // 생성
     public void saveStoneShape(StoneShapeDto stoneShapeDto) {
-        boolean existsByShapeName = stoneShapeRepository.existsByStoneShapeName(stoneShapeDto.getStoneShapeName());
-        if (existsByShapeName) {
+        String name = stoneShapeDto.getStoneShapeName() == null ? null : stoneShapeDto.getStoneShapeName().trim();
+        if (name == null || name.isEmpty()) {
+            throw new IllegalArgumentException("스톤 모양명은 필수입니다.");
+        }
+        if (stoneShapeRepository.existsByStoneShapeName(name)) {
             throw new IllegalArgumentException(IS_EXIST);
         }
 
         StoneShape stoneShape = StoneShape.builder()
-                .stoneShapeName(stoneShapeDto.getStoneShapeName())
+                .stoneShapeName(name)
                 .stoneShapeNote(stoneShapeDto.getStoneShapeNote())
                 .build();
 

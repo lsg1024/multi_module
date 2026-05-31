@@ -42,10 +42,20 @@ public class CatalogRepositoryImpl implements CatalogRepository {
         this.query = new JPAQueryFactory(em);
     }
 
+    private static Long tryParseLong(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            return Long.parseLong(raw.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     @Override
     public CustomPage<CatalogProductDto.Page> findCatalogProducts(
             String productName, String classificationId,
-            String setTypeId, String sortField, String sort, Pageable pageable) {
+            String setTypeId, String materialName, String relatedNumber,
+            String sortField, String sort, Pageable pageable) {
 
         BooleanBuilder builder = new BooleanBuilder();
 
@@ -53,12 +63,23 @@ public class CatalogRepositoryImpl implements CatalogRepository {
             builder.and(product.productName.containsIgnoreCase(productName));
         }
 
-        if (classificationId != null && !classificationId.isBlank()) {
-            builder.and(product.classification.classificationId.eq(Long.parseLong(classificationId)));
+        // 비숫자 값은 무시 (NumberFormatException → 500 방지).
+        Long classificationIdLong = tryParseLong(classificationId);
+        if (classificationIdLong != null) {
+            builder.and(product.classification.classificationId.eq(classificationIdLong));
         }
 
-        if (setTypeId != null && !setTypeId.isBlank()) {
-            builder.and(product.setType.setTypeId.eq(Long.parseLong(setTypeId)));
+        Long setTypeIdLong = tryParseLong(setTypeId);
+        if (setTypeIdLong != null) {
+            builder.and(product.setType.setTypeId.eq(setTypeIdLong));
+        }
+
+        // 재질명/관련번호 부분일치 필터 추가.
+        if (materialName != null && !materialName.isBlank()) {
+            builder.and(product.material.materialName.containsIgnoreCase(materialName));
+        }
+        if (relatedNumber != null && !relatedNumber.isBlank()) {
+            builder.and(product.productRelatedNumber.containsIgnoreCase(relatedNumber));
         }
 
         QProductImageDto_Response image = new QProductImageDto_Response(
@@ -311,19 +332,30 @@ public class CatalogRepositoryImpl implements CatalogRepository {
     }
 
     @Override
-    public List<CatalogExcelDto> findCatalogProductsForExcel(String productName, String classificationId, String setTypeId) {
+    public List<CatalogExcelDto> findCatalogProductsForExcel(String productName, String classificationId, String setTypeId,
+                                                              String materialName, String relatedNumber) {
         BooleanBuilder builder = new BooleanBuilder();
 
         if (productName != null && !productName.isBlank()) {
             builder.and(product.productName.containsIgnoreCase(productName));
         }
 
-        if (classificationId != null && !classificationId.isBlank()) {
-            builder.and(product.classification.classificationId.eq(Long.parseLong(classificationId)));
+        // 비숫자 값은 무시 (NumberFormatException → 500 방지).
+        Long classificationIdLong = tryParseLong(classificationId);
+        if (classificationIdLong != null) {
+            builder.and(product.classification.classificationId.eq(classificationIdLong));
         }
 
-        if (setTypeId != null && !setTypeId.isBlank()) {
-            builder.and(product.setType.setTypeId.eq(Long.parseLong(setTypeId)));
+        Long setTypeIdLong = tryParseLong(setTypeId);
+        if (setTypeIdLong != null) {
+            builder.and(product.setType.setTypeId.eq(setTypeIdLong));
+        }
+
+        if (materialName != null && !materialName.isBlank()) {
+            builder.and(product.material.materialName.containsIgnoreCase(materialName));
+        }
+        if (relatedNumber != null && !relatedNumber.isBlank()) {
+            builder.and(product.productRelatedNumber.containsIgnoreCase(relatedNumber));
         }
 
         return query

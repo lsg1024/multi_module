@@ -7,13 +7,11 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.SQLDelete;
 
 @Entity
 @Getter
 @Table(name = "ADDITIONAL_OPTION")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE ADDITIONAL_OPTION SET DELETED = TRUE WHERE OPTION_ID = ?")
 @Schema(description = "거래처 부가 옵션 엔티티 — 과거 판매분 적용 여부, 특수 재질 매핑 등")
 public class AdditionalOption {
 
@@ -30,8 +28,6 @@ public class AdditionalOption {
     @Column(name = "OPTION_MATERIAL_NAME") // 싱글 조회용
     @Schema(description = "재질명 (싱글 조회 캐시용)", example = "18K")
     private String optionMaterialName;
-    @Schema(description = "소프트 삭제 플래그", example = "false")
-    private boolean deleted = false;
 
     @Builder
     public AdditionalOption(boolean optionApplyPastSales, String optionMaterialId, String optionMaterialName) {

@@ -33,9 +33,17 @@ public class CommonOptionDto {
         }
 
         public CommonOption toEntity(GoldHarry goldHarry) {
+            OptionTradeType tradeType = OptionTradeType.fromInput(this.tradeType);
+            OptionLevel level = OptionLevel.fromInput(this.grade);
+            if (tradeType == null) {
+                throw new IllegalArgumentException("지원하지 않는 거래 유형: " + this.tradeType);
+            }
+            if (level == null) {
+                throw new IllegalArgumentException("지원하지 않는 등급: " + this.grade);
+            }
             return CommonOption.builder()
-                    .optionTradeType(OptionTradeType.valueOf(this.tradeType))
-                    .optionLevel(OptionLevel.valueOf(this.grade))
+                    .optionTradeType(tradeType)
+                    .optionLevel(level)
                     .goldHarry(goldHarry)
                     .goldHarryLoss(goldHarry.getGoldHarryLoss().toString())
                     .build();
