@@ -47,8 +47,9 @@ public class MaterialController {
     }
 
     @GetMapping("/materials")
-    public ResponseEntity<ApiResponse<List<MaterialDto.ResponseSingle>>> getMaterials() {
-        return ResponseEntity.ok(ApiResponse.success(materialService.getMaterials()));
+    public ResponseEntity<ApiResponse<List<MaterialDto.ResponseSingle>>> getMaterials(
+            @RequestParam(name = "name", required = false) String name) {
+        return ResponseEntity.ok(ApiResponse.success(materialService.getMaterials(name)));
     }
 
     @PatchMapping("/materials/{id}")
