@@ -234,7 +234,8 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                     subAsstLabor,
                     stock.stoneAddLaborCost,
                     subMainQty,
-                    subAsstQty
+                    subAsstQty,
+                    stock.product.id
                 ))
                 .from(saleItem)
                 .join(saleItem.sale, sale)
@@ -302,6 +303,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                         Expressions.nullExpression(Long.class),
                         Expressions.nullExpression(Long.class),
                         Expressions.nullExpression(Integer.class),
+                        Expressions.nullExpression(Long.class),
                         Expressions.nullExpression(Long.class),
                         Expressions.nullExpression(Long.class)
                 ))
@@ -402,7 +404,8 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                         subAsstLabor,
                         stock.stoneAddLaborCost,
                         subMainQty,
-                        subAsstQty
+                        subAsstQty,
+                        stock.product.id
                 ))
                 .from(saleItem)
                 .join(saleItem.sale, sale)
@@ -461,6 +464,7 @@ public class SaleRepositoryImpl implements CustomSaleRepository {
                         Expressions.nullExpression(Long.class),
                         Expressions.nullExpression(Long.class),
                         Expressions.nullExpression(Integer.class),
+                        Expressions.nullExpression(Long.class),
                         Expressions.nullExpression(Long.class),
                         Expressions.nullExpression(Long.class)
                 ))

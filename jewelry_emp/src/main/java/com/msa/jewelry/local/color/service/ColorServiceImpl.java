@@ -12,6 +12,7 @@ import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -79,6 +80,7 @@ public class ColorServiceImpl implements ColorService {
     }
 
     @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED) // 배치 런칭은 트랜잭션 밖에서 (JobRepository "Existing transaction" 방지)
     public void deleteColor(String accessToken, Long colorId) {
         String role = jwtUtil.getRole(accessToken);
         String tenantId = jwtUtil.getTenantId(accessToken);

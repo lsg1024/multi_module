@@ -133,8 +133,33 @@ public class UsersService {
         Long id = Long.parseLong(jwtUtil.getId(accessToken));
         String tenantId = jwtUtil.getTenantId(accessToken);
 
-        return usersRepository.findByIdAndTenantId(id, tenantId).orElseThrow(() ->
-                new UserNotFoundException("사용자 정보 불일치"));
+        // 행이 없으면(마이그레이션 누락 등) 401 대신 JWT 클레임으로 임시 사용자 degrade.
+        // 영구 해결은 users 데이터 백필(tools/backfill_users.sql) 로 수행한다.
+        return usersRepository.findByIdAndTenantId(id, tenantId)
+                .orElseGet(() -> buildTransientFromToken(accessToken, tenantId));
+    }
+
+    /**
+     * users 행이 없을 때 JWT 클레임으로 임시(미저장) Users 를 구성한다.
+     * - 읽기 경로(getUserInfo/getAllUsers)와 권한 게이트(updateUserInfo)는 정상 동작
+     * - 영속 변경 경로(deletedUser.softDeleted)는 미저장 객체라 no-op 으로 안전 degrade
+     */
+    private Users buildTransientFromToken(String accessToken, String tenantId) {
+        log.warn("users 행 부재 — JWT 클레임으로 임시 사용자 degrade. id={}, tenant={}",
+                jwtUtil.getId(accessToken), tenantId);
+        Role role;
+        try {
+            role = Role.valueOf(jwtUtil.getRole(accessToken));
+        } catch (IllegalArgumentException | NullPointerException e) {
+            role = Role.GUEST;
+        }
+        return Users.builder()
+                .userId(jwtUtil.getId(accessToken))   // 토큰에 로그인 아이디가 없어 PK 문자열로 degrade
+                .nickname(jwtUtil.getNickname(accessToken))
+                .tenantId(tenantId)
+                .role(role)
+                .storeId(jwtUtil.getStoreId(accessToken))
+                .build();
     }
 
     public UserDto.UserInfo login(UserDto.Login userDto) {

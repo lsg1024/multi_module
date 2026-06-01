@@ -22,6 +22,9 @@ public class StoneType {
     @Column(name = "STONE_TYPE_NOTE")
     @Schema(description = "스톤 타입 비고", example = "천연 다이아몬드")
     private String stoneTypeNote;
+    @Column(name = "STONE_TYPE_DEFAULT", nullable = false)
+    @Schema(description = "기본(보호) 마스터 여부 — true 면 삭제 불가", example = "false")
+    private boolean stoneTypeDefault = false;
 
     @Builder
     public StoneType(String stoneTypeName, String stoneTypeNote) {
@@ -35,6 +38,10 @@ public class StoneType {
 
     public String getStoneTypeNote() {
         return stoneTypeNote;
+    }
+
+    public boolean isStoneTypeDefault() {
+        return stoneTypeDefault;
     }
 
     public void updateStoneType(StoneTypeDto stoneTypeDto) {
