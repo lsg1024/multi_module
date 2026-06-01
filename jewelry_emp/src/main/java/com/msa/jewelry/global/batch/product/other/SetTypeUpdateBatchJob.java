@@ -54,7 +54,7 @@ public class SetTypeUpdateBatchJob {
     @StepScope
     public JdbcPagingItemReader<Product> updateSetTypeReader(
             @Value("#{jobParameters['tenantId']}") String tenantId,
-            @Value("#{jobParameters['setTypeId']}") String setTypeId,
+            @Value("#{jobParameters['setTypeId']}") Long setTypeId,
             @Qualifier("defaultDataSource") DataSource dataSource) {
 
         JdbcPagingItemReader<Product> reader = new JdbcPagingItemReader<>();

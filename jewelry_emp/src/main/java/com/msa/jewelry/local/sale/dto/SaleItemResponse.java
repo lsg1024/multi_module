@@ -66,6 +66,8 @@ public class SaleItemResponse {
         private String storeId;
         @Schema(description = "거래처(매장) 이름", example = "ABC 보석상")
         private String storeName;
+        @Schema(description = "상품 ID — 대표 이미지 매핑 키", example = "501")
+        private Long productId;
         @Schema(description = "판매 세션 코드 (TSID)", example = "445823472384938240")
         private String saleCode;
         @Schema(description = "사용자 표시용 주문장 코드", example = "2605160001")
@@ -110,7 +112,7 @@ public class SaleItemResponse {
         private List<StatusHistoryDto> statusHistories;
 
         @QueryProjection
-        public SaleItem(String createAt, String createBy, String saleType, String storeId, String storeName, String saleCode, String displayCode, String flowCode, String productName, String materialName, String colorName, String stockNote, String mainNote, String subNote, Boolean assistantStone, String assistantName, BigDecimal goldWeight, BigDecimal stoneWeight, BigDecimal harry, Integer productLabor, Integer productAddLabor, String assistantCreateAt, Long mainStoneLabor, Long asstStoneLabor, Integer stoneAddLabor, Long mainQty, Long asstQty) {
+        public SaleItem(String createAt, String createBy, String saleType, String storeId, String storeName, String saleCode, String displayCode, String flowCode, String productName, String materialName, String colorName, String stockNote, String mainNote, String subNote, Boolean assistantStone, String assistantName, BigDecimal goldWeight, BigDecimal stoneWeight, BigDecimal harry, Integer productLabor, Integer productAddLabor, String assistantCreateAt, Long mainStoneLabor, Long asstStoneLabor, Integer stoneAddLabor, Long mainQty, Long asstQty, Long productId) {
             this.createAt = createAt;
             this.createBy = createBy;
             this.saleType = saleType;
@@ -141,6 +143,7 @@ public class SaleItemResponse {
             this.stoneAddLaborCost = (stoneAddLabor == null) ? 0 : stoneAddLabor;
             this.mainStoneQuantity = (mainQty == null) ? 0 : mainQty;
             this.assistanceStoneQuantity = (asstQty == null) ? 0 : asstQty;
+            this.productId = productId;
         }
 
         public void updateImagePath(String imagePath) {

@@ -17,6 +17,7 @@ import com.msa.jewelry.local.order.entity.order_enum.BusinessPhase;
 import com.msa.jewelry.local.order.entity.order_enum.OrderStatus;
 import com.msa.jewelry.local.order.repository.CustomOrderStoneRepository;
 import com.msa.jewelry.local.order.repository.StatusHistoryRepository;
+import com.msa.jewelry.local.product.dto.ProductImageView;
 import com.msa.jewelry.local.product.service.ProductService;
 import com.msa.jewelry.local.sale.dto.SaleDto;
 import com.msa.jewelry.local.sale.dto.SaleItemResponse;
@@ -54,6 +55,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.msa.jewelry.global.exception.ExceptionMessage.NOT_ACCESS;
@@ -224,6 +226,8 @@ public class SaleService {
 
                     dto.updateHistory(statusHistoryDtos);
                 });
+
+        applyProductImages(content);
 
         return sales;
     }
@@ -823,6 +827,12 @@ public class SaleService {
         }
         SaleItemResponse saleItemResponse = printSales.get(0);
 
+        List<SaleItemResponse.SaleItem> printItems = printSales.stream()
+                .filter(response -> response.getSaleItems() != null)
+                .flatMap(response -> response.getSaleItems().stream())
+                .toList();
+        applyProductImages(printItems);
+
         //미수금액 조회
         if (StringUtils.hasText(saleItemResponse.getStoreName())) {
             Long storeIdLong = Long.valueOf(saleItemResponse.getStoreId());
@@ -841,6 +851,30 @@ public class SaleService {
         return SalePrintResponse.builder()
                 .saleItemResponses(printSales)
                 .build();
+    }
+
+    /**
+     * 판매 라인 목록에 상품 대표 이미지 경로를 일괄 주입한다.
+     */
+    private void applyProductImages(List<SaleItemResponse.SaleItem> items) {
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+        List<Long> productIds = items.stream()
+                .map(SaleItemResponse.SaleItem::getProductId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (productIds.isEmpty()) {
+            return;
+        }
+        Map<Long, ProductImageView> imageMap = productService.getProductImages(productIds);
+        items.forEach(item -> {
+            ProductImageView view = imageMap.get(item.getProductId());
+            if (view != null && view.imagePath() != null) {
+                item.updateImagePath(view.imagePath());
+            }
+        });
     }
 
     /**

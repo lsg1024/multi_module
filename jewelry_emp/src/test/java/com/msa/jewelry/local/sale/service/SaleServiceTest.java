@@ -31,6 +31,7 @@ import com.msa.jewelry.local.stock.repository.StockRepository;
 import com.msa.jewelry.local.store.dto.StoreReceivableLogView;
 import com.msa.jewelry.local.store.dto.StoreView;
 import com.msa.jewelry.local.store.service.StoreService;
+import jakarta.ws.rs.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -632,15 +633,14 @@ class SaleServiceTest {
     class GetSalePrint {
 
         @Test
-        @DisplayName("printSales 가 비어있으면 IndexOutOfBoundsException — 알려진 잠재 버그")
-        void 빈결과_NPE_위험() {
+        @DisplayName("printSales 가 비어있으면 NotFoundException — 빈 결과 가드")
+        void 빈결과_NotFound() {
             given(customSaleRepository.findPrintSales(SALE_CODE.toString()))
                     .willReturn(Collections.emptyList());
 
-            // 현 구현이 printSales.get(0) 를 무방비로 호출하므로 IndexOutOfBoundsException 가 나는 게 정상.
-            // 향후 가드 추가 시 이 테스트가 깨지면 expected 를 바꿔주면 된다.
+            // 빈 결과(잘못된 saleCode / soft-deleted sale)는 NotFoundException 으로 가드된다.
             assertThatThrownBy(() -> saleService.getSalePrint(TOKEN, SALE_CODE.toString()))
-                    .isInstanceOf(IndexOutOfBoundsException.class);
+                    .isInstanceOf(NotFoundException.class);
         }
 
         @Test
@@ -658,6 +658,26 @@ class SaleServiceTest {
 
             assertThat(resp).isNotNull();
             verify(storeService, never()).getReceivableLog(any(), any());
+        }
+
+        @Test
+        @DisplayName("productId 가 있으면 대표 이미지 경로를 saleItem 에 주입")
+        void 이미지_매핑_주입() {
+            SaleItemResponse.SaleItem item = mock(SaleItemResponse.SaleItem.class);
+            given(item.getProductId()).willReturn(501L);
+
+            SaleItemResponse response = mock(SaleItemResponse.class);
+            given(response.getStoreName()).willReturn(null);
+            given(response.getSaleItems()).willReturn(List.of(item));
+
+            given(customSaleRepository.findPrintSales(SALE_CODE.toString()))
+                    .willReturn(List.of(response));
+            given(productService.getProductImages(List.of(501L)))
+                    .willReturn(Map.of(501L, new ProductImageView(501L, "/products/501/main.jpg")));
+
+            saleService.getSalePrint(TOKEN, SALE_CODE.toString());
+
+            verify(item).updateImagePath("/products/501/main.jpg");
         }
     }
 

@@ -54,7 +54,7 @@ public class ColorUpdateBatchJob {
     @StepScope
     public JdbcPagingItemReader<ProductWorkGradePolicyGroup> updateColorReader(
             @Value("#{jobParameters['tenantId']}") String tenantId,
-            @Value("#{jobParameters['colorId']}") String colorId,
+            @Value("#{jobParameters['colorId']}") Long colorId,
             @Qualifier("defaultDataSource") DataSource dataSource) {
 
         JdbcPagingItemReader<ProductWorkGradePolicyGroup> reader = new JdbcPagingItemReader<>();

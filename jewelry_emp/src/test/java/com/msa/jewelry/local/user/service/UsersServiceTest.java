@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -162,16 +163,19 @@ class UsersServiceTest {
         }
 
         @Test
-        @DisplayName("토큰의 사용자가 존재하지 않으면 UserNotFoundException")
-        void 토큰_불일치() {
+        @DisplayName("토큰 사용자가 users 에 없으면 JWT 클레임으로 degrade — nickname 은 토큰 값 사용")
+        void 토큰_사용자_부재_degrade() {
             given(jwtUtil.getId(TOKEN)).willReturn(USER_PK.toString());
             given(jwtUtil.getTenantId(TOKEN)).willReturn(TENANT_ID);
+            given(jwtUtil.getNickname(TOKEN)).willReturn("홍길동");
             given(usersRepository.findByIdAndTenantId(USER_PK, TENANT_ID))
                     .willReturn(Optional.empty());
 
-            assertThatThrownBy(() -> usersService.getUserInfo(TOKEN))
-                    .isInstanceOf(UserNotFoundException.class)
-                    .hasMessageContaining("사용자 정보 불일치");
+            UserDto.UserInfo info = usersService.getUserInfo(TOKEN);
+
+            // 행 부재여도 401 대신 토큰 기반 정보로 응답 (마이그레이션 누락 사용자 구제)
+            assertThat(info.getNickname()).isEqualTo("홍길동");
+            assertThat(info.getUserId()).isEqualTo(USER_PK.toString());
         }
     }
 
@@ -317,15 +321,15 @@ class UsersServiceTest {
         }
 
         @Test
-        @DisplayName("토큰 사용자 없음 → UserNotFoundException")
-        void 사용자_없음() {
+        @DisplayName("토큰 사용자가 users 에 없으면 예외 없이 no-op degrade")
+        void 토큰_사용자_부재_무영향() {
             given(jwtUtil.getId(TOKEN)).willReturn(USER_PK.toString());
             given(jwtUtil.getTenantId(TOKEN)).willReturn(TENANT_ID);
             given(usersRepository.findByIdAndTenantId(USER_PK, TENANT_ID))
                     .willReturn(Optional.empty());
 
-            assertThatThrownBy(() -> usersService.deletedUser(TOKEN))
-                    .isInstanceOf(UserNotFoundException.class);
+            assertThatCode(() -> usersService.deletedUser(TOKEN))
+                    .doesNotThrowAnyException();
         }
     }
 
