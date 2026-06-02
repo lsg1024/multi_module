@@ -54,7 +54,7 @@ public class ClassificationUpdateBatchJob {
     @StepScope
     public JdbcPagingItemReader<Product> updateClassificationReader(
             @Value("#{jobParameters['tenantId']}") String tenantId,
-            @Value("#{jobParameters['classificationId']}") String classificationId,
+            @Value("#{jobParameters['classificationId']}") Long classificationId,
             @Qualifier("defaultDataSource")DataSource dataSource) {
 
         JdbcPagingItemReader<Product> reader = new JdbcPagingItemReader<>();

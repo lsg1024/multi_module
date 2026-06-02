@@ -85,6 +85,10 @@ public class StoneShapeService {
         StoneShape stoneShape = stoneShapeRepository.findById(stoneShapeId)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
+        if (stoneShape.isStoneShapeDefault()) {
+            throw new IllegalArgumentException("기본 스톤 모양은 삭제할 수 없습니다.");
+        }
+
         stoneShapeRepository.delete(stoneShape);
     }
 }

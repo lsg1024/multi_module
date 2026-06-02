@@ -23,6 +23,9 @@ public class StoneShape {
     @Column(name = "STONE_SHAPE_NOTE")
     @Schema(description = "스톤 모양 비고", example = "원형 브릴리언트 컷")
     private String stoneShapeNote;
+    @Column(name = "STONE_SHAPE_DEFAULT", nullable = false)
+    @Schema(description = "기본(보호) 마스터 여부 — true 면 삭제 불가", example = "false")
+    private boolean stoneShapeDefault = false;
 
     @Builder
     public StoneShape(String stoneShapeName, String stoneShapeNote) {
@@ -36,6 +39,10 @@ public class StoneShape {
 
     public String getStoneShapeNote() {
         return stoneShapeNote;
+    }
+
+    public boolean isStoneShapeDefault() {
+        return stoneShapeDefault;
     }
 
     public void updateStoneShape(StoneShapeDto stoneShapeDto) {

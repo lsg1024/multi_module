@@ -84,6 +84,10 @@ public class StoneTypeService {
         StoneType stoneType = stoneTypeRepository.findById(stoneTypeId)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND));
 
+        if (stoneType.isStoneTypeDefault()) {
+            throw new IllegalArgumentException("기본 스톤 타입은 삭제할 수 없습니다.");
+        }
+
         stoneTypeRepository.delete(stoneType);
     }
 }

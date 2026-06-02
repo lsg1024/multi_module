@@ -15,6 +15,7 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -50,6 +51,7 @@ public class GoldHarryService {
         this.goldHarryRepository = goldHarryRepository;
     }
 
+    @Transactional(propagation = Propagation.NOT_SUPPORTED) // 배치 런칭은 트랜잭션 밖에서 (JobRepository "Existing transaction" 방지)
     public void updateLoss(String accessToken, Long goldHarryId, GoldHarryDto.Update request) {
         String tenantId = jwtUtil.getTenantId(accessToken);
 
@@ -75,6 +77,7 @@ public class GoldHarryService {
         }
     }
 
+    @Transactional(propagation = Propagation.NOT_SUPPORTED) // 배치 런칭은 트랜잭션 밖에서 (JobRepository "Existing transaction" 방지)
     public void delete(String accessToken, String goldHarryId) {
         String tenantId = jwtUtil.getTenantId(accessToken);
 
@@ -85,8 +88,9 @@ public class GoldHarryService {
             if (goldHarry.getDefaultOption()) {
                 throw new IllegalArgumentException(DEFAULT_HARRY);
             }
-            goldHarryRepository.delete(goldHarry);
-
+            // 부모(goldHarry) 삭제 전에 자식(common_option) 재지정 배치를 먼저 실행한다.
+            // 역순이면 JPA delete 의 flush 타이밍에 따라 배치 JOIN 이 이미 삭제된 harry 를 못 찾아
+            // common_option.gold_harry_id 가 고아 FK 로 남을 수 있다.
             try {
                 JobParameters params = new JobParametersBuilder()
                         .addString("tenantId", tenantId)
@@ -98,6 +102,8 @@ public class GoldHarryService {
                 log.error("deleteGoldHarryJob 실행 실패: goldHarryId={}", goldHarryId, e);
                 throw new IllegalStateException(BATCH_FAIL, e);
             }
+
+            goldHarryRepository.delete(goldHarry);
         }
     }
 
