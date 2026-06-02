@@ -230,19 +230,25 @@ public class ProductServiceImpl implements ProductService {
         Long newSetTypeId = parseNullableLong(updateDto.getSetType());
         Long curSetTypeId = product.getSetType() != null ? product.getSetType().getSetTypeId() : null;
         if (newSetTypeId != null && !newSetTypeId.equals(curSetTypeId)) {
-            product.setSetType(setTypeRepository.getReferenceById(newSetTypeId));
+            SetType setType = setTypeRepository.findById(newSetTypeId)
+                    .orElseThrow(() -> new IllegalArgumentException("세트 타입: " + NOT_FOUND));
+            product.setSetType(setType);
         }
 
         Long newMaterialId = parseNullableLong(updateDto.getMaterial());
         Long curMaterialId = product.getMaterial() != null ? product.getMaterial().getMaterialId() : null;
         if (newMaterialId != null && !newMaterialId.equals(curMaterialId)) {
-            product.setMaterial(materialRepository.getReferenceById(newMaterialId));
+            Material material = materialRepository.findById(newMaterialId)
+                    .orElseThrow(() -> new IllegalArgumentException("재질 타입: " + NOT_FOUND));
+            product.setMaterial(material);
         }
 
         Long newClassificationId = parseNullableLong(updateDto.getClassification());
         Long curClassificationId = product.getClassification() != null ? product.getClassification().getClassificationId() : null;
         if (newClassificationId != null && !newClassificationId.equals(curClassificationId)) {
-            product.setClassification(classificationRepository.getReferenceById(newClassificationId));
+            Classification classification = classificationRepository.findById(newClassificationId)
+                    .orElseThrow(() -> new IllegalArgumentException("분류 타입: " + NOT_FOUND));
+            product.setClassification(classification);
         }
 
         extractedProductColorWorkGradePolicy(updateDto, product);
@@ -426,6 +432,9 @@ public class ProductServiceImpl implements ProductService {
                         .build();
 
                 for (ProductWorkGradePolicyDto.Request policyDto : dto.getPolicyDtos()) {
+                    if (policyDto.getGrade() == null || policyDto.getGrade().isBlank()) {
+                        throw new IllegalArgumentException("grade: 새 정책 그룹의 등급(grade)은 필수입니다.");
+                    }
                     ProductWorkGradePolicy policy = ProductWorkGradePolicy.builder()
                             .grade(policyDto.getGrade())
                             .laborCost(policyDto.getLaborCost())
