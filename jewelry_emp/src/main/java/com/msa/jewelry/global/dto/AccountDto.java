@@ -82,11 +82,12 @@ public class AccountDto {
         }
 
         @QueryProjection
-        public AccountResponse(Long accountId, String accountName, String goldWeight, String moneyAmount) {
+        public AccountResponse(Long accountId, String accountName, String goldWeight, String moneyAmount, String goldHarryLoss) {
             this.accountId = accountId;
             this.accountName = accountName;
             this.goldWeight = goldWeight;
             this.moneyAmount = moneyAmount;
+            this.goldHarryLoss = goldHarryLoss;
         }
     }
 

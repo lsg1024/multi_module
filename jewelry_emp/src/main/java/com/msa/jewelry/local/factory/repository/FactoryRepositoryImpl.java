@@ -1,5 +1,7 @@
 package com.msa.jewelry.local.factory.repository;
 
+import com.msa.common.global.common_enum.sale_enum.SaleStatus;
+import com.msa.common.global.util.CustomPage;
 import com.msa.jewelry.global.dto.AccountDto;
 import com.msa.jewelry.global.dto.QAccountDto_AccountResponse;
 import com.msa.jewelry.global.dto.QAccountDto_AccountSingleResponse;
@@ -10,12 +12,8 @@ import com.msa.jewelry.global.excel.dto.QPurchaseExcelDto;
 import com.msa.jewelry.local.factory.dto.FactoryDto;
 import com.msa.jewelry.local.factory.dto.QFactoryDto_ApiFactoryInfo;
 import com.msa.jewelry.local.factory.dto.QFactoryDto_FactoryResponse;
-import com.msa.common.global.util.CustomPage;
-import com.querydsl.core.types.Expression;
-import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
-import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.StringExpression;
@@ -28,18 +26,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static com.msa.jewelry.local.address.entity.QAddress.address;
 import static com.msa.jewelry.local.common_option.entity.QCommonOption.commonOption;
-import static com.msa.jewelry.local.goldharry.entity.QGoldHarry.goldHarry;
 import static com.msa.jewelry.local.factory.entity.QFactory.factory;
-import static com.msa.jewelry.local.transaction_history.entity.QSaleLog.saleLog;
+import static com.msa.jewelry.local.goldharry.entity.QGoldHarry.goldHarry;
 import static com.msa.jewelry.local.transaction_history.entity.QTransactionHistory.transactionHistory;
 
 public class FactoryRepositoryImpl implements CustomFactoryRepository {
@@ -249,45 +243,16 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
     @Override
     public CustomPage<AccountDto.AccountResponse> findAllFactoryAndPurchase(String startAt, String endAt, Pageable pageable) {
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        LocalDateTime endDateTime = LocalDate.parse(endAt, formatter).atTime(23, 59, 59);
-
-        com.querydsl.core.types.dsl.BooleanExpression saleDateCond = saleLog.saleDate.loe(endDateTime);
-        if (startAt != null && !startAt.isBlank()) {
-            LocalDateTime startDateTime = LocalDate.parse(startAt, formatter).atStartOfDay();
-            saleDateCond = saleDateCond.and(saleLog.saleDate.goe(startDateTime));
-        }
-
-        JPQLQuery<Long> maxIdSubQuery = JPAExpressions
-                .select(saleLog.id.max())
-                .from(saleLog)
-                .where(saleLog.factory.eq(factory)
-                        .and(saleDateCond));
-
-        Expression<String> goldBalanceSubQuery = ExpressionUtils.as(
-                JPAExpressions.select(saleLog.afterGoldBalance.coalesce(BigDecimal.ZERO).stringValue())
-                        .from(saleLog)
-                        .where(saleLog.id.eq(maxIdSubQuery))
-                        .orderBy(saleLog.saleDate.desc(), saleLog.id.desc()),
-                "currentGoldBalance"
-        );
-
-        Expression<String> moneyBalanceSubQuery = ExpressionUtils.as(
-                JPAExpressions.select(saleLog.afterMoneyBalance.coalesce(0L).stringValue())
-                        .from(saleLog)
-                        .where(saleLog.id.eq(maxIdSubQuery))
-                        .orderBy(saleLog.saleDate.desc(), saleLog.id.desc()),
-                "currentMoneyBalance"
-        );
-
         List<AccountDto.AccountResponse> content = query
                 .select(new QAccountDto_AccountResponse(
                         factory.factoryId,
                         factory.factoryName,
-                        goldBalanceSubQuery,
-                        moneyBalanceSubQuery
+                        factory.currentGoldBalance.stringValue(),
+                        factory.currentMoneyBalance.stringValue(),
+                        commonOption.goldHarryLoss.stringValue()
                 ))
                 .from(factory)
+                .join(factory.commonOption, commonOption)
                 .where(
                         factory.factoryDeleted.isFalse(),
                         factory.currentGoldBalance.ne(BigDecimal.ZERO).or(factory.currentMoneyBalance.ne(0L))
@@ -309,38 +274,13 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
 
     @Override
     public List<PurchaseExcelDto> findAllPurchaseExcel(String endAt) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        LocalDateTime endDateTime = LocalDate.parse(endAt, formatter).atTime(23, 59, 59);
-
-        JPQLQuery<Long> maxIdSubQuery = JPAExpressions
-                .select(saleLog.id.max())
-                .from(saleLog)
-                .where(saleLog.factory.eq(factory)
-                        .and(saleLog.saleDate.loe(endDateTime)));
-
-        Expression<String> goldBalanceSubQuery = ExpressionUtils.as(
-                JPAExpressions.select(saleLog.afterGoldBalance.coalesce(BigDecimal.ZERO).stringValue())
-                        .from(saleLog)
-                        .where(saleLog.id.eq(maxIdSubQuery))
-                        .orderBy(saleLog.saleDate.desc(), saleLog.id.desc()),
-                "currentGoldBalance"
-        );
-
-        Expression<String> moneyBalanceSubQuery = ExpressionUtils.as(
-                JPAExpressions.select(saleLog.afterMoneyBalance.coalesce(0L).stringValue())
-                        .from(saleLog)
-                        .where(saleLog.id.eq(maxIdSubQuery))
-                        .orderBy(saleLog.saleDate.desc(), saleLog.id.desc()),
-                "currentMoneyBalance"
-        );
-
         return query
                 .select(new QPurchaseExcelDto(
                         factory.factoryId,
                         factory.factoryName,
                         factory.commonOption.optionLevel.stringValue(),
-                        goldBalanceSubQuery,
-                        moneyBalanceSubQuery,
+                        factory.currentGoldBalance.stringValue(),
+                        factory.currentMoneyBalance.stringValue(),
                         factory.factoryNote
                 ))
                 .from(factory)
