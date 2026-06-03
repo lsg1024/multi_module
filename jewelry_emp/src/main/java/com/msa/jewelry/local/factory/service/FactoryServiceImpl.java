@@ -175,8 +175,8 @@ public class FactoryServiceImpl implements FactoryService {
 
     @Override
     @Transactional(readOnly = true)
-    public CustomPage<AccountDto.AccountResponse> getFactoryPurchase(String endAt, Pageable pageable) {
-        return factoryRepository.findAllFactoryAndPurchase(endAt, pageable);
+    public CustomPage<AccountDto.AccountResponse> getFactoryPurchase(String startAt, String endAt, Pageable pageable) {
+        return factoryRepository.findAllFactoryAndPurchase(startAt, endAt, pageable);
     }
 
     @Override

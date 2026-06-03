@@ -247,16 +247,22 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
     }
 
     @Override
-    public CustomPage<AccountDto.AccountResponse> findAllFactoryAndPurchase(String endAt, Pageable pageable) {
+    public CustomPage<AccountDto.AccountResponse> findAllFactoryAndPurchase(String startAt, String endAt, Pageable pageable) {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         LocalDateTime endDateTime = LocalDate.parse(endAt, formatter).atTime(23, 59, 59);
+
+        com.querydsl.core.types.dsl.BooleanExpression saleDateCond = saleLog.saleDate.loe(endDateTime);
+        if (startAt != null && !startAt.isBlank()) {
+            LocalDateTime startDateTime = LocalDate.parse(startAt, formatter).atStartOfDay();
+            saleDateCond = saleDateCond.and(saleLog.saleDate.goe(startDateTime));
+        }
 
         JPQLQuery<Long> maxIdSubQuery = JPAExpressions
                 .select(saleLog.id.max())
                 .from(saleLog)
                 .where(saleLog.factory.eq(factory)
-                        .and(saleLog.saleDate.loe(endDateTime)));
+                        .and(saleDateCond));
 
         Expression<String> goldBalanceSubQuery = ExpressionUtils.as(
                 JPAExpressions.select(saleLog.afterGoldBalance.coalesce(BigDecimal.ZERO).stringValue())
