@@ -490,10 +490,10 @@ class FactoryServiceImplTest {
             Pageable pageable = PageRequest.of(0, 20);
             @SuppressWarnings("unchecked")
             CustomPage<AccountDto.AccountResponse> page = mock(CustomPage.class);
-            given(factoryRepository.findAllFactoryAndPurchase("2026-05-31", pageable)).willReturn(page);
+            given(factoryRepository.findAllFactoryAndPurchase("2026-05-31", "2026-05-31", pageable)).willReturn(page);
 
             CustomPage<AccountDto.AccountResponse> result =
-                    factoryService.getFactoryPurchase("2026-05-31", pageable);
+                    factoryService.getFactoryPurchase("2026-05-31", "2026-05-31", pageable);
 
             assertThat(result).isSameAs(page);
         }

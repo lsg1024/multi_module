@@ -461,11 +461,11 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private long parseLongRequired(String s) {
-        if (s == null || s.isBlank()) throw new IllegalArgumentException("ID_REQUIRED");
+        if (s == null || s.isBlank()) throw new IllegalArgumentException("필수 ID 값이 누락되었습니다.");
         try {
             return Long.parseLong(s);
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("ID_INVALID");
+            throw new IllegalArgumentException("ID 값이 올바르지 않습니다.");
         }
     }
 

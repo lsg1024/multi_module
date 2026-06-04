@@ -29,14 +29,16 @@ CREATE TABLE IF NOT EXISTS balance_history (
     event_id               VARCHAR(100)    NOT NULL UNIQUE,          -- 멱등키
     account_sale_code      BIGINT,                                   -- 판매 주문장 참조 (있을 때)
     note                   VARCHAR(255),
-    created_by             VARCHAR(255),
-    created_at             TIMESTAMP       NOT NULL DEFAULT NOW(),
+    create_date                TIMESTAMP,
+    last_modified_date         TIMESTAMP,
+    created_by                 VARCHAR(255),
+    last_modified_by           VARCHAR(255),
     CONSTRAINT fk_balance_history_store
         FOREIGN KEY (store_id) REFERENCES store (store_id),
     CONSTRAINT fk_balance_history_factory
         FOREIGN KEY (factory_id) REFERENCES factory (factory_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_balance_history_factory ON balance_history (factory_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_balance_history_store   ON balance_history (store_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_balance_history_owner   ON balance_history (owner_type, created_at);
+CREATE INDEX IF NOT EXISTS idx_balance_history_factory ON balance_history (factory_id, create_date);
+CREATE INDEX IF NOT EXISTS idx_balance_history_store   ON balance_history (store_id, create_date);
+CREATE INDEX IF NOT EXISTS idx_balance_history_owner   ON balance_history (owner_type, create_date);

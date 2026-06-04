@@ -42,22 +42,6 @@ import static com.msa.jewelry.local.priority.entity.QPriority.priority;
 import static com.msa.jewelry.local.stock.entity.QStock.stock;
 import static java.util.stream.Collectors.*;
 
-/**
- * 주문 QueryDSL 동적 쿼리 구현체.
- *
- * *주문 목록 조회, 출고 예정 조회, 삭제된 주문 조회, 필터 목록 조회,
- * 엑셀 데이터 조회 등 다양한 동적 쿼리를 제공한다.
- *
- * *주요 특징:
- *
- *   - {@link BooleanBuilder}를 이용한 다중 조건 필터 조합
- *   - {@code StatusHistory} EXISTS 서브쿼리로 주문 상태 이력 검증
- *   - 재고 수량 서브쿼리 및 (상품명·재질·컬러) 키 기반 flowCode 맵 후처리로 2단계 로딩
- *   - 동적 정렬 — 공장·매장·세트유형·컬러 필드별 ASC/DESC 지원
- * 
- *
- * *의존성: {@link JPAQueryFactory}, {@code DEFAULT_STORE_STOCK_ID}(매장 재고 고정 ID = 1)
- */
 @Slf4j
 @Repository
 public class OrderRepositoryImpl implements CustomOrderRepository {
@@ -283,27 +267,6 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
                 .fetch();
     }
 
-    /**
-     * 주문 목록 페이징 쿼리를 실행하고 재고 flowCode 맵을 후처리하여 응답을 구성한다.
-     *
-     * *처리 흐름:
-     *
-     *   - 재고 수량 서브쿼리({@code stockQty})를 인라인으로 구성하여 SELECT에 포함
-     *   - 동적 정렬 스펙({@link #createOrderSpecifiers})을 적용하여 본 쿼리 실행
-     *   - 결과 DTO에서 (productName, materialName, colorName) 키 집합을 추출
-     *   - 해당 키들의 {@code stock.flowCode} 목록을 단일 배치 쿼리로 조회
-     *   - Tuple을 {@code Map<StockCondition, List<String>>}으로 그룹핑 후 각 DTO에 주입
-     *   - 카운트 쿼리를 별도로 실행하여 {@link CustomPage} 반환
-     * 
-     *
-     * @param pageable        페이징 정보
-     * @param sortCondition   동적 정렬 조건
-     * @param conditionBuilder 검색어 필터
-     * @param statusBuilder   상태/날짜 필터
-     * @param optionBuilder   드롭다운 옵션 필터
-     * @param orderDeleted    삭제 여부 플래그
-     * @return 페이징된 주문 쿼리 결과
-     */
     @NotNull
     private CustomPage<OrderQueryDto> getResponse(Pageable pageable, OrderDto.SortCondition sortCondition, BooleanBuilder conditionBuilder, BooleanExpression statusBuilder, BooleanBuilder optionBuilder, Boolean orderDeleted) {
 
@@ -441,15 +404,6 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
     }
 
-    /**
-     * 주문 검색 조건 빌더.
-     *
-     * 정책:
-     *   - 검색 필터 미선택(기본값, {@code searchField} 가 비어있음) → 모든 대상 필드에 대해
-     *     부분 일치({@code containsIgnoreCase}) LIKE 검색을 수행한다. (원활한 검색)
-     *   - 검색 필터 선택됨 → 해당 필드에 대해 정확히 일치({@code eq}) 검색만 수행한다.
-     *     (modelNumber 는 productName / productFactoryName 둘 중 하나가 정확히 일치해야 함)
-     */
     @NotNull
     private static BooleanBuilder getSearchBuilder(OrderDto.InputCondition orderCondition) {
         BooleanBuilder searchBuilder = new BooleanBuilder();
