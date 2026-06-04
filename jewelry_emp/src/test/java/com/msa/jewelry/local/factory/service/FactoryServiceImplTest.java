@@ -16,6 +16,7 @@ import com.msa.jewelry.local.factory.entity.Factory;
 import com.msa.jewelry.local.factory.repository.FactoryRepository;
 import com.msa.jewelry.local.goldharry.repository.GoldHarryRepository;
 import com.msa.jewelry.local.transaction_history.entity.TransactionHistory;
+import com.msa.jewelry.local.transaction_history.repository.BalanceHistoryRepository;
 import com.msa.jewelry.local.transaction_history.repository.TransactionHistoryRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -57,6 +58,7 @@ class FactoryServiceImplTest {
     @Mock FactoryRepository factoryRepository;
     @Mock GoldHarryRepository goldHarryRepository;
     @Mock TransactionHistoryRepository transactionHistoryRepository;
+    @Mock BalanceHistoryRepository balanceHistoryRepository;
 
     @InjectMocks
     FactoryServiceImpl factoryService;

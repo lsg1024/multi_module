@@ -243,16 +243,50 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
     @Override
     public CustomPage<AccountDto.AccountResponse> findAllFactoryAndPurchase(String startAt, String endAt, Pageable pageable) {
 
+        StringExpression latestTxDate = Expressions.stringTemplate(
+                "TO_CHAR(MAX(transactionHistory.transactionDate), 'YYYY-MM-DD HH24:MI:SS')",
+                transactionHistory.transactionDate.max()
+        );
+        JPQLQuery<String> lastSaleDateQuery = JPAExpressions
+                .select(latestTxDate)
+                .from(transactionHistory)
+                .where(transactionHistory.factory.eq(factory)
+                        .and(transactionHistory.transactionDeleted.isFalse())
+                        .and(transactionHistory.transactionType.eq(SaleStatus.SALE)));
+        JPQLQuery<String> lastPaymentDateQuery = JPAExpressions
+                .select(latestTxDate)
+                .from(transactionHistory)
+                .where(transactionHistory.factory.eq(factory)
+                        .and(transactionHistory.transactionDeleted.isFalse())
+                        .and(transactionHistory.transactionType.eq(SaleStatus.PAYMENT)));
+
         List<AccountDto.AccountResponse> content = query
                 .select(new QAccountDto_AccountResponse(
                         factory.factoryId,
                         factory.factoryName,
                         factory.currentGoldBalance.stringValue(),
                         factory.currentMoneyBalance.stringValue(),
-                        commonOption.goldHarryLoss.stringValue()
+                        lastSaleDateQuery,
+                        factory.factoryOwnerName,
+                        factory.factoryPhoneNumber,
+                        factory.factoryContactNumber1,
+                        factory.factoryContactNumber2,
+                        factory.factoryFaxNumber,
+                        factory.factoryNote,
+                        commonOption.optionLevel.stringValue(),
+                        commonOption.optionTradeType.stringValue(),
+                        commonOption.goldHarryLoss.stringValue(),
+                        lastPaymentDateQuery,
+                        Expressions.stringTemplate(
+                                "concat({0}, ' ', {1}, ' ', {2})",
+                                factory.address.addressZipCode,
+                                factory.address.addressBasic,
+                                factory.address.addressAdd
+                        )
                 ))
                 .from(factory)
                 .join(factory.commonOption, commonOption)
+                .leftJoin(factory.address, address)
                 .where(
                         factory.factoryDeleted.isFalse(),
                         factory.currentGoldBalance.ne(BigDecimal.ZERO).or(factory.currentMoneyBalance.ne(0L))

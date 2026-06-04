@@ -16,7 +16,9 @@ import com.msa.jewelry.local.factory.entity.Factory;
 import com.msa.jewelry.local.factory.repository.FactoryRepository;
 import com.msa.jewelry.local.goldharry.entity.GoldHarry;
 import com.msa.jewelry.local.goldharry.repository.GoldHarryRepository;
+import com.msa.jewelry.local.transaction_history.entity.BalanceHistory;
 import com.msa.jewelry.local.transaction_history.entity.TransactionHistory;
+import com.msa.jewelry.local.transaction_history.repository.BalanceHistoryRepository;
 import com.msa.jewelry.local.transaction_history.repository.TransactionHistoryRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -38,15 +40,18 @@ public class FactoryServiceImpl implements FactoryService {
     private final FactoryRepository factoryRepository;
     private final GoldHarryRepository goldHarryRepository;
     private final TransactionHistoryRepository transactionHistoryRepository;
+    private final BalanceHistoryRepository balanceHistoryRepository;
 
     public FactoryServiceImpl(AuthorityUserRoleUtil authorityUserRoleUtil,
                               FactoryRepository factoryRepository,
                               GoldHarryRepository goldHarryRepository,
-                              TransactionHistoryRepository transactionHistoryRepository) {
+                              TransactionHistoryRepository transactionHistoryRepository,
+                              BalanceHistoryRepository balanceHistoryRepository) {
         this.authorityUserRoleUtil = authorityUserRoleUtil;
         this.factoryRepository = factoryRepository;
         this.goldHarryRepository = goldHarryRepository;
         this.transactionHistoryRepository = transactionHistoryRepository;
+        this.balanceHistoryRepository = balanceHistoryRepository;
     }
 
     @Override
@@ -222,6 +227,10 @@ public class FactoryServiceImpl implements FactoryService {
                 .orElseThrow(() -> new NotFoundException("Factory not found: factoryId=" + factoryId));
         BigDecimal gold = goldDelta != null ? goldDelta : BigDecimal.ZERO;
         Long money = moneyDelta != null ? moneyDelta : 0L;
+
+        BigDecimal beforeGold = factory.getCurrentGoldBalance();
+        Long beforeMoney = factory.getCurrentMoneyBalance();
+
         factory.updateBalance(gold, money);
         TransactionHistory history = TransactionHistory.builder()
                 .transactionType(parseSaleStatus(transactionType))
@@ -234,6 +243,21 @@ public class FactoryServiceImpl implements FactoryService {
                 .transactionHistoryNote(note)
                 .build();
         transactionHistoryRepository.save(history);
+
+        balanceHistoryRepository.save(BalanceHistory.builder()
+                .ownerType("FACTORY")
+                .factory(factory)
+                .beforeGoldBalance(beforeGold)
+                .afterGoldBalance(factory.getCurrentGoldBalance())
+                .beforeMoneyBalance(beforeMoney)
+                .afterMoneyBalance(factory.getCurrentMoneyBalance())
+                .deltaGold(gold)
+                .deltaMoney(money)
+                .reason(transactionType != null && !transactionType.isBlank() ? transactionType : "UNKNOWN")
+                .eventId(eventId)
+                .accountSaleCode(accountSaleCode)
+                .note(note)
+                .build());
         log.info("FactoryService.applyDelta: factoryId={} goldDelta={} moneyDelta={} eventId={} type={}", factoryId, gold, money, eventId, transactionType);
     }
 

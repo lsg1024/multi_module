@@ -1,5 +1,6 @@
 package com.msa.jewelry.global.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.msa.jewelry.local.address.dto.AddressDto;
 import com.msa.jewelry.local.common_option.dto.AdditionalOptionDto;
 import com.msa.jewelry.local.common_option.dto.CommonOptionDto;
@@ -25,7 +26,8 @@ public class AccountDto {
 
     @Getter
     @NoArgsConstructor
-    @Schema(description = "거래처 목록 응답 (잔액/거래일/주소 합본 포함)")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(description = "거래처 목록 응답 (잔액/거래일/주소 합본 포함) — 값이 없는(null) 필드는 응답 JSON 에서 제외")
     public static class AccountResponse {
         @Schema(description = "거래처 PK", example = "10")
         private Long accountId;
