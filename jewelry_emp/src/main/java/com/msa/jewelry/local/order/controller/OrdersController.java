@@ -58,8 +58,8 @@ public class OrdersController {
     public ResponseEntity<ApiResponse<CustomPage<OrderDto.Response>>> getOrders(
             @RequestParam(name = "search", required = false) String input,
             @RequestParam(name = "searchField", required = false) String searchField,
-            @RequestParam(name = "start") String startAt,
-            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "startAt") String startAt,
+            @RequestParam(name = "endAt") String endAt,
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
@@ -150,8 +150,8 @@ public class OrdersController {
             @AccessToken String accessToken,
             @RequestParam(name = "search", required = false) String input,
             @RequestParam(name = "searchField", required = false) String searchField,
-            @RequestParam(name = "start", required = false) String startAt,
-            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "startAt", required = false) String startAt,
+            @RequestParam(name = "endAt") String endAt,
             @RequestParam(name = "order_status", required = false) String orderStatus,
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
@@ -176,8 +176,8 @@ public class OrdersController {
             @AccessToken String accessToken,
             @RequestParam(name = "search", required = false) String input,
             @RequestParam(name = "searchField", required = false) String searchField,
-            @RequestParam(name = "start") String startAt,
-            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "startAt") String startAt,
+            @RequestParam(name = "endAt") String endAt,
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
@@ -198,8 +198,8 @@ public class OrdersController {
     // 공장 리스트 배열 // 페이징 처리하면 로딩된 페이징 값의 데이터로만 구성 가능하니 별도 호출이 필요
     @GetMapping("/filters/factory")
     public ResponseEntity<ApiResponse<List<String>>> getFactoryNames(
-            @RequestParam(name = "start") String startAt,
-            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "startAt") String startAt,
+            @RequestParam(name = "endAt") String endAt,
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
@@ -216,8 +216,8 @@ public class OrdersController {
     // 상점 리스트 배열
     @GetMapping("/filters/store")
     public ResponseEntity<ApiResponse<List<String>>> getStoreNames(
-            @RequestParam(name = "start") String startAt,
-            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "startAt") String startAt,
+            @RequestParam(name = "endAt") String endAt,
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
@@ -233,8 +233,8 @@ public class OrdersController {
     // 유형 리스트 배열
     @GetMapping("/filters/set-type")
     public ResponseEntity<ApiResponse<List<String>>> getSetTypeNames(
-            @RequestParam(name = "start") String startAt,
-            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "startAt") String startAt,
+            @RequestParam(name = "endAt") String endAt,
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
@@ -249,8 +249,8 @@ public class OrdersController {
 
     @GetMapping("/filters/color")
     public ResponseEntity<ApiResponse<List<String>>> getColorNames(
-            @RequestParam(name = "start") String startAt,
-            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "startAt") String startAt,
+            @RequestParam(name = "endAt") String endAt,
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
@@ -265,8 +265,8 @@ public class OrdersController {
     // 분류 리스트 배열
     @GetMapping("/filters/classification")
     public ResponseEntity<ApiResponse<List<String>>> getClassificationNames(
-            @RequestParam(name = "start") String startAt,
-            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "startAt") String startAt,
+            @RequestParam(name = "endAt") String endAt,
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,
@@ -281,8 +281,8 @@ public class OrdersController {
     // 재질 리스트 배열
     @GetMapping("/filters/material")
     public ResponseEntity<ApiResponse<List<String>>> getMaterialNames(
-            @RequestParam(name = "start") String startAt,
-            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "startAt") String startAt,
+            @RequestParam(name = "endAt") String endAt,
             @RequestParam(name = "factory", required = false) String factoryName,
             @RequestParam(name = "store", required = false) String storeName,
             @RequestParam(name = "setType", required = false) String setTypeName,

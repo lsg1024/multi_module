@@ -577,14 +577,6 @@ public class SaleService {
     }
 
     /**
-     * 잔액 변동을 type 에 따라 {@link StoreService#applyDelta} /
-     * {@link FactoryService#applyDelta} 로 직접 위임한다.
-     *
-     * <p>같은 트랜잭션 안에서 in-process 호출로 매장/공장 잔액에 즉시 반영된다.
-     * (과거 마이크로서비스 시절에는 account-service 의 {@code current-balance-update}
-     * Kafka 토픽으로 발행하던 페이로드였으나, 모놀리식 통합 이후로는 토픽 발행 없이
-     * 동일 JVM 안에서 동기 호출로 처리된다.)
-     *
      * @param eventId         멱등성 키
      * @param saleCode        판매 코드 (TSID 문자열)
      * @param tenantId        테넌트 식별자

@@ -37,26 +37,6 @@ import static com.msa.jewelry.local.order.entity.QOrderStone.orderStone;
 import static com.msa.jewelry.local.order.entity.QStatusHistory.statusHistory;
 import static com.msa.jewelry.local.stock.entity.QStock.stock;
 
-/**
- * 재고 QueryDSL 동적 쿼리 구현체.
- *
- * *재고 목록 조회, 대여/반납 이력 조회, 재고 조사, 필터 목록 조회 등
- * 다양한 동적 쿼리를 제공한다.
- *
- * *주요 특징:
- *
- *   - 주석/보조석 수량 분리 — {@code Expressions.cases()}의 CASE-WHEN 구문으로
- *       {@code mainStone=true} 인 경우와 {@code mainStone=false} 인 경우를 각각 집계
- *   - 그룹 JOIN — {@code stock}을 기준으로 {@code orderStone} LEFT JOIN 후
- *       {@code stockId, statusHistory.id} 기준 GROUP BY 적용
- *   - 상태 이력 최신/최초 조회 — 서브쿼리로 {@code statusHistory.createAt.max()} /
- *       {@code statusHistory.createAt.min()} 을 이용하여 최신 또는 최초 이력의 sourceType 조회
- *   - QueryDSL UPDATE — {@link #resetAllStockChecks}에서 재고 조사 초기화 시 사용
- *   - 재고 조사 통계 — 재질별 중량 합계·수량·매입가 합계를 GROUP BY materialName으로 집계
- * 
- *
- * *의존성: {@link JPAQueryFactory}
- */
 @Repository
 public class StockRepositoryImpl implements CustomStockRepository {
 
@@ -359,15 +339,6 @@ public class StockRepositoryImpl implements CustomStockRepository {
         );
     }
 
-    /**
-     * 재고 검색 조건 빌더.
-     *
-     * 정책:
-     *   - 검색 필터 미선택(기본값, {@code searchField} 가 비어있음) → 모든 대상 필드에 대해
-     *     부분 일치({@code containsIgnoreCase}) LIKE 검색을 수행한다. (원활한 검색)
-     *   - 검색 필터 선택됨 → 해당 필드에 대해 정확히 일치({@code eq}) 검색만 수행한다.
-     *     (modelNumber 는 productName / productFactoryName 둘 중 하나가 정확히 일치해야 함)
-     */
     @NotNull
     private static BooleanBuilder getSearchBuilder(OrderDto.InputCondition inputCondition) {
         BooleanBuilder searchBuilder = new BooleanBuilder();

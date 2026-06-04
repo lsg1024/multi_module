@@ -25,6 +25,7 @@ import com.msa.jewelry.local.store.entity.Store;
 import com.msa.jewelry.local.store.repository.StoreRepository;
 import com.msa.jewelry.local.transaction_history.entity.SaleLog;
 import com.msa.jewelry.local.transaction_history.entity.TransactionHistory;
+import com.msa.jewelry.local.transaction_history.repository.BalanceHistoryRepository;
 import com.msa.jewelry.local.transaction_history.repository.SaleLogRepository;
 import com.msa.jewelry.local.transaction_history.repository.TransactionHistoryRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -70,6 +71,7 @@ class StoreServiceImplTest {
     @Mock SaleLogRepository saleLogRepository;
     @Mock GoldHarryRepository goldHarryRepository;
     @Mock TransactionHistoryRepository transactionHistoryRepository;
+    @Mock BalanceHistoryRepository balanceHistoryRepository;
 
     @InjectMocks
     StoreServiceImpl storeService;

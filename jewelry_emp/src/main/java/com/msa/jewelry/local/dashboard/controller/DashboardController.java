@@ -114,8 +114,8 @@ public class DashboardController {
      */
     @GetMapping("/sales/store-statistics")
     public ResponseEntity<ApiResponse<List<DashboardDto.StoreTradeStatistics>>> getStoreTradeStatistics(
-            @RequestParam(required = false) String start,
-            @RequestParam(required = false) String end,
+            @RequestParam(required = false) String startAt,
+            @RequestParam(required = false) String endAt,
             @RequestParam(required = false) String storeName,
             @RequestParam(required = false) String storeGrade,
             @RequestParam(required = false) String tradeType,
@@ -126,8 +126,8 @@ public class DashboardController {
             @RequestParam(required = false) String statisticsType) {
 
         DashboardDto.StoreStatisticsSearchCondition condition = DashboardDto.StoreStatisticsSearchCondition.builder()
-                .start(start)
-                .end(end)
+                .start(startAt)
+                .end(endAt)
                 .storeName(storeName)
                 .storeGrade(storeGrade)
                 .tradeType(tradeType)

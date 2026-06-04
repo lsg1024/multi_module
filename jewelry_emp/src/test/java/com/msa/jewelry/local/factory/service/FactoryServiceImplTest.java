@@ -16,6 +16,7 @@ import com.msa.jewelry.local.factory.entity.Factory;
 import com.msa.jewelry.local.factory.repository.FactoryRepository;
 import com.msa.jewelry.local.goldharry.repository.GoldHarryRepository;
 import com.msa.jewelry.local.transaction_history.entity.TransactionHistory;
+import com.msa.jewelry.local.transaction_history.repository.BalanceHistoryRepository;
 import com.msa.jewelry.local.transaction_history.repository.TransactionHistoryRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -57,6 +58,7 @@ class FactoryServiceImplTest {
     @Mock FactoryRepository factoryRepository;
     @Mock GoldHarryRepository goldHarryRepository;
     @Mock TransactionHistoryRepository transactionHistoryRepository;
+    @Mock BalanceHistoryRepository balanceHistoryRepository;
 
     @InjectMocks
     FactoryServiceImpl factoryService;
@@ -488,10 +490,10 @@ class FactoryServiceImplTest {
             Pageable pageable = PageRequest.of(0, 20);
             @SuppressWarnings("unchecked")
             CustomPage<AccountDto.AccountResponse> page = mock(CustomPage.class);
-            given(factoryRepository.findAllFactoryAndPurchase("2026-05-31", pageable)).willReturn(page);
+            given(factoryRepository.findAllFactoryAndPurchase("2026-05-31", "2026-05-31", pageable)).willReturn(page);
 
             CustomPage<AccountDto.AccountResponse> result =
-                    factoryService.getFactoryPurchase("2026-05-31", pageable);
+                    factoryService.getFactoryPurchase("2026-05-31", "2026-05-31", pageable);
 
             assertThat(result).isSameAs(page);
         }

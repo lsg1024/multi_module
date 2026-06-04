@@ -47,8 +47,8 @@ public class SaleController {
     @GetMapping("/sales")
     public ResponseEntity<ApiResponse<CustomPage<SaleItemResponse.SaleItem>>> getSales(
             @RequestParam(name = "search", required = false) String input,
-            @RequestParam(name = "start") String startAt,
-            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "startAt") String startAt,
+            @RequestParam(name = "endAt") String endAt,
             @RequestParam(name = "type", required = false) String material,
             @PageableDefault(size = 20) Pageable pageable) {
 
@@ -59,8 +59,8 @@ public class SaleController {
     // 판매 전체 목록 (페이징 없이 배열 반환)
     @GetMapping("/sales/all")
     public ResponseEntity<ApiResponse<List<SaleItemResponse.SaleItem>>> getAllSales(
-            @RequestParam(name = "start") String startAt,
-            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "startAt") String startAt,
+            @RequestParam(name = "endAt") String endAt,
             @RequestParam(name = "search", required = false) String input,
             @RequestParam(name = "type", required = false) String material) {
 
@@ -71,8 +71,8 @@ public class SaleController {
     // 날짜 범위 내 판매 거래처 목록 (메시지 전송용 - 거래처 ID/이름만 반환)
     @GetMapping("/sales/stores")
     public ResponseEntity<ApiResponse<List<SaleDto.SaleStoreInfo>>> getSaleStores(
-            @RequestParam(name = "start") String startAt,
-            @RequestParam(name = "end") String endAt) {
+            @RequestParam(name = "startAt") String startAt,
+            @RequestParam(name = "endAt") String endAt) {
 
         List<SaleDto.SaleStoreInfo> stores = saleService.getSaleStores(startAt, endAt);
         return ResponseEntity.ok(ApiResponse.success(stores));
@@ -187,8 +187,8 @@ public class SaleController {
     @GetMapping("/sales/excel")
     public ResponseEntity<byte[]> downloadSalesExcel(
             @RequestParam(name = "search", required = false) String input,
-            @RequestParam(name = "start") String startAt,
-            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "startAt") String startAt,
+            @RequestParam(name = "endAt") String endAt,
             @RequestParam(name = "type", required = false) String material) throws IOException {
 
         byte[] excelBytes = saleService.getSalesExcel(input, startAt, endAt, material);
