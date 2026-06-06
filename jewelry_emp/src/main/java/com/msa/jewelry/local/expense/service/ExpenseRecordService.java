@@ -144,7 +144,7 @@ public class ExpenseRecordService {
     @Transactional(readOnly = true)
     public ExpenseRecordDto.DetailResponse getExpenseRecordById(Long id) {
         ExpenseRecord record = recordRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Expense record not found with id: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("해당 지출 내역을 찾을 수 없습니다. (id: " + id + ")"));
         return convertToDetailResponse(record);
     }
 
@@ -189,7 +189,7 @@ public class ExpenseRecordService {
 
     public ExpenseRecordDto.DetailResponse updateExpenseRecord(Long id, ExpenseRecordDto.UpdateRequest request) {
         ExpenseRecord record = recordRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Expense record not found with id: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("해당 지출 내역을 찾을 수 없습니다. (id: " + id + ")"));
 
         ExpenseBankType bankType = bankTypeRepository.findById(request.getBankTypeId())
                 .orElseThrow(() -> new IllegalArgumentException("Bank type not found"));
@@ -220,7 +220,7 @@ public class ExpenseRecordService {
 
     public void deleteExpenseRecord(Long id) {
         if (!recordRepository.existsById(id)) {
-            throw new IllegalArgumentException("Expense record not found with id: " + id);
+            throw new IllegalArgumentException("해당 지출 내역을 찾을 수 없습니다. (id: " + id + ")");
         }
         recordRepository.deleteById(id);
     }

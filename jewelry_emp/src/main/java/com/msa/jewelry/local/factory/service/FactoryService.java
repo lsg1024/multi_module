@@ -40,7 +40,7 @@ public interface FactoryService {
 
     List<FactoryDto.ApiFactoryInfo> findAllFactory();
 
-    CustomPage<AccountDto.AccountResponse> getFactoryPurchase(String endAt, Pageable pageable);
+    CustomPage<AccountDto.AccountResponse> getFactoryPurchase(String startAt, String endAt, Pageable pageable);
 
     byte[] getPurchaseExcel(String accessToken, String endAt) throws IOException;
 
@@ -52,4 +52,13 @@ public interface FactoryService {
 
     void applyDelta(Long factoryId, BigDecimal goldDelta, Long moneyDelta, String eventId,
                     String transactionType, String material, Long accountSaleCode, String note);
+
+    /**
+     * applyDelta 변형 - 거래 일자(transactionDate)를 직접 지정할 수 있는 버전.
+     * 매입 수기 등록(매입 생성) 처럼 등록일을 사용자가 지정하는 경우 사용한다.
+     * transactionDate 가 null 이면 기존 @PrePersist(now()) 동작과 동일하다.
+     */
+    void applyDelta(Long factoryId, BigDecimal goldDelta, Long moneyDelta, String eventId,
+                    String transactionType, String material, Long accountSaleCode, String note,
+                    java.time.LocalDateTime transactionDate);
 }

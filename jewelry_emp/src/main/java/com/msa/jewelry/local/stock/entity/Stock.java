@@ -23,18 +23,6 @@ import java.util.List;
 
 import static jakarta.persistence.CascadeType.*;
 
-/**
- * 재고 엔티티.
- *
- * *공장에서 출고된 제품의 재고 정보를 관리하며, 주문({@link Orders})과 연결되거나
- * 독립 재고로 존재할 수 있다. {@code stockCode}와 {@code flowCode}는 TSID 기반 식별자이며,
- * 주문 연결 시 {@code flowCode}는 주문의 값을 그대로 사용한다.
- *
- * *상태 전이 흐름:
- * {@code WAITING} → {@code STOCK} → {@code RENTAL} → {@code RETURN} → {@code SALE} 또는 {@code DELETED}
- *
- * *삭제는 소프트 딜리트({@code STOCK_DELETED = TRUE})로 처리된다.
- */
 @Slf4j
 @Getter
 @Table(name = "STOCK")

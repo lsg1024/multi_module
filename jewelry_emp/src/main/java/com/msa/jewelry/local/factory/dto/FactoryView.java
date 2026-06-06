@@ -2,11 +2,6 @@ package com.msa.jewelry.local.factory.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-/**
- * 다른 모듈이 제조사를 참조할 때 사용하는 불변 view DTO.
- *
- * <p>{@code goldHarryLoss} 는 String — 원본 엔티티 그대로.
- */
 @Schema(description = "제조사(공장) 정보 외부 노출용 view — 다른 모듈이 제조사를 참조할 때 사용")
 public record FactoryView(
         @Schema(description = "제조사 PK", example = "5")

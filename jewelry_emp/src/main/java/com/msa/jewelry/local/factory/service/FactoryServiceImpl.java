@@ -16,7 +16,9 @@ import com.msa.jewelry.local.factory.entity.Factory;
 import com.msa.jewelry.local.factory.repository.FactoryRepository;
 import com.msa.jewelry.local.goldharry.entity.GoldHarry;
 import com.msa.jewelry.local.goldharry.repository.GoldHarryRepository;
+import com.msa.jewelry.local.transaction_history.entity.BalanceHistory;
 import com.msa.jewelry.local.transaction_history.entity.TransactionHistory;
+import com.msa.jewelry.local.transaction_history.repository.BalanceHistoryRepository;
 import com.msa.jewelry.local.transaction_history.repository.TransactionHistoryRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static com.msa.jewelry.global.exception.ExceptionMessage.*;
@@ -38,15 +41,18 @@ public class FactoryServiceImpl implements FactoryService {
     private final FactoryRepository factoryRepository;
     private final GoldHarryRepository goldHarryRepository;
     private final TransactionHistoryRepository transactionHistoryRepository;
+    private final BalanceHistoryRepository balanceHistoryRepository;
 
     public FactoryServiceImpl(AuthorityUserRoleUtil authorityUserRoleUtil,
                               FactoryRepository factoryRepository,
                               GoldHarryRepository goldHarryRepository,
-                              TransactionHistoryRepository transactionHistoryRepository) {
+                              TransactionHistoryRepository transactionHistoryRepository,
+                              BalanceHistoryRepository balanceHistoryRepository) {
         this.authorityUserRoleUtil = authorityUserRoleUtil;
         this.factoryRepository = factoryRepository;
         this.goldHarryRepository = goldHarryRepository;
         this.transactionHistoryRepository = transactionHistoryRepository;
+        this.balanceHistoryRepository = balanceHistoryRepository;
     }
 
     @Override
@@ -175,8 +181,8 @@ public class FactoryServiceImpl implements FactoryService {
 
     @Override
     @Transactional(readOnly = true)
-    public CustomPage<AccountDto.AccountResponse> getFactoryPurchase(String endAt, Pageable pageable) {
-        return factoryRepository.findAllFactoryAndPurchase(endAt, pageable);
+    public CustomPage<AccountDto.AccountResponse> getFactoryPurchase(String startAt, String endAt, Pageable pageable) {
+        return factoryRepository.findAllFactoryAndPurchase(startAt, endAt, pageable);
     }
 
     @Override
@@ -218,10 +224,21 @@ public class FactoryServiceImpl implements FactoryService {
     @Override
     public void applyDelta(Long factoryId, BigDecimal goldDelta, Long moneyDelta, String eventId,
                            String transactionType, String material, Long accountSaleCode, String note) {
+        applyDelta(factoryId, goldDelta, moneyDelta, eventId, transactionType, material, accountSaleCode, note, null);
+    }
+
+    @Override
+    public void applyDelta(Long factoryId, BigDecimal goldDelta, Long moneyDelta, String eventId,
+                           String transactionType, String material, Long accountSaleCode, String note,
+                           LocalDateTime transactionDate) {
         Factory factory = factoryRepository.findByIdWithLock(factoryId)
                 .orElseThrow(() -> new NotFoundException("Factory not found: factoryId=" + factoryId));
         BigDecimal gold = goldDelta != null ? goldDelta : BigDecimal.ZERO;
         Long money = moneyDelta != null ? moneyDelta : 0L;
+
+        BigDecimal beforeGold = factory.getCurrentGoldBalance();
+        Long beforeMoney = factory.getCurrentMoneyBalance();
+
         factory.updateBalance(gold, money);
         TransactionHistory history = TransactionHistory.builder()
                 .transactionType(parseSaleStatus(transactionType))
@@ -234,6 +251,26 @@ public class FactoryServiceImpl implements FactoryService {
                 .transactionHistoryNote(note)
                 .build();
         transactionHistoryRepository.save(history);
+        // @PrePersist 가 transactionDate 를 now() 로 강제 세팅하므로, 등록일 지정이 있으면 저장 후 갱신
+        // (동일 트랜잭션 내 dirty checking 으로 UPDATE 반영).
+        if (transactionDate != null) {
+            history.updateTransactionDate(transactionDate);
+        }
+
+        balanceHistoryRepository.save(BalanceHistory.builder()
+                .ownerType("FACTORY")
+                .factory(factory)
+                .beforeGoldBalance(beforeGold)
+                .afterGoldBalance(factory.getCurrentGoldBalance())
+                .beforeMoneyBalance(beforeMoney)
+                .afterMoneyBalance(factory.getCurrentMoneyBalance())
+                .deltaGold(gold)
+                .deltaMoney(money)
+                .reason(transactionType != null && !transactionType.isBlank() ? transactionType : "UNKNOWN")
+                .eventId(eventId)
+                .accountSaleCode(accountSaleCode)
+                .note(note)
+                .build());
         log.info("FactoryService.applyDelta: factoryId={} goldDelta={} moneyDelta={} eventId={} type={}", factoryId, gold, money, eventId, transactionType);
     }
 
@@ -253,7 +290,7 @@ public class FactoryServiceImpl implements FactoryService {
         try {
             return SaleStatus.valueOf(transactionType);
         } catch (IllegalArgumentException e) {
-            log.warn("parseSaleStatus: unknown transactionType '{}' — stored as null", transactionType);
+            log.warn("parseSaleStatus: unknown transactionType '{}' - stored as null", transactionType);
             return null;
         }
     }

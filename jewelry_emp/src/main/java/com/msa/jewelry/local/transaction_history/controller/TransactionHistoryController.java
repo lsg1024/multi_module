@@ -11,6 +11,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 public class TransactionHistoryController {
 
@@ -56,10 +58,11 @@ public class TransactionHistoryController {
         return ResponseEntity.ok(ApiResponse.success(accountPurchasePage));
     }
 
+    // 매입 생성 - 매입 등록 모달에서 입력한 여러 줄을 한 번에 등록
     @PostMapping("/purchase/factory")
     public ResponseEntity<ApiResponse<String>> createFactoryPurchase(
-            @RequestBody PurchaseDto purchaseDto) {
-        transactionHistoryService.savePurchase(purchaseDto);
+            @RequestBody List<PurchaseDto> purchaseList) {
+        transactionHistoryService.savePurchases(purchaseList);
         return ResponseEntity.ok(ApiResponse.success("생성 완료"));
     }
 

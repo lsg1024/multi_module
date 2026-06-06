@@ -19,8 +19,10 @@ import com.msa.jewelry.local.store.dto.StoreReceivableLogView;
 import com.msa.jewelry.local.store.dto.StoreView;
 import com.msa.jewelry.local.store.entity.Store;
 import com.msa.jewelry.local.store.repository.StoreRepository;
+import com.msa.jewelry.local.transaction_history.entity.BalanceHistory;
 import com.msa.jewelry.local.transaction_history.entity.SaleLog;
 import com.msa.jewelry.local.transaction_history.entity.TransactionHistory;
+import com.msa.jewelry.local.transaction_history.repository.BalanceHistoryRepository;
 import com.msa.jewelry.local.transaction_history.repository.SaleLogRepository;
 import com.msa.jewelry.local.transaction_history.repository.TransactionHistoryRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -44,17 +46,20 @@ public class StoreServiceImpl implements StoreService {
     private final SaleLogRepository saleLogRepository;
     private final GoldHarryRepository goldHarryRepository;
     private final TransactionHistoryRepository transactionHistoryRepository;
+    private final BalanceHistoryRepository balanceHistoryRepository;
 
     public StoreServiceImpl(AuthorityUserRoleUtil authorityUserRoleUtil,
                             StoreRepository storeRepository,
                             SaleLogRepository saleLogRepository,
                             GoldHarryRepository goldHarryRepository,
-                            TransactionHistoryRepository transactionHistoryRepository) {
+                            TransactionHistoryRepository transactionHistoryRepository,
+                            BalanceHistoryRepository balanceHistoryRepository) {
         this.authorityUserRoleUtil = authorityUserRoleUtil;
         this.storeRepository = storeRepository;
         this.saleLogRepository = saleLogRepository;
         this.goldHarryRepository = goldHarryRepository;
         this.transactionHistoryRepository = transactionHistoryRepository;
+        this.balanceHistoryRepository = balanceHistoryRepository;
     }
 
     @Override
@@ -286,6 +291,11 @@ public class StoreServiceImpl implements StoreService {
                 .orElseThrow(() -> new NotFoundException("Store not found: storeId=" + storeId));
         BigDecimal gold = goldDelta != null ? goldDelta : BigDecimal.ZERO;
         Long money = moneyDelta != null ? moneyDelta : 0L;
+
+        // 변경 전 스냅샷 (balance_history 기록용)
+        BigDecimal beforeGold = store.getCurrentGoldBalance();
+        Long beforeMoney = store.getCurrentMoneyBalance();
+
         store.updateBalance(gold, money);
         TransactionHistory history = TransactionHistory.builder()
                 .transactionType(parseSaleStatus(transactionType))
@@ -298,6 +308,22 @@ public class StoreServiceImpl implements StoreService {
                 .transactionHistoryNote(note)
                 .build();
         transactionHistoryRepository.save(history);
+
+        // 잔액 변경 불변 이력 — before/after 스냅샷을 같은 트랜잭션에 원자 기록 (BALANCE_HISTORY_PLAN)
+        balanceHistoryRepository.save(BalanceHistory.builder()
+                .ownerType("STORE")
+                .store(store)
+                .beforeGoldBalance(beforeGold)
+                .afterGoldBalance(store.getCurrentGoldBalance())
+                .beforeMoneyBalance(beforeMoney)
+                .afterMoneyBalance(store.getCurrentMoneyBalance())
+                .deltaGold(gold)
+                .deltaMoney(money)
+                .reason(transactionType != null && !transactionType.isBlank() ? transactionType : "UNKNOWN")
+                .eventId(eventId)
+                .accountSaleCode(accountSaleCode)
+                .note(note)
+                .build());
         log.info("StoreService.applyDelta: storeId={} goldDelta={} moneyDelta={} eventId={} type={}", storeId, gold, money, eventId, transactionType);
     }
 

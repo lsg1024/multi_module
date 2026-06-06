@@ -35,8 +35,8 @@ public class ExcelController {
     // 주문장 조회
     @GetMapping("/orders/excel/order-book")
     public ResponseEntity<byte[]> getOrderExcel(
-            @RequestParam(name = "start") String startAt,
-            @RequestParam(name = "end") String endAt,
+            @RequestParam(name = "startAt") String startAt,
+            @RequestParam(name = "endAt") String endAt,
             @RequestParam(name = "search", required = false) String search,
             @RequestParam(name = "searchField", required = false) String searchField,
             @RequestParam(name = "factory", required = false) String factoryName,
