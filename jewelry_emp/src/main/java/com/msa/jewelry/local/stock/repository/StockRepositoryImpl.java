@@ -33,9 +33,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.msa.jewelry.global.util.DateConversionUtil.ParseLocalDateTime;
+import static com.msa.jewelry.local.factory.entity.QFactory.factory;
 import static com.msa.jewelry.local.order.entity.QOrderStone.orderStone;
 import static com.msa.jewelry.local.order.entity.QStatusHistory.statusHistory;
 import static com.msa.jewelry.local.stock.entity.QStock.stock;
+import static com.msa.jewelry.local.store.entity.QStore.store;
 
 @Repository
 public class StockRepositoryImpl implements CustomStockRepository {
@@ -64,8 +66,8 @@ public class StockRepositoryImpl implements CustomStockRepository {
                         stock.lastModifiedDate.stringValue(),
                         statusHistory.sourceType.stringValue(),
                         stock.orderStatus.stringValue(),
-                        Expressions.constant(""),
-                        Expressions.constant(""),
+                        store.storeName.coalesce(""),
+                        factory.factoryName.coalesce(""),
                         stock.product.id.stringValue(),
                         stock.product.productName,
                         stock.product.productFactoryName,
@@ -113,16 +115,23 @@ public class StockRepositoryImpl implements CustomStockRepository {
                                             .from(subHistory)
                                             .where(subHistory.flowCode.eq(stock.flowCode))
                             ))
+                .leftJoin(store).on(store.storeId.eq(stock.storeId))
+                .leftJoin(factory).on(factory.factoryId.eq(stock.factoryId))
                 .where(searchBuilder, stockStatusBuilder, orderTypeCondition, optionBuilder)
                 .orderBy(stockSpecifiers)
-                .groupBy(stock.stockId, statusHistory.id)
+                .groupBy(stock.stockId, statusHistory.id, store.storeId, factory.factoryId)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
 
+        // 이력(status_history)이 없는 행(예: 마이그레이션 데이터)도 안전하게 — null 이면 빈값 처리
         for (StockDto.Response response : content) {
-            String originStatus = SourceType.valueOf(response.getOriginStatus()).getDisplayName();
-            String currentStatus = BusinessPhase.valueOf(response.getCurrentStatus()).getDisplayName();
+            String originStatus = response.getOriginStatus() != null
+                    ? SourceType.valueOf(response.getOriginStatus()).getDisplayName()
+                    : "";
+            String currentStatus = response.getCurrentStatus() != null
+                    ? BusinessPhase.valueOf(response.getCurrentStatus()).getDisplayName()
+                    : "";
             response.updateStatus(originStatus, currentStatus);
         }
 
@@ -166,8 +175,8 @@ public class StockRepositoryImpl implements CustomStockRepository {
                         stock.lastModifiedDate.stringValue(),
                         statusHistory.sourceType.stringValue(),
                         stock.orderStatus.stringValue(),
-                        Expressions.constant(""),
-                        Expressions.constant(""),
+                        store.storeName.coalesce(""),
+                        factory.factoryName.coalesce(""),
                         stock.product.id.stringValue(),
                         stock.product.productName,
                         stock.product.productFactoryName,
@@ -214,6 +223,8 @@ public class StockRepositoryImpl implements CustomStockRepository {
                                         .from(subHistory)
                                         .where(subHistory.flowCode.eq(stock.flowCode))
                         ))
+                .leftJoin(store).on(store.storeId.eq(stock.storeId))
+                .leftJoin(factory).on(factory.factoryId.eq(stock.factoryId))
                 .where(
                         stock.flowCode.in(subQuery),
                         searchBuilder,
@@ -221,7 +232,7 @@ public class StockRepositoryImpl implements CustomStockRepository {
                         stock.orderStatus.in(OrderStatus.RENTAL, OrderStatus.RETURN)
                 )
                 .orderBy(stockSpecifiers)
-                .groupBy(stock.stockId, statusHistory.id)
+                .groupBy(stock.stockId, statusHistory.id, store.storeId, factory.factoryId)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();

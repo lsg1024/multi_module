@@ -112,12 +112,15 @@ public class OrderMigrationProcessor implements ItemProcessor<OrderBatchDto, Ord
                 .legacyOrderNo(dto.getLegacyOrderNo())
                 .storeId(storeId)
                 .factoryId(factoryId)
-                .orderNote(buildNote(dto))
+                .orderNote(StringUtils.hasText(dto.getNote()) ? dto.getNote().trim() : null)
                 .createAt(parseDate(dto.getCreateAt()))
                 .shippingAt(parseDate(dto.getShippingAt()))
                 .productStatus(ProductStatus.RECEIPT)
                 .orderStatus(orderStatus)
                 .build();
+
+        // 원본 등록/수정 일시를 audit(create_date/last_modified_date)로 강제 지정 (Writer 가 native update).
+        order.setMigrationDates(parseDateTime(dto.getCreatedDate()), parseDateTime(dto.getUpdatedDate()));
 
         order.addOrderProduct(buildOrderProduct(dto.getProduct()));
         for (OrderBatchDto.Stone s : dto.getStones()) {
@@ -259,16 +262,15 @@ public class OrderMigrationProcessor implements ItemProcessor<OrderBatchDto, Ord
 
     // ---------------- 유틸 ----------------
 
-    private String buildNote(OrderBatchDto dto) {
-        StringBuilder sb = new StringBuilder();
-        if (StringUtils.hasText(dto.getNote())) sb.append(dto.getNote());
-        if (StringUtils.hasText(dto.getCreatedBy())) {
-            if (sb.length() > 0) sb.append(" / ");
-            sb.append("[이관 원본작성: ").append(dto.getCreatedBy());
-            if (StringUtils.hasText(dto.getCreatedDate())) sb.append(" ").append(dto.getCreatedDate());
-            sb.append("]");
+    /** ISO 일시("2026-05-06T16:52:19") → LocalDateTime. 원본 등록/수정 시각용. */
+    private LocalDateTime parseDateTime(String iso) {
+        if (!StringUtils.hasText(iso)) return null;
+        try {
+            return LocalDateTime.parse(iso.trim());
+        } catch (Exception e) {
+            log.warn("일시 파싱 실패: {}", iso);
+            return null;
         }
-        return sb.length() > 0 ? sb.toString() : null;
     }
 
     private OrderStatus parseOrderStatus(String s) {
