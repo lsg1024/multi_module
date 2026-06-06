@@ -91,6 +91,11 @@ public class Orders extends BaseEntity {
     @Schema(description = "주문 비즈니스 처리 상태 (WAIT/STOCK/RENTAL/SALE/RETURN/DELETED 등)")
     private OrderStatus orderStatus;
 
+    @Transient
+    private LocalDateTime migrationCreateDate;
+    @Transient
+    private LocalDateTime migrationModifiedDate;
+
     @Builder
     public Orders(Long orderId, Long flowCode, Long storeId, String storeGrade, BigDecimal storeHarry,
                   Long factoryId, BigDecimal factoryHarry, String orderNote,
@@ -130,6 +135,11 @@ public class Orders extends BaseEntity {
 
     public void addPriority(Priority priority) {
         this.priority = priority;
+    }
+
+    public void setMigrationDates(LocalDateTime createDate, LocalDateTime modifiedDate) {
+        this.migrationCreateDate = createDate;
+        this.migrationModifiedDate = modifiedDate;
     }
 
     public void updateProductStatus(ProductStatus newStatus) {
