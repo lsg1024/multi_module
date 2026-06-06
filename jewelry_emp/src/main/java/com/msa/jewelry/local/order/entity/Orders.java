@@ -64,6 +64,10 @@ public class Orders extends BaseEntity {
     @Schema(description = "소프트 삭제 플래그 — TRUE 이면 사용자에게는 보이지 않음", example = "false")
     private boolean orderDeleted = false;
 
+    @Column(name = "LEGACY_ORDER_NO", length = 20, unique = true)
+    @Schema(description = "레거시(khan) 원본 주문번호 — 이관 멱등키. 신규 주문은 null.", example = "J1079994")
+    private String legacyOrderNo;
+
     @OneToOne(mappedBy = "order", cascade = {PERSIST, MERGE})
     @Schema(description = "주문 상품 정보 (1:1)")
     private OrderProduct orderProduct;
@@ -91,7 +95,7 @@ public class Orders extends BaseEntity {
     public Orders(Long orderId, Long flowCode, Long storeId, String storeGrade, BigDecimal storeHarry,
                   Long factoryId, BigDecimal factoryHarry, String orderNote,
                   LocalDateTime createAt, LocalDateTime shippingAt,
-                  ProductStatus productStatus, OrderStatus orderStatus) {
+                  ProductStatus productStatus, OrderStatus orderStatus, String legacyOrderNo) {
         this.orderId = orderId;
         this.flowCode = flowCode;
         this.storeId = storeId;
@@ -104,6 +108,7 @@ public class Orders extends BaseEntity {
         this.shippingAt = shippingAt;
         this.productStatus = productStatus;
         this.orderStatus = orderStatus;
+        this.legacyOrderNo = legacyOrderNo;
     }
 
     @PrePersist
