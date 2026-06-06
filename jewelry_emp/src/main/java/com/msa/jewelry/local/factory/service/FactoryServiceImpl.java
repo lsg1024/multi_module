@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static com.msa.jewelry.global.exception.ExceptionMessage.*;
@@ -223,6 +224,13 @@ public class FactoryServiceImpl implements FactoryService {
     @Override
     public void applyDelta(Long factoryId, BigDecimal goldDelta, Long moneyDelta, String eventId,
                            String transactionType, String material, Long accountSaleCode, String note) {
+        applyDelta(factoryId, goldDelta, moneyDelta, eventId, transactionType, material, accountSaleCode, note, null);
+    }
+
+    @Override
+    public void applyDelta(Long factoryId, BigDecimal goldDelta, Long moneyDelta, String eventId,
+                           String transactionType, String material, Long accountSaleCode, String note,
+                           LocalDateTime transactionDate) {
         Factory factory = factoryRepository.findByIdWithLock(factoryId)
                 .orElseThrow(() -> new NotFoundException("Factory not found: factoryId=" + factoryId));
         BigDecimal gold = goldDelta != null ? goldDelta : BigDecimal.ZERO;
@@ -243,6 +251,11 @@ public class FactoryServiceImpl implements FactoryService {
                 .transactionHistoryNote(note)
                 .build();
         transactionHistoryRepository.save(history);
+        // @PrePersist 가 transactionDate 를 now() 로 강제 세팅하므로, 등록일 지정이 있으면 저장 후 갱신
+        // (동일 트랜잭션 내 dirty checking 으로 UPDATE 반영).
+        if (transactionDate != null) {
+            history.updateTransactionDate(transactionDate);
+        }
 
         balanceHistoryRepository.save(BalanceHistory.builder()
                 .ownerType("FACTORY")
@@ -277,7 +290,7 @@ public class FactoryServiceImpl implements FactoryService {
         try {
             return SaleStatus.valueOf(transactionType);
         } catch (IllegalArgumentException e) {
-            log.warn("parseSaleStatus: unknown transactionType '{}' — stored as null", transactionType);
+            log.warn("parseSaleStatus: unknown transactionType '{}' - stored as null", transactionType);
             return null;
         }
     }
