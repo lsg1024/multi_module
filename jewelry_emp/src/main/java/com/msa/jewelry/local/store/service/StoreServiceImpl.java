@@ -32,7 +32,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.msa.jewelry.global.exception.ExceptionMessage.*;
 
@@ -211,15 +214,26 @@ public class StoreServiceImpl implements StoreService {
     @Override
     @Transactional(readOnly = true)
     public List<StoreDto.StorePhoneInfo> getStorePhones(List<Long> storeIds) {
-        return storeIds.stream()
-                .map(id -> storeRepository.findById(id)
-                        .map(store -> new StoreDto.StorePhoneInfo(
-                                store.getStoreId(),
-                                store.getStoreName(),
-                                store.getStorePhoneNumber()))
-                        .orElse(null))
-                .filter(java.util.Objects::nonNull)
-                .toList();
+        if (storeIds == null || storeIds.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, Store> storeById = new HashMap<>();
+        for (Store store : storeRepository.findAllById(storeIds)) {
+            if (store != null && store.getStoreId() != null) {
+                storeById.putIfAbsent(store.getStoreId(), store);
+            }
+        }
+        List<StoreDto.StorePhoneInfo> phones = new ArrayList<>();
+        for (Long storeId : storeIds) {
+            Store store = storeId != null ? storeById.get(storeId) : null;
+            if (store != null) {
+                phones.add(new StoreDto.StorePhoneInfo(
+                        store.getStoreId(),
+                        store.getStoreName(),
+                        store.getStorePhoneNumber()));
+            }
+        }
+        return phones;
     }
 
     @Override

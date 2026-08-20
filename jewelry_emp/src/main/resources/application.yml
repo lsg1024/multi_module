@@ -36,7 +36,7 @@ spring:
         jdbc:
           batch_size: 30
           time_zone: Asia/Seoul
-        format_sql: true
+        format_sql: false
         default_batch_fetch_size: 100
 
   flyway:
@@ -98,8 +98,8 @@ custom:
 
 logging:
   level:
-    org.hibernate.SQL: debug
-    org.hibernate.orm.jdbc.bind: trace
+    org.hibernate.SQL: warn
+    org.hibernate.orm.jdbc.bind: warn
     org.springframework.kafka.retrytopic: debug
     org.apache.kafka.clients.consumer: WARN
     org.apache.kafka.clients.NetworkClient: WARN

@@ -47,21 +47,12 @@ public class UsersService {
             throw new IllegalArgumentException("이미 존재하는 아이디 입니다.");
         }
 
-        Role role = Role.GUEST;
-        if (userDto.getRole() != null) {
-            try {
-                role = Role.valueOf(userDto.getRole());
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("올바르지 않은 권한 값입니다: " + userDto.getRole());
-            }
-        }
-
         final Users user = Users.builder()
                 .userId(userDto.getUserId())
                 .tenantId(tenantId)
                 .password(encoder.encode(userDto.getPassword()))
                 .nickname(userDto.getNickname())
-                .role(role)
+                .role(Role.GUEST)
                 .storeId(userDto.getStoreId())
                 .build();
 
@@ -87,7 +78,8 @@ public class UsersService {
                 .orElseThrow(() -> new UserNotFoundException("대상 사용자를 찾을 수 없습니다."));
 
         boolean isAdmin = authorityUserRoleUtil.isAdmin(accessToken);
-        boolean isSelf = authorityUserRoleUtil.isSelf(targetUser.getUserId(), accessToken);
+        boolean isSelf = targetUser.getId() != null
+                && targetUser.getId().equals(Long.valueOf(jwtUtil.getId(accessToken)));
 
         if (!isSelf && !isAdmin) {
             throw new IllegalArgumentException("사용자 정보를 수정할 권한이 없습니다.");
@@ -117,6 +109,7 @@ public class UsersService {
         String userId = jwtUtil.getId(accessToken);
 
         return usersRepository.findAll().stream()
+                .filter(u -> !u.isDeleted())
                 .filter(u -> !userId.equals(u.getUserId()))
                 .map(u -> UserDto.UserInfo.builder()
                         .userId(u.getId().toString())
@@ -136,6 +129,12 @@ public class UsersService {
         // 행이 없으면(마이그레이션 누락 등) 401 대신 JWT 클레임으로 임시 사용자 degrade.
         // 영구 해결은 users 데이터 백필(tools/backfill_users.sql) 로 수행한다.
         return usersRepository.findByIdAndTenantId(id, tenantId)
+                .map(found -> {
+                    if (found.isDeleted()) {
+                        throw new UserNotFoundException("이미 탈퇴 처리된 계정입니다.");
+                    }
+                    return found;
+                })
                 .orElseGet(() -> buildTransientFromToken(accessToken, tenantId));
     }
 
@@ -166,6 +165,10 @@ public class UsersService {
 
         Users userInfo = usersRepository.findByUserId(userDto.getUserId())
                 .orElseThrow(() -> new UserNotFoundException("유저 정보가 없습니다."));
+
+        if (userInfo.isDeleted()) {
+            throw new UserNotFoundException("유저 정보가 없습니다.");
+        }
 
         boolean matches = encoder.matches(userDto.getPassword(), userInfo.getPassword());
 

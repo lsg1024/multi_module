@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.jewelry.global.exception.OrderServiceException;
 import com.msa.jewelry.global.exception.DomainException;
+import com.msa.jewelry.global.exception.NotAuthorityException;
 import com.msa.jewelry.local.user.exception.UserNotFoundException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -15,9 +16,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
 import java.util.UUID;
@@ -48,6 +56,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Object>> handleAccountNotFoundException(
             com.msa.jewelry.global.exception.NotFoundException e) {
         return userFacing(HttpStatus.NOT_FOUND.value(), e, MSG_NOT_FOUND, "NotFoundException");
+    }
+
+    @ExceptionHandler(NotAuthorityException.class)
+    public ResponseEntity<ApiResponse<Object>> handleNotAuthority(NotAuthorityException e) {
+        return userFacing(HttpStatus.FORBIDDEN.value(), e, "권한이 없습니다.", "NotAuthorityException");
     }
 
     @ExceptionHandler(OrderServiceException.class)
@@ -144,6 +157,43 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .body(ApiResponse.error(withId(MSG_DUPLICATE, errorId)));
+    }
+
+    @ExceptionHandler({
+            MissingServletRequestParameterException.class,
+            MissingServletRequestPartException.class,
+            ServletRequestBindingException.class
+    })
+    public ResponseEntity<ApiResponse<Object>> handleMissingRequestParameter(Exception e) {
+        log.warn("Bad request: {} - {}", e.getClass().getSimpleName(), e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(MSG_BAD_REQUEST));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Object>> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
+        log.warn("Type mismatch: parameter={}, value={}", e.getName(), e.getValue());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("'" + e.getName() + "' 파라미터 형식이 올바르지 않습니다."));
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleMethodNotSupported(HttpRequestMethodNotSupportedException e) {
+        log.warn("Method not supported: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(ApiResponse.error("지원하지 않는 요청 방식입니다."));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Object>> handleNoResourceFound(NoResourceFoundException e) {
+        log.warn("No resource found: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(MSG_NOT_FOUND));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Object>> handleMaxUploadSize(MaxUploadSizeExceededException e) {
+        log.warn("Max upload size exceeded: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(ApiResponse.error("업로드 가능한 파일 크기를 초과했습니다."));
     }
 
     @ExceptionHandler(Exception.class)

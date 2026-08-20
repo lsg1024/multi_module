@@ -71,7 +71,7 @@ class UsersServiceTest {
     class CreateUser {
 
         @Test
-        @DisplayName("정상 — Repository.save 호출")
+        @DisplayName("정상 — Repository.save 호출 (요청 본문 role 은 무시하고 GUEST 로 고정)")
         void 정상생성() {
             UserDto.Create dto = new UserDto.Create(USER_ID, "닉네임", "Password1!", "Password1!", "USER", 10L);
             given(usersRepository.existsByUserId(USER_ID)).willReturn(false);
@@ -83,9 +83,9 @@ class UsersServiceTest {
             verify(usersRepository).save(captor.capture());
             assertThat(captor.getValue().getUserId()).isEqualTo(USER_ID);
             assertThat(captor.getValue().getPassword()).isEqualTo("encoded-pw");
-            assertThat(captor.getValue().getRole()).isEqualTo(Role.USER);
+            assertThat(captor.getValue().getRole()).isEqualTo(Role.GUEST);
             assertThat(captor.getValue().getTenantId()).isEqualTo(TENANT_ID);
-            assertThat(captor.getValue().getStoreId()).isEqualTo(10L);
+            assertThat(captor.getValue().getStoreId()).isNull();
         }
 
         @Test
@@ -128,14 +128,18 @@ class UsersServiceTest {
         }
 
         @Test
-        @DisplayName("잘못된 Role 값 → IllegalArgumentException")
-        void 잘못된_Role() {
-            UserDto.Create dto = new UserDto.Create(USER_ID, "닉네임", "Password1!", "Password1!", "NOT_A_REAL_ROLE", null);
+        @DisplayName("요청 본문 role 이 ADMIN 이어도 GUEST 로 저장 (권한 상승 차단)")
+        void 요청_role_무시() {
+            UserDto.Create dto = new UserDto.Create(USER_ID, "닉네임", "Password1!", "Password1!", "ADMIN", 10L);
             given(usersRepository.existsByUserId(USER_ID)).willReturn(false);
+            given(encoder.encode(anyString())).willReturn("encoded");
 
-            assertThatThrownBy(() -> usersService.createUser(dto))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("올바르지 않은 권한");
+            usersService.createUser(dto);
+
+            ArgumentCaptor<Users> captor = ArgumentCaptor.forClass(Users.class);
+            verify(usersRepository).save(captor.capture());
+            assertThat(captor.getValue().getRole()).isEqualTo(Role.GUEST);
+            assertThat(captor.getValue().getStoreId()).isNull();
         }
     }
 
@@ -194,16 +198,15 @@ class UsersServiceTest {
             given(usersRepository.findByIdAndTenantId(USER_PK, TENANT_ID))
                     .willReturn(Optional.of(currentUser));
 
-            // 대상 사용자
             Users target = mock(Users.class);
+            given(target.getId()).willReturn(USER_PK);
             given(target.getUserId()).willReturn(USER_ID);
             given(target.getRole()).willReturn(Role.USER);
-            given(usersRepository.findById(2L)).willReturn(Optional.of(target));
+            given(usersRepository.findById(USER_PK)).willReturn(Optional.of(target));
 
-            given(authorityUserRoleUtil.isSelf(USER_ID, TOKEN)).willReturn(true);
             given(authorityUserRoleUtil.isAdmin(TOKEN)).willReturn(false);
 
-            UserDto.Update dto = new UserDto.Update("2", "새이름", null);
+            UserDto.Update dto = new UserDto.Update(USER_PK.toString(), "새이름", null);
             usersService.updateUserInfo(TOKEN, dto);
 
             verify(target).updateInfo(dto);
@@ -219,10 +222,10 @@ class UsersServiceTest {
                     .willReturn(Optional.of(currentUser));
 
             Users target = mock(Users.class);
+            given(target.getId()).willReturn(2L);
             given(target.getUserId()).willReturn("other-user");
             given(usersRepository.findById(2L)).willReturn(Optional.of(target));
 
-            given(authorityUserRoleUtil.isSelf("other-user", TOKEN)).willReturn(false);
             given(authorityUserRoleUtil.isAdmin(TOKEN)).willReturn(false);
 
             UserDto.Update dto = new UserDto.Update("2", "새이름", null);
@@ -244,14 +247,14 @@ class UsersServiceTest {
                     .willReturn(Optional.of(currentUser));
 
             Users target = mock(Users.class);
+            given(target.getId()).willReturn(USER_PK);
             given(target.getUserId()).willReturn(USER_ID);
             given(target.getRole()).willReturn(Role.USER);
-            given(usersRepository.findById(2L)).willReturn(Optional.of(target));
+            given(usersRepository.findById(USER_PK)).willReturn(Optional.of(target));
 
-            given(authorityUserRoleUtil.isSelf(USER_ID, TOKEN)).willReturn(true);
             given(authorityUserRoleUtil.isAdmin(TOKEN)).willReturn(false);
 
-            UserDto.Update dto = new UserDto.Update("2", "새이름", "ADMIN");
+            UserDto.Update dto = new UserDto.Update(USER_PK.toString(), "새이름", "ADMIN");
 
             assertThatThrownBy(() -> usersService.updateUserInfo(TOKEN, dto))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -270,11 +273,11 @@ class UsersServiceTest {
                     .willReturn(Optional.of(currentUser));
 
             Users target = mock(Users.class);
+            given(target.getId()).willReturn(2L);
             given(target.getUserId()).willReturn("other-user");
             given(target.getRole()).willReturn(Role.USER);
             given(usersRepository.findById(2L)).willReturn(Optional.of(target));
 
-            given(authorityUserRoleUtil.isSelf("other-user", TOKEN)).willReturn(false);
             given(authorityUserRoleUtil.isAdmin(TOKEN)).willReturn(true);
 
             UserDto.Update dto = new UserDto.Update("2", "새이름", "ADMIN");

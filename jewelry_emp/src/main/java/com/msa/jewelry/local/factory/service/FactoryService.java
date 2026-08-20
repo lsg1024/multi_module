@@ -40,7 +40,7 @@ public interface FactoryService {
 
     List<FactoryDto.ApiFactoryInfo> findAllFactory();
 
-    CustomPage<AccountDto.AccountResponse> getFactoryPurchase(String startAt, String endAt, Pageable pageable);
+    CustomPage<AccountDto.AccountResponse> getFactoryPurchase(String startAt, String endAt, String accountName, Pageable pageable);
 
     byte[] getPurchaseExcel(String accessToken, String endAt) throws IOException;
 

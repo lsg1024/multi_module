@@ -9,17 +9,22 @@ import com.msa.jewelry.local.product.entity.ProductImage;
 import com.msa.jewelry.local.product.repository.ProductRepository;
 import com.msa.jewelry.local.product.repository.image.ProductImageRepository;
 import lombok.extern.slf4j.Slf4j;
-import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 import static com.msa.jewelry.global.exception.ExceptionMessage.NOT_FOUND;
@@ -28,6 +33,9 @@ import static com.msa.jewelry.global.exception.ExceptionMessage.NOT_FOUND;
 @Service
 @Transactional
 public class ProductImageService {
+
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "webp", "bmp");
+    private static final long MAX_IMAGE_BYTES = 20L * 1024 * 1024;
 
     @Value("${FILE_UPLOAD_PATH2:/tmp/jewelry/uploads}")
     private String baseUploadPath;
@@ -53,7 +61,13 @@ public class ProductImageService {
             String originalFilename = file.getOriginalFilename();
             if (originalFilename == null) continue;
 
-            String productName = originalFilename.substring(0, originalFilename.lastIndexOf('.'));
+            int dotIndex = originalFilename.lastIndexOf('.');
+            if (dotIndex <= 0) {
+                log.warn("Skipped: 확장자가 없는 파일명 '{}'", originalFilename);
+                continue;
+            }
+
+            String productName = originalFilename.substring(0, dotIndex);
 
             Optional<Product> productOpt = productRepository.findByProductNameIgnoreCase(productName);
 
@@ -84,7 +98,7 @@ public class ProductImageService {
                     .map(ProductImage::getImageId)
                     .toList();
             for (ProductImage oldImage : currentImages) {
-                deletePhysicalFile(oldImage.getImagePath(), tenant);
+                deletePhysicalFileAfterCommit(oldImage.getImagePath(), tenant);
                 productImageRepository.delete(oldImage);
             }
             product.getProductImages().clear();
@@ -135,7 +149,7 @@ public class ProductImageService {
         ProductImage image = productImageRepository.findById(imageId)
                 .orElseThrow(() -> new IllegalArgumentException("이미지를 찾을 수 없습니다. ID: " + imageId));
 
-        deletePhysicalFile(image.getImagePath(), tenant);
+        deletePhysicalFileAfterCommit(image.getImagePath(), tenant);
 
         productImageRepository.delete(image);
 
@@ -152,6 +166,8 @@ public class ProductImageService {
     }
 
     private void saveImageFileAndEntity(MultipartFile file, Product product, String tenant) {
+        String extension = validateAndGetExtension(file);
+
         String absoluteDirPath = getAbsoluteProductDirPath(tenant, product.getProductId());
 
         // 디렉토리 생성
@@ -161,12 +177,6 @@ public class ProductImageService {
             if (!created) log.warn("Directory creation failed (might already exist): {}", absoluteDirPath);
         }
 
-        String originalFilename = file.getOriginalFilename();
-        String extension = "";
-        if (originalFilename.contains(".")) {
-            extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        }
-
         String fileName = UUID.randomUUID() + extension;
 
         String dbRelativePath = "/products/" + product.getProductId() + "/" + fileName;
@@ -174,10 +184,9 @@ public class ProductImageService {
         try {
             Path targetPath = Paths.get(absoluteDirPath, fileName);
 
-            Thumbnails.of(file.getInputStream())
-                    .scale(1.0)
-                    .outputQuality(1.0f)
-                    .toFile(targetPath.toFile());
+            try (InputStream in = file.getInputStream()) {
+                Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            }
 
             boolean existsMain = productImageRepository.existsByProduct_ProductId(product.getProductId());
 
@@ -203,6 +212,56 @@ public class ProductImageService {
 
         } catch (IOException e) {
             throw new RuntimeException("이미지 저장 실패: " + file.getOriginalFilename(), e);
+        }
+    }
+
+    private String validateAndGetExtension(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("빈 파일은 업로드할 수 없습니다.");
+        }
+        if (file.getSize() > MAX_IMAGE_BYTES) {
+            throw new IllegalArgumentException("이미지 파일이 너무 큽니다. (최대 " + (MAX_IMAGE_BYTES / (1024 * 1024)) + "MB)");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType != null && !contentType.toLowerCase().startsWith("image/")) {
+            throw new IllegalArgumentException("이미지 파일만 업로드할 수 있습니다: " + contentType);
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        if (!StringUtils.hasText(originalFilename)) {
+            throw new IllegalArgumentException("파일명이 없습니다.");
+        }
+
+        int dotIndex = originalFilename.lastIndexOf('.');
+        if (dotIndex < 0 || dotIndex == originalFilename.length() - 1) {
+            throw new IllegalArgumentException("확장자가 없는 파일입니다: " + originalFilename);
+        }
+
+        String extension = originalFilename.substring(dotIndex + 1).toLowerCase(Locale.ROOT);
+        if (!ALLOWED_EXTENSIONS.contains(extension)) {
+            throw new IllegalArgumentException("허용되지 않는 이미지 확장자입니다: " + extension);
+        }
+
+        return "." + extension;
+    }
+
+    private void deletePhysicalFileAfterCommit(String dbRelativePath, String tenant) {
+        if (dbRelativePath == null) {
+            return;
+        }
+        final String pathToPurge = dbRelativePath;
+        final String tenantToPurge = tenant;
+
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    deletePhysicalFile(pathToPurge, tenantToPurge);
+                }
+            });
+        } else {
+            deletePhysicalFile(pathToPurge, tenantToPurge);
         }
     }
 

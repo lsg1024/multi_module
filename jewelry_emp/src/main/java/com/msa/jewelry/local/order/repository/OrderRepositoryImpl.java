@@ -35,11 +35,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import static com.msa.jewelry.local.factory.entity.QFactory.factory;
 import static com.msa.jewelry.local.order.entity.QOrderProduct.orderProduct;
 import static com.msa.jewelry.local.order.entity.QOrders.orders;
 import static com.msa.jewelry.local.order.entity.QStatusHistory.statusHistory;
 import static com.msa.jewelry.local.priority.entity.QPriority.priority;
 import static com.msa.jewelry.local.stock.entity.QStock.stock;
+import static com.msa.jewelry.local.store.entity.QStore.store;
 import static java.util.stream.Collectors.*;
 
 @Slf4j
@@ -108,23 +110,14 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
             ordersStatusBuilder = getOrdersStatusBuilder(condition);
         }
 
-        List<Long> factoryIds = query
-                .selectDistinct(orders.factoryId)
+        return query
+                .selectDistinct(factory.factoryName)
                 .from(orders)
+                .join(factory).on(factory.factoryId.eq(orders.factoryId))
                 .where(ordersStatusBuilder)
-                .fetch();
-        return factoryIds.stream()
+                .fetch()
+                .stream()
                 .filter(Objects::nonNull)
-                .map(id -> {
-                    try {
-                        com.msa.jewelry.local.factory.dto.FactoryView v = factoryService.getFactoryInfo(id);
-                        return v != null ? v.factoryName() : null;
-                    } catch (RuntimeException e) {
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .distinct()
                 .toList();
     }
 
@@ -140,23 +133,14 @@ public class OrderRepositoryImpl implements CustomOrderRepository {
             ordersStatusBuilder = getOrdersStatusBuilder(condition);
         }
 
-        List<Long> storeIds = query
-                .selectDistinct(orders.storeId)
+        return query
+                .selectDistinct(store.storeName)
                 .from(orders)
+                .join(store).on(store.storeId.eq(orders.storeId))
                 .where(ordersStatusBuilder)
-                .fetch();
-        return storeIds.stream()
+                .fetch()
+                .stream()
                 .filter(Objects::nonNull)
-                .map(id -> {
-                    try {
-                        com.msa.jewelry.local.store.dto.StoreView v = storeService.getStoreInfoView(id);
-                        return v != null ? v.storeName() : null;
-                    } catch (RuntimeException e) {
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .distinct()
                 .toList();
     }
 

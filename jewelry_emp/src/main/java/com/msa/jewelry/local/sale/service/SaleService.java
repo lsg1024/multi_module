@@ -36,10 +36,9 @@ import com.msa.jewelry.local.stock.repository.StockRepository;
 import com.msa.jewelry.local.store.dto.StoreReceivableLogView;
 import com.msa.jewelry.local.store.dto.StoreView;
 import com.msa.jewelry.local.store.service.StoreService;
-import jakarta.ws.rs.NotFoundException;
+import com.msa.jewelry.global.exception.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -273,25 +272,26 @@ public class SaleService {
 
         String tenantId = jwtUtil.getTenantId(accessToken);
 
-        try {
-            LocalDateTime saleDate = LocalDateTime.now();
-            Long storeId = saleDto.getId();
-            String storeName = saleDto.getName();
-            BigDecimal harry = saleDto.getHarry();
-            String grade = saleDto.getGrade();
-
-            Sale sale = getSale(saleDate, storeId, storeName, harry, grade, createNewSheet);
-            sale.updateAccountGoldPrice(saleDto.getAccountGoldPrice());
-
-            SalePayment payment = createSalePayment(saleDto);
-            payment.updateEventId(eventId);
-            sale.addPayment(payment);
-            salePaymentRepository.saveAndFlush(payment);
-
-            applyBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, payment.getSaleStatus().name(), "STORE", storeId, storeName, payment.getMaterial(), payment.getPureGoldWeight(), payment.getCashAmount(), payment.getCreateDate());
-        } catch (DataIntegrityViolationException e) {
-            log.warn("멱등성 키 중복: 이미 처리된 요청입니다. eventId={}", eventId);
+        if (salePaymentRepository.existsByEventId(eventId)) {
+            log.info("멱등성 키 중복: 이미 처리된 요청입니다. eventId={}", eventId);
+            return;
         }
+
+        LocalDateTime saleDate = LocalDateTime.now();
+        Long storeId = saleDto.getId();
+        String storeName = saleDto.getName();
+        BigDecimal harry = saleDto.getHarry();
+        String grade = saleDto.getGrade();
+
+        Sale sale = getSale(saleDate, storeId, storeName, harry, grade, createNewSheet);
+        sale.updateAccountGoldPrice(saleDto.getAccountGoldPrice());
+
+        SalePayment payment = createSalePayment(saleDto);
+        payment.updateEventId(eventId);
+        sale.addPayment(payment);
+        salePaymentRepository.saveAndFlush(payment);
+
+        applyBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, payment.getSaleStatus().name(), "STORE", storeId, storeName, payment.getMaterial(), payment.getPureGoldWeight(), payment.getCashAmount(), payment.getCreateDate());
     }
 
     public void stockToSale(String accessToken, String eventId, Long flowCode, StockDto.stockRequest stockDto, boolean createNewSheet) {
@@ -357,8 +357,8 @@ public class SaleService {
         BigDecimal factoryPureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), materialNameUpper, factoryHarry);
         Integer factoryTotalMoney = stock.getTotalStonePurchaseCost() + product.getProductPurchaseCost();
 
-        applyBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", storeId, storeName, product.getMaterialName(), storePureGoldWeight, storeTotalMoney, transactionDate);
-        applyBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.PURCHASE.name(), "FACTORY", factoryId, factoryName, product.getMaterialName(), factoryPureGoldWeight, factoryTotalMoney, transactionDate);
+        applyBalanceChange(legEventId(eventId, "STORE"), sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", storeId, storeName, product.getMaterialName(), storePureGoldWeight, storeTotalMoney, transactionDate);
+        applyBalanceChange(legEventId(eventId, "FACTORY"), sale.getSaleCode().toString(), tenantId, SaleStatus.PURCHASE.name(), "FACTORY", factoryId, factoryName, product.getMaterialName(), factoryPureGoldWeight, factoryTotalMoney, transactionDate);
     }
 
     public void orderToSale(String accessToken, String eventId, Long flowCode, StockDto.StockRegisterRequest stockDto, boolean createNewSheet) {
@@ -401,8 +401,8 @@ public class SaleService {
         BigDecimal factoryPureGoldWeight = GoldUtils.calculatePureGoldWeightWithHarry(stockDto.getGoldWeight(), stockDto.getMaterialName().toUpperCase(), factoryHarry);
         Integer factoryTotalMoney = stock.getTotalStonePurchaseCost() + stock.getProduct().getProductPurchaseCost();
 
-        applyBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", storeId, storeName, stock.getProduct().getMaterialName(), storePureGoldWeight, storeTotalMoney, transactionDate);
-        applyBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.PURCHASE.name(), "FACTORY", factoryId, factoryName, stock.getProduct().getMaterialName(), factoryPureGoldWeight, factoryTotalMoney, transactionDate);
+        applyBalanceChange(legEventId(eventId, "STORE"), sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", storeId, storeName, stock.getProduct().getMaterialName(), storePureGoldWeight, storeTotalMoney, transactionDate);
+        applyBalanceChange(legEventId(eventId, "FACTORY"), sale.getSaleCode().toString(), tenantId, SaleStatus.PURCHASE.name(), "FACTORY", factoryId, factoryName, stock.getProduct().getMaterialName(), factoryPureGoldWeight, factoryTotalMoney, transactionDate);
     }
 
     //반품 로직 -> 제품은 다시 재고로, 결제는 다시 원복 -> 마지막 결제일의 경우?
@@ -574,6 +574,16 @@ public class SaleService {
         String stockStoreName = stock.getStoreId() != null
                 ? storeService.getStoreInfoView(stock.getStoreId()).storeName() : null;
         applyBalanceChange(eventId, sale.getSaleCode().toString(), tenantId, SaleStatus.SALE.name(), "STORE", stock.getStoreId(), stockStoreName, product.getMaterialName(), pureGoldWeightDelta, moneyBalanceDelta, lastModifiedDate);
+    }
+
+    private static String legEventId(String eventId, String leg) {
+        if (eventId == null) {
+            return null;
+        }
+        String suffix = ":" + leg;
+        int maxBaseLength = 100 - suffix.length();
+        String base = eventId.length() > maxBaseLength ? eventId.substring(0, maxBaseLength) : eventId;
+        return base + suffix;
     }
 
     /**
