@@ -81,8 +81,9 @@ public class FactoryController {
     public ResponseEntity<ApiResponse<CustomPage<AccountDto.AccountResponse>>> getFactoryPurchase(
             @RequestParam(name = "startAt", required = false) String startAt,
             @RequestParam(name = "endAt", required = false) String endAt,
+            @RequestParam(name = "accountName", required = false) String accountName,
             @PageableDefault(size = 12) Pageable pageable) {
-        CustomPage<AccountDto.AccountResponse> factoryPurchase = factoryService.getFactoryPurchase(startAt, endAt, pageable);
+        CustomPage<AccountDto.AccountResponse> factoryPurchase = factoryService.getFactoryPurchase(startAt, endAt, accountName, pageable);
         return ResponseEntity.ok(ApiResponse.success(factoryPurchase));
     }
 

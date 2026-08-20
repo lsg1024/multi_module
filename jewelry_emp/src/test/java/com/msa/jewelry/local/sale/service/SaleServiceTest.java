@@ -31,7 +31,7 @@ import com.msa.jewelry.local.stock.repository.StockRepository;
 import com.msa.jewelry.local.store.dto.StoreReceivableLogView;
 import com.msa.jewelry.local.store.dto.StoreView;
 import com.msa.jewelry.local.store.service.StoreService;
-import jakarta.ws.rs.NotFoundException;
+import com.msa.jewelry.global.exception.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -299,11 +299,24 @@ class SaleServiceTest {
         }
 
         @Test
-        @DisplayName("멱등키 중복(DataIntegrityViolation) 시 예외 삼키고 정상 종료 — log 만 남김")
+        @DisplayName("이미 처리된 eventId 는 사전 조회로 걸러 조용히 종료 — 저장/잔액 반영 없음")
         void 멱등키_중복_조용히_종료() {
             SaleDto.Request req = paymentRequest("18K", "3.250", 150_000, SaleStatus.PAYMENT.name());
 
-            // salePaymentRepository.saveAndFlush 가 중복 키로 터지는 시나리오
+            given(salePaymentRepository.existsByEventId(EVENT_ID)).willReturn(true);
+
+            saleService.createStorePayment(TOKEN, EVENT_ID, req, true);
+
+            verify(salePaymentRepository, never()).saveAndFlush(any(SalePayment.class));
+            verify(storeService, never()).applyDelta(any(), any(), any(), any(), any(), any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("경합으로 뚫린 중복 키는 삼키지 않고 그대로 전파된다 — 트랜잭션 롤백")
+        void 멱등키_경합_예외_전파() {
+            SaleDto.Request req = paymentRequest("18K", "3.250", 150_000, SaleStatus.PAYMENT.name());
+
+            given(salePaymentRepository.existsByEventId(EVENT_ID)).willReturn(false);
             willThrow(new DataIntegrityViolationException("dup key"))
                     .given(salePaymentRepository).saveAndFlush(any(SalePayment.class));
 
@@ -312,10 +325,9 @@ class SaleServiceTest {
             given(saleRepository.save(any(Sale.class))).willAnswer(inv -> inv.getArgument(0));
             given(saleRepository.countByCreateDateBetween(any(), any())).willReturn(0L);
 
-            // 예외가 밖으로 새지 않아야 한다
-            saleService.createStorePayment(TOKEN, EVENT_ID, req, true);
+            assertThatThrownBy(() -> saleService.createStorePayment(TOKEN, EVENT_ID, req, true))
+                    .isInstanceOf(DataIntegrityViolationException.class);
 
-            // applyBalanceChange 까지는 도달하지 않음 (예외 후 catch)
             verify(storeService, never()).applyDelta(any(), any(), any(), any(), any(), any(), any(), any());
         }
     }

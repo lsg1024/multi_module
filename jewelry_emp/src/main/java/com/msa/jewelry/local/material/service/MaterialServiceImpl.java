@@ -6,7 +6,9 @@ import com.msa.jewelry.local.material.dto.MaterialDto;
 import com.msa.jewelry.local.material.entity.Material;
 import com.msa.jewelry.local.material.repository.MaterialRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
@@ -112,16 +114,22 @@ public class MaterialServiceImpl implements MaterialService {
             throw new IllegalArgumentException(NOT_ACCESS);
         }
 
+        JobExecution jobExecution;
         try {
             JobParameters jobParameters = new JobParametersBuilder()
                     .addString("tenantId", tenantId)
                     .addLong("materialId", id)
                     .addLong("timestamp", System.currentTimeMillis())
                     .toJobParameters();
-            jobLauncher.run(updateMaterialUpdateJob, jobParameters);
+            jobExecution = jobLauncher.run(updateMaterialUpdateJob, jobParameters);
         } catch (Exception e) {
             log.error("updateMaterialUpdateJob 실행 실패: materialId={}", id, e);
             throw new IllegalStateException(BATCH_FAIL, e);
+        }
+        if (jobExecution != null && jobExecution.getStatus() != BatchStatus.COMPLETED) {
+            log.error("updateMaterialUpdateJob 비정상 종료: materialId={}, status={}, failures={}",
+                    id, jobExecution.getStatus(), jobExecution.getAllFailureExceptions());
+            throw new IllegalStateException(BATCH_FAIL);
         }
     }
 

@@ -11,4 +11,6 @@ public interface SalePaymentRepository extends JpaRepository<SalePayment, Long> 
             "left join fetch sp.sale s " +
             "where sp.flowCode= :flowCode")
     Optional<SalePayment> findByFlowCode(Long flowCode);
+
+    boolean existsByEventId(String eventId);
 }

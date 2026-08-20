@@ -785,9 +785,7 @@ class StoreServiceImplTest {
             Long id1 = 1L, id2 = 2L, id3 = 3L;
             Store s1 = realStorePhone(id1, "A상점", "010-1111-1111");
             Store s3 = realStorePhone(id3, "C상점", "010-3333-3333");
-            given(storeRepository.findById(id1)).willReturn(Optional.of(s1));
-            given(storeRepository.findById(id2)).willReturn(Optional.empty());
-            given(storeRepository.findById(id3)).willReturn(Optional.of(s3));
+            given(storeRepository.findAllById(List.of(id1, id2, id3))).willReturn(List.of(s1, s3));
 
             List<StoreDto.StorePhoneInfo> result = storeService.getStorePhones(List.of(id1, id2, id3));
 
@@ -988,7 +986,7 @@ class StoreServiceImplTest {
         @DisplayName("정상 — StorePhoneInfo → StorePhoneView 매핑")
         void 정상() {
             Store s = realStorePhone(1L, "A상점", "010-1111-2222");
-            given(storeRepository.findById(1L)).willReturn(Optional.of(s));
+            given(storeRepository.findAllById(List.of(1L))).willReturn(List.of(s));
 
             List<StorePhoneView> result = storeService.getStorePhonesView(List.of(1L));
 

@@ -117,6 +117,9 @@ public class StockServiceImpl implements StockService {
             }
         }
 
+        Map<Long, String> storeNameCache = new HashMap<>();
+        Map<Long, String> factoryNameCache = new HashMap<>();
+
         List<StockDto.ResponseDetail> responseDetails = new ArrayList<>();
         for (Stock stock : stocks) {
             StatusHistory statusHistory = latestHistoryByFlowCode.get(stock.getFlowCode());
@@ -130,10 +133,26 @@ public class StockServiceImpl implements StockService {
                     ? statusHistory.getSourceType().getDisplayName()
                     : null;
 
-            String stockStoreName = stock.getStoreId() != null
-                    ? storeService.getStoreInfoView(stock.getStoreId()).storeName() : null;
-            String stockFactoryName = stock.getFactoryId() != null
-                    ? factoryService.getFactoryInfo(stock.getFactoryId()).factoryName() : null;
+            String stockStoreName = null;
+            if (stock.getStoreId() != null) {
+                Long stockStoreId = stock.getStoreId();
+                if (storeNameCache.containsKey(stockStoreId)) {
+                    stockStoreName = storeNameCache.get(stockStoreId);
+                } else {
+                    stockStoreName = storeService.getStoreInfoView(stockStoreId).storeName();
+                    storeNameCache.put(stockStoreId, stockStoreName);
+                }
+            }
+            String stockFactoryName = null;
+            if (stock.getFactoryId() != null) {
+                Long stockFactoryId = stock.getFactoryId();
+                if (factoryNameCache.containsKey(stockFactoryId)) {
+                    stockFactoryName = factoryNameCache.get(stockFactoryId);
+                } else {
+                    stockFactoryName = factoryService.getFactoryInfo(stockFactoryId).factoryName();
+                    factoryNameCache.put(stockFactoryId, stockFactoryName);
+                }
+            }
 
             StockDto.ResponseDetail stockDetail = StockDto.ResponseDetail.builder()
                     .createAt(stock.getCreateDate() != null ? stock.getCreateDate().toString() : null)

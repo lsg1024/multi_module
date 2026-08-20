@@ -623,6 +623,9 @@ public class OrdersService {
             }
         }
 
+        Map<Long, String> storeNameCache = new HashMap<>();
+        Map<Long, String> factoryNameCache = new HashMap<>();
+
         List<StockDto.ResponseDetail> responseDetails = new ArrayList<>();
         for (Orders order : orders) {
             StatusHistory statusHistory = latestHistoryByFlowCode.get(order.getFlowCode());
@@ -635,12 +638,26 @@ public class OrdersService {
                     ? statusHistory.getSourceType().getDisplayName()
                     : null;
 
-            String orderStoreName = order.getStoreId() != null
-                    ? storeService.getStoreInfoView(order.getStoreId()).storeName()
-                    : null;
-            String orderFactoryName = order.getFactoryId() != null
-                    ? factoryService.getFactoryInfo(order.getFactoryId()).factoryName()
-                    : null;
+            String orderStoreName = null;
+            if (order.getStoreId() != null) {
+                Long storeId = order.getStoreId();
+                if (storeNameCache.containsKey(storeId)) {
+                    orderStoreName = storeNameCache.get(storeId);
+                } else {
+                    orderStoreName = storeService.getStoreInfoView(storeId).storeName();
+                    storeNameCache.put(storeId, orderStoreName);
+                }
+            }
+            String orderFactoryName = null;
+            if (order.getFactoryId() != null) {
+                Long factoryId = order.getFactoryId();
+                if (factoryNameCache.containsKey(factoryId)) {
+                    orderFactoryName = factoryNameCache.get(factoryId);
+                } else {
+                    orderFactoryName = factoryService.getFactoryInfo(factoryId).factoryName();
+                    factoryNameCache.put(factoryId, orderFactoryName);
+                }
+            }
 
             StockDto.ResponseDetail orderDetail = StockDto.ResponseDetail.builder()
                     .createAt(order.getCreateAt() != null ? order.getCreateAt().toString() : null)

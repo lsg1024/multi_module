@@ -241,7 +241,11 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
     }
 
     @Override
-    public CustomPage<AccountDto.AccountResponse> findAllFactoryAndPurchase(String startAt, String endAt, Pageable pageable) {
+    public CustomPage<AccountDto.AccountResponse> findAllFactoryAndPurchase(String startAt, String endAt, String accountName, Pageable pageable) {
+
+        BooleanExpression accountNameCondition = StringUtils.hasText(accountName)
+                ? factory.factoryName.contains(accountName.trim())
+                : null;
 
         StringExpression latestTxDate = Expressions.stringTemplate(
                 "TO_CHAR(MAX(transactionHistory.transactionDate), 'YYYY-MM-DD HH24:MI:SS')",
@@ -289,7 +293,8 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
                 .leftJoin(factory.address, address)
                 .where(
                         factory.factoryDeleted.isFalse(),
-                        factory.currentGoldBalance.ne(BigDecimal.ZERO).or(factory.currentMoneyBalance.ne(0L))
+                        factory.currentGoldBalance.ne(BigDecimal.ZERO).or(factory.currentMoneyBalance.ne(0L)),
+                        accountNameCondition
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -300,7 +305,8 @@ public class FactoryRepositoryImpl implements CustomFactoryRepository {
                 .from(factory)
                 .where(
                         factory.factoryDeleted.isFalse(),
-                        factory.currentGoldBalance.ne(BigDecimal.ZERO).or(factory.currentMoneyBalance.ne(0L))
+                        factory.currentGoldBalance.ne(BigDecimal.ZERO).or(factory.currentMoneyBalance.ne(0L)),
+                        accountNameCondition
                 );
 
         return new CustomPage<>(content, pageable, countQuery.fetchOne());
