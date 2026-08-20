@@ -11,6 +11,9 @@ import java.util.Optional;
 
 public interface OrdersRepository extends JpaRepository<Orders, Long> {
     boolean existsByFlowCodeAndProductStatusIn(Long flowCode, List<ProductStatus> statuses);
+
+    /** 레거시 주문 이관 멱등 가드 — 동일 원본 주문번호가 이미 적재됐는지. */
+    boolean existsByLegacyOrderNo(String legacyOrderNo);
     @Query("""
     select distinct o from Orders o
      left join fetch o.orderProduct op

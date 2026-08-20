@@ -31,8 +31,8 @@ public class ScheduleController {
      */
     @GetMapping("/schedules")
     public ResponseEntity<ApiResponse<List<ScheduleDto.Response>>> getSchedules(
-            @RequestParam(name = "start") String startDate,
-            @RequestParam(name = "end") String endDate) {
+            @RequestParam(name = "startAt") String startDate,
+            @RequestParam(name = "endAt") String endDate) {
         List<ScheduleDto.Response> schedules = scheduleService.getSchedulesByDateRange(startDate, endDate);
         return ResponseEntity.ok(ApiResponse.success(schedules));
     }

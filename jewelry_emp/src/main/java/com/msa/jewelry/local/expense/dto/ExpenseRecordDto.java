@@ -1,6 +1,10 @@
 package com.msa.jewelry.local.expense.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,10 +22,14 @@ public class ExpenseRecordDto {
     @Builder
     @Schema(description = "지출/수입 기록 등록 요청")
     public static class CreateRequest {
+        @NotBlank(message = "기록 일자는 필수입니다.")
         @Schema(description = "기록 일자 (문자열, 예: 2026-05-16)", example = "2026-05-16")
         private String recordDate;
+        @NotBlank(message = "지출 유형은 필수입니다.")
+        @Pattern(regexp = "(?i)(INCOME|EXPENSE)", message = "지출 유형은 INCOME 또는 EXPENSE 여야 합니다.")
         @Schema(description = "지출 유형 (수입/지출 구분)", example = "EXPENSE")
         private String expenseType;
+        @NotNull(message = "은행 유형 ID는 필수입니다.")
         @Schema(description = "은행 유형 ID", example = "1")
         private Long bankTypeId;
         @Schema(description = "수입 계정 ID", example = "1")
@@ -34,14 +42,19 @@ public class ExpenseRecordDto {
         private String description;
         @Schema(description = "재질 (14K/18K/24K 등)", example = "18K")
         private String material;
+        @PositiveOrZero(message = "중량은 0 이상이어야 합니다.")
         @Schema(description = "중량(g)", example = "12.345")
         private BigDecimal weight;
+        @PositiveOrZero(message = "수량은 0 이상이어야 합니다.")
         @Schema(description = "수량", example = "1")
         private Integer quantity;
+        @PositiveOrZero(message = "단가는 0 이상이어야 합니다.")
         @Schema(description = "단가", example = "100000")
         private Long unitPrice;
+        @PositiveOrZero(message = "공급가액은 0 이상이어야 합니다.")
         @Schema(description = "공급가액", example = "1000000")
         private Long supplyAmount;
+        @PositiveOrZero(message = "부가세액은 0 이상이어야 합니다.")
         @Schema(description = "부가세액", example = "100000")
         private Long taxAmount;
     }
@@ -52,10 +65,14 @@ public class ExpenseRecordDto {
     @Builder
     @Schema(description = "지출/수입 기록 수정 요청")
     public static class UpdateRequest {
+        @NotBlank(message = "기록 일자는 필수입니다.")
         @Schema(description = "기록 일자 (문자열)", example = "2026-05-16")
         private String recordDate;
+        @NotBlank(message = "지출 유형은 필수입니다.")
+        @Pattern(regexp = "(?i)(INCOME|EXPENSE)", message = "지출 유형은 INCOME 또는 EXPENSE 여야 합니다.")
         @Schema(description = "지출 유형 (수입/지출 구분)", example = "EXPENSE")
         private String expenseType;
+        @NotNull(message = "은행 유형 ID는 필수입니다.")
         @Schema(description = "은행 유형 ID", example = "1")
         private Long bankTypeId;
         @Schema(description = "수입 계정 ID", example = "1")
@@ -68,14 +85,19 @@ public class ExpenseRecordDto {
         private String description;
         @Schema(description = "재질", example = "18K")
         private String material;
+        @PositiveOrZero(message = "중량은 0 이상이어야 합니다.")
         @Schema(description = "중량(g)", example = "12.345")
         private BigDecimal weight;
+        @PositiveOrZero(message = "수량은 0 이상이어야 합니다.")
         @Schema(description = "수량", example = "1")
         private Integer quantity;
+        @PositiveOrZero(message = "단가는 0 이상이어야 합니다.")
         @Schema(description = "단가", example = "100000")
         private Long unitPrice;
+        @PositiveOrZero(message = "공급가액은 0 이상이어야 합니다.")
         @Schema(description = "공급가액", example = "1000000")
         private Long supplyAmount;
+        @PositiveOrZero(message = "부가세액은 0 이상이어야 합니다.")
         @Schema(description = "부가세액", example = "100000")
         private Long taxAmount;
     }

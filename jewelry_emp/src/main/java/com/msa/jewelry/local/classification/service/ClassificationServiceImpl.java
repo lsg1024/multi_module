@@ -6,7 +6,9 @@ import com.msa.jewelry.local.classification.repository.ClassificationRepository;
 import com.msa.jewelry.global.exception.NotFoundException;
 import com.msa.common.global.jwt.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
@@ -95,16 +97,22 @@ public class ClassificationServiceImpl implements ClassificationService {
             throw new IllegalArgumentException(NOT_ACCESS);
         }
 
+        JobExecution jobExecution;
         try {
             JobParameters jobParameters = new JobParametersBuilder()
                     .addString("tenantId", tenantId)
                     .addLong("classificationId", classificationId)
                     .addLong("timestamp", System.currentTimeMillis())
                     .toJobParameters();
-            jobLauncher.run(updateClassificationJob, jobParameters);
+            jobExecution = jobLauncher.run(updateClassificationJob, jobParameters);
         } catch (Exception e) {
             log.error("updateClassificationJob 실행 실패: classificationId={}", classificationId, e);
             throw new IllegalStateException(BATCH_FAIL, e);
+        }
+        if (jobExecution != null && jobExecution.getStatus() != BatchStatus.COMPLETED) {
+            log.error("updateClassificationJob 비정상 종료: classificationId={}, status={}, failures={}",
+                    classificationId, jobExecution.getStatus(), jobExecution.getAllFailureExceptions());
+            throw new IllegalStateException(BATCH_FAIL);
         }
     }
 

@@ -48,7 +48,7 @@ public class ExpenseRecordController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<ExpenseRecordDto.DetailResponse>> createExpenseRecord(
-            @RequestBody ExpenseRecordDto.CreateRequest request) {
+            @Valid @RequestBody ExpenseRecordDto.CreateRequest request) {
         ExpenseRecordDto.DetailResponse response = recordService.createExpenseRecord(request);
         return ResponseEntity.ok(ApiResponse.success("Expense record created successfully", response));
     }
@@ -63,7 +63,7 @@ public class ExpenseRecordController {
     @PatchMapping("/{id}")
     public ResponseEntity<ApiResponse<ExpenseRecordDto.DetailResponse>> updateExpenseRecord(
             @PathVariable Long id,
-            @RequestBody ExpenseRecordDto.UpdateRequest request) {
+            @Valid @RequestBody ExpenseRecordDto.UpdateRequest request) {
         ExpenseRecordDto.DetailResponse response = recordService.updateExpenseRecord(id, request);
         return ResponseEntity.ok(ApiResponse.success("Expense record updated successfully", response));
     }

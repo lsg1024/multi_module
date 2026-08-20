@@ -2,11 +2,13 @@ package com.msa.jewelry.local.store.controller;
 
 import com.msa.jewelry.global.dto.AccountDto;
 import com.msa.jewelry.global.excel.dto.AccountExcelDto;
+import com.msa.jewelry.global.exception.NotAuthorityException;
 import com.msa.jewelry.local.factory.service.ExcelService;
 import com.msa.jewelry.local.store.dto.StoreDto;
 import com.msa.jewelry.local.store.service.StoreService;
 import com.msa.common.global.api.ApiResponse;
 import com.msa.common.global.jwt.AccessToken;
+import com.msa.common.global.util.AuthorityUserRoleUtil;
 import com.msa.common.global.util.CustomPage;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -39,19 +41,41 @@ public class StoreController {
     private final ExcelService excelService;
     private final JobLauncher jobLauncher;
     private final Job storeImportJob;
+    private final AuthorityUserRoleUtil authorityUserRoleUtil;
 
-    public StoreController(StoreService storeService, ExcelService excelService, JobLauncher jobLauncher, Job storeImportJob) {
+    public StoreController(StoreService storeService, ExcelService excelService, JobLauncher jobLauncher, Job storeImportJob,
+                           AuthorityUserRoleUtil authorityUserRoleUtil) {
         this.storeService = storeService;
         this.excelService = excelService;
         this.jobLauncher = jobLauncher;
         this.storeImportJob = storeImportJob;
+        this.authorityUserRoleUtil = authorityUserRoleUtil;
+    }
+
+    private void verifyReadRole(String accessToken) {
+        if (!authorityUserRoleUtil.verification(accessToken)) {
+            throw new NotAuthorityException("권한이 없습니다.");
+        }
+    }
+
+    private void verifyStoreReadAccess(String accessToken, Long storeId) {
+        if (authorityUserRoleUtil.isStore(accessToken)) {
+            Long ownStoreId = authorityUserRoleUtil.getStoreId(accessToken);
+            if (ownStoreId == null || !ownStoreId.equals(storeId)) {
+                throw new NotAuthorityException("본인 거래처만 조회할 수 있습니다.");
+            }
+            return;
+        }
+        verifyReadRole(accessToken);
     }
 
     //상점 단일 조회
     @GetMapping("/store/{id}")
     public ResponseEntity<ApiResponse<AccountDto.AccountSingleResponse>> getStoreInfo(
+            @AccessToken String accessToken,
             @PathVariable("id") String storeId) {
 
+        verifyStoreReadAccess(accessToken, Long.valueOf(storeId));
         AccountDto.AccountSingleResponse storeInfo = storeService.getStoreInfo(storeId);
 
         return ResponseEntity.ok(ApiResponse.success(storeInfo));
@@ -60,12 +84,14 @@ public class StoreController {
     //상점 목록 조회
     @GetMapping("/stores")
     public ResponseEntity<ApiResponse<CustomPage<StoreDto.StoreResponse>>> getStoreList(
+            @AccessToken String accessToken,
             @RequestParam(name = "search", required = false) String name,
             @RequestParam(name = "searchField", required = false) String searchField,
             @RequestParam(name = "sortField", required = false) String sortField,
             @RequestParam(name = "sortOrder", required = false) String sortOrder,
             @PageableDefault(size = 12) Pageable pageable) {
 
+        verifyReadRole(accessToken);
         CustomPage<StoreDto.StoreResponse> storeList = storeService.getStoreList(name, searchField, sortField, sortOrder, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(storeList));
@@ -74,10 +100,12 @@ public class StoreController {
     //상점 미수 금액 조회
     @GetMapping("/stores/receivable")
     public ResponseEntity<ApiResponse<CustomPage<AccountDto.AccountResponse>>> getStoreReceivable(
+            @AccessToken String accessToken,
             @RequestParam(name = "search", required = false) String name,
             @RequestParam(name = "sortField", required = false) String field,
             @RequestParam(name = "sortOrder", required = false) String sort,
             @PageableDefault(size = 12) Pageable pageable) {
+        verifyReadRole(accessToken);
         CustomPage<AccountDto.AccountResponse> storeAttemptList = storeService.getStoreReceivable(name, field, sort, pageable);
         return ResponseEntity.ok(ApiResponse.success(storeAttemptList));
     }
@@ -85,8 +113,10 @@ public class StoreController {
     //상점 미수 금액 상세조회 - 현재 미수 값 조회
     @GetMapping("/stores/receivable/{id}")
     public ResponseEntity<ApiResponse<AccountDto.AccountResponse>> getStoreReceivableDetail(
+            @AccessToken String accessToken,
             @PathVariable(name = "id") String storeId) {
 
+        verifyStoreReadAccess(accessToken, Long.valueOf(storeId));
         AccountDto.AccountResponse storeAttemptDetail = storeService.getStoreReceivableDetail(storeId);
         return ResponseEntity.ok(ApiResponse.success(storeAttemptDetail));
     }
@@ -94,9 +124,11 @@ public class StoreController {
     //판매 로그 기반 상점 미수 금액 상세조회 - 현재 미수 값 조회
     @GetMapping("/stores/receivable/sale-log/{id}")
     public ResponseEntity<ApiResponse<AccountDto.AccountSaleLogResponse>> getStoreReceivableLogDetail(
+            @AccessToken String accessToken,
             @PathVariable(name = "id") String storeId,
             @RequestParam(name = "saleCode") String saleCode) {
 
+        verifyStoreReadAccess(accessToken, Long.valueOf(storeId));
         AccountDto.AccountSaleLogResponse storeAttemptDetail = storeService.getStoreReceivableLogDetail(storeId, saleCode);
         return ResponseEntity.ok(ApiResponse.success(storeAttemptDetail));
     }
@@ -107,8 +139,10 @@ public class StoreController {
      */
     @GetMapping("/stores/{id}/recent-activity")
     public ResponseEntity<ApiResponse<AccountDto.RecentActivityResponse>> getStoreRecentActivity(
+            @AccessToken String accessToken,
             @PathVariable(name = "id") Long storeId,
             @RequestParam(name = "limit", required = false, defaultValue = "20") int limit) {
+        verifyStoreReadAccess(accessToken, storeId);
         return ResponseEntity.ok(ApiResponse.success(storeService.getStoreRecentActivity(storeId, limit)));
     }
 
@@ -141,7 +175,7 @@ public class StoreController {
         } catch (Exception e) {
             log.error("Store batch upload failed", e);
             return ResponseEntity.internalServerError()
-                    .body(ApiResponse.error("저장 실패: " + e.getMessage()));
+                    .body(ApiResponse.error("업로드 처리에 실패했습니다."));
         } finally {
             if (tempPath != null) {
                 try { Files.deleteIfExists(tempPath); } catch (IOException ignored) {}

@@ -2,6 +2,8 @@ package com.msa.jewelry.local.user.service;
 
 import com.msa.common.global.domain.dto.MessageDto;
 import com.msa.common.global.jwt.JwtUtil;
+import com.msa.common.global.util.AuthorityUserRoleUtil;
+import com.msa.jewelry.global.exception.NotAuthorityException;
 import com.msa.jewelry.local.store.service.StoreService;
 import com.msa.jewelry.local.store.dto.StorePhoneView;
 import com.msa.jewelry.local.user.entity.MessageHistory;
@@ -31,10 +33,18 @@ public class MessageService {
     private final StoreService storeService;
     private final NaverSensApi naverSensApi;
     private final JwtUtil jwtUtil;
+    private final AuthorityUserRoleUtil authorityUserRoleUtil;
+
+    private void requireStaff(String accessToken) {
+        if (!authorityUserRoleUtil.verification(accessToken)) {
+            throw new NotAuthorityException("메시지 기능을 사용할 권한이 없습니다.");
+        }
+    }
 
     // SENS 설정 저장/수정
     @Transactional
     public MessageDto.SensConfigResponse saveSensConfig(String accessToken, MessageDto.SensConfigRequest request) {
+        requireStaff(accessToken);
         String tenantId = jwtUtil.getTenantId(accessToken);
 
         SensConfig config = sensConfigRepository.findByTenantId(tenantId)
@@ -65,6 +75,7 @@ public class MessageService {
     // SENS 설정 조회
     @Transactional(readOnly = true)
     public MessageDto.SensConfigResponse getSensConfig(String accessToken) {
+        requireStaff(accessToken);
         String tenantId = jwtUtil.getTenantId(accessToken);
 
         SensConfig config = sensConfigRepository.findByTenantId(tenantId)
@@ -82,6 +93,7 @@ public class MessageService {
     // SENS 설정 삭제
     @Transactional
     public void deleteSensConfig(String accessToken) {
+        requireStaff(accessToken);
         String tenantId = jwtUtil.getTenantId(accessToken);
 
         SensConfig config = sensConfigRepository.findByTenantId(tenantId)
@@ -93,6 +105,7 @@ public class MessageService {
     // SMS 전송
     @Transactional
     public List<MessageDto.SendResult> sendMessage(String accessToken, MessageDto.SendRequest request) {
+        requireStaff(accessToken);
         String tenantId = jwtUtil.getTenantId(accessToken);
         String nickname = jwtUtil.getNickname(accessToken);
 
@@ -144,8 +157,8 @@ public class MessageService {
                         "SUCCESS", null, requestId, nickname);
 
             } catch (Exception e) {
-                log.error("SMS 전송 실패 - Store: {}, Phone: {}, Error: {}",
-                        store.storeName(), phone, e.getMessage());
+                log.error("SMS 전송 실패 - storeId: {}, phone: {}, error: {}",
+                        store.storeId(), maskPhone(phone), e.getMessage());
 
                 results.add(MessageDto.SendResult.builder()
                         .storeName(store.storeName())
@@ -171,6 +184,7 @@ public class MessageService {
                                                        LocalDate startDate,
                                                        LocalDate endDate,
                                                        Pageable pageable) {
+        requireStaff(accessToken);
         String tenantId = jwtUtil.getTenantId(accessToken);
 
         LocalDateTime startDateTime = startDate != null ? startDate.atStartOfDay() : null;
@@ -194,6 +208,13 @@ public class MessageService {
                         .sentBy(h.getSentBy())
                         .createdAt(h.getCreatedAt())
                         .build());
+    }
+
+    private static String maskPhone(String p) {
+        if (p == null || p.length() < 4) {
+            return "****";
+        }
+        return "*".repeat(p.length() - 4) + p.substring(p.length() - 4);
     }
 
     private String trimOrNull(String value) {

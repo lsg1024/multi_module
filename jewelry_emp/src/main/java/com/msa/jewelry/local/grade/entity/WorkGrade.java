@@ -27,7 +27,7 @@ public enum WorkGrade {
                 return grade;
             }
         }
-        throw new IllegalArgumentException("No enum constant with level " + level);
+        throw new IllegalArgumentException("유효하지 않은 등급 값입니다: " + level);
     }
 
     public String getLevel() {

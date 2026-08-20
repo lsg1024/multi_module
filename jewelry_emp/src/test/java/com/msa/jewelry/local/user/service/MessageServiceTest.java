@@ -2,6 +2,7 @@ package com.msa.jewelry.local.user.service;
 
 import com.msa.common.global.domain.dto.MessageDto;
 import com.msa.common.global.jwt.JwtUtil;
+import com.msa.common.global.util.AuthorityUserRoleUtil;
 import com.msa.jewelry.global.exception.ExceptionMessage;
 import com.msa.jewelry.local.store.service.StoreService;
 import com.msa.jewelry.local.user.entity.SensConfig;
@@ -47,6 +48,8 @@ class MessageServiceTest {
     NaverSensApi naverSensApi;
     @Mock
     JwtUtil jwtUtil;
+    @Mock
+    AuthorityUserRoleUtil authorityUserRoleUtil;
 
     @InjectMocks
     MessageService messageService;
@@ -55,6 +58,8 @@ class MessageServiceTest {
     void commonStubs() {
         given(jwtUtil.getTenantId(anyString())).willReturn(TENANT_ID);
         given(jwtUtil.getNickname(anyString())).willReturn(NICKNAME);
+        given(authorityUserRoleUtil.isAdmin(anyString())).willReturn(true);
+        given(authorityUserRoleUtil.verification(anyString())).willReturn(true);
     }
 
     // -----------------------------------------------------------------------

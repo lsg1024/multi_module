@@ -6,7 +6,9 @@ import com.msa.jewelry.local.color.dto.ColorDto;
 import com.msa.jewelry.local.color.entity.Color;
 import com.msa.jewelry.local.color.repository.ColorRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
@@ -93,16 +95,22 @@ public class ColorServiceImpl implements ColorService {
             throw new IllegalArgumentException(NOT_ACCESS);
         }
 
+        JobExecution jobExecution;
         try {
             JobParameters jobParameters = new JobParametersBuilder()
                     .addString("tenantId", tenantId)
                     .addLong("colorId", colorId)
                     .addLong("timestamp", System.currentTimeMillis())
                     .toJobParameters();
-            jobLauncher.run(updateColorJob, jobParameters);
+            jobExecution = jobLauncher.run(updateColorJob, jobParameters);
         } catch (Exception e) {
             log.error("updateColorJob 실행 실패: colorId={}", colorId, e);
             throw new IllegalStateException(BATCH_FAIL, e);
+        }
+        if (jobExecution != null && jobExecution.getStatus() != BatchStatus.COMPLETED) {
+            log.error("updateColorJob 비정상 종료: colorId={}, status={}, failures={}",
+                    colorId, jobExecution.getStatus(), jobExecution.getAllFailureExceptions());
+            throw new IllegalStateException(BATCH_FAIL);
         }
     }
 

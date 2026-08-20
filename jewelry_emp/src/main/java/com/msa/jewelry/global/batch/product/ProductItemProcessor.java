@@ -65,7 +65,7 @@ public class ProductItemProcessor implements ItemProcessor<ProductBatchDto, Prod
 
         } catch (Exception e) {
             log.error(">>>> [Batch] 공장 정보를 불러오는데 실패했습니다.", e);
-            throw new RuntimeException("Factory Data Load Failed", e);
+            throw new RuntimeException("공장 데이터 로드에 실패했습니다.", e);
         }
     }
     @Override

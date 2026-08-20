@@ -1,5 +1,17 @@
 FILE_UPLOAD_PATH: ${FILE_UPLOAD_PATH:/tmp/jewelry/uploads}
 
+spring:
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+
+logging:
+  level:
+    com.msa.jewelry: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+
 imagesearch:
   base-url: ${IMAGE_SEARCH_BASE_URL:http://localhost:8081}
   api-key: ${IMAGE_SEARCH_API_KEY:dev-api-key}

@@ -3,17 +3,16 @@ package com.msa.jewelry.local.transaction_history.service;
 import com.msa.common.global.common_enum.sale_enum.SaleStatus;
 import com.msa.common.global.util.CustomPage;
 import com.msa.jewelry.local.factory.repository.FactoryRepository;
+import com.msa.jewelry.local.factory.service.FactoryService;
 import com.msa.jewelry.local.store.repository.StoreRepository;
 import com.msa.jewelry.local.transaction_history.dto.PurchaseDto;
 import com.msa.jewelry.local.transaction_history.dto.TransactionDto;
 import com.msa.jewelry.local.transaction_history.dto.TransactionPage;
-import com.msa.jewelry.local.transaction_history.entity.TransactionHistory;
 import com.msa.jewelry.local.transaction_history.repository.TransactionHistoryRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -22,17 +21,16 @@ import org.mockito.quality.Strictness;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -50,19 +48,17 @@ class TransactionHistoryServiceTest {
     @Mock StoreRepository storeRepository;
     @Mock FactoryRepository factoryRepository;
     @Mock TransactionHistoryRepository transactionHistoryRepository;
+    @Mock FactoryService factoryService;
 
     @InjectMocks
     TransactionHistoryService service;
 
-    // -----------------------------------------------------------------------
-    // getCurrentBalance
-    // -----------------------------------------------------------------------
     @Nested
     @DisplayName("getCurrentBalance")
     class GetCurrentBalance {
 
         @Test
-        @DisplayName("type=store — storeRepository 위임, factoryRepository 호출 없음")
+        @DisplayName("type=store - storeRepository 위임, factoryRepository 호출 없음")
         void store_분기() {
             TransactionDto dto = new TransactionDto("12.345", "1500000");
             given(storeRepository.findByStoreIdAndStoreName(STORE_ID, STORE_NAME)).willReturn(dto);
@@ -76,7 +72,7 @@ class TransactionHistoryServiceTest {
         }
 
         @Test
-        @DisplayName("type=factory — factoryRepository 위임")
+        @DisplayName("type=factory - factoryRepository 위임")
         void factory_분기() {
             TransactionDto dto = new TransactionDto("3.000", "200000");
             given(factoryRepository.findByFactoryIdAndFactoryName(FACTORY_ID, FACTORY_NAME)).willReturn(dto);
@@ -89,7 +85,7 @@ class TransactionHistoryServiceTest {
         }
 
         @Test
-        @DisplayName("type 이 store 가 아닌 임의 문자열(unknown) → factory 분기로 폴백 (else 처리)")
+        @DisplayName("type 이 store 가 아닌 임의 문자열(unknown) -> factory 분기로 폴백 (else 처리)")
         void unknown_type_factory_폴백() {
             TransactionDto dto = new TransactionDto("0", "0");
             given(factoryRepository.findByFactoryIdAndFactoryName(eq(FACTORY_ID), any())).willReturn(dto);
@@ -101,7 +97,7 @@ class TransactionHistoryServiceTest {
         }
 
         @Test
-        @DisplayName("ID 가 숫자로 파싱 불가 → NumberFormatException")
+        @DisplayName("ID 가 숫자로 파싱 불가 -> NumberFormatException")
         void 잘못된_ID() {
             assertThatThrownBy(() -> service.getCurrentBalance("store", "not-a-number", STORE_NAME))
                     .isInstanceOf(NumberFormatException.class);
@@ -118,15 +114,12 @@ class TransactionHistoryServiceTest {
         }
     }
 
-    // -----------------------------------------------------------------------
-    // findAccountPurchase
-    // -----------------------------------------------------------------------
     @Nested
     @DisplayName("findAccountPurchase")
     class FindAccountPurchase {
 
         @Test
-        @DisplayName("정상 — 레포에 위임")
+        @DisplayName("정상 - 레포에 위임")
         void 정상() {
             Pageable pageable = PageRequest.of(0, 20);
             CustomPage<TransactionPage> empty = new CustomPage<>(Collections.emptyList(), pageable, 0L);
@@ -143,21 +136,7 @@ class TransactionHistoryServiceTest {
         }
 
         @Test
-        @DisplayName("빈 검색 조건 — 레포가 알아서 처리")
-        void 빈_조건() {
-            Pageable pageable = PageRequest.of(0, 10);
-            CustomPage<TransactionPage> empty = new CustomPage<>(Collections.emptyList(), pageable, 0L);
-            given(transactionHistoryRepository.findTransactionHistory(
-                    any(), any(), any(), any(), eq(pageable))).willReturn(empty);
-
-            CustomPage<TransactionPage> result = service.findAccountPurchase(
-                    "", "", "", "", pageable);
-
-            assertThat(result.getContent()).isEmpty();
-        }
-
-        @Test
-        @DisplayName("페이징 경계 — 큰 페이지 번호 그대로 전달")
+        @DisplayName("페이징 경계 - 큰 페이지 번호 그대로 전달")
         void 큰_페이지() {
             Pageable pageable = PageRequest.of(999, 5);
             CustomPage<TransactionPage> empty = new CustomPage<>(Collections.emptyList(), pageable, 0L);
@@ -171,15 +150,12 @@ class TransactionHistoryServiceTest {
         }
     }
 
-    // -----------------------------------------------------------------------
-    // findFactoryPurchase
-    // -----------------------------------------------------------------------
     @Nested
     @DisplayName("findFactoryPurchase")
     class FindFactoryPurchase {
 
         @Test
-        @DisplayName("정상 — factory 전용 레포 메서드 위임")
+        @DisplayName("정상 - factory 전용 레포 메서드 위임")
         void 정상() {
             Pageable pageable = PageRequest.of(0, 20);
             CustomPage<TransactionPage> empty = new CustomPage<>(Collections.emptyList(), pageable, 0L);
@@ -196,7 +172,7 @@ class TransactionHistoryServiceTest {
         }
 
         @Test
-        @DisplayName("findAccountPurchase 와 별개의 메서드 — 위임 분리 확인")
+        @DisplayName("findAccountPurchase 와 별개의 메서드 - 위임 분리 확인")
         void 메서드_분리() {
             Pageable pageable = PageRequest.of(0, 20);
             CustomPage<TransactionPage> empty = new CustomPage<>(Collections.emptyList(), pageable, 0L);
@@ -210,99 +186,125 @@ class TransactionHistoryServiceTest {
         }
     }
 
-    // -----------------------------------------------------------------------
-    // savePurchase
-    // -----------------------------------------------------------------------
     @Nested
-    @DisplayName("savePurchase")
+    @DisplayName("savePurchase / savePurchases")
     class SavePurchase {
 
         @Test
-        @DisplayName("정상 — 빌더 매핑 후 save, transactionDate 있으면 updateTransactionDate 호출")
-        void 정상() throws Exception {
-            PurchaseDto dto = purchaseDto("SALE", new BigDecimal("3.333"), 500_000L,
-                    "445823472384938240", LocalDateTime.of(2026, 5, 16, 14, 30));
+        @DisplayName("매입(PURCHASE) - applyDelta 에 양수 금/금액 위임, 재질/등록일 전달")
+        void 매입_양수() {
+            PurchaseDto dto = purchaseDto("PURCHASE", "18K", new BigDecimal("3.333"), 500_000L,
+                    null, LocalDateTime.of(2026, 5, 16, 0, 0));
+            dto.setAccountId("10");
 
             service.savePurchase(dto);
 
-            ArgumentCaptor<TransactionHistory> captor = ArgumentCaptor.forClass(TransactionHistory.class);
-            verify(transactionHistoryRepository).save(captor.capture());
-
-            TransactionHistory saved = captor.getValue();
-            assertThat(saved.getTransactionType()).isEqualTo(SaleStatus.SALE);
-            assertThat(saved.getGoldAmount()).isEqualByComparingTo("3.333");
-            assertThat(saved.getMoneyAmount()).isEqualTo(500_000L);
-            assertThat(saved.getAccountSaleCode()).isEqualTo(445_823_472_384_938_240L);
-            assertThat(saved.getTransactionDate()).isEqualTo(LocalDateTime.of(2026, 5, 16, 14, 30));
+            verify(factoryService).applyDelta(
+                    eq(10L),
+                    eq(new BigDecimal("3.333")),
+                    eq(500_000L),
+                    any(String.class),
+                    eq("PURCHASE"),
+                    eq("18K"),
+                    eq(null),
+                    eq("단위테스트"),
+                    eq(LocalDateTime.of(2026, 5, 16, 0, 0)));
+            verifyNoInteractions(transactionHistoryRepository);
         }
 
         @Test
-        @DisplayName("transactionDate=null — updateTransactionDate 호출 안 됨 (이력 그대로 저장)")
-        void 날짜_null() {
-            PurchaseDto dto = purchaseDto("PAYMENT", new BigDecimal("0"), 1_000L,
-                    "100", null);
+        @DisplayName("결제(PAYMENT) - 금/금액 부호 음수로 잔액 반영")
+        void 결제_음수() {
+            PurchaseDto dto = purchaseDto("PAYMENT", "24K", new BigDecimal("2.000"), 1_000L, null, null);
+            dto.setAccountId("10");
 
             service.savePurchase(dto);
 
-            ArgumentCaptor<TransactionHistory> captor = ArgumentCaptor.forClass(TransactionHistory.class);
-            verify(transactionHistoryRepository).save(captor.capture());
-
-            // 생성 직후 호출이므로 onCreate() 가 안 불려서 transactionDate 가 null 인 상태가 정상
-            assertThat(captor.getValue().getTransactionDate()).isNull();
-            assertThat(captor.getValue().getTransactionType()).isEqualTo(SaleStatus.PAYMENT);
+            verify(factoryService).applyDelta(
+                    eq(10L),
+                    eq(new BigDecimal("2.000").negate()),
+                    eq(-1_000L),
+                    any(String.class),
+                    eq("PAYMENT"),
+                    eq("24K"),
+                    eq(null),
+                    any(),
+                    eq(null));
         }
 
         @Test
-        @DisplayName("잘못된 transactionType 문자열 → IllegalArgumentException(enum)")
+        @DisplayName("표시명(매입) 도 허용 - PURCHASE 로 매핑")
+        void 표시명_허용() {
+            PurchaseDto dto = purchaseDto("매입", "14K", new BigDecimal("1.000"), 0L, null, null);
+            dto.setAccountId("7");
+
+            service.savePurchase(dto);
+
+            verify(factoryService).applyDelta(
+                    eq(7L), eq(new BigDecimal("1.000")), eq(0L), any(String.class),
+                    eq("PURCHASE"), eq("14K"), eq(null), any(), eq(null));
+        }
+
+        @Test
+        @DisplayName("잘못된 transactionType -> IllegalArgumentException, applyDelta 미호출")
         void 잘못된_type() {
-            PurchaseDto dto = purchaseDto("NOT_A_TYPE", BigDecimal.ZERO, 0L, "1", null);
+            PurchaseDto dto = purchaseDto("NOT_A_TYPE", "18K", BigDecimal.ZERO, 0L, null, null);
+            dto.setAccountId("1");
 
             assertThatThrownBy(() -> service.savePurchase(dto))
                     .isInstanceOf(IllegalArgumentException.class);
 
-            verifyNoInteractions(transactionHistoryRepository);
+            verifyNoInteractions(factoryService);
         }
 
         @Test
-        @DisplayName("saleCode 가 숫자가 아닌 경우 → NumberFormatException")
-        void 잘못된_saleCode() {
-            PurchaseDto dto = purchaseDto("SALE", BigDecimal.ZERO, 0L, "abc", null);
+        @DisplayName("accountId 누락 -> IllegalArgumentException")
+        void accountId_누락() {
+            PurchaseDto dto = purchaseDto("PURCHASE", "18K", BigDecimal.ZERO, 0L, null, null);
+            dto.setAccountId(null);
 
             assertThatThrownBy(() -> service.savePurchase(dto))
-                    .isInstanceOf(NumberFormatException.class);
+                    .isInstanceOf(IllegalArgumentException.class);
 
-            verifyNoInteractions(transactionHistoryRepository);
+            verifyNoInteractions(factoryService);
+        }
+
+        @Test
+        @DisplayName("savePurchases - 빈 목록이면 IllegalArgumentException")
+        void 빈_목록() {
+            assertThatThrownBy(() -> service.savePurchases(Collections.emptyList()))
+                    .isInstanceOf(IllegalArgumentException.class);
+            verifyNoInteractions(factoryService);
+        }
+
+        @Test
+        @DisplayName("savePurchases - 여러 줄을 각각 applyDelta 로 위임")
+        void 여러줄() {
+            PurchaseDto a = purchaseDto("PURCHASE", "18K", new BigDecimal("1.0"), 100L, null, null);
+            a.setAccountId("10");
+            PurchaseDto b = purchaseDto("PURCHASE", "24K", new BigDecimal("2.0"), 200L, null, null);
+            b.setAccountId("11");
+
+            service.savePurchases(List.of(a, b));
+
+            verify(factoryService).applyDelta(eq(10L), eq(new BigDecimal("1.0")), eq(100L), any(String.class),
+                    eq("PURCHASE"), eq("18K"), eq(null), any(), eq(null));
+            verify(factoryService).applyDelta(eq(11L), eq(new BigDecimal("2.0")), eq(200L), any(String.class),
+                    eq("PURCHASE"), eq("24K"), eq(null), any(), eq(null));
         }
     }
 
-    // -----------------------------------------------------------------------
-    // 헬퍼
-    // -----------------------------------------------------------------------
-    private static PurchaseDto purchaseDto(String type, BigDecimal gold, Long money,
+    private static PurchaseDto purchaseDto(String type, String material, BigDecimal gold, Long money,
                                            String saleCode, LocalDateTime txDate) {
-        PurchaseDto dto = PurchaseDto.builder()
+        return PurchaseDto.builder()
                 .transactionType(type)
+                .material(material)
                 .goldAmount(gold)
                 .moneyAmount(money)
                 .saleCode(saleCode)
                 .accountId("10")
                 .transactionNote("단위테스트")
+                .transactionDate(txDate)
                 .build();
-
-        if (txDate != null) {
-            // reflection 으로 transactionDate 세팅 (DTO setter 없음, builder 에도 없음)
-            setField(dto, "transactionDate", txDate);
-        }
-        return dto;
-    }
-
-    private static void setField(Object target, String name, Object value) {
-        try {
-            Field f = target.getClass().getDeclaredField(name);
-            f.setAccessible(true);
-            f.set(target, value);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 }

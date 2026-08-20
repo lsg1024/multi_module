@@ -34,7 +34,7 @@ public class ImageEmbeddingBackfillService {
     public BackfillJob start(String tenantId, int chunkSize, boolean dryRun) {
         BackfillJob existing = currentJob.get();
         if (existing != null && existing.getStatus() == BackfillStatus.RUNNING) {
-            throw new IllegalStateException("Backfill already running — id=" + existing.getId());
+            throw new IllegalStateException("이미 실행 중인 백필 작업이 있습니다. (id=" + existing.getId() + ")");
         }
 
         BackfillJob job = new BackfillJob(UUID.randomUUID().toString(), tenantId, dryRun);
@@ -48,7 +48,7 @@ public class ImageEmbeddingBackfillService {
     public BackfillJob status() {
         BackfillJob job = currentJob.get();
         if (job == null) {
-            throw new IllegalStateException("No backfill job has been started");
+            throw new IllegalStateException("시작된 백필 작업이 없습니다.");
         }
         return job;
     }
@@ -56,7 +56,7 @@ public class ImageEmbeddingBackfillService {
     public BackfillJob cancel() {
         BackfillJob job = currentJob.get();
         if (job == null || job.getStatus() != BackfillStatus.RUNNING) {
-            throw new IllegalStateException("No running backfill to cancel");
+            throw new IllegalStateException("취소할 실행 중인 백필 작업이 없습니다.");
         }
         job.setStatus(BackfillStatus.CANCELLED);
         return job;

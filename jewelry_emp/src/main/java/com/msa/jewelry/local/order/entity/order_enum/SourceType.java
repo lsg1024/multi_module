@@ -8,7 +8,9 @@ public enum SourceType {
     NORMAL("일반"),
     SALE("판매"),
     RENTAL("대여"),
-    RETURN("반품");
+    RETURN("반품"),
+    STOCK("재고"),
+    DELETED("삭제");
 
     private final String displayName;
 

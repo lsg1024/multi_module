@@ -23,13 +23,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * OrderCommandService 단위 테스트.
- * <p>
- * 모놀리스 통합으로 OrderCommandService 와 OrderProcessingService 가 한 클래스로 합쳐졌고,
- * 핵심 happy-path 흐름은 OrdersServiceIntegrationTest 의 @SpringBootTest 가 커버한다.
- * 여기서는 외부 의존(DB/날짜 파싱) 없이도 검증 가능한 입력 가드를 단위 테스트로 고정한다.
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("OrderCommandService 단위 테스트")

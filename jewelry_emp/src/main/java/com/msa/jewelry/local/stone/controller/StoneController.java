@@ -6,6 +6,7 @@ import com.msa.common.global.util.CustomPage;
 import com.msa.jewelry.local.stone.dto.StoneDto;
 import com.msa.jewelry.local.stone.service.StoneService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
@@ -27,6 +28,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+@Slf4j
 @RestController
 public class StoneController {
     private final StoneService stoneService;
@@ -58,8 +60,9 @@ public class StoneController {
     public ResponseEntity<ApiResponse<String>> uploadStonesBatch(
             @RequestParam("file") MultipartFile file) {
 
+        Path tempPath = null;
         try {
-            Path tempPath = Files.createTempFile("stone-upload-", ".json");
+            tempPath = Files.createTempFile("stone-upload-", ".json");
 
             file.transferTo(tempPath.toFile());
 
@@ -71,9 +74,13 @@ public class StoneController {
             jobLauncher.run(stoneInsertJob, params);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Stone batch upload failed", e);
             return ResponseEntity.internalServerError()
-                    .body(ApiResponse.error("저장 실패: " + e.getMessage()));
+                    .body(ApiResponse.error("업로드 처리에 실패했습니다."));
+        } finally {
+            if (tempPath != null) {
+                try { Files.deleteIfExists(tempPath); } catch (IOException ignored) {}
+            }
         }
 
         return ResponseEntity.ok(ApiResponse.success("저장 중..."));

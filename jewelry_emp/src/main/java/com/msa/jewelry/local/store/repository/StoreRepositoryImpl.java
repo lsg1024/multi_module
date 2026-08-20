@@ -37,27 +37,6 @@ import static com.msa.jewelry.local.store.entity.QAdditionalOption.additionalOpt
 import static com.msa.jewelry.local.store.entity.QStore.store;
 import static com.msa.jewelry.local.transaction_history.entity.QTransactionHistory.transactionHistory;
 
-/**
- * 매장 QueryDSL 쿼리 구현체.
- *
- * *매장 단건/목록 조회, 미수금 조회, 엑셀 데이터 추출 등 다양한 쿼리를 제공한다.
- *
- * *주요 특징:
- *
- *   - LEFT JOIN 4개 테이블 — {@code store} 기준으로 {@code address},
- *       {@code commonOption}, {@code additionalOption}, {@code goldHarry} 를 각각 LEFT JOIN
- *   - 미수금 서브쿼리 — {@code transactionHistory} 테이블에서
- *       최신 판매일({@code SaleStatus.SALE})과 최신 결제일({@code SaleStatus.PAYMENT})을
- *       {@code TO_CHAR(MAX(...))} 서브쿼리로 각각 조회하여 응답 DTO에 포함
- *   - 미수금 필터 — 잔액이 0이 아니거나 거래 이력이 존재하는 매장만 조회하는 EXISTS 조건 적용
- *   - 엑셀 다운로드 — 매장 목록 및 미수금 목록 각각에 대해 엑셀 전용 DTO로 데이터를 조회
- *   - 동적 정렬 — 매장명·대표자명·등급·금 잔액·현금 잔액 기준 ASC/DESC 지원
- * 
- *
- * *의존성: {@link JPAQueryFactory}, {@code store}, {@code address},
- * {@code commonOption}, {@code additionalOption}, {@code goldHarry},
- * {@code transactionHistory} Q클래스
- */
 public class StoreRepositoryImpl implements CustomStoreRepository {
 
     private final JPAQueryFactory query;
@@ -109,8 +88,6 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
         BooleanExpression searchCondition = buildStoreSearchCondition(name, searchField);
         OrderSpecifier<?>[] orderSpecifiers = specifiers(sortField, sortOrder);
 
-        // Task 4-2: 거래처 목록에 최근 거래일 / 최근 결제일 서브쿼리 추가.
-        // (findAllStoreAndReceivable 에서 이미 검증된 패턴을 그대로 재사용한다.)
         StringExpression latestTransactionDateString = Expressions.stringTemplate(
                 "TO_CHAR(MAX(transactionHistory.transactionDate), 'YYYY-MM-DD HH24:MI:SS')",
                 transactionHistory.transactionDate.max()
@@ -441,11 +418,6 @@ public class StoreRepositoryImpl implements CustomStoreRepository {
                         .and(transactionHistory.transactionDeleted.isFalse())
                         .and(transactionHistory.transactionType.eq(SaleStatus.SALE)));
 
-        //   store.eq(store).and(deleted.isFalse()).or(type.eq(PAYMENT)).or(type.eq(SALE))
-        // 은 "((store AND !deleted) OR PAYMENT) OR SALE" 로 해석되어 OR 분기가
-        // store 필터를 우회. DB에 PAYMENT/SALE 이력이 하나라도 존재하면 모든 store
-        // 에 대해 항상 TRUE 가 되었다. 의도는 "해당 store 의 삭제되지 않은 트랜잭션
-        // 중 PAYMENT 또는 SALE 유형이 존재하는가" 이므로 IN 조건으로 정정한다.
         BooleanExpression hasHistory = JPAExpressions
                 .selectOne()
                 .from(transactionHistory)

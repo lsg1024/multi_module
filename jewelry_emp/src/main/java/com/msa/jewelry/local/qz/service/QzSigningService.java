@@ -33,8 +33,6 @@ public class QzSigningService {
 
         byte[] signedBytes = signature.sign();
 
-        String s = Base64.getEncoder().encodeToString(signedBytes);
-        log.info("sign log = {}", s);
-        return s;
+        return Base64.getEncoder().encodeToString(signedBytes);
     }
 }

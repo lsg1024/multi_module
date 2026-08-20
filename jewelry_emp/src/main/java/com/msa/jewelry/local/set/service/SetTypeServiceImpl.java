@@ -6,7 +6,9 @@ import com.msa.jewelry.local.set.dto.SetTypeDto;
 import com.msa.jewelry.local.set.entity.SetType;
 import com.msa.jewelry.local.set.repository.SetTypeRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
@@ -95,16 +97,22 @@ public class SetTypeServiceImpl implements SetTypeService {
             throw new IllegalArgumentException(NOT_ACCESS);
         }
 
+        JobExecution jobExecution;
         try {
             JobParameters jobParameters = new JobParametersBuilder()
                     .addString("tenantId", tenantId)
                     .addLong("setTypeId", setTypeId)
                     .addLong("timestamp", System.currentTimeMillis())
                     .toJobParameters();
-            jobLauncher.run(updateSetTypeUpdateJob, jobParameters);
+            jobExecution = jobLauncher.run(updateSetTypeUpdateJob, jobParameters);
         } catch (Exception e) {
             log.error("updateSetTypeUpdateJob 실행 실패: setTypeId={}", setTypeId, e);
             throw new IllegalStateException(BATCH_FAIL, e);
+        }
+        if (jobExecution != null && jobExecution.getStatus() != BatchStatus.COMPLETED) {
+            log.error("updateSetTypeUpdateJob 비정상 종료: setTypeId={}, status={}, failures={}",
+                    setTypeId, jobExecution.getStatus(), jobExecution.getAllFailureExceptions());
+            throw new IllegalStateException(BATCH_FAIL);
         }
     }
 
